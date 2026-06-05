@@ -60,8 +60,9 @@ def search(name, query, *, k=10):
         return f"corpus {name!r} is empty; build it first: ir build {name}"
     lines = []
     for h in corpus.search(query, k=k):
-        label = h.metadata.get("name") or h.metadata.get("project") or h.artifact_id
-        lines.append(f"{h.score:+.3f}  {label}  [{h.surface_kind}]")
+        # artifact_id is the unique label across corpora (skill name[@parent],
+        # package name, or a report's relative path).
+        lines.append(f"{h.score:+.3f}  {h.artifact_id}  [{h.surface_kind}]")
     return "\n".join(lines) or "(no matches)"
 
 
