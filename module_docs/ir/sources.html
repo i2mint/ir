@@ -1,0 +1,202 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.sources &mdash; ir 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ir.store" href="store.html" />
+    <link rel="prev" title="ir.retrieve" href="retrieve.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ir.sources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.sources.CorpusSource"><code class="docutils literal notranslate"><span class="pre">CorpusSource</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.sources.CorpusSource.change_signal"><code class="docutils literal notranslate"><span class="pre">CorpusSource.change_signal()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.sources.CorpusSource.from_files"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_files()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.sources.CorpusSource.from_mapping"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_mapping()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.sources.CorpusSource.from_md_reports"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_md_reports()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.sources.CorpusSource.from_packages"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_packages()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.sources.CorpusSource.from_skills"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_skills()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.sources.content_hash_signal"><code class="docutils literal notranslate"><span class="pre">content_hash_signal()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ir.sources</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/ir/sources.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ir.sources">
+<span id="ir-sources"></span><h1>ir.sources<a class="headerlink" href="#module-ir.sources" title="Link to this heading"></a></h1>
+<p>Defining a corpus source — an abstract strategy plus parameters.</p>
+<p>A <a class="reference internal" href="#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusSource</span></code></a> says <em>what</em> a corpus is and <em>how to keep it current</em>,
+independent of how it is indexed or stored:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">scope</span></code>            — a <code class="docutils literal notranslate"><span class="pre">Mapping[id</span> <span class="pre">-&gt;</span> <span class="pre">raw]</span></code> enumerating the corpus (a dict,
+a <code class="docutils literal notranslate"><span class="pre">dol</span></code> file store, or any mapping). This is the “what is in the corpus” slot.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">change_signal</span></code>    — <code class="docutils literal notranslate"><span class="pre">(id,</span> <span class="pre">raw)</span> <span class="pre">-&gt;</span> <span class="pre">version_str</span></code>; default is the content
+hash. This is the “what counts as stale” slot, driving incremental reindex.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">indexing_strategy</span></code>— how a raw item becomes filter fields + surfaces.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">embedder</span></code>         — embedder spec (default: the decent local model).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metadata_of</span></code>      — optional <code class="docutils literal notranslate"><span class="pre">(id,</span> <span class="pre">raw)</span> <span class="pre">-&gt;</span> <span class="pre">dict</span></code> of extra filter metadata.</p></li>
+</ul>
+<p>Smart-default constructors cover the common ways to define a source:
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">from_mapping()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_files()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_md_reports()</span></code>,
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">from_skills()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_packages()</span></code>.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.sources.CorpusSource">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">CorpusSource</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">name:</span> <span class="pre">str,</span> <span class="pre">scope:</span> <span class="pre">~collections.abc.Mapping[str,</span> <span class="pre">~typing.Any],</span> <span class="pre">indexing_strategy:</span> <span class="pre">~ir.strategy.IndexingStrategy</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">change_signal:</span> <span class="pre">~collections.abc.Callable[[str,</span> <span class="pre">~typing.Any],</span> <span class="pre">str]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">content_hash_signal&gt;,</span> <span class="pre">embedder:</span> <span class="pre">~typing.Any</span> <span class="pre">=</span> <span class="pre">'default',</span> <span class="pre">metadata_of:</span> <span class="pre">~collections.abc.Callable[[str,</span> <span class="pre">~typing.Any],</span> <span class="pre">~collections.abc.Mapping[str,</span> <span class="pre">~typing.Any]]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/sources.html#CorpusSource"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.sources.CorpusSource" title="Link to this definition"></a></dt>
+<dd><p>A corpus definition: scope + change signal + strategy + embedder.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.sources.CorpusSource.change_signal">
+<span class="sig-name descname"><span class="pre">change_signal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#ir.sources.CorpusSource.change_signal" title="Link to this definition"></a></dt>
+<dd><p>Default change signal: a content hash of the raw payload.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.sources.CorpusSource.from_files">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'.*\\.md$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><span class="pre">IndexingStrategy</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><span class="pre">CorpusSource</span></a></span></span><a class="reference internal" href="../../_modules/ir/sources.html#CorpusSource.from_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.sources.CorpusSource.from_files" title="Link to this definition"></a></dt>
+<dd><p>A directory tree of text files as a corpus (lazy <code class="docutils literal notranslate"><span class="pre">dol</span></code> scope).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.sources.CorpusSource.from_mapping">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_mapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mapping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><span class="pre">IndexingStrategy</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><span class="pre">CorpusSource</span></a></span></span><a class="reference internal" href="../../_modules/ir/sources.html#CorpusSource.from_mapping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.sources.CorpusSource.from_mapping" title="Link to this definition"></a></dt>
+<dd><p>Any mapping <code class="docutils literal notranslate"><span class="pre">{id</span> <span class="pre">-&gt;</span> <span class="pre">raw}</span></code> (dict, <code class="docutils literal notranslate"><span class="pre">dol</span></code> store) as a corpus.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.sources.CorpusSource.from_md_reports">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_md_reports</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'reports'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projects_root</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><span class="pre">IndexingStrategy</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><span class="pre">CorpusSource</span></a></span></span><a class="reference internal" href="../../_modules/ir/sources.html#CorpusSource.from_md_reports"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.sources.CorpusSource.from_md_reports" title="Link to this definition"></a></dt>
+<dd><p>Markdown reports under projects’ <code class="docutils literal notranslate"><span class="pre">docs/</span></code> and <code class="docutils literal notranslate"><span class="pre">misc/docs/</span></code>.</p>
+<p>Excludes ALL-CAPS filenames (README/CLAUDE/MEMORY/SKILL…). Each record
+is a project-tagged document; ids are paths relative to the projects root.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.sources.CorpusSource.from_packages">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_packages</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'packages'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manifest</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">readme_chars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><span class="pre">IndexingStrategy</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><span class="pre">CorpusSource</span></a></span></span><a class="reference internal" href="../../_modules/ir/sources.html#CorpusSource.from_packages"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.sources.CorpusSource.from_packages" title="Link to this definition"></a></dt>
+<dd><p>The local package ecosystem, scanned from the <code class="docutils literal notranslate"><span class="pre">.pth</span></code> manifest.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.sources.CorpusSource.from_skills">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_skills</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'skills'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fetcher</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><span class="pre">IndexingStrategy</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><span class="pre">CorpusSource</span></a></span></span><a class="reference internal" href="../../_modules/ir/sources.html#CorpusSource.from_skills"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.sources.CorpusSource.from_skills" title="Link to this definition"></a></dt>
+<dd><p>The agent-skills corpus, via <code class="docutils literal notranslate"><span class="pre">priv.skills_index</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fetcher</span></code> overrides the source of skill records (each a mapping with
+<code class="docutils literal notranslate"><span class="pre">name</span></code>/<code class="docutils literal notranslate"><span class="pre">description</span></code>/<code class="docutils literal notranslate"><span class="pre">parent</span></code>) — inject a test double to avoid the
+<code class="docutils literal notranslate"><span class="pre">priv</span></code> dependency.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.sources.content_hash_signal">
+<span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">content_hash_signal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/sources.html#content_hash_signal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.sources.content_hash_signal" title="Link to this definition"></a></dt>
+<dd><p>Default change signal: a content hash of the raw payload.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="retrieve.html" class="btn btn-neutral float-left" title="ir.retrieve" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="store.html" class="btn btn-neutral float-right" title="ir.store" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

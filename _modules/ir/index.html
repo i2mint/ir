@@ -1,0 +1,315 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.index &mdash; ir 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../ir.html">ir</a></li>
+      <li class="breadcrumb-item active">ir.index</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ir.index</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The indexing pipeline and incremental maintenance.</span>
+
+<span class="sd">:func:`build` turns a :class:`~ir.sources.CorpusSource` into a queryable</span>
+<span class="sd">:class:`Corpus`, persisting records through a</span>
+<span class="sd">:class:`~ir.store.CorpusStore`. It is **incremental and idempotent**: each</span>
+<span class="sd">artifact&#39;s change signal is compared to the ledger, and only new, changed, or</span>
+<span class="sd">re-modeled artifacts are decomposed and embedded. Artifacts that vanished from</span>
+<span class="sd">the source are pruned (full-refresh). Re-running ``build`` on an unchanged</span>
+<span class="sd">source is a near-no-op.</span>
+
+<span class="sd">This is the light maintenance path — content-hash CRUD over a flat store, which</span>
+<span class="sd">is the right tool for the small corpora ``ir`` targets. The heavier</span>
+<span class="sd">content-addressed artifact-graph (``ef.artifact_graph``) is the documented</span>
+<span class="sd">upgrade for corpora large enough that recomputing surfaces is the bottleneck.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Record</span><span class="p">,</span> <span class="n">storage_key</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.embed</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_embedder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusSource</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusStore</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_strategy_id</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stable id for a strategy: class name + its simple parameters.</span>
+
+<span class="sd">    Changing the strategy (or its parameters) changes this id, so an unchanged</span>
+<span class="sd">    corpus rebuilt under a different strategy is correctly re-decomposed rather</span>
+<span class="sd">    than skipped.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_embed</span><span class="p">(</span><span class="n">emb</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">texts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">input_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Call an embedder, tolerating those that don&#39;t accept ``input_type``.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">texts</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">emb</span><span class="p">(</span><span class="n">texts</span><span class="p">,</span> <span class="n">input_type</span><span class="o">=</span><span class="n">input_type</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">emb</span><span class="p">(</span><span class="n">texts</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_embed_batched</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">texts</span><span class="p">,</span> <span class="n">input_type</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">texts</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_embed</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">texts</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span> <span class="n">input_type</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="k">if</span> <span class="n">out</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Corpus">
+<a class="viewcode-back" href="../../module_docs/ir/index.html#ir.Corpus">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Corpus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A built, queryable corpus: a store plus its embedder.&quot;&quot;&quot;</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">store</span><span class="p">:</span> <span class="n">CorpusStore</span>
+    <span class="n">embedder</span><span class="p">:</span> <span class="n">Callable</span>
+    <span class="n">embedder_id</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span>
+
+        <span class="k">return</span> <span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="build">
+<a class="viewcode-back" href="../../module_docs/ir/index.html#ir.build">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">CorpusSource</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">store</span><span class="p">:</span> <span class="n">CorpusStore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">embedder</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">full</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Corpus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build or incrementally update *source* into a :class:`Corpus`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    store : the persistence backend (default: file-backed under XDG data dir).</span>
+<span class="sd">    embedder : override the source&#39;s embedder spec.</span>
+<span class="sd">    full : when True (default), prune artifacts no longer in the source.</span>
+<span class="sd">    batch_size : embedding batch size.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">store</span> <span class="o">=</span> <span class="n">CorpusStore</span><span class="o">.</span><span class="n">local</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">store</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">store</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">embedder</span> <span class="k">if</span> <span class="n">embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">source</span><span class="o">.</span><span class="n">embedder</span>
+    <span class="n">emb</span><span class="p">,</span> <span class="n">emb_id</span> <span class="o">=</span> <span class="n">make_embedder</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+    <span class="n">strat_id</span> <span class="o">=</span> <span class="n">_strategy_id</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">indexing_strategy</span><span class="p">)</span>
+
+    <span class="n">seen</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">changed</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span> <span class="ow">in</span> <span class="n">source</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">)</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">change_signal</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">storage_key</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">)</span>
+        <span class="n">prev</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_ledger_entry</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">prev</span>
+            <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;version&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">version</span>
+            <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_id&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">emb_id</span>
+            <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;strategy_id&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">strat_id</span>
+        <span class="p">):</span>
+            <span class="k">continue</span>  <span class="c1"># unchanged content + same model + same strategy</span>
+        <span class="n">meta_extra</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">metadata_of</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span> <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">metadata_of</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">indexing_strategy</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">meta_extra</span><span class="p">)</span>
+        <span class="n">changed</span><span class="p">[</span><span class="n">artifact_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">prev</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+
+    <span class="c1"># Embed all surfaces of changed artifacts together (cache makes this cheap).</span>
+    <span class="n">flat</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">surface</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="p">(</span><span class="n">_k</span><span class="p">,</span> <span class="n">_v</span><span class="p">,</span> <span class="n">_p</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span> <span class="ow">in</span> <span class="n">changed</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">surface</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">surfaces</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">vectors</span> <span class="o">=</span> <span class="n">_embed_batched</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">flat</span><span class="p">],</span> <span class="s2">&quot;document&quot;</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+
+    <span class="c1"># Replace records of changed artifacts (delete-then-write).</span>
+    <span class="k">for</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="p">(</span><span class="n">_k</span><span class="p">,</span> <span class="n">_v</span><span class="p">,</span> <span class="n">prev</span><span class="p">,</span> <span class="n">_plan</span><span class="p">)</span> <span class="ow">in</span> <span class="n">changed</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">prev</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;record_ids&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">delete_record</span><span class="p">(</span><span class="n">rid</span><span class="p">)</span>
+
+    <span class="n">record_ids</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">surface</span><span class="p">),</span> <span class="n">vec</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">flat</span><span class="p">,</span> <span class="n">vectors</span><span class="p">):</span>
+        <span class="n">rid</span> <span class="o">=</span> <span class="n">Record</span><span class="o">.</span><span class="n">make_id</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">surface</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="n">changed</span><span class="p">[</span><span class="n">artifact_id</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">plan</span><span class="o">.</span><span class="n">filter_fields</span><span class="p">,</span> <span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">surface</span><span class="o">.</span><span class="n">metadata</span><span class="p">)}</span>
+        <span class="n">store</span><span class="o">.</span><span class="n">put_record</span><span class="p">(</span>
+            <span class="n">Record</span><span class="p">(</span>
+                <span class="nb">id</span><span class="o">=</span><span class="n">rid</span><span class="p">,</span>
+                <span class="n">artifact_id</span><span class="o">=</span><span class="n">artifact_id</span><span class="p">,</span>
+                <span class="n">surface_kind</span><span class="o">=</span><span class="n">surface</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span>
+                <span class="n">surface_index</span><span class="o">=</span><span class="n">i</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="n">surface</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+                <span class="n">vector</span><span class="o">=</span><span class="n">vec</span><span class="p">,</span>
+                <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">record_ids</span><span class="p">[</span><span class="n">artifact_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rid</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">_prev</span><span class="p">,</span> <span class="n">_plan</span><span class="p">)</span> <span class="ow">in</span> <span class="n">changed</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">store</span><span class="o">.</span><span class="n">set_ledger_entry</span><span class="p">(</span>
+            <span class="n">key</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;artifact_id&quot;</span><span class="p">:</span> <span class="n">artifact_id</span><span class="p">,</span>
+                <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">version</span><span class="p">,</span>
+                <span class="s2">&quot;embedder_id&quot;</span><span class="p">:</span> <span class="n">emb_id</span><span class="p">,</span>
+                <span class="s2">&quot;strategy_id&quot;</span><span class="p">:</span> <span class="n">strat_id</span><span class="p">,</span>
+                <span class="s2">&quot;record_ids&quot;</span><span class="p">:</span> <span class="n">record_ids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">full</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">ledger_items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;artifact_id&quot;</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;record_ids&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+                    <span class="n">store</span><span class="o">.</span><span class="n">delete_record</span><span class="p">(</span><span class="n">rid</span><span class="p">)</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">delete_ledger_entry</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="n">store</span><span class="o">.</span><span class="n">set_config</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;embedder_spec&quot;</span><span class="p">:</span> <span class="n">spec</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;embedder_id&quot;</span><span class="p">:</span> <span class="n">emb_id</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">Corpus</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">store</span><span class="p">,</span> <span class="n">emb</span><span class="p">,</span> <span class="n">emb_id</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="open_corpus">
+<a class="viewcode-back" href="../../module_docs/ir/index.html#ir.open_corpus">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">embedder</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Corpus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reopen a previously built corpus by name (resolves its embedder).&quot;&quot;&quot;</span>
+    <span class="n">store</span> <span class="o">=</span> <span class="n">CorpusStore</span><span class="o">.</span><span class="n">local</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">embedder</span> <span class="k">if</span> <span class="n">embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_spec&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span>
+    <span class="n">emb</span><span class="p">,</span> <span class="n">emb_id</span> <span class="o">=</span> <span class="n">make_embedder</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Corpus</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">store</span><span class="p">,</span> <span class="n">emb</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_id&quot;</span><span class="p">,</span> <span class="n">emb_id</span><span class="p">))</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,216 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.base &mdash; ir 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ir.config" href="config.html" />
+    <link rel="prev" title="ir" href="../ir.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../ir.html">ir</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ir.base</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.Artifact"><code class="docutils literal notranslate"><span class="pre">Artifact</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.FilterFields"><code class="docutils literal notranslate"><span class="pre">FilterFields</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.IndexPlan"><code class="docutils literal notranslate"><span class="pre">IndexPlan</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.Record"><code class="docutils literal notranslate"><span class="pre">Record</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.base.Record.make_id"><code class="docutils literal notranslate"><span class="pre">Record.make_id()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.SearchHit"><code class="docutils literal notranslate"><span class="pre">SearchHit</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.best_per_artifact"><code class="docutils literal notranslate"><span class="pre">best_per_artifact()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.storage_key"><code class="docutils literal notranslate"><span class="pre">storage_key()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ir.base</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/ir/base.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ir.base">
+<span id="ir-base"></span><h1>ir.base<a class="headerlink" href="#module-ir.base" title="Link to this heading"></a></h1>
+<p>Core data model for <code class="docutils literal notranslate"><span class="pre">ir</span></code>.</p>
+<p>Retrieval in <code class="docutils literal notranslate"><span class="pre">ir</span></code> flows through four small, explicit types:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#ir.base.Artifact" title="ir.base.Artifact"><code class="xref py py-class docutils literal notranslate"><span class="pre">Artifact</span></code></a> — a logical item in a corpus (a file, a skill, a package).
+Opaque <code class="docutils literal notranslate"><span class="pre">raw</span></code> payload plus <code class="docutils literal notranslate"><span class="pre">metadata</span></code>.</p></li>
+<li><p><a class="reference internal" href="#ir.base.Surface" title="ir.base.Surface"><code class="xref py py-class docutils literal notranslate"><span class="pre">Surface</span></code></a> — one <em>embeddable unit</em> derived from an artifact. A single
+artifact may yield several heterogeneous surfaces (a short description, an
+AI-authored synopsis, a list of problem classes, body chunks). The
+artifact→surfaces decomposition is the job of an
+<a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a>.</p></li>
+<li><p><a class="reference internal" href="#ir.base.IndexPlan" title="ir.base.IndexPlan"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexPlan</span></code></a> — a strategy’s output for one artifact: the
+<code class="docutils literal notranslate"><span class="pre">filter_fields</span></code> (hard-filterable metadata, <em>not</em> embedded) and the list of
+surfaces (embedded).</p></li>
+<li><p><a class="reference internal" href="#ir.base.Record" title="ir.base.Record"><code class="xref py py-class docutils literal notranslate"><span class="pre">Record</span></code></a> — a stored, embedded surface (one row in the index; maps
+directly to a <code class="docutils literal notranslate"><span class="pre">vd</span></code> <code class="docutils literal notranslate"><span class="pre">Document</span></code>).</p></li>
+<li><p><a class="reference internal" href="#ir.base.SearchHit" title="ir.base.SearchHit"><code class="xref py py-class docutils literal notranslate"><span class="pre">SearchHit</span></code></a> — a scored record returned by retrieval, with a helper to
+collapse multiple surface-hits of the same artifact.</p></li>
+</ul>
+<p>The split between <strong>filter_fields</strong> (metadata you filter on) and <strong>surfaces</strong>
+(text you embed) is deliberate and central: good retrieval is hard metadata
+filtering <em>and</em> semantic ranking, not only embeddings.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.base.Artifact">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">Artifact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/base.html#Artifact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.Artifact" title="Link to this definition"></a></dt>
+<dd><p>A logical corpus item before decomposition into surfaces.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.base.FilterFields">
+<span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">FilterFields</span></span><a class="headerlink" href="#ir.base.FilterFields" title="Link to this definition"></a></dt>
+<dd><p>Non-embedded, hard-filterable metadata for an artifact (name, owner, tags).</p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>]</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.base.IndexPlan">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">IndexPlan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filter_fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.base.Surface" title="ir.base.Surface"><span class="pre">Surface</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/base.html#IndexPlan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.IndexPlan" title="Link to this definition"></a></dt>
+<dd><p>An <a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a>’s output for one artifact.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.base.Record">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">Record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/base.html#Record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.Record" title="Link to this definition"></a></dt>
+<dd><p>A stored, embedded surface — one row of the index.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.base.Record.make_id">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">make_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/base.html#Record.make_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.Record.make_id" title="Link to this definition"></a></dt>
+<dd><p>Deterministic storage id for a surface of an artifact.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.base.SearchHit">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">SearchHit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/base.html#SearchHit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.SearchHit" title="Link to this definition"></a></dt>
+<dd><p>A scored record returned by retrieval (higher score = closer).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.base.Surface">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">Surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">granularity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'document'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/base.html#Surface"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.Surface" title="Link to this definition"></a></dt>
+<dd><p>One embeddable unit derived from an artifact.</p>
+<p><code class="docutils literal notranslate"><span class="pre">kind</span></code> names the surface type (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;description&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;synopsis&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;problem_class&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;chunk&quot;</span></code>) so a query can match the <em>right part</em> of
+an artifact. <code class="docutils literal notranslate"><span class="pre">granularity</span></code> is a coarse hint (<code class="docutils literal notranslate"><span class="pre">&quot;document&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;chunk&quot;</span></code>
+/ <code class="docutils literal notranslate"><span class="pre">&quot;field&quot;</span></code>). <code class="docutils literal notranslate"><span class="pre">metadata</span></code> is surface-local (e.g. chunk offsets).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.base.best_per_artifact">
+<span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">best_per_artifact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/base.html#best_per_artifact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.best_per_artifact" title="Link to this definition"></a></dt>
+<dd><p>Collapse hits to the highest-scoring surface per artifact.</p>
+<p>Returns the surviving hits sorted by score (descending).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.base.storage_key">
+<span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">storage_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">parts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/base.html#storage_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.storage_key" title="Link to this definition"></a></dt>
+<dd><p>Stable, filesystem-safe id from arbitrary string parts (truncated SHA-256).</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../ir.html" class="btn btn-neutral float-left" title="ir" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="config.html" class="btn btn-neutral float-right" title="ir.config" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

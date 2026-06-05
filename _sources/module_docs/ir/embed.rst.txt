@@ -1,0 +1,4 @@
+ir.embed
+========
+.. automodule:: ir.embed
+   :members:

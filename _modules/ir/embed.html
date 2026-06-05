@@ -1,0 +1,220 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.embed &mdash; ir 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../ir.html">ir</a></li>
+      <li class="breadcrumb-item active">ir.embed</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ir.embed</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Embedder resolution for ``ir`` — a decent local default, a light fallback.</span>
+
+<span class="sd">``ir`` favors a *decent local* embedding so retrieval works offline and tests</span>
+<span class="sd">need no API keys, while keeping a *light* (numpy-only) option for when semantic</span>
+<span class="sd">power is not what&#39;s under test.</span>
+
+<span class="sd">- ``&quot;default&quot;`` / ``&quot;local&quot;`` / ``&quot;minilm&quot;`` → ``all-MiniLM-L6-v2`` (384-dim)</span>
+<span class="sd">  via :func:`ef.embedder_adapters.sentence_transformers_embedder`</span>
+<span class="sd">  (``normalize=True``), wrapped in :class:`ef.CachedEmbedder` over a ``dol``</span>
+<span class="sd">  cache under ``~/.cache/ir/embeddings/&lt;model&gt;``. If ``sentence-transformers``</span>
+<span class="sd">  is unavailable, it degrades to the hashing embedder with a warning.</span>
+<span class="sd">- ``&quot;light&quot;`` / ``&quot;hashing&quot;`` → :class:`ef.HashingEmbedder` (numpy only).</span>
+<span class="sd">- any other string → treated as a sentence-transformers model name.</span>
+<span class="sd">- a callable / existing ``Embedder`` → passed through ``ef.as_embedder``.</span>
+
+<span class="sd">:func:`make_embedder` returns ``(embedder, embedder_id)``; the id pins the</span>
+<span class="sd">model in the corpus ledger so a model change triggers a re-embed (the SSOT</span>
+<span class="sd">discipline that keeps the index from silently drifting).</span>
+
+<span class="sd">Importing this module sets ``USE_TF=0`` so ``sentence-transformers`` (via</span>
+<span class="sd">``transformers``) does not import TensorFlow, which crashes on this stack&#39;s</span>
+<span class="sd">numpy ABI. Import ``ir`` before anything that imports ``transformers``.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="c1"># Force-disable TensorFlow in transformers (it crashes on this stack&#39;s numpy</span>
+<span class="c1"># ABI). Assignment (not setdefault) so a stray ``USE_TF=1`` in the shell can&#39;t</span>
+<span class="c1"># re-enable it. Must precede any transformers import; ``ir`` never uses TF.</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;USE_TF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>
+
+<span class="n">DEFAULT_MODEL</span> <span class="o">=</span> <span class="s2">&quot;all-MiniLM-L6-v2&quot;</span>
+
+<span class="n">_LIGHT</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;light&quot;</span><span class="p">,</span> <span class="s2">&quot;hashing&quot;</span><span class="p">,</span> <span class="s2">&quot;hash&quot;</span><span class="p">}</span>
+<span class="n">_LOCAL</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;minilm&quot;</span><span class="p">,</span> <span class="s2">&quot;st&quot;</span><span class="p">,</span> <span class="s2">&quot;sentence-transformers&quot;</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_hashing</span><span class="p">():</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">ef</span>
+
+    <span class="k">return</span> <span class="n">ef</span><span class="o">.</span><span class="n">HashingEmbedder</span><span class="p">(),</span> <span class="s2">&quot;hashing__dim512&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sentence_transformers</span><span class="p">(</span><span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">ef</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ef</span><span class="w"> </span><span class="kn">import</span> <span class="n">embedder_adapters</span>
+
+    <span class="n">emb</span> <span class="o">=</span> <span class="n">embedder_adapters</span><span class="o">.</span><span class="n">sentence_transformers_embedder</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">emb</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;st__</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_with_cache</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrap *emb* in a disk-cached embedder keyed under this model&#39;s cache dir.&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">ef</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">embeddings_cache_dir</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ndarray_store</span>
+
+    <span class="n">store</span> <span class="o">=</span> <span class="n">_ndarray_store</span><span class="p">(</span><span class="n">embeddings_cache_dir</span><span class="p">(</span><span class="n">model_id</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">ef</span><span class="o">.</span><span class="n">CachedEmbedder</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="make_embedder">
+<a class="viewcode-back" href="../../module_docs/ir/embed.html#ir.embed.make_embedder">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_embedder</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Callable</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve *spec* to ``(embedder, embedder_id)``.</span>
+
+<span class="sd">    ``embedder`` is a batch callable ``Iterable[str] -&gt; ndarray(n, dim)`` that</span>
+<span class="sd">    also accepts ``input_type=`` (``&quot;query&quot;`` / ``&quot;document&quot;``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">ef</span>
+
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ef</span><span class="o">.</span><span class="n">as_embedder</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="s2">&quot;_ir_id&quot;</span><span class="p">,</span> <span class="s2">&quot;custom&quot;</span><span class="p">)</span>
+
+    <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">spec</span> <span class="ow">or</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_LIGHT</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_hashing</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_LOCAL</span><span class="p">:</span>
+        <span class="n">model_name</span> <span class="o">=</span> <span class="n">DEFAULT_MODEL</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">model_name</span> <span class="o">=</span> <span class="n">spec</span>  <span class="c1"># any other string is a model name</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span> <span class="o">=</span> <span class="n">_sentence_transformers</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># ImportError or model-load failure</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Local embedder </span><span class="si">{</span><span class="n">model_name</span><span class="si">!r}</span><span class="s2"> unavailable (</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">); &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;falling back to the light hashing embedder. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Install with `pip install sentence-transformers` for semantic search.&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">_hashing</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="n">emb</span> <span class="o">=</span> <span class="n">_with_cache</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

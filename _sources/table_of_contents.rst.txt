@@ -1,0 +1,13 @@
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   module_docs/ir
+   module_docs/ir/base
+   module_docs/ir/config
+   module_docs/ir/embed
+   module_docs/ir/index
+   module_docs/ir/retrieve
+   module_docs/ir/sources
+   module_docs/ir/store
+   module_docs/ir/strategy

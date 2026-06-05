@@ -1,0 +1,4 @@
+ir.index
+========
+.. automodule:: ir.index
+   :members:

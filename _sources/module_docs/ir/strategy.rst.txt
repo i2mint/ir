@@ -1,0 +1,4 @@
+ir.strategy
+===========
+.. automodule:: ir.strategy
+   :members:
