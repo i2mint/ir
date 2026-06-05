@@ -53,13 +53,16 @@ def build(name, *, embedder=None, full=True):
     return f"built {name!r}: {len(corpus)} records (embedder {corpus.embedder_id})"
 
 
-def search(name, query, *, k=10):
-    """Search a built corpus and print the top-k hits."""
+def search(name, query, *, k=10, mode="dense"):
+    """Search a built corpus and print the top-k hits.
+
+    mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused via RRF).
+    """
     corpus = open_corpus(name)
     if len(corpus) == 0:
         return f"corpus {name!r} is empty; build it first: ir build {name}"
     lines = []
-    for h in corpus.search(query, k=k):
+    for h in corpus.search(query, k=k, mode=mode):
         # artifact_id is the unique label across corpora (skill name[@parent],
         # package name, or a report's relative path).
         lines.append(f"{h.score:+.3f}  {h.artifact_id}  [{h.surface_kind}]")
