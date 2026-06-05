@@ -1,0 +1,114 @@
+# Indexing & Embedding Strategy for Agentic Capability Artifacts: SKILL.md, MCP Tools, and Subagent Specs
+
+## TL;DR
+- **Embed intent, not implementation.** For all three artifact types, the highest-signal vector is a *concatenation of name + description + an LLM-generated "when-to-use" / synthetic-query expansion*; raw bodies, parameter schemas, and JSON typing add noise more often than signal. The strongest empirical result in the literature is that document expansion — not model swaps — moves capability retrieval the most: Tool-DE's expansion-trained reranker beat the MTEB SoTA open model by +10.23 NDCG@10 on its own benchmark.
+- **Run hybrid (BM25 + dense) with RRF and a reranker; default the reranker to Voyage rerank-2.5.** Capability descriptions are short and jargon-dense (exact tool/function names matter), the exact regime where dense-only retrieval fails silently; ToolRet showed ColBERT underperforming plain BM25, and instruction-conditioning added +9 to +17 NDCG@10. rerank-2.5's instruction-following is a natural fit for the query→capability asymmetry.
+- **Do not index SKILL.md bodies; treat the Git registry as SSOT with content-hash invalidation.** Progressive disclosure means the body is loaded *after* selection, so it belongs on disk, not in the retrieval index. Sync the index by hashing (name + description + params) per ScaleMCP's SHA-256 CRUD pipeline and re-embedding only on hash change.
+
+## Key Findings
+
+### 1. Tool/skill retrieval is a distinct, hard problem — generic MTEB scores do not transfer
+The single most important framing result comes from ToolRet (Shi et al., ACL Findings 2025): across 7.6k retrieval tasks over a 43k-tool corpus, **even the best embedding model, NV-Embed-v1, reached only NDCG@10 = 33.83**, and *"retrieval methods that demonstrate strong performance in conventional IR tasks, such as ColBERT, even underperform compared to simple lexical-based matching approaches like BM25"* (ColBERT 19.46 vs BM25s 22.32, no-instruction). The root cause is measured: query↔tool lexical overlap (ROUGE-L) is just **0.06** in ToolRet versus 0.27–0.34 for MSMARCO/MTEB. You therefore cannot pick an embedder off the MTEB leaderboard and assume it works for capability retrieval — the task has near-zero surface overlap between a task-phrased query and a capability-phrased document, and ToolRet's correlation analysis (Pearson β = 0.790 with MTEB but uniformly lower absolute scores) confirms the gap is systematic.
+
+This is what underlies the "tool selection collapses at scale" narrative. Anthropic's own engineering data, reported in *Advanced tool use*, shows that with the Tool Search Tool enabled on large MCP libraries, **Opus 4 tool-selection accuracy improved from 49% to 74%, and Opus 4.5 from 79.5% to 88.1%** — i.e., roughly a quarter of selections still failed even on the better baseline. RAG-MCP's controlled stress test is starker still: schema-dump ("Blank Conditioning") selection scored **13.62%**, "Actual Match" 18.20%, and retrieval-based MCP-RAG **43.13%** — the highest of the three — while cutting average prompt tokens from 2,133.84 to 1,084 (≈49% reduction). The qualitative degradation past 30–50 tools is robust across sources; the exact percentages are setup-dependent.
+
+### 2. What to embed: expansion beats field-juggling
+Two convergent findings dominate:
+- **Document expansion is the highest-leverage lever.** Tool-DE (Lu et al., arXiv:2510.22670, ICLR 2026) enriches each tool doc with LLM-generated structured fields and reports field-level contribution (radar-plot deltas, §4.1): `function_description` and `tags` contribute most (their removal causes noticeable NDCG drops), `when_to_use` contributes large improvements, `limitations` is retained, and **`example_usage` is least useful — smallest, often negative gains, and it actively hurt GritLM** — so the authors *excluded* it from the final profile. Their expansion-trained Tool-Embed-4B (Qwen3-Embedding base) hit NDCG@10 = 52.23 / Recall@10 = 63.13 on Tool-DE; the Tool-Rank-4B reranker reached **56.44 / 67.81 / 56.60 (N/R/C@10), +10.23 / +10.29 / +9.08 over Qwen3-Embedding-8B**, the MTEB SoTA open model as of Sept 2025. Expansion roughly *doubled* the 4B retriever's gain versus a non-expansion control (+6.69 vs +3.67 NDCG@10).
+- **Query-side expansion closes the asymmetry.** Re-Invoke (Chen et al., Google, EMNLP 2024 Findings, arXiv:2408.01875) generates synthetic queries per tool at index time and extracts intents from the user query at inference time, achieving *"a 20% relative improvement in nDCG@5 for single-tool retrieval and a 39% improvement for multi-tool retrieval"* on ToolE — fully unsupervised, over BM25 and Vertex AI text-embedding baselines.
+
+Practical synthesis: the embedded text for a capability should be `name + description + LLM-generated(when_to_use, tags, synthetic queries)`, *excluding* verbose usage examples and raw parameter dumps.
+
+### 3. Multi-vector / late-interaction: promising but not yet justified here
+Late-interaction (ColBERTv2, Jina-ColBERT-v2, GTE-ModernColBERT) preserves token-level signal and excels at exact-term matching — attractive for jargon-dense identifiers. But ToolRet found vanilla ColBERT *underperforming BM25* on tool retrieval, and the multi-vector index carries a 6–10× storage penalty even after ColBERTv2's residual compression. For a catalog of hundreds-to-thousands of capabilities, that storage and operational cost is not yet repaid by accuracy gains; a hybrid sparse+dense pipeline with a strong cross-encoder reranker dominates the current evidence. The genuinely useful multi-vector pattern here is **field-level multi-vector** (separate embeddings for "what it does" vs "when to use it"), not token-level late interaction — ScaleMCP's TDWA (Tool Document Weighted Average) is the closest published instance, selectively weighting tool-doc components (e.g., name, synthetic questions) during embedding.
+
+### 4. SKILL.md body: keep it out of the retrieval index
+The agentskills.io spec's progressive-disclosure design is decisive: metadata (~100 tokens: name + description) loads at startup for all skills; the full body (<5k tokens recommended, <500 lines) loads *only after* the skill is selected; and `references/`, `scripts/`, `assets/` load on demand. Since selection happens on metadata alone and the runtime loads the body into context *after* selection, **the body carries no retrieval responsibility.** Indexing it risks fragmenting intent — a query matching one subsection of a long body even when the skill as a whole is the wrong choice. Recommendation: index `name + description (+ expansion)`; leave the body on disk. AST/structure-aware chunking of the body for *selection* is an anti-pattern; it is only justified if you separately serve intra-skill search (e.g., to retrieve a specific reference section after activation). The same logic applies to subagent specs: the Markdown system-prompt body is appended to the spawned agent post-delegation, and Claude Code routes purely on the `description` field — so the body should not be in the routing index.
+
+### 5. Hybrid retrieval and reranker selection
+For short, identifier-heavy capability text, BM25 is not optional: dense-only retrieval "fails silently on exact identifiers, code, and rare terms," and rare/new identifiers are poorly represented by embeddings (cold-start). The production-consensus stack is BM25 + dense ANN fused with **Reciprocal Rank Fusion** (rank-based, sidestepping the BM25/cosine score-scale mismatch), then a cross-encoder reranker over the top 20–50 candidates. Note the practitioner caveat that naive RRF can undersell tuned hybrid (one Elasticsearch benchmark: plain RRF +1.3% NDCG vs a term-match-boosted tier +7.5%) — so weight lexical matches up for exact tool/function names.
+
+Reranker choice (anchored on Voyage rerank-2.5, swappable):
+- **Voyage rerank-2.5 / 2.5-lite** *(default)* — first reranker with instruction-following, 32K context. Per Voyage's benchmark post, *"rerank-2.5 and rerank-2.5-lite outperform Cohere Rerank v3.5 by 12.70% and 10.36%, respectively"* on MAIR, and +7.94% across 93 datasets. Instruction-following is the killer feature for capability retrieval: you can steer "prefer read-only tools" or "rank tools matching this task intent" at query time.
+- **Qwen3-Reranker-8B** — strongest open-weight option; Voyage reports rerank-2.5-lite edging it by **+1.01% NDCG@10 "despite being over an order of magnitude smaller."** Pick Qwen3 for self-hosting.
+- **bge-reranker-v2-gemma** — the *single best reranker on ToolRet itself* (NDCG@10 = 47.52 with instruction), giving it direct, domain-specific benchmark support; strong open default for tool catalogs specifically.
+- **Cohere Rerank 3.5** — solid generalist, shorter context, no instruction steering.
+
+Critical caution from ToolRet: reranking can *hurt*. MonoT5 reranking dropped NV-Embed-v1 from 33.83 to 28.92 NDCG@10. Rerankers must be evaluated on your own capability set, never assumed beneficial.
+
+### 6. SSOT and index maintenance
+The canonical pattern is ScaleMCP's auto-synchronization pipeline: treat the Git-first file registry as single source of truth, compute a **SHA-256 hash over (name + description + parameters)** per capability, diff against stored hashes, and issue CRUD ops — re-embedding only on hash mismatch (matched hashes are no-ops; changed hashes trigger discard-and-re-embed). This cleanly handles description edits, additions, and removals, and eliminates the "stored catalog drifts from live registry" bug. Anthropic's Tool Search BM25 variant takes a complementary stateless route for smaller catalogs: the catalog is rebuilt from the current tool-defs on every assembly, which "prevents drift bugs where a stored catalog goes out of sync." Embedding-model version migration requires a *full* re-embed (vectors are model-specific and non-comparable across models, and even Voyage notes a model upgrade "requires re-embedding your corpus") — so store model+version in index metadata and trigger a bulk re-embed on version bump.
+
+### 7. Embedding model choice with tool-specific benchmark evidence
+Ranked by *tool-retrieval-specific* evidence, not generic MTEB:
+- **Instruction-tuned embedders win on tool retrieval — the strongest single lever after expansion.** ToolRet's with-instruction setting: gte-Qwen2-1.5B-instruct hit NDCG@10 = 45.96 (best embedding model), and instruction-conditioning lifted every model **+9 to +17 NDCG@10** (gte-Qwen2 +17.00, bge-large +15.47, BM25s +14.14, e5-mistral +12.91, GritLM +11.11, NV-Embed +8.88).
+- **Qwen3-Embedding (0.6B/4B/8B)** — current open default and the base for Tool-DE's SoTA Tool-Embed; supports instructions and Matryoshka dims (32–1024+, +1–5% from instructions per Qwen).
+- **Voyage-3.5 / voyage-3-large** — strong proprietary default in the anchored stack; voyage-3.5 beats OpenAI v3-large by 8.26% across eight domains, with int8@2048 cutting vector-DB cost ~83%. Use **voyage-code-3** for code-identifier-heavy catalogs.
+- **NV-Embed-v1** — best *without* instructions on ToolRet (33.83); reasonable non-instruction baseline.
+- **pplx-embed (Perplexity, arXiv:2602.11151, Feb 2026)** — newer; Perplexity reports the family *"leads a range of public benchmarks including MTEB(Multilingual, v2), BERGEN, ToolRet, and ConTEB,"* with pplx-embed-v1-4B (INT8) at nDCG@10 69.66% on MTEB Multilingual v2 (vs Qwen3-Embedding-4B 69.60%, gemini-embedding-001 67.71%), plus INT8/binary compression. Worth evaluating; figures are vendor-reported.
+
+### 8. Gotchas and the questions you should be asking but haven't
+- **Multi-tool / multi-hop queries break single-vector retrieval.** ScaleMCP found a single query embedding "often fails to capture multiple distinct retrieval targets"; a query needing 3–12 tools (e.g., "revenue + net income") won't be served by one vector. You need query decomposition or agentic multi-retrieval, not a better embedder. (Re-Invoke's multi-tool gain of +39% vs +20% single-tool quantifies how much harder the multi-target case is.)
+- **The "shifting bottleneck."** Retrieval/Tool Search doesn't fix bad capability hygiene — "bad tool definitions lead to bad tool selection." Retrieval makes description quality *more* load-bearing, not less. Anthropic's own evidence: refining tool *descriptions* alone drove Claude Sonnet 3.5 to SoTA on SWE-bench Verified.
+- **Embedding the schema dilutes the description.** Parameter names, enums, and JSON typing are noise for *selection* (they matter for *invocation*, which is post-selection). Anthropic's tool-search BM25 variant searches names + descriptions + arg names/descriptions for lexical recall — but for *dense* embedding, concatenating full schemas dilutes the intent vector. Expose arg names to BM25; keep them out of the dense vector.
+- **Annotations (readOnlyHint/destructiveHint/idempotentHint/openWorldHint)** carry near-zero semantic retrieval signal but high policy signal — use them as *metadata filters and reranker instructions*, not embedded text.
+- **Completeness@K, not Recall@K, is the metric that matters.** ToolRet's Completeness@10 (=1 only if *all* required tools are in top-K) is far stricter than recall, and all retrievers scored <35% on it. If tasks need tool *sets*, evaluate on completeness.
+- **Description-as-trigger collision.** For SKILL.md and subagent specs the description *is* the routing signal; near-duplicate descriptions cause silent mis-routing — Claude Code "keeps one and discards the other without warning" on name collisions. Contrastive description-writing and dedup are retrieval-critical, not cosmetic.
+- **Raw retrieval accuracy ≠ end-to-end eval.** Anthropic's 49%→74% figures are *end-to-end* selection-with-reasoning; an independent cross-check (Arcade, relayed via Stacklok) reported Tool Search hitting only ~56% (regex) / ~64% (BM25) *raw retrieval* accuracy across 4,027 tools. Headline accuracy gains can mask weaker first-stage recall at very large scale.
+
+## Details: Comparison Matrix
+
+| Dimension | SKILL.md (agentskills.io) | MCP tool definition (FastMCP) | Subagent spec (Claude Code) |
+|---|---|---|---|
+| **Primary embed field** | `name + description` | `name + description` | `name + description` |
+| **Recommended expansion** | + LLM `when_to_use` + tags + synthetic queries | + `when_to_use` + tags + synthetic queries (Re-Invoke / Tool-DE) | + trigger phrases ("use proactively when…") |
+| **Index the body?** | **No** — loaded post-selection via progressive disclosure | N/A (no body; schema is invocation-time) | **No** — system-prompt body is post-delegation |
+| **Schema / params** | n/a | Exclude from dense vector; expose arg names to BM25 only | n/a (`tools` field is a policy allowlist) |
+| **Annotations / metadata** | license, compatibility → filters | readOnly/destructive/idempotent/openWorld → filters + reranker instructions | tools, model, permissionMode → filters |
+| **Multi-vector?** | Optional: "what" / "when" split | Optional: TDWA-weighted fields | Low value (few specs) |
+| **Hash key for SSOT** | name+description+frontmatter | name+description+parameters (SHA-256, ScaleMCP) | name+description+tools+model |
+| **Retrieval need** | Often small (50–100); BM25+regex may suffice | Large (50–1000s) → full hybrid + rerank | Usually small; description-routing, light retrieval |
+| **Best-evidence stack** | Hybrid + rerank-2.5; index metadata only | Hybrid + RRF + rerank-2.5; expansion-trained embedder | Description-match + dedup; retrieval optional |
+
+## Recommendations
+
+**Stage 1 — Baseline (ship first):** Index `name + description` per capability with a hybrid pipeline — BM25 + dense (voyage-3.5 or Qwen3-Embedding-4B) fused via RRF, top-50 → Voyage rerank-2.5 with a task-intent instruction. Git registry as SSOT, SHA-256 content-hash invalidation. Do **not** index SKILL.md or subagent bodies. For MCP catalogs under ~30 tools, Anthropic Tool Search (BM25/regex variant) alone is sufficient — defer the vector index.
+
+**Stage 2 — Expansion (highest ROI; when recall@k or completeness@k underperforms):** Add offline LLM document expansion (`function_description`, `when_to_use`, `tags`; *omit* `example_usage`) per Tool-DE, plus Re-Invoke-style synthetic-query indexing. This should precede any model swap. **Threshold to trigger:** Completeness@10 below ~0.6 on a held-out task set, or observed mis-routing among similar capabilities.
+
+**Stage 3 — Instruction-conditioning & model upgrade:** Move to an instruction-tuned embedder (gte-Qwen2-instruct / Qwen3-Embedding) and pass per-query instructions; ToolRet shows +9–17 NDCG@10. A/B bge-reranker-v2-gemma against rerank-2.5 on *your* catalog (bge was ToolRet's best reranker). **Threshold:** if instruction-conditioning doesn't lift held-out NDCG@10, the gap is description quality, not the model — return to Stage 2 hygiene.
+
+**Stage 4 — Multi-hop handling:** If tasks routinely need tool *sets* (3+ capabilities), add agentic query decomposition / iterative retrieval (ScaleMCP pattern); a single query vector will not solve this regardless of embedder quality.
+
+**What would change these recommendations:** a multi-vector / late-interaction model showing tool-retrieval gains net of its 6–10× storage cost (none yet); catalogs small enough (<30 tools) that BM25/regex tool search removes the need for a vector index entirely; or a code-identifier-dominated domain, favoring voyage-code-3 and heavier BM25 weighting.
+
+## Caveats
+- Tool-DE's §4.1 field ablation is reported graphically (radar plots); the directional conclusions quoted here are explicit, but per-field absolute NDCG values are not printed in the text.
+- ToolRet and Tool-DE are built on web APIs, code functions, and customized apps — *not* specifically on MCP tool definitions, SKILL.md, or subagent specs. The transfer is well-motivated (all are short capability descriptions with low query overlap) but not directly benchmarked; treat the SKILL.md/subagent guidance as reasoned extrapolation, not measured fact.
+- Vendor benchmark numbers (Voyage, Qwen, Perplexity, Anthropic Tool Search) are self-reported; the load-bearing claims here are anchored to peer-reviewed papers (ToolRet ACL 2025, Re-Invoke EMNLP 2024, Tool-DE ICLR 2026, RAG-MCP) with vendor figures explicitly flagged.
+- The Anthropic Tool Search "49%→74%" figures are end-to-end selection evals relayed via the Anthropic engineering post; independent raw-retrieval measurements at large scale (~56–64%) are lower, so interpret accuracy claims by stage.
+- Some sourced material (Hermes Agent, MarkTechPost, "MCP is dead" practitioner posts) carries marketing/speculative framing and was used only for corroboration, not as primary evidence.
+
+## References
+1. Shi Z, Wang Y, Yan L, Ren P, Wang S, Yin D, Ren Z. Retrieval Models Aren't Tool-Savvy: Benchmarking Tool Retrieval for Large Language Models. Findings of ACL 2025. Available from: https://aclanthology.org/2025.findings-acl.1258/ and https://arxiv.org/abs/2503.01763
+2. Lu X, Huang H, Meng R, Jin Y, Zeng W, Shen X. Tools are Under-Documented: Simple Document Expansion Boosts Tool Retrieval. arXiv:2510.22670 (ICLR 2026). Available from: https://arxiv.org/abs/2510.22670
+3. Chen Y, Yoon J, Sachan DS, Wang Q, Cohen-Addad V, Bateni M, et al. Re-Invoke: Tool Invocation Rewriting for Zero-Shot Tool Retrieval. Findings of EMNLP 2024. Available from: https://aclanthology.org/2024.findings-emnlp.270/ and https://arxiv.org/abs/2408.01875
+4. Gan Q, Sun Q. RAG-MCP: Mitigating Prompt Bloat in LLM Tool Selection via Retrieval-Augmented Generation. arXiv:2505.03275. Available from: https://arxiv.org/abs/2505.03275
+5. Lumer E, et al. ScaleMCP: Dynamic and Auto-Synchronizing Model Context Protocol Tools for LLM Agents. arXiv:2505.06416. Available from: https://arxiv.org/abs/2505.06416
+6. Anthropic. Introducing advanced tool use on the Claude Developer Platform. 2025. Available from: https://www.anthropic.com/engineering/advanced-tool-use
+7. Anthropic. Writing effective tools for AI agents—using AI agents. 2025. Available from: https://www.anthropic.com/engineering/writing-tools-for-agents
+8. Anthropic. Effective context engineering for AI agents. 2025. Available from: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+9. Anthropic / Claude API Docs. Tool search tool. 2025. Available from: https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool
+10. Agent Skills. Specification (SKILL.md format). 2025. Available from: https://agentskills.io/specification and https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx
+11. Claude Code Docs. Create custom subagents. 2026. Available from: https://code.claude.com/docs/en/sub-agents
+12. Voyage AI. rerank-2.5 and rerank-2.5-lite: Instruction-Following Rerankers. 2025 Aug 11. Available from: https://blog.voyageai.com/2025/08/11/rerank-2-5/
+13. Voyage AI. voyage-3.5 and voyage-3.5-lite: improved quality for a new retrieval frontier. 2025 May 20. Available from: https://blog.voyageai.com/2025/05/20/voyage-3-5/
+14. Voyage AI. voyage-3-large: the new state-of-the-art general-purpose embedding model. 2025 Jan 7. Available from: https://blog.voyageai.com/2025/01/07/voyage-3-large/
+15. Zhang Y, et al. (Qwen Team). Qwen3 Embedding: Advancing Text Embedding and Reranking Through Foundation Models. arXiv:2506.05176. Available from: https://arxiv.org/abs/2506.05176
+16. Santhanam K, Khattab O, Saad-Falcon J, Potts C, Zaharia M. ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction. arXiv:2112.01488. Available from: https://arxiv.org/abs/2112.01488
+17. Jha A, et al. Jina-ColBERT-v2: A General-Purpose Multilingual Late Interaction Retriever. arXiv:2408.16672. Available from: https://arxiv.org/abs/2408.16672
+18. Luo R, et al. MCP-Universe: Benchmarking Large Language Models with Real-World Model Context Protocol Servers. arXiv:2508.14704. Available from: https://arxiv.org/abs/2508.14704
+19. Perplexity AI. pplx-embed: State-of-the-Art Embedding Models for Web-Scale Retrieval. 2026. Available from: https://research.perplexity.ai/articles/pplx-embed-state-of-the-art-embedding-models-for-web-scale-retrieval
+20. Lee C, et al. (NVIDIA). NV-Embed: Improved Techniques for Training LLMs as Generalist Embedding Models. arXiv:2405.17428. Available from: https://arxiv.org/abs/2405.17428
+21. Digital Applied. Hybrid Search: BM25, Vector & Reranking — 2026 Reference. 2026. Available from: https://www.digitalapplied.com/blog/hybrid-search-bm25-vector-reranking-reference-2026
+22. Tessl. Anthropic brings MCP tool search to Claude Code. 2026. Available from: https://tessl.io/blog/anthropic-brings-mcp-tool-search-to-claude-code/
