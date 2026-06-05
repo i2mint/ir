@@ -3,10 +3,13 @@
    :caption: Contents:
 
    module_docs/ir
+   module_docs/ir/__main__
    module_docs/ir/base
+   module_docs/ir/cli
    module_docs/ir/config
    module_docs/ir/embed
    module_docs/ir/index
+   module_docs/ir/registry
    module_docs/ir/retrieve
    module_docs/ir/sources
    module_docs/ir/store

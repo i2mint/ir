@@ -1,0 +1,180 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.cli &mdash; ir 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ir.config" href="config.html" />
+    <link rel="prev" title="ir.base" href="base.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base.html">ir.base</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ir.cli</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.cli.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.cli.info"><code class="docutils literal notranslate"><span class="pre">info()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.cli.ls"><code class="docutils literal notranslate"><span class="pre">ls()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.cli.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.cli.rm"><code class="docutils literal notranslate"><span class="pre">rm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.cli.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ir.cli</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/ir/cli.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ir.cli">
+<span id="ir-cli"></span><h1>ir.cli<a class="headerlink" href="#module-ir.cli" title="Link to this heading"></a></h1>
+<p>Command-line surface for <code class="docutils literal notranslate"><span class="pre">ir</span></code> (argh-dispatched).</p>
+<p>Commands operate on <strong>named</strong> corpora from the registry (see
+<a class="reference internal" href="registry.html#module-ir.registry" title="ir.registry"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.registry</span></code></a>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ir</span> <span class="n">build</span> <span class="n">skills</span>                 <span class="c1"># build/update the skills preset corpus</span>
+<span class="n">ir</span> <span class="n">search</span> <span class="n">skills</span> <span class="s2">&quot;deploy app&quot;</span>   <span class="c1"># query it</span>
+<span class="n">ir</span> <span class="n">ls</span>                           <span class="c1"># list corpora + record counts</span>
+<span class="n">ir</span> <span class="n">info</span> <span class="n">packages</span>                <span class="c1"># config + stats for a corpus</span>
+<span class="n">ir</span> <span class="n">register</span> <span class="n">notes</span> <span class="n">files</span> <span class="o">--</span><span class="n">root</span> <span class="o">~/</span><span class="n">notes</span> <span class="o">--</span><span class="n">pattern</span> <span class="s1">&#39;.*\.md$&#39;</span>
+<span class="n">ir</span> <span class="n">rm</span> <span class="n">notes</span>                     <span class="c1"># unregister (keeps built data)</span>
+</pre></div>
+</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.cli.build">
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.build" title="Link to this definition"></a></dt>
+<dd><p>Build or incrementally update a registered (or preset) corpus.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.cli.info">
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.info" title="Link to this definition"></a></dt>
+<dd><p>Show a corpus’s stored config and stats.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.cli.ls">
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">ls</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#ls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.ls" title="Link to this definition"></a></dt>
+<dd><p>List registered corpora with their kind, embedder, and record count.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.cli.register">
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.register" title="Link to this definition"></a></dt>
+<dd><p>Register a named corpus. kind: skills | packages | reports | files.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.cli.rm">
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">rm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#rm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.rm" title="Link to this definition"></a></dt>
+<dd><p>Unregister a corpus (does not delete its built data).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.cli.search">
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.search" title="Link to this definition"></a></dt>
+<dd><p>Search a built corpus and print the top-k hits.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="base.html" class="btn btn-neutral float-left" title="ir.base" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="config.html" class="btn btn-neutral float-right" title="ir.config" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

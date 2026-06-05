@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.0.1 documentation</title>
+  <title>Index &mdash; ir 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -47,10 +47,13 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/__main__.html">ir.__main__</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/cli.html">ir.cli</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/config.html">ir.config</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/store.html">ir.store</a></li>
@@ -90,6 +93,7 @@
  | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
@@ -97,6 +101,7 @@
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
+ | <a href="#U"><strong>U</strong></a>
  | <a href="#W"><strong>W</strong></a>
  
 </div>
@@ -117,14 +122,18 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/base.html#ir.base.best_per_artifact">best_per_artifact() (in module ir.base)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.build">build() (in module ir)</a>
 
       <ul>
+        <li><a href="module_docs/ir/cli.html#ir.cli.build">(in module ir.cli)</a>
+</li>
         <li><a href="module_docs/ir/index.html#ir.index.build">(in module ir.index)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir.html#ir.build_corpus">build_corpus() (in module ir)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -151,6 +160,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir.html#ir.corpora">corpora() (in module ir)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.Corpus">Corpus (class in ir)</a>
 
       <ul>
@@ -230,6 +241,14 @@
   </ul></td>
 </tr></table>
 
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/registry.html#ir.registry.get">get() (in module ir.registry)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -245,11 +264,20 @@
         <li><a href="module_docs/ir/base.html#ir.base.IndexPlan">(class in ir.base)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/cli.html#ir.cli.info">info() (in module ir.cli)</a>
+</li>
       <li>
     ir
 
       <ul>
         <li><a href="module_docs/ir.html#module-ir">module</a>
+</li>
+      </ul></li>
+      <li>
+    ir.__main__
+
+      <ul>
+        <li><a href="module_docs/ir/__main__.html#module-ir.__main__">module</a>
 </li>
       </ul></li>
       <li>
@@ -260,12 +288,21 @@
 </li>
       </ul></li>
       <li>
+    ir.cli
+
+      <ul>
+        <li><a href="module_docs/ir/cli.html#module-ir.cli">module</a>
+</li>
+      </ul></li>
+      <li>
     ir.config
 
       <ul>
         <li><a href="module_docs/ir/config.html#module-ir.config">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ir.embed
 
@@ -273,13 +310,18 @@
         <li><a href="module_docs/ir/embed.html#module-ir.embed">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ir.index
 
       <ul>
         <li><a href="module_docs/ir/index.html#module-ir.index">module</a>
+</li>
+      </ul></li>
+      <li>
+    ir.registry
+
+      <ul>
+        <li><a href="module_docs/ir/registry.html#module-ir.registry">module</a>
 </li>
       </ul></li>
       <li>
@@ -323,11 +365,17 @@
 </li>
       </ul></li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/cli.html#ir.cli.ls">ls() (in module ir.cli)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/__main__.html#ir.__main__.main">main() (in module ir.__main__)</a>
+</li>
       <li><a href="module_docs/ir/embed.html#ir.embed.make_embedder">make_embedder() (in module ir.embed)</a>
 </li>
       <li><a href="module_docs/ir/base.html#ir.base.Record.make_id">make_id() (ir.base.Record static method)</a>
@@ -354,13 +402,19 @@
       <ul>
         <li><a href="module_docs/ir.html#module-ir">ir</a>
 </li>
+        <li><a href="module_docs/ir/__main__.html#module-ir.__main__">ir.__main__</a>
+</li>
         <li><a href="module_docs/ir/base.html#module-ir.base">ir.base</a>
+</li>
+        <li><a href="module_docs/ir/cli.html#module-ir.cli">ir.cli</a>
 </li>
         <li><a href="module_docs/ir/config.html#module-ir.config">ir.config</a>
 </li>
         <li><a href="module_docs/ir/embed.html#module-ir.embed">ir.embed</a>
 </li>
         <li><a href="module_docs/ir/index.html#module-ir.index">ir.index</a>
+</li>
+        <li><a href="module_docs/ir/registry.html#module-ir.registry">ir.registry</a>
 </li>
         <li><a href="module_docs/ir/retrieve.html#module-ir.retrieve">ir.retrieve</a>
 </li>
@@ -407,9 +461,21 @@
         <li><a href="module_docs/ir/base.html#ir.base.Record">(class in ir.base)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir.html#ir.register">register() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/cli.html#ir.cli.register">(in module ir.cli)</a>
+</li>
+        <li><a href="module_docs/ir/registry.html#ir.registry.register">(in module ir.registry)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/registry.html#ir.registry.registered">registered() (in module ir.registry)</a>
+</li>
       <li><a href="module_docs/ir/config.html#ir.config.registry_path">registry_path() (in module ir.config)</a>
+</li>
+      <li><a href="module_docs/ir/cli.html#ir.cli.rm">rm() (in module ir.cli)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -422,6 +488,8 @@
       <li><a href="module_docs/ir.html#ir.search">search() (in module ir)</a>
 
       <ul>
+        <li><a href="module_docs/ir/cli.html#ir.cli.search">(in module ir.cli)</a>
+</li>
         <li><a href="module_docs/ir/retrieve.html#ir.retrieve.search">(in module ir.retrieve)</a>
 </li>
       </ul></li>
@@ -439,6 +507,10 @@
         <li><a href="module_docs/ir/strategy.html#ir.strategy.Skill">(class in ir.strategy)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/registry.html#ir.registry.source_for">source_for() (in module ir.registry)</a>
+</li>
+      <li><a href="module_docs/ir/registry.html#ir.registry.source_from_entry">source_from_entry() (in module ir.registry)</a>
+</li>
       <li><a href="module_docs/ir/base.html#ir.base.storage_key">storage_key() (in module ir.base)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.Surface">Surface (class in ir)</a>
@@ -447,6 +519,14 @@
         <li><a href="module_docs/ir/base.html#ir.base.Surface">(class in ir.base)</a>
 </li>
       </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/registry.html#ir.registry.unregister">unregister() (in module ir.registry)</a>
+</li>
   </ul></td>
 </tr></table>
 

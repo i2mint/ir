@@ -1,0 +1,219 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.cli &mdash; ir 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../ir.html">ir</a></li>
+      <li class="breadcrumb-item active">ir.cli</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ir.cli</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Command-line surface for ``ir`` (argh-dispatched).</span>
+
+<span class="sd">Commands operate on **named** corpora from the registry (see</span>
+<span class="sd">:mod:`ir.registry`)::</span>
+
+<span class="sd">    ir build skills                 # build/update the skills preset corpus</span>
+<span class="sd">    ir search skills &quot;deploy app&quot;   # query it</span>
+<span class="sd">    ir ls                           # list corpora + record counts</span>
+<span class="sd">    ir info packages                # config + stats for a corpus</span>
+<span class="sd">    ir register notes files --root ~/notes --pattern &#39;.*\\.md$&#39;</span>
+<span class="sd">    ir rm notes                     # unregister (keeps built data)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">registry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">build</span> <span class="k">as</span> <span class="n">_build</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
+
+
+<div class="viewcode-block" id="ls">
+<a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.ls">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ls</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;List registered corpora with their kind, embedder, and record count.&quot;&quot;&quot;</span>
+    <span class="n">entries</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">registered</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">entries</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;No corpora registered. Try: ir build skills&quot;</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">entries</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;kind&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">10</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;embedder&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;default&#39;</span><span class="p">)</span><span class="si">:</span><span class="s2">10</span><span class="si">}</span><span class="s2"> records=</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="register">
+<a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.register">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pattern</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register a named corpus. kind: skills | packages | reports | files.&quot;&quot;&quot;</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">root</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;root&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">root</span>
+    <span class="k">if</span> <span class="n">pattern</span><span class="p">:</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;pattern&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pattern</span>
+    <span class="n">registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;registered </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> (kind=</span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">, embedder=</span><span class="si">{</span><span class="n">embedder</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="build">
+<a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.build">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build or incrementally update a registered (or preset) corpus.&quot;&quot;&quot;</span>
+    <span class="n">source</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">source_for</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_build</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="n">full</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;built </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span><span class="si">}</span><span class="s2"> records (embedder </span><span class="si">{</span><span class="n">corpus</span><span class="o">.</span><span class="n">embedder_id</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="search">
+<a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.search">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search a built corpus and print the top-k hits.&quot;&quot;&quot;</span>
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is empty; build it first: ir build </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">corpus</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">):</span>
+        <span class="c1"># artifact_id is the unique label across corpora (skill name[@parent],</span>
+        <span class="c1"># package name, or a report&#39;s relative path).</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">score</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="si">}</span><span class="s2">  [</span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">surface_kind</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;(no matches)&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="info">
+<a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.info">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">info</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Show a corpus&#39;s stored config and stats.&quot;&quot;&quot;</span>
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
+    <span class="n">reg</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;name: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s2">registered: </span><span class="si">{</span><span class="n">reg</span><span class="si">}</span><span class="se">\n</span><span class="s2">records: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">config: </span><span class="si">{</span><span class="n">cfg</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="rm">
+<a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.rm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rm</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unregister a corpus (does not delete its built data).&quot;&quot;&quot;</span>
+    <span class="n">registry</span><span class="o">.</span><span class="n">unregister</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;unregistered </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">&quot;</span></div>
+
+
+
+<span class="n">COMMANDS</span> <span class="o">=</span> <span class="p">[</span><span class="n">ls</span><span class="p">,</span> <span class="n">register</span><span class="p">,</span> <span class="n">build</span><span class="p">,</span> <span class="n">search</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">rm</span><span class="p">]</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

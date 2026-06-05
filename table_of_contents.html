@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>&lt;no title&gt; &mdash; ir 0.0.1 documentation</title>
+  <title>&lt;no title&gt; &mdash; ir 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -48,10 +48,13 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/__main__.html">ir.__main__</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/cli.html">ir.cli</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/config.html">ir.config</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/store.html">ir.store</a></li>
@@ -100,8 +103,15 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.build_corpus"><code class="docutils literal notranslate"><span class="pre">build_corpus()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.corpora"><code class="docutils literal notranslate"><span class="pre">corpora()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/__main__.html">ir.__main__</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/__main__.html#ir.__main__.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/base.html">ir.base</a><ul>
@@ -113,6 +123,15 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.best_per_artifact"><code class="docutils literal notranslate"><span class="pre">best_per_artifact()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.storage_key"><code class="docutils literal notranslate"><span class="pre">storage_key()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/cli.html">ir.cli</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.info"><code class="docutils literal notranslate"><span class="pre">info()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.ls"><code class="docutils literal notranslate"><span class="pre">ls()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.rm"><code class="docutils literal notranslate"><span class="pre">rm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/config.html">ir.config</a><ul>
@@ -133,6 +152,15 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/index.html#ir.index.Corpus"><code class="docutils literal notranslate"><span class="pre">Corpus</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/index.html#ir.index.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/index.html#ir.index.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.get"><code class="docutils literal notranslate"><span class="pre">get()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.registered"><code class="docutils literal notranslate"><span class="pre">registered()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.source_for"><code class="docutils literal notranslate"><span class="pre">source_for()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.source_from_entry"><code class="docutils literal notranslate"><span class="pre">source_from_entry()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.unregister"><code class="docutils literal notranslate"><span class="pre">unregister()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a><ul>

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.0.1 documentation</title>
+  <title>ir &mdash; ir 0.1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../_static/documentation_options.js?v=01f34227"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -24,7 +24,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="ir.base" href="ir/base.html" />
+    <link rel="next" title="ir.__main__" href="ir/__main__.html" />
     <link rel="prev" title="Welcome to ir’s documentation!" href="../index.html" /> 
 </head>
 
@@ -80,14 +80,20 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.build_corpus"><code class="docutils literal notranslate"><span class="pre">build_corpus()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.corpora"><code class="docutils literal notranslate"><span class="pre">corpora()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="ir/__main__.html">ir.__main__</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ir/cli.html">ir.cli</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/config.html">ir.config</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/store.html">ir.store</a></li>
@@ -312,9 +318,27 @@ an artifact. <code class="docutils literal notranslate"><span class="pre">granul
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.build_corpus">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">build_corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir.html#build_corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.build_corpus" title="Link to this definition"></a></dt>
+<dd><p>Build (or update) a registered/preset corpus by name; returns a Corpus.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.corpora">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">corpora</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#ir.corpora" title="Link to this definition"></a></dt>
+<dd><p>All registered corpus definitions, keyed by name.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.open_corpus">
 <span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">open_corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="ir/index.html#ir.index.Corpus" title="ir.index.Corpus"><span class="pre">Corpus</span></a></span></span><a class="reference internal" href="../_modules/ir/index.html#open_corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.open_corpus" title="Link to this definition"></a></dt>
 <dd><p>Reopen a previously built corpus by name (resolves its embedder).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.register">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'default'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/ir/registry.html#register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.register" title="Link to this definition"></a></dt>
+<dd><p>Register (or overwrite) a named corpus definition.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -330,7 +354,7 @@ an artifact. <code class="docutils literal notranslate"><span class="pre">granul
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="../index.html" class="btn btn-neutral float-left" title="Welcome to ir’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="ir/base.html" class="btn btn-neutral float-right" title="ir.base" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="ir/__main__.html" class="btn btn-neutral float-right" title="ir.__main__" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -1,0 +1,235 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.registry &mdash; ir 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../ir.html">ir</a></li>
+      <li class="breadcrumb-item active">ir.registry</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ir.registry</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Named-corpus registry — persistent, reusable corpus definitions.</span>
+
+<span class="sd">A registry entry records *how* to (re)build a corpus — its ``kind`` (a source</span>
+<span class="sd">preset), parameters, and embedder spec — so a corpus becomes a stable name you</span>
+<span class="sd">can build once and query across sessions. The registry is a single JSON file</span>
+<span class="sd">under the config dir (``~/.config/ir/corpora.json``).</span>
+
+<span class="sd">Presets map to :class:`~ir.sources.CorpusSource` constructors:</span>
+
+<span class="sd">- ``skills``   → :meth:`CorpusSource.from_skills`</span>
+<span class="sd">- ``packages`` → :meth:`CorpusSource.from_packages`</span>
+<span class="sd">- ``reports``  → :meth:`CorpusSource.from_md_reports`</span>
+<span class="sd">- ``files``    → :meth:`CorpusSource.from_files` (needs ``root``; optional</span>
+<span class="sd">  ``pattern``)</span>
+
+<span class="sd">Unregistered preset names (``skills``/``packages``/``reports``) are</span>
+<span class="sd">auto-registered with defaults on first use, so ``ir build skills`` just works.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">registry_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusSource</span>
+
+<span class="n">PRESETS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;skills&quot;</span><span class="p">,</span> <span class="s2">&quot;packages&quot;</span><span class="p">,</span> <span class="s2">&quot;reports&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">registry_path</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">{}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_save</span><span class="p">(</span><span class="n">entries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">registry_path</span><span class="p">()</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">entries</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="register">
+<a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.register">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">embedder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register (or overwrite) a named corpus definition.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PRESETS</span> <span class="ow">and</span> <span class="n">kind</span> <span class="o">!=</span> <span class="s2">&quot;files&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unknown corpus kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">; use one of </span><span class="si">{</span><span class="n">PRESETS</span><span class="si">}</span><span class="s2"> or &#39;files&#39;.&quot;</span>
+        <span class="p">)</span>
+    <span class="n">entries</span> <span class="o">=</span> <span class="n">_load</span><span class="p">()</span>
+    <span class="n">entries</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;kind&quot;</span><span class="p">:</span> <span class="n">kind</span><span class="p">,</span> <span class="s2">&quot;embedder&quot;</span><span class="p">:</span> <span class="n">embedder</span><span class="p">,</span> <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">params</span><span class="p">}</span>
+    <span class="n">_save</span><span class="p">(</span><span class="n">entries</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">entries</span><span class="p">[</span><span class="n">name</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="registered">
+<a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.registered">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">registered</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All registered corpus definitions, keyed by name.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_load</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get">
+<a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.get">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The registry entry for *name*, or ``None``.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_load</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="unregister">
+<a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.unregister">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">unregister</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove *name* from the registry (does not delete built data).&quot;&quot;&quot;</span>
+    <span class="n">entries</span> <span class="o">=</span> <span class="n">_load</span><span class="p">()</span>
+    <span class="n">entries</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">_save</span><span class="p">(</span><span class="n">entries</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="source_from_entry">
+<a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.source_from_entry">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">source_from_entry</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CorpusSource</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct a :class:`CorpusSource` from a registry entry.&quot;&quot;&quot;</span>
+    <span class="n">kind</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;kind&quot;</span><span class="p">]</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;params&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+    <span class="n">embedder</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;skills&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_skills</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;packages&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_packages</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;reports&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_md_reports</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;files&quot;</span><span class="p">:</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;root&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_files</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown corpus kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="source_for">
+<a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.source_for">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">source_for</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CorpusSource</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve *name* to a source, auto-registering a preset if needed.&quot;&quot;&quot;</span>
+    <span class="n">entry</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">PRESETS</span><span class="p">:</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="n">register</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is not registered. Register it with &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;`ir register`, or use a preset name: </span><span class="si">{</span><span class="n">PRESETS</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">source_from_entry</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">entry</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
