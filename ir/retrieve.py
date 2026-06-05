@@ -74,6 +74,12 @@ def search(
         return []
 
     qv = _embed_query(corpus.embedder, query)
+    if qv.shape[0] != mat.shape[1]:
+        raise ValueError(
+            f"Query embedding dim {qv.shape[0]} != index dim {mat.shape[1]}. "
+            f"The corpus was built with a different embedder than the one "
+            f"querying it; rebuild the corpus or use its original embedder."
+        )
     sub = mat[candidates]
     scores = sub @ qv
 

@@ -16,6 +16,7 @@ upgrade for corpora large enough that recomputing surfaces is the bottleneck.
 
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -26,6 +27,21 @@ from .base import Record, storage_key
 from .embed import make_embedder
 from .sources import CorpusSource
 from .store import CorpusStore
+
+
+def _strategy_id(strategy) -> str:
+    """Stable id for a strategy: class name + its simple parameters.
+
+    Changing the strategy (or its parameters) changes this id, so an unchanged
+    corpus rebuilt under a different strategy is correctly re-decomposed rather
+    than skipped.
+    """
+    params = {
+        k: v
+        for k, v in vars(strategy).items()
+        if isinstance(v, (str, int, float, bool, type(None)))
+    }
+    return f"{type(strategy).__name__}:{json.dumps(params, sort_keys=True)}"
 
 
 def _embed(emb: Callable, texts: list[str], input_type: str) -> np.ndarray:
@@ -84,6 +100,7 @@ def build(
     store = CorpusStore.local(source.name) if store is None else store
     spec = embedder if embedder is not None else source.embedder
     emb, emb_id = make_embedder(spec)
+    strat_id = _strategy_id(source.indexing_strategy)
 
     seen: set[str] = set()
     changed: dict[str, tuple] = {}
@@ -97,8 +114,9 @@ def build(
             prev
             and prev.get("version") == version
             and prev.get("embedder_id") == emb_id
+            and prev.get("strategy_id") == strat_id
         ):
-            continue  # unchanged content + same model
+            continue  # unchanged content + same model + same strategy
         meta_extra = source.metadata_of(artifact_id, raw) if source.metadata_of else {}
         plan = source.indexing_strategy.decompose(artifact_id, raw, meta_extra)
         changed[artifact_id] = (key, version, prev, plan)
@@ -142,6 +160,7 @@ def build(
                 "artifact_id": artifact_id,
                 "version": version,
                 "embedder_id": emb_id,
+                "strategy_id": strat_id,
                 "record_ids": record_ids.get(artifact_id, []),
             },
         )

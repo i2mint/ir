@@ -29,7 +29,10 @@ import warnings
 from collections.abc import Callable
 from typing import Any
 
-os.environ.setdefault("USE_TF", "0")  # must precede any transformers import
+# Force-disable TensorFlow in transformers (it crashes on this stack's numpy
+# ABI). Assignment (not setdefault) so a stray ``USE_TF=1`` in the shell can't
+# re-enable it. Must precede any transformers import; ``ir`` never uses TF.
+os.environ["USE_TF"] = "0"
 
 DEFAULT_MODEL = "all-MiniLM-L6-v2"
 

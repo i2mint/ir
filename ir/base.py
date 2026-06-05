@@ -105,9 +105,9 @@ class SearchHit:
 
 
 def best_per_artifact(hits: Sequence[SearchHit]) -> list[SearchHit]:
-    """Collapse hits to the single highest-scoring surface per artifact.
+    """Collapse hits to the highest-scoring surface per artifact.
 
-    Preserves the input ordering of first appearance (assumed score-descending).
+    Returns the surviving hits sorted by score (descending).
     """
     seen: dict[str, SearchHit] = {}
     for h in hits:

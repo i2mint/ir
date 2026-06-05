@@ -152,13 +152,22 @@ class CorpusSource:
         *,
         name: str = "skills",
         filter: Any = None,
+        fetcher: Callable[[], list] | None = None,
         strategy: IndexingStrategy | None = None,
         **kwargs,
     ) -> "CorpusSource":
-        """The agent-skills corpus, via ``priv.skills_index``."""
-        from priv.skills_index import skills_index as _skills_index
+        """The agent-skills corpus, via ``priv.skills_index``.
 
-        records = _skills_index(filter=filter, egress="raw")
+        ``fetcher`` overrides the source of skill records (each a mapping with
+        ``name``/``description``/``parent``) — inject a test double to avoid the
+        ``priv`` dependency.
+        """
+        if fetcher is not None:
+            records = list(fetcher())
+        else:
+            from priv.skills_index import skills_index as _skills_index
+
+            records = _skills_index(filter=filter, egress="raw")
         # Preserve same-named skills from different packages (collision-safe ids).
         scope: dict[str, dict] = {}
         for r in records:
