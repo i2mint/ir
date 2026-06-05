@@ -1,0 +1,6 @@
+{"__meta__": {"corpus": "demo", "note": "disjoint-vocab demo corpus; gold ids are the demo doc keys"}}
+{"query": "how do I write a script in python", "gold": ["python"], "source_id": "python"}
+{"query": "frontend code that runs in the browser", "gold": ["javascript"], "source_id": "javascript"}
+{"query": "store data in relational tables and run queries", "gold": ["database"], "source_id": "database"}
+{"query": "package an app into a container image", "gold": ["docker"], "source_id": "docker"}
+{"query": "knit a wool sweater with bamboo needles", "gold": []}

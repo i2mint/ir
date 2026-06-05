@@ -71,3 +71,9 @@ def search(corpus, query, **kwargs):
     if isinstance(corpus, str):
         corpus = open_corpus(corpus)
     return _search(corpus, query, **kwargs)
+
+
+# The evaluation harness is reachable as ``ir.eval`` (its ``ef`` imports are
+# lazy, so this does not weigh down ``import ir``). Kept out of ``__all__`` so a
+# star-import does not shadow the ``eval`` builtin.
+from . import eval  # noqa: E402,F401  (submodule attribute: ir.eval)

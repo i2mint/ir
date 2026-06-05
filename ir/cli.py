@@ -9,6 +9,7 @@ Commands operate on **named** corpora from the registry (see
     ir info packages                # config + stats for a corpus
     ir register notes files --root ~/notes --pattern '.*\\.md$'
     ir rm notes                     # unregister (keeps built data)
+    ir eval skills skills_eval.jsonl --mode hybrid   # score retrieval on a case file
 """
 
 from __future__ import annotations
@@ -83,4 +84,33 @@ def rm(name):
     return f"unregistered {name!r}"
 
 
-COMMANDS = [ls, register, build, search, info, rm]
+def eval(name, cases, *, mode="hybrid", k=10):
+    """Score a built corpus's retrieval against a DiscoveryCase JSONL file.
+
+    cases: path to a JSONL file of cases (see :mod:`ir.eval`); each line is a
+    ``{"query": ..., "gold": [artifact_id, ...]}`` record (empty ``gold`` = an
+    abstention case). Prints recall@k / NDCG@k / MRR / MAP plus the failure-mode
+    taxonomy. mode: dense | lexical | hybrid.
+    """
+    from .eval import evaluate_discovery, load_cases, validate_cases
+
+    corpus = open_corpus(name)
+    if len(corpus) == 0:
+        return f"corpus {name!r} is empty; build it first: ir build {name}"
+    case_list = load_cases(cases)
+    if not case_list:
+        return f"no cases found in {cases!r}"
+    drift = validate_cases(corpus, case_list)
+    report = evaluate_discovery(
+        corpus, case_list, mode=mode, primary_k=k, k_values=tuple(sorted({1, 5, k}))
+    )
+    out = str(report)
+    if drift:
+        out += (
+            f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
+            f"corpus {name!r} (stale fixture?); their misses are not real."
+        )
+    return out
+
+
+COMMANDS = [ls, register, build, search, info, rm, eval]
