@@ -27,6 +27,7 @@ selects a numpy-only hashing embedder. Data persists under XDG dirs through a
 from __future__ import annotations
 
 from . import embed as _embed  # noqa: F401  (sets USE_TF=0 before transformers)
+from . import registry
 from .base import Artifact, IndexPlan, Record, SearchHit, Surface
 from .index import Corpus, build, open_corpus
 from .retrieve import search as _search
@@ -51,7 +52,18 @@ __all__ = [
     "build",
     "open_corpus",
     "search",
+    "register",
+    "corpora",
+    "build_corpus",
 ]
+
+register = registry.register
+corpora = registry.registered
+
+
+def build_corpus(name, **kwargs):
+    """Build (or update) a registered/preset corpus by name; returns a Corpus."""
+    return build(registry.source_for(name), **kwargs)
 
 
 def search(corpus, query, **kwargs):
