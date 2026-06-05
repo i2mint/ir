@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.retrieve &mdash; ir 0.1.0 documentation</title>
+  <title>ir.retrieve &mdash; ir 0.1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/documentation_options.js?v=a58bc63e"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -86,27 +86,48 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.retrieve</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Retrieval — hard metadata filtering + dense brute-force ranking.</span>
+<span></span><span class="sd">&quot;&quot;&quot;Retrieval — hard metadata filtering + dense / lexical / hybrid ranking.</span>
 
 <span class="sd">:func:`search` embeds the query, applies a hard metadata filter to narrow the</span>
 <span class="sd">candidate set (the ``vd`` Mongo-style filter language — ownership, name, tags),</span>
-<span class="sd">ranks the survivors by cosine similarity (exact brute force; correct and</span>
-<span class="sd">instant at ``ir``&#39;s corpus sizes), and collapses surface-hits to the best</span>
-<span class="sd">surface per artifact.</span>
+<span class="sd">then ranks the survivors. Three ranking modes share that one filtered candidate</span>
+<span class="sd">set:</span>
 
-<span class="sd">Hybrid lexical fusion (BM25 + ``vd.reciprocal_rank_fusion``) and cross-encoder</span>
-<span class="sd">reranking are deliberate next-step seams (see the retrieval issue): dense +</span>
-<span class="sd">filter is the shippable baseline.</span>
+<span class="sd">- ``&quot;dense&quot;`` (default) — exact brute-force cosine over the embedding matrix.</span>
+<span class="sd">- ``&quot;lexical&quot;`` — Okapi BM25 over the candidates&#39; text (``vd.bm25_lexical_search``).</span>
+<span class="sd">- ``&quot;hybrid&quot;`` — dense and lexical fused by Reciprocal Rank Fusion</span>
+<span class="sd">  (``vd.reciprocal_rank_fusion``), the rank-based fuse that sidesteps the</span>
+<span class="sd">  cosine/BM25 score-scale mismatch.</span>
+
+<span class="sd">Hybrid matters for short, identifier-heavy capability text (skill / package /</span>
+<span class="sd">tool names), the regime where dense-only retrieval fails silently on exact</span>
+<span class="sd">identifiers and rare terms. An optional ``rerank`` hook (any</span>
+<span class="sd">:class:`ef.Reranker`) re-scores the top fused candidates with a cross-encoder;</span>
+<span class="sd">it defaults to ``None`` so retrieval stays offline and API-free out of the box.</span>
+
+<span class="sd">All ranking is exact brute force — correct and instant at ``ir``&#39;s corpus</span>
+<span class="sd">sizes — and surface-hits collapse to the best surface per artifact. Lexical and</span>
+<span class="sd">fusion reuse ``vd``; if ``vd`` is unavailable, hybrid degrades to dense and</span>
+<span class="sd">lexical returns no results (both with a warning), so a missing optional dep</span>
+<span class="sd">never hard-fails a search.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchHit</span><span class="p">,</span> <span class="n">best_per_artifact</span>
+
+<span class="c1">#: Ranking modes accepted by :func:`search`.</span>
+<span class="n">MODES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;dense&quot;</span><span class="p">,</span> <span class="s2">&quot;lexical&quot;</span><span class="p">,</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">)</span>
+
+<span class="c1">#: RRF rank constant — the ``k`` of ``1 / (k + rank)`` (standard default 60).</span>
+<span class="n">DFLT_RRF_K</span> <span class="o">=</span> <span class="mi">60</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_matches</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -128,6 +149,139 @@
     <span class="k">return</span> <span class="n">vec</span> <span class="o">/</span> <span class="n">norm</span> <span class="k">if</span> <span class="n">norm</span> <span class="k">else</span> <span class="n">vec</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_filter_candidates</span><span class="p">(</span>
+    <span class="n">metas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Row indices surviving the surface restriction and hard metadata filter.&quot;&quot;&quot;</span>
+    <span class="n">surface_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">surfaces</span><span class="p">)</span> <span class="k">if</span> <span class="n">surfaces</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">metas</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">surface_set</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;surface_kind&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">surface_set</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="nb">filter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_matches</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{}),</span> <span class="nb">filter</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">candidates</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_dense_ranked</span><span class="p">(</span>
+    <span class="n">corpus</span><span class="p">,</span>
+    <span class="n">mat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">fetch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Top-*fetch* ``(record_id, cosine)`` pairs by exact brute-force cosine.&quot;&quot;&quot;</span>
+    <span class="n">qv</span> <span class="o">=</span> <span class="n">_embed_query</span><span class="p">(</span><span class="n">corpus</span><span class="o">.</span><span class="n">embedder</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">qv</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Query embedding dim </span><span class="si">{</span><span class="n">qv</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> != index dim </span><span class="si">{</span><span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;The corpus was built with a different embedder than the one &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;querying it; rebuild the corpus or use its original embedder.&quot;</span>
+        <span class="p">)</span>
+    <span class="n">sub</span> <span class="o">=</span> <span class="n">mat</span><span class="p">[</span><span class="n">candidates</span><span class="p">]</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">sub</span> <span class="o">@</span> <span class="n">qv</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">-</span><span class="n">scores</span><span class="p">)[:</span><span class="n">fetch</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="n">ids</span><span class="p">[</span><span class="n">candidates</span><span class="p">[</span><span class="n">o</span><span class="p">]],</span> <span class="nb">float</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">o</span><span class="p">]))</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">order</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_lexical_ranked</span><span class="p">(</span>
+    <span class="n">ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">metas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+    <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">fetch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">bm25</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Top-*fetch* ``(record_id, bm25)`` pairs via ``vd.bm25_lexical_search``.</span>
+
+<span class="sd">    The candidate texts are exposed to ``vd`` as a zero-copy mapping view</span>
+<span class="sd">    (``record_id -&gt; obj`` with ``.text`` / ``.metadata``) so no vectors are</span>
+<span class="sd">    duplicated and BM25 runs only over the already-filtered candidates. Returns</span>
+<span class="sd">    ``[]`` (with a warning) if ``vd``&#39;s lexical search is unavailable, letting</span>
+<span class="sd">    hybrid degrade to dense.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">vd</span><span class="w"> </span><span class="kn">import</span> <span class="n">bm25_lexical_search</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;vd.bm25_lexical_search unavailable; BM25 lexical ranking is &quot;</span>
+            <span class="s2">&quot;skipped. Hybrid falls back to dense; lexical mode returns no &quot;</span>
+            <span class="s2">&quot;results. Install `vd` for lexical/hybrid retrieval.&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="n">collection</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">ids</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span> <span class="n">SimpleNamespace</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">metas</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metas</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">candidates</span>
+    <span class="p">}</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">bm25_lexical_search</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">fetch</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">bm25</span> <span class="ow">or</span> <span class="p">{}))</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="nb">float</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]))</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rrf_fuse</span><span class="p">(</span>
+    <span class="n">dense</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
+    <span class="n">lexical</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
+    <span class="n">rrf_k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">fetch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fuse dense + lexical rankings via ``vd.reciprocal_rank_fusion``.</span>
+
+<span class="sd">    Falls back to the dense ranking if ``vd`` is unavailable or lexical is</span>
+<span class="sd">    empty (RRF of a single non-empty list is just that list&#39;s order).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">lexical</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dense</span><span class="p">[:</span><span class="n">fetch</span><span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">vd</span><span class="w"> </span><span class="kn">import</span> <span class="n">reciprocal_rank_fusion</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;vd.reciprocal_rank_fusion unavailable; falling back to dense &quot;</span>
+            <span class="s2">&quot;ranking for hybrid search.&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">dense</span><span class="p">[:</span><span class="n">fetch</span><span class="p">]</span>
+
+    <span class="n">fused</span> <span class="o">=</span> <span class="n">reciprocal_rank_fusion</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">[{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">rid</span><span class="p">,</span> <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">s</span><span class="p">}</span> <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">dense</span><span class="p">],</span>
+            <span class="p">[{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">rid</span><span class="p">,</span> <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">s</span><span class="p">}</span> <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">lexical</span><span class="p">],</span>
+        <span class="p">],</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">rrf_k</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;rrf_score&quot;</span><span class="p">]))</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">fused</span><span class="p">[:</span><span class="n">fetch</span><span class="p">]]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_apply_rerank</span><span class="p">(</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ranked</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
+    <span class="n">meta_by_id</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span>
+    <span class="n">rerank</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Re-score the ranked candidates with an :class:`ef.Reranker` via ``ef.rerank``.</span>
+
+<span class="sd">    The full candidate list is handed to the reranker; it may reorder freely</span>
+<span class="sd">    and the top ``limit`` are kept. The reranker score replaces the candidate</span>
+<span class="sd">    score, and ``_rid`` rides along on each segment so the reordered output</span>
+<span class="sd">    maps back to records.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ef</span><span class="w"> </span><span class="kn">import</span> <span class="n">rerank</span> <span class="k">as</span> <span class="n">ef_rerank</span>
+
+    <span class="n">segments</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="s2">&quot;_rid&quot;</span><span class="p">:</span> <span class="n">rid</span><span class="p">}</span> <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">ranked</span><span class="p">]</span>
+    <span class="n">reordered</span> <span class="o">=</span> <span class="n">ef_rerank</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">segments</span><span class="p">,</span> <span class="n">rerank</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;_rid&quot;</span><span class="p">],</span> <span class="nb">float</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rerank_score&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">reordered</span>
+    <span class="p">]</span>
+
+
 <div class="viewcode-block" id="search">
 <a class="viewcode-back" href="../../module_docs/ir/retrieve.html#ir.retrieve.search">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span>
@@ -138,6 +292,11 @@
     <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">per_artifact</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;dense&quot;</span><span class="p">,</span>
+    <span class="n">rrf_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_RRF_K</span><span class="p">,</span>
+    <span class="n">fetch_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">rerank</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">bm25</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the top-*k* :class:`~ir.base.SearchHit` for *query*.</span>
 
@@ -147,45 +306,57 @@
 <span class="sd">    filter : a ``vd`` Mongo-style filter over record metadata (hard filter).</span>
 <span class="sd">    surfaces : restrict to these surface kinds (e.g. ``{&quot;description&quot;}``).</span>
 <span class="sd">    per_artifact : collapse to the best surface per artifact (default True).</span>
+<span class="sd">    mode : ``&quot;dense&quot;`` (default, cosine), ``&quot;lexical&quot;`` (BM25), or ``&quot;hybrid&quot;``</span>
+<span class="sd">        (dense + BM25 fused by Reciprocal Rank Fusion). Hybrid is the strongest</span>
+<span class="sd">        default for short, identifier-heavy text; ``&quot;dense&quot;`` is the historical</span>
+<span class="sd">        behavior and is kept as the default for backward compatibility.</span>
+<span class="sd">    rrf_k : the RRF rank constant for ``&quot;hybrid&quot;`` (standard default 60).</span>
+<span class="sd">    fetch_k : candidate depth before fusion / reranking / dedupe</span>
+<span class="sd">        (default ``max(k*5, 50)`` when collapsing per artifact, else ``k``).</span>
+<span class="sd">    rerank : an optional :class:`ef.Reranker` (``(query, segments) -&gt; scores``)</span>
+<span class="sd">        that re-scores the ranked candidates after fusion. The reranker sees</span>
+<span class="sd">        the full candidate list (up to ``fetch_k`` items) and may reorder it.</span>
+<span class="sd">        Default ``None`` keeps retrieval offline (no model download / API call).</span>
+<span class="sd">    bm25 : optional Okapi params forwarded to ``vd.bm25_lexical_search``</span>
+<span class="sd">        (e.g. ``{&quot;k1&quot;: 1.5, &quot;b&quot;: 0.75}``).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">MODES</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown mode </span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">MODES</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
     <span class="n">ids</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">metas</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">matrix</span><span class="p">()</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ids</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
 
-    <span class="n">surface_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">surfaces</span><span class="p">)</span> <span class="k">if</span> <span class="n">surfaces</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">metas</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">surface_set</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;surface_kind&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">surface_set</span><span class="p">:</span>
-            <span class="k">continue</span>
-        <span class="k">if</span> <span class="nb">filter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_matches</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{}),</span> <span class="nb">filter</span><span class="p">):</span>
-            <span class="k">continue</span>
-        <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+    <span class="n">candidates</span> <span class="o">=</span> <span class="n">_filter_candidates</span><span class="p">(</span><span class="n">metas</span><span class="p">,</span> <span class="n">surfaces</span><span class="p">,</span> <span class="nb">filter</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">candidates</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
 
-    <span class="n">qv</span> <span class="o">=</span> <span class="n">_embed_query</span><span class="p">(</span><span class="n">corpus</span><span class="o">.</span><span class="n">embedder</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">qv</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Query embedding dim </span><span class="si">{</span><span class="n">qv</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> != index dim </span><span class="si">{</span><span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">. &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;The corpus was built with a different embedder than the one &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;querying it; rebuild the corpus or use its original embedder.&quot;</span>
-        <span class="p">)</span>
-    <span class="n">sub</span> <span class="o">=</span> <span class="n">mat</span><span class="p">[</span><span class="n">candidates</span><span class="p">]</span>
-    <span class="n">scores</span> <span class="o">=</span> <span class="n">sub</span> <span class="o">@</span> <span class="n">qv</span>
+    <span class="n">fetch</span> <span class="o">=</span> <span class="n">fetch_k</span> <span class="k">if</span> <span class="n">fetch_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span> <span class="k">if</span> <span class="n">per_artifact</span> <span class="k">else</span> <span class="n">k</span><span class="p">)</span>
 
-    <span class="c1"># Over-fetch before collapsing to artifacts so dedupe doesn&#39;t starve top-k.</span>
-    <span class="n">take</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span> <span class="k">if</span> <span class="n">per_artifact</span> <span class="k">else</span> <span class="n">k</span><span class="p">)</span>
-    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">-</span><span class="n">scores</span><span class="p">)[:</span><span class="n">take</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;lexical&quot;</span><span class="p">:</span>
+        <span class="n">ranked</span> <span class="o">=</span> <span class="n">_lexical_ranked</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">metas</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">bm25</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dense</span> <span class="o">=</span> <span class="n">_dense_ranked</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">fetch</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;dense&quot;</span><span class="p">:</span>
+            <span class="n">ranked</span> <span class="o">=</span> <span class="n">dense</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># hybrid</span>
+            <span class="n">lexical</span> <span class="o">=</span> <span class="n">_lexical_ranked</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">metas</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">bm25</span><span class="p">)</span>
+            <span class="n">ranked</span> <span class="o">=</span> <span class="n">_rrf_fuse</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="n">lexical</span><span class="p">,</span> <span class="n">rrf_k</span><span class="p">,</span> <span class="n">fetch</span><span class="p">)</span>
+
+    <span class="n">meta_by_id</span> <span class="o">=</span> <span class="p">{</span><span class="n">ids</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span> <span class="n">metas</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">rerank</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ranked</span><span class="p">:</span>
+        <span class="n">ranked</span> <span class="o">=</span> <span class="n">_apply_rerank</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">ranked</span><span class="p">,</span> <span class="n">meta_by_id</span><span class="p">,</span> <span class="n">rerank</span><span class="p">,</span> <span class="n">fetch</span><span class="p">)</span>
 
     <span class="n">hits</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">SearchHit</span><span class="p">(</span>
-            <span class="n">artifact_id</span><span class="o">=</span><span class="n">metas</span><span class="p">[</span><span class="n">candidates</span><span class="p">[</span><span class="n">o</span><span class="p">]][</span><span class="s2">&quot;artifact_id&quot;</span><span class="p">],</span>
-            <span class="n">surface_kind</span><span class="o">=</span><span class="n">metas</span><span class="p">[</span><span class="n">candidates</span><span class="p">[</span><span class="n">o</span><span class="p">]][</span><span class="s2">&quot;surface_kind&quot;</span><span class="p">],</span>
-            <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">o</span><span class="p">]),</span>
-            <span class="n">text</span><span class="o">=</span><span class="n">metas</span><span class="p">[</span><span class="n">candidates</span><span class="p">[</span><span class="n">o</span><span class="p">]][</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
-            <span class="n">metadata</span><span class="o">=</span><span class="n">metas</span><span class="p">[</span><span class="n">candidates</span><span class="p">[</span><span class="n">o</span><span class="p">]]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">artifact_id</span><span class="o">=</span><span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="s2">&quot;artifact_id&quot;</span><span class="p">],</span>
+            <span class="n">surface_kind</span><span class="o">=</span><span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="s2">&quot;surface_kind&quot;</span><span class="p">],</span>
+            <span class="n">score</span><span class="o">=</span><span class="n">score</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{}),</span>
         <span class="p">)</span>
-        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">order</span>
+        <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">ranked</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="n">per_artifact</span><span class="p">:</span>
         <span class="n">hits</span> <span class="o">=</span> <span class="n">best_per_artifact</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
