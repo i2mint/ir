@@ -66,8 +66,9 @@ All corpora were built with the production `all-MiniLM-L6-v2` embedder.
 
 > **Sampling caveat.** packages/reports were capped at 120 artifacts (`--max-artifacts`,
 > sorted-id order for skills/packages; the reports sample spans many top-level path
-> prefixes, so it is not degenerate). The reports *scoring* was further restricted
-> to a random 100-gold sample because of the BM25 scaling issue (§6.1).
+> prefixes, so it is not degenerate). The reports figures above are the full
+> 600-gold run (≈3 min after the BM25 caching fix, §6.1); the original run was
+> restricted to 100 gold because lexical/hybrid did not scale before that fix.
 
 ---
 
@@ -80,7 +81,7 @@ All corpora were built with the production `all-MiniLM-L6-v2` embedder.
 | **skills** — judge-clean | 704 | 0.728 | 0.709 | **0.772** | hybrid |
 | **skills** — judge-graded | 719 | 0.733 | 0.684 | **0.765** | hybrid |
 | **packages** — strict | 582 | **0.583** | 0.305 | 0.489 | dense |
-| **reports** — strict (n=100) | 100 | 0.431 | 0.367 | **0.477** | hybrid |
+| **reports** — strict | 600 | 0.500 | 0.401 | **0.537** | hybrid |
 
 "Lenses" are four increasingly-fair definitions of the gold set for skills (§4).
 The mode **ordering is identical across all four skills lenses** — the result is
@@ -171,6 +172,12 @@ over 600 queries did **not finish in >10 min of 100%-CPU** and had to be killed
 and down-sampled to 100 queries. **Opportunity (ir/vd):** build/persist the BM25
 index once per corpus (alongside the dense matrix) and reuse it across queries —
 this is the single biggest blocker to running `ir` at corpus scale.
+
+> **Update — fixed.** Resolved in ir #21 (`ir.retrieve` caches a per-corpus
+> `vd.BM25Index`, keyed by surfaces+filter) on top of vd #22/#23 (`vd.BM25Index`,
+> build-once / query-many). The full 600-query reports run now completes in
+> ~3 min (all three modes, vs >10 min killed before); skills strict reproduces
+> the pre-fix numbers exactly, so the change is behavior-preserving.
 
 ### 6.2 Near-duplicate artifacts in the skills corpus
 27% of skills are indexed twice (global + package-scoped) with near-identical
