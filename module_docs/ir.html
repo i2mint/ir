@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.5 documentation</title>
+  <title>ir &mdash; ir 0.1.6 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=59fadc99"></script>
+      <script src="../_static/documentation_options.js?v=6e0256f3"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -68,6 +68,23 @@
 <li class="toctree-l3"><a class="reference internal" href="#ir.CorpusStore.memory"><code class="docutils literal notranslate"><span class="pre">CorpusStore.memory()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.Disclosure"><code class="docutils literal notranslate"><span class="pre">Disclosure</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Disclosure.artifact_id"><code class="docutils literal notranslate"><span class="pre">Disclosure.artifact_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Disclosure.level"><code class="docutils literal notranslate"><span class="pre">Disclosure.level</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Disclosure.name"><code class="docutils literal notranslate"><span class="pre">Disclosure.name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Disclosure.score"><code class="docutils literal notranslate"><span class="pre">Disclosure.score</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Disclosure.summary"><code class="docutils literal notranslate"><span class="pre">Disclosure.summary</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Disclosure.body"><code class="docutils literal notranslate"><span class="pre">Disclosure.body</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Disclosure.pointer"><code class="docutils literal notranslate"><span class="pre">Disclosure.pointer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Disclosure.metadata"><code class="docutils literal notranslate"><span class="pre">Disclosure.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Disclosure.to_dict"><code class="docutils literal notranslate"><span class="pre">Disclosure.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.DiscoveryResult"><code class="docutils literal notranslate"><span class="pre">DiscoveryResult</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.DiscoveryResult.ids"><code class="docutils literal notranslate"><span class="pre">DiscoveryResult.ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.DiscoveryResult.to_dict"><code class="docutils literal notranslate"><span class="pre">DiscoveryResult.to_dict()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.IndexPlan"><code class="docutils literal notranslate"><span class="pre">IndexPlan</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.IndexingStrategy"><code class="docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.Package"><code class="docutils literal notranslate"><span class="pre">Package</span></code></a></li>
@@ -76,15 +93,28 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.SearchHit"><code class="docutils literal notranslate"><span class="pre">SearchHit</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.Selection"><code class="docutils literal notranslate"><span class="pre">Selection</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Selection.selected"><code class="docutils literal notranslate"><span class="pre">Selection.selected</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Selection.candidates"><code class="docutils literal notranslate"><span class="pre">Selection.candidates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Selection.abstained"><code class="docutils literal notranslate"><span class="pre">Selection.abstained</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Selection.reason"><code class="docutils literal notranslate"><span class="pre">Selection.reason</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Selection.signals"><code class="docutils literal notranslate"><span class="pre">Selection.signals</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Selection.selected_ids"><code class="docutils literal notranslate"><span class="pre">Selection.selected_ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.Selection.to_dict"><code class="docutils literal notranslate"><span class="pre">Selection.to_dict()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.build_corpus"><code class="docutils literal notranslate"><span class="pre">build_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.corpora"><code class="docutils literal notranslate"><span class="pre">corpora()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.disclose"><code class="docutils literal notranslate"><span class="pre">disclose()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.select"><code class="docutils literal notranslate"><span class="pre">select()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ir/__main__.html">ir.__main__</a></li>
@@ -97,6 +127,7 @@
 <li class="toctree-l1"><a class="reference internal" href="ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/store.html">ir.store</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/strategy.html">ir.strategy</a></li>
@@ -242,6 +273,131 @@ corpora return a <code class="docutils literal notranslate"><span class="pre">(0
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="ir.Disclosure">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">Disclosure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">summary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pointer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/select.html#Disclosure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.Disclosure" title="Link to this definition"></a></dt>
+<dd><p>The progressively-disclosed payload for one selected artifact.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Disclosure.artifact_id">
+<span class="sig-name descname"><span class="pre">artifact_id</span></span><a class="headerlink" href="#ir.Disclosure.artifact_id" title="Link to this definition"></a></dt>
+<dd><p>the artifact this payload belongs to.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Disclosure.level">
+<span class="sig-name descname"><span class="pre">level</span></span><a class="headerlink" href="#ir.Disclosure.level" title="Link to this definition"></a></dt>
+<dd><p>how much was loaded — <code class="docutils literal notranslate"><span class="pre">&quot;metadata&quot;</span></code> (no I/O), <code class="docutils literal notranslate"><span class="pre">&quot;body&quot;</span></code> (the
+pointer’s full text), or <code class="docutils literal notranslate"><span class="pre">&quot;bundled&quot;</span></code> (body + extras).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Disclosure.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#ir.Disclosure.name" title="Link to this definition"></a></dt>
+<dd><p>a display name (the <code class="docutils literal notranslate"><span class="pre">name</span></code> filter field, else the id).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Disclosure.score">
+<span class="sig-name descname"><span class="pre">score</span></span><a class="headerlink" href="#ir.Disclosure.score" title="Link to this definition"></a></dt>
+<dd><p>the selecting hit’s score.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Disclosure.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><a class="headerlink" href="#ir.Disclosure.summary" title="Link to this definition"></a></dt>
+<dd><p>the matched surface text — always present, always cheap.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Disclosure.body">
+<span class="sig-name descname"><span class="pre">body</span></span><a class="headerlink" href="#ir.Disclosure.body" title="Link to this definition"></a></dt>
+<dd><p>the full payload (SKILL.md / file text); <code class="docutils literal notranslate"><span class="pre">None</span></code> below
+<code class="docutils literal notranslate"><span class="pre">&quot;body&quot;</span></code> level or when the pointer could not be read.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Disclosure.pointer">
+<span class="sig-name descname"><span class="pre">pointer</span></span><a class="headerlink" href="#ir.Disclosure.pointer" title="Link to this definition"></a></dt>
+<dd><p>the source pointer (<code class="docutils literal notranslate"><span class="pre">skill_path</span></code> / <code class="docutils literal notranslate"><span class="pre">path</span></code>) — the “package
+pointer” an agent follows to act; <code class="docutils literal notranslate"><span class="pre">None</span></code> if the hit has none.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Disclosure.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><a class="headerlink" href="#ir.Disclosure.metadata" title="Link to this definition"></a></dt>
+<dd><p>the hit’s filter metadata, plus a <code class="docutils literal notranslate"><span class="pre">disclosure</span></code> note when a
+pointer was present but unreadable (stale/moved/deleted).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.Disclosure.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/ir/select.html#Disclosure.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.Disclosure.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable form (score cast to <code class="docutils literal notranslate"><span class="pre">float</span></code>).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.DiscoveryResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">DiscoveryResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">query:</span> <span class="pre">str,</span> <span class="pre">mode:</span> <span class="pre">str,</span> <span class="pre">strategy:</span> <span class="pre">str,</span> <span class="pre">disclose_level:</span> <span class="pre">str,</span> <span class="pre">results:</span> <span class="pre">list[~ir.select.Disclosure],</span> <span class="pre">abstained:</span> <span class="pre">bool,</span> <span class="pre">reason:</span> <span class="pre">str,</span> <span class="pre">n_retrieved:</span> <span class="pre">int,</span> <span class="pre">signals:</span> <span class="pre">~collections.abc.Mapping[str,</span> <span class="pre">~typing.Any]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/select.html#DiscoveryResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.DiscoveryResult" title="Link to this definition"></a></dt>
+<dd><p>The result of <a class="reference internal" href="#ir.discover" title="ir.discover"><code class="xref py py-func docutils literal notranslate"><span class="pre">discover()</span></code></a> — retrieve → select → (optional) disclose.</p>
+<p>The qh-exposable payload: <a class="reference internal" href="#ir.DiscoveryResult.to_dict" title="ir.DiscoveryResult.to_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code></a> is fully JSON-serializable (lists
+of dicts, floats, strings, bools — no numpy, no objects), so a FastAPI
+facade can return it directly.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="ir.DiscoveryResult.ids">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ids</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#ir.DiscoveryResult.ids" title="Link to this definition"></a></dt>
+<dd><p>The committed artifact ids, best-first.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.DiscoveryResult.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/ir/select.html#DiscoveryResult.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.DiscoveryResult.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable result for the qh / HTTP surface.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="ir.IndexPlan">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">IndexPlan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filter_fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/base.html#ir.base.Surface" title="ir.base.Surface"><span class="pre">Surface</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/base.html#IndexPlan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.IndexPlan" title="Link to this definition"></a></dt>
 <dd><p>An <a class="reference internal" href="ir/strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a>’s output for one artifact.</p>
@@ -277,6 +433,82 @@ synopsis / problem-class surfaces are a documented extension point.</p>
 <dt class="sig sig-object py" id="ir.SearchHit">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">SearchHit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/base.html#SearchHit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.SearchHit" title="Link to this definition"></a></dt>
 <dd><p>A scored record returned by retrieval (higher score = closer).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.Selection">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">Selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">selected:</span> <span class="pre">list[~ir.base.SearchHit],</span> <span class="pre">candidates:</span> <span class="pre">list[~ir.base.SearchHit],</span> <span class="pre">abstained:</span> <span class="pre">bool,</span> <span class="pre">reason:</span> <span class="pre">str,</span> <span class="pre">signals:</span> <span class="pre">~collections.abc.Mapping[str,</span> <span class="pre">~typing.Any]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/select.html#Selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.Selection" title="Link to this definition"></a></dt>
+<dd><p>A selector’s commitment: the chosen subset of a ranked candidate list.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Selection.selected">
+<span class="sig-name descname"><span class="pre">selected</span></span><a class="headerlink" href="#ir.Selection.selected" title="Link to this definition"></a></dt>
+<dd><p>the committed hits, best-first (empty iff <code class="docutils literal notranslate"><span class="pre">abstained</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[<a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit">ir.base.SearchHit</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Selection.candidates">
+<span class="sig-name descname"><span class="pre">candidates</span></span><a class="headerlink" href="#ir.Selection.candidates" title="Link to this definition"></a></dt>
+<dd><p>the full ranked input, kept for provenance / audit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[<a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit">ir.base.SearchHit</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Selection.abstained">
+<span class="sig-name descname"><span class="pre">abstained</span></span><a class="headerlink" href="#ir.Selection.abstained" title="Link to this definition"></a></dt>
+<dd><p>True iff the selector committed to nothing by policy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Selection.reason">
+<span class="sig-name descname"><span class="pre">reason</span></span><a class="headerlink" href="#ir.Selection.reason" title="Link to this definition"></a></dt>
+<dd><p>which rule ended the commit (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;rel_threshold&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;score_gap&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;max_k&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;abstain:below_floor&quot;</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.Selection.signals">
+<span class="sig-name descname"><span class="pre">signals</span></span><a class="headerlink" href="#ir.Selection.signals" title="Link to this definition"></a></dt>
+<dd><p>concrete, defined numbers behind the decision (<code class="docutils literal notranslate"><span class="pre">top_score</span></code>,
+<code class="docutils literal notranslate"><span class="pre">n_candidates</span></code>, <code class="docutils literal notranslate"><span class="pre">n_selected</span></code>, <code class="docutils literal notranslate"><span class="pre">min_ratio</span></code>) — the auditable
+replacement for an opaque “confidence” float.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ir.Selection.selected_ids">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">selected_ids</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#ir.Selection.selected_ids" title="Link to this definition"></a></dt>
+<dd><p>The committed artifact ids, best-first.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.Selection.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/ir/select.html#Selection.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.Selection.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable form (scores cast to <code class="docutils literal notranslate"><span class="pre">float</span></code>).</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -332,6 +564,75 @@ an artifact. <code class="docutils literal notranslate"><span class="pre">granul
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.disclose">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">disclose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">selection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ir/select.html#ir.select.Selection" title="ir.select.Selection"><span class="pre">Selection</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'body'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/select.html#ir.select.Disclosure" title="ir.select.Disclosure"><span class="pre">Disclosure</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/ir/select.html#disclose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.disclose" title="Link to this definition"></a></dt>
+<dd><p>Reveal the payload of each selected hit at <code class="docutils literal notranslate"><span class="pre">level</span></code> — append-only, pure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>selection</strong> – a committed <a class="reference internal" href="#ir.Selection" title="ir.Selection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Selection</span></code></a>.</p></li>
+<li><p><strong>level</strong> – <code class="docutils literal notranslate"><span class="pre">&quot;metadata&quot;</span></code> (no I/O — summary + pointer only), <code class="docutils literal notranslate"><span class="pre">&quot;body&quot;</span></code> (load
+the pointer’s full text), or <code class="docutils literal notranslate"><span class="pre">&quot;bundled&quot;</span></code> (body + extras; today the
+same as <code class="docutils literal notranslate"><span class="pre">&quot;body&quot;</span></code>, reserved for bundled scripts/references).</p></li>
+<li><p><strong>loader</strong> – override the body resolver — <code class="docutils literal notranslate"><span class="pre">metadata</span> <span class="pre">-&gt;</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></code>. The
+default reads the <code class="docutils literal notranslate"><span class="pre">skill_path</span></code> / <code class="docutils literal notranslate"><span class="pre">path</span></code> pointer from disk and
+tolerates a missing target (returns <code class="docutils literal notranslate"><span class="pre">None</span></code>, never raises).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>one <a class="reference internal" href="#ir.Disclosure" title="ir.Disclosure"><code class="xref py py-class docutils literal notranslate"><span class="pre">Disclosure</span></code></a> per selected hit, best-first. This is a pure
+read: the <a class="reference internal" href="#ir.Selection" title="ir.Selection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Selection</span></code></a> and its hits are never mutated, so a caller
+can disclose append-only without disturbing a cached ranked prefix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.discover">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">discover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'conservative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disclose_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'metadata'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gap_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="ir/select.html#ir.select.DiscoveryResult" title="ir.select.DiscoveryResult"><span class="pre">DiscoveryResult</span></a></span></span><a class="reference internal" href="../_modules/ir/select.html#discover"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.discover" title="Link to this definition"></a></dt>
+<dd><p>Find and commit to the capabilities for <code class="docutils literal notranslate"><span class="pre">query</span></code> — the one search tool.</p>
+<p>Retrieves <code class="docutils literal notranslate"><span class="pre">k</span></code> candidates, commits to a distractor-robust subset, and
+(optionally) discloses each committed item’s payload. This is the single
+agent-callable surface the capability-discovery research argues for: one
+tool that returns <em>few, high-precision</em> answers rather than a long candidate
+list the model must then filter under context rot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>corpus</strong> – a built <a class="reference internal" href="ir/index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a>, or a registered corpus
+<strong>name</strong> (resolved with <a class="reference internal" href="#ir.open_corpus" title="ir.open_corpus"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.open_corpus()</span></code></a>). Pass a <em>name</em> for
+the qh / HTTP surface — it is the JSON-friendly form.</p></li>
+<li><p><strong>query</strong> – the user intent.</p></li>
+<li><p><strong>k</strong> – candidate depth retrieved before selection.</p></li>
+<li><p><strong>mode</strong> – ranking mode — <code class="docutils literal notranslate"><span class="pre">&quot;hybrid&quot;</span></code> (default; <code class="docutils literal notranslate"><span class="pre">ir</span></code>’s strongest overall),
+<code class="docutils literal notranslate"><span class="pre">&quot;dense&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;lexical&quot;</span></code>.</p></li>
+<li><p><strong>strategy</strong> – selection strategy (see <a class="reference internal" href="ir/select.html#module-ir.select" title="ir.select"><code class="xref py py-func docutils literal notranslate"><span class="pre">select()</span></code></a>).</p></li>
+<li><p><strong>disclose_level</strong> – <code class="docutils literal notranslate"><span class="pre">&quot;metadata&quot;</span></code> (default; cheap, no body I/O), <code class="docutils literal notranslate"><span class="pre">&quot;body&quot;</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">&quot;bundled&quot;</span></code>.</p></li>
+<li><p><strong>filter</strong> – retrieval constraints (forwarded to
+<a class="reference internal" href="ir/retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a>).</p></li>
+<li><p><strong>surfaces</strong> – retrieval constraints (forwarded to
+<a class="reference internal" href="ir/retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a>).</p></li>
+<li><p><strong>max_k</strong> – selection parameters (see
+<a class="reference internal" href="ir/select.html#module-ir.select" title="ir.select"><code class="xref py py-func docutils literal notranslate"><span class="pre">select()</span></code></a>).</p></li>
+<li><p><strong>rel</strong> – selection parameters (see
+<a class="reference internal" href="ir/select.html#module-ir.select" title="ir.select"><code class="xref py py-func docutils literal notranslate"><span class="pre">select()</span></code></a>).</p></li>
+<li><p><strong>gap_ratio</strong> – selection parameters (see
+<a class="reference internal" href="ir/select.html#module-ir.select" title="ir.select"><code class="xref py py-func docutils literal notranslate"><span class="pre">select()</span></code></a>).</p></li>
+<li><p><strong>min_score</strong> – selection parameters (see
+<a class="reference internal" href="ir/select.html#module-ir.select" title="ir.select"><code class="xref py py-func docutils literal notranslate"><span class="pre">select()</span></code></a>).</p></li>
+<li><p><strong>loader</strong> – optional body resolver for disclosure (see <a class="reference internal" href="#ir.disclose" title="ir.disclose"><code class="xref py py-func docutils literal notranslate"><span class="pre">disclose()</span></code></a>).</p></li>
+<li><p><strong>**search_kw</strong> – any other <a class="reference internal" href="ir/retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a> keyword (<code class="docutils literal notranslate"><span class="pre">rrf_k</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rerank</span></code>, <code class="docutils literal notranslate"><span class="pre">bm25</span></code>, …).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a <a class="reference internal" href="#ir.DiscoveryResult" title="ir.DiscoveryResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscoveryResult</span></code></a> (<code class="docutils literal notranslate"><span class="pre">.to_dict()</span></code> for JSON / qh).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.open_corpus">
 <span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">open_corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="ir/index.html#ir.index.Corpus" title="ir.index.Corpus"><span class="pre">Corpus</span></a></span></span><a class="reference internal" href="../_modules/ir/index.html#open_corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.open_corpus" title="Link to this definition"></a></dt>
 <dd><p>Reopen a previously built corpus by name (resolves its embedder).</p>
@@ -347,6 +648,36 @@ an artifact. <code class="docutils literal notranslate"><span class="pre">granul
 <dt class="sig sig-object py" id="ir.search">
 <span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir.html#search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.search" title="Link to this definition"></a></dt>
 <dd><p>Search a <a class="reference internal" href="ir/index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a>, or a corpus <em>name</em> (reopened lazily).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.select">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'conservative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gap_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="ir/select.html#ir.select.Selection" title="ir.select.Selection"><span class="pre">Selection</span></a></span></span><a class="reference internal" href="../_modules/ir/select.html#select"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.select" title="Link to this definition"></a></dt>
+<dd><p>Commit to a subset of ranked <code class="docutils literal notranslate"><span class="pre">hits</span></code> — the selection stage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hits</strong> – ranked <a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><code class="xref py py-class docutils literal notranslate"><span class="pre">SearchHit</span></code></a>s (best first), as returned by
+<a class="reference internal" href="ir/retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a>.</p></li>
+<li><p><strong>strategy</strong> – <code class="docutils literal notranslate"><span class="pre">&quot;conservative&quot;</span></code> (the default distractor-robust commit),
+one of <code class="docutils literal notranslate"><span class="pre">&quot;top_k&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;abs_threshold&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;rel_threshold&quot;</span></code> /
+<code class="docutils literal notranslate"><span class="pre">&quot;score_gap&quot;</span></code>, or any <code class="xref py py-data docutils literal notranslate"><span class="pre">Selector</span></code> callable (<code class="docutils literal notranslate"><span class="pre">hits</span> <span class="pre">-&gt;</span>
+<span class="pre">subset</span></code>) — e.g. one built by <code class="xref py py-func docutils literal notranslate"><span class="pre">make_llm_selector()</span></code>.</p></li>
+<li><p><strong>max_k</strong> – never commit to more than this many (caps distractor exposure).</p></li>
+<li><p><strong>rel</strong> – relative-to-top keep threshold for <code class="docutils literal notranslate"><span class="pre">&quot;conservative&quot;</span></code> / the ratio
+for <code class="docutils literal notranslate"><span class="pre">&quot;rel_threshold&quot;</span></code>.</p></li>
+<li><p><strong>gap_ratio</strong> – score-gap elbow ratio — used by the <code class="docutils literal notranslate"><span class="pre">&quot;score_gap&quot;</span></code> strategy
+only (<code class="docutils literal notranslate"><span class="pre">&quot;conservative&quot;</span></code> deliberately uses <code class="docutils literal notranslate"><span class="pre">rel</span></code> alone, not an
+elbow; see this module’s docstring).</p></li>
+<li><p><strong>min_score</strong> – optional absolute floor; with <code class="docutils literal notranslate"><span class="pre">&quot;conservative&quot;</span></code> the selector
+abstains when even the top hit falls below it (also usable as the
+<code class="docutils literal notranslate"><span class="pre">&quot;abs_threshold&quot;</span></code> floor).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a <a class="reference internal" href="#ir.Selection" title="ir.Selection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Selection</span></code></a>. <code class="docutils literal notranslate"><span class="pre">abstained</span></code> is True iff <code class="docutils literal notranslate"><span class="pre">selected</span></code> is empty.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>

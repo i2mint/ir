@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.eval &mdash; ir 0.1.5 documentation</title>
+  <title>ir.eval &mdash; ir 0.1.6 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=59fadc99"></script>
+      <script src="../../_static/documentation_options.js?v=6e0256f3"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -83,11 +83,23 @@
 <li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryReport.primary"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport.primary</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.SelectionReport"><code class="docutils literal notranslate"><span class="pre">SelectionReport</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.SelectionReport.selection_precision"><code class="docutils literal notranslate"><span class="pre">SelectionReport.selection_precision</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.SelectionReport.selection_recall"><code class="docutils literal notranslate"><span class="pre">SelectionReport.selection_recall</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.SelectionReport.selection_f1"><code class="docutils literal notranslate"><span class="pre">SelectionReport.selection_f1</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.SelectionReport.conditional_commit_rate"><code class="docutils literal notranslate"><span class="pre">SelectionReport.conditional_commit_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.SelectionReport.n_gold_retrieved"><code class="docutils literal notranslate"><span class="pre">SelectionReport.n_gold_retrieved</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.SelectionReport.abstention_accuracy"><code class="docutils literal notranslate"><span class="pre">SelectionReport.abstention_accuracy</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.SelectionReport.mean_selected_size"><code class="docutils literal notranslate"><span class="pre">SelectionReport.mean_selected_size</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.SelectionReport.to_dict"><code class="docutils literal notranslate"><span class="pre">SelectionReport.to_dict()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.as_doc_retriever"><code class="docutils literal notranslate"><span class="pre">as_doc_retriever()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.corpus_artifact_ids"><code class="docutils literal notranslate"><span class="pre">corpus_artifact_ids()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.distractor_curve_from_cases"><code class="docutils literal notranslate"><span class="pre">distractor_curve_from_cases()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.distractor_robustness_curve"><code class="docutils literal notranslate"><span class="pre">distractor_robustness_curve()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.evaluate_discovery"><code class="docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.evaluate_selection"><code class="docutils literal notranslate"><span class="pre">evaluate_selection()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.load_cases"><code class="docutils literal notranslate"><span class="pre">load_cases()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.retrieval_report"><code class="docutils literal notranslate"><span class="pre">retrieval_report()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.save_cases"><code class="docutils literal notranslate"><span class="pre">save_cases()</span></code></a></li>
@@ -99,6 +111,7 @@
 <li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
 <li class="toctree-l1"><a class="reference internal" href="strategy.html">ir.strategy</a></li>
@@ -395,6 +408,128 @@ are <em>not</em> the requested configuration’s).</p>
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.eval.SelectionReport">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">SelectionReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">selection_precision</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selection_recall</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selection_f1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conditional_commit_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_gold_retrieved</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">abstention_accuracy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_selected_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_gold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_abstention</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'conservative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/eval.html#SelectionReport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.SelectionReport" title="Link to this definition"></a></dt>
+<dd><p>The outcome of <a class="reference internal" href="#ir.eval.evaluate_selection" title="ir.eval.evaluate_selection"><code class="xref py py-func docutils literal notranslate"><span class="pre">evaluate_selection()</span></code></a> — selection quality, isolated.</p>
+<p>Where <a class="reference internal" href="#ir.eval.evaluate_discovery" title="ir.eval.evaluate_discovery"><code class="xref py py-func docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a> scores the <em>ranking</em>, this scores the
+<em>commit</em>: given the same <code class="docutils literal notranslate"><span class="pre">k</span></code> candidates, what subset did the selector keep?
+The headline is <a class="reference internal" href="#ir.eval.SelectionReport.conditional_commit_rate" title="ir.eval.SelectionReport.conditional_commit_rate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">conditional_commit_rate</span></code></a> — accuracy of the selection
+decision <strong>conditioned on retrieval having surfaced the gold</strong> — which is the
+one number that separates a selection failure from a retrieval failure.</p>
+<p>Every selection-quality metric shares that conditioning: precision, recall
+and F1 are computed <strong>only over the</strong> <a class="reference internal" href="#ir.eval.SelectionReport.n_gold_retrieved" title="ir.eval.SelectionReport.n_gold_retrieved"><code class="xref py py-attr docutils literal notranslate"><span class="pre">n_gold_retrieved</span></code></a> <strong>cases</strong> whose
+gold reached the <code class="docutils literal notranslate"><span class="pre">k</span></code> candidates, so a retrieval miss is never charged to the
+selector (it is <a class="reference internal" href="#ir.eval.evaluate_discovery" title="ir.eval.evaluate_discovery"><code class="xref py py-func docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a>’s to report).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.SelectionReport.selection_precision">
+<span class="sig-name descname"><span class="pre">selection_precision</span></span><a class="headerlink" href="#ir.eval.SelectionReport.selection_precision" title="Link to this definition"></a></dt>
+<dd><p>mean over committed gold-retrieved cases of
+<code class="docutils literal notranslate"><span class="pre">|selected</span> <span class="pre">∩</span> <span class="pre">gold|</span> <span class="pre">/</span> <span class="pre">|selected|</span></code> (<code class="docutils literal notranslate"><span class="pre">None</span></code> if nothing was ever
+committed) — how clean the committed sets are.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.SelectionReport.selection_recall">
+<span class="sig-name descname"><span class="pre">selection_recall</span></span><a class="headerlink" href="#ir.eval.SelectionReport.selection_recall" title="Link to this definition"></a></dt>
+<dd><p>mean over gold-retrieved cases of
+<code class="docutils literal notranslate"><span class="pre">|selected</span> <span class="pre">∩</span> <span class="pre">gold|</span> <span class="pre">/</span> <span class="pre">|gold</span> <span class="pre">∩</span> <span class="pre">retrieved|</span></code> — of the gold the selector
+was actually shown, how much it kept (denominator is the <em>retrievable</em>
+gold, so retrieval misses do not depress it).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.SelectionReport.selection_f1">
+<span class="sig-name descname"><span class="pre">selection_f1</span></span><a class="headerlink" href="#ir.eval.SelectionReport.selection_f1" title="Link to this definition"></a></dt>
+<dd><p>mean per-case F1 over gold-retrieved cases (an empty commit
+scores 0).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.SelectionReport.conditional_commit_rate">
+<span class="sig-name descname"><span class="pre">conditional_commit_rate</span></span><a class="headerlink" href="#ir.eval.SelectionReport.conditional_commit_rate" title="Link to this definition"></a></dt>
+<dd><p>among gold cases whose gold was in the <code class="docutils literal notranslate"><span class="pre">k</span></code>
+candidates, the fraction where the selector committed to ≥1 gold —
+the selection decision isolated from retrieval recall (<code class="docutils literal notranslate"><span class="pre">None</span></code> if
+retrieval never surfaced any gold).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.SelectionReport.n_gold_retrieved">
+<span class="sig-name descname"><span class="pre">n_gold_retrieved</span></span><a class="headerlink" href="#ir.eval.SelectionReport.n_gold_retrieved" title="Link to this definition"></a></dt>
+<dd><p>the shared denominator of every selection-quality
+metric above (cases whose gold reached the <code class="docutils literal notranslate"><span class="pre">k</span></code> candidates).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.SelectionReport.abstention_accuracy">
+<span class="sig-name descname"><span class="pre">abstention_accuracy</span></span><a class="headerlink" href="#ir.eval.SelectionReport.abstention_accuracy" title="Link to this definition"></a></dt>
+<dd><p>fraction of abstention cases (empty gold) the
+selector correctly committed nothing to (<code class="docutils literal notranslate"><span class="pre">None</span></code> if none).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.SelectionReport.mean_selected_size">
+<span class="sig-name descname"><span class="pre">mean_selected_size</span></span><a class="headerlink" href="#ir.eval.SelectionReport.mean_selected_size" title="Link to this definition"></a></dt>
+<dd><p>mean committed-set size over gold-retrieved cases.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">n_cases</span> <span class="pre">/</span> <span class="pre">n_gold</span> <span class="pre">/</span> <span class="pre">n_abstention</span></span></dt>
+<dd><p>case counts.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">strategy</span> <span class="pre">/</span> <span class="pre">mode</span> <span class="pre">/</span> <span class="pre">k</span></span></dt>
+<dd><p>the configuration scored (so a number is never
+mistaken for a different setup’s).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.SelectionReport.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#SelectionReport.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.SelectionReport.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable form (for the qh / HTTP surface).</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.eval.as_doc_retriever">
 <span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">as_doc_retriever</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#as_doc_retriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.as_doc_retriever" title="Link to this definition"></a></dt>
@@ -503,6 +638,39 @@ all-abstention set) the retrieval metrics are omitted — <code class="docutils 
 is <code class="docutils literal notranslate"><span class="pre">None</span></code> — but the taxonomy and abstention counts are still returned
 (unlike <a class="reference internal" href="#ir.eval.retrieval_report" title="ir.eval.retrieval_report"><code class="xref py py-func docutils literal notranslate"><span class="pre">retrieval_report()</span></code></a>, which raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> on that
 input).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.evaluate_selection">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">evaluate_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'conservative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gap_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.eval.SelectionReport" title="ir.eval.SelectionReport"><span class="pre">SelectionReport</span></a></span></span><a class="reference internal" href="../../_modules/ir/eval.html#evaluate_selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.evaluate_selection" title="Link to this definition"></a></dt>
+<dd><p>Score a selector against <code class="docutils literal notranslate"><span class="pre">cases</span></code> — selection quality, isolated.</p>
+<p>Retrieves <code class="docutils literal notranslate"><span class="pre">k</span></code> candidates per case (the window the selector sees), commits
+with <a class="reference internal" href="select.html#ir.select.select" title="ir.select.select"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.select.select()</span></code></a>, and scores the <em>commit</em>. The key number,
+<a class="reference internal" href="#ir.eval.SelectionReport.conditional_commit_rate" title="ir.eval.SelectionReport.conditional_commit_rate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">SelectionReport.conditional_commit_rate</span></code></a>, conditions on retrieval
+having surfaced the gold among those <code class="docutils literal notranslate"><span class="pre">k</span></code> — so a low value means the
+<em>selector</em> dropped a gold it was shown, not that retrieval missed it.</p>
+<p><code class="docutils literal notranslate"><span class="pre">k</span></code> is the candidate window; hold it equal to the <code class="docutils literal notranslate"><span class="pre">k</span></code> used with
+<a class="reference internal" href="#ir.eval.evaluate_discovery" title="ir.eval.evaluate_discovery"><code class="xref py py-func docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a> to compare the two stages on the same footing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>corpus</strong> – an <a class="reference internal" href="index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a> or a registered corpus <em>name</em>.</p></li>
+<li><p><strong>cases</strong> – the <a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscoveryCase</span></code></a>s (gold-bearing and/or abstention).</p></li>
+<li><p><strong>strategy</strong> – selection strategy (see <a class="reference internal" href="select.html#ir.select.select" title="ir.select.select"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.select.select()</span></code></a>).</p></li>
+<li><p><strong>mode</strong> – ranking mode for retrieval.</p></li>
+<li><p><strong>k</strong> – candidate depth retrieved before selection.</p></li>
+<li><p><strong>surfaces</strong> – restrict retrieval to these surface kinds.</p></li>
+<li><p><strong>max_k</strong> – selection parameters.</p></li>
+<li><p><strong>rel</strong> – selection parameters.</p></li>
+<li><p><strong>gap_ratio</strong> – selection parameters.</p></li>
+<li><p><strong>min_score</strong> – selection parameters.</p></li>
+<li><p><strong>**search_kw</strong> – any other <a class="reference internal" href="retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a> keyword.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a <a class="reference internal" href="#ir.eval.SelectionReport" title="ir.eval.SelectionReport"><code class="xref py py-class docutils literal notranslate"><span class="pre">SelectionReport</span></code></a>.</p>
 </dd>
 </dl>
 </dd></dl>

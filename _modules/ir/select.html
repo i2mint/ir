@@ -1,0 +1,902 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.select &mdash; ir 0.1.6 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=6e0256f3"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../ir.html">ir</a></li>
+      <li class="breadcrumb-item active">ir.select</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ir.select</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Selection &amp; progressive disclosure — committing to a subset, then revealing it.</span>
+
+<span class="sd">Retrieval (:func:`ir.retrieve.search`) ranks *candidates*; **selection** commits</span>
+<span class="sd">to the small, high-precision *subset* an agent should actually act on, and</span>
+<span class="sd">**disclosure** loads the heavy payload (a SKILL.md body, a package pointer, a</span>
+<span class="sd">file&#39;s full text) for only those committed items — and only when asked.</span>
+
+<span class="sd">The split is deliberate and grounded in the capability-discovery research</span>
+<span class="sd">(``misc/docs/ir_01``):</span>
+
+<span class="sd">- *Fewer, higher-precision candidates beat more.* The distractor problem — the</span>
+<span class="sd">  central selection risk — worsens, not improves, as you retrieve more. So the</span>
+<span class="sd">  default selector is **conservative and adaptive**, not a fixed top-*k*: it</span>
+<span class="sd">  keeps the best candidate and admits the next only while the score stays close</span>
+<span class="sd">  to the top (relative threshold), capped at a small ``max_k``. A score-gap</span>
+<span class="sd">  &quot;elbow&quot; cut is offered as its own strategy (:func:`score_gap`) rather than</span>
+<span class="sd">  folded into the default, where it would only duplicate the relative threshold.</span>
+<span class="sd">- *Progressive disclosure is append-only.* Naively injecting full payloads into</span>
+<span class="sd">  context destroys prompt-cache hits. Disclosure here is a *pure* function that</span>
+<span class="sd">  reads pointers already stored on each hit and returns **new** payload objects;</span>
+<span class="sd">  it never mutates the ranked hits and never re-embeds. The append-only *benefit*</span>
+<span class="sd">  is the caller&#39;s to realize, not ``ir``&#39;s to enforce: ``ir`` only hands back</span>
+<span class="sd">  additive :class:`Disclosure` objects. To keep the prompt cache warm in an</span>
+<span class="sd">  agent loop, append each disclosed payload into the **message history** (the</span>
+<span class="sd">  cheap, append-only end of the prefix) rather than mutating the tool</span>
+<span class="sd">  definitions or an earlier system block — exactly the discipline ir_01 §5</span>
+<span class="sd">  prescribes.</span>
+
+<span class="sd">Three composable entry points, smallest surface first:</span>
+
+<span class="sd">- :func:`select` — ranked hits → a :class:`Selection` (a committed subset, or</span>
+<span class="sd">  abstention). Pure; offline; no model.</span>
+<span class="sd">- :func:`disclose` — a :class:`Selection` → per-item :class:`Disclosure`</span>
+<span class="sd">  payloads at a chosen level (``&quot;metadata&quot;`` / ``&quot;body&quot;`` / ``&quot;bundled&quot;``).</span>
+<span class="sd">- :func:`discover` — the single agent-callable tool: retrieve → select →</span>
+<span class="sd">  (optionally) disclose, returning a JSON-serializable :class:`DiscoveryResult`.</span>
+<span class="sd">  This is the qh-exposable surface (pass a corpus *name*; get back ``.to_dict()``).</span>
+
+<span class="sd">Selection scores are compared **relatively** (ratios to the top score), so the</span>
+<span class="sd">same selector works across ``dense`` cosine, ``hybrid`` RRF, and ``lexical``</span>
+<span class="sd">BM25 — whose absolute scales differ by orders of magnitude — without</span>
+<span class="sd">per-mode calibration. Absolute abstention (``&quot;nothing applies&quot;``) requires</span>
+<span class="sd">either an explicit ``min_score`` floor or an LLM selector; pure relative</span>
+<span class="sd">structure cannot tell &quot;all irrelevant&quot; from &quot;all relevant&quot;.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchHit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span> <span class="k">as</span> <span class="n">_search</span>
+
+<span class="c1">#: A selector: ranked hits → the committed subset (a pure ranking decision).</span>
+<span class="n">Selector</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]],</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]]</span>
+
+<span class="c1">#: A body loader: a hit&#39;s metadata → its disclosed payload text (or ``None``).</span>
+<span class="n">BodyLoader</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="s2">&quot;str | None&quot;</span><span class="p">]</span>
+
+<span class="c1">#: Max items the conservative selector will ever commit to. Small on purpose:</span>
+<span class="c1">#: ir_01 §3 (&quot;fewer, higher-precision candidates beat more&quot;), echoing MCP-Atlas&#39;s</span>
+<span class="c1">#: 3–7 target tools per task. Tune up only if your eval&#39;s distractor curve allows.</span>
+<span class="n">DFLT_MAX_K</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="c1">#: Keep a follow-on hit only if its score is at least this fraction of the top.</span>
+<span class="c1">#: 0.6 is a deliberately strict &quot;stay close to the best&quot; band (a distractor a bit</span>
+<span class="c1">#: behind the top is dropped); loosen toward 0 to admit more, tighten toward 1 to</span>
+<span class="c1">#: admit only near-ties. A starting default to tune against your distractor curve.</span>
+<span class="n">DFLT_REL_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.6</span>
+
+<span class="c1">#: Cut before a hit whose score drops below this fraction of the previous one</span>
+<span class="c1">#: (the score-gap &quot;elbow&quot;): a sharp relative drop marks the end of the signal.</span>
+<span class="c1">#: Used by the ``score_gap`` strategy only — the conservative default uses the</span>
+<span class="c1">#: relative-to-top threshold above, which would otherwise subsume a weaker elbow.</span>
+<span class="n">DFLT_GAP_RATIO</span> <span class="o">=</span> <span class="mf">0.5</span>
+
+<span class="c1">#: Candidate depth retrieved before selection in :func:`discover`.</span>
+<span class="n">DFLT_FETCH_K</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="c1">#: Disclosure levels, cheapest → richest (each a superset of the previous).</span>
+<span class="n">DISCLOSURE_LEVELS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="s2">&quot;bundled&quot;</span><span class="p">)</span>
+
+<span class="c1">#: Truncate a disclosed body to this many characters (a guard, not a feature).</span>
+<span class="n">DFLT_MAX_BODY_CHARS</span> <span class="o">=</span> <span class="mi">20000</span>
+
+<span class="c1">#: Metadata keys checked, in order, for a disclosure pointer (the file/dir whose</span>
+<span class="c1">#: contents are the artifact&#39;s body). Skills stamp ``skill_path``; packages,</span>
+<span class="c1">#: reports and files stamp ``path`` (see :mod:`ir.sources`).</span>
+<span class="n">POINTER_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;skill_path&quot;</span><span class="p">,</span> <span class="s2">&quot;path&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Selection result</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<div class="viewcode-block" id="Selection">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Selection">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Selection</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A selector&#39;s commitment: the chosen subset of a ranked candidate list.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        selected: the committed hits, best-first (empty iff ``abstained``).</span>
+<span class="sd">        candidates: the full ranked input, kept for provenance / audit.</span>
+<span class="sd">        abstained: True iff the selector committed to nothing by policy.</span>
+<span class="sd">        reason: which rule ended the commit (e.g. ``&quot;rel_threshold&quot;``,</span>
+<span class="sd">            ``&quot;score_gap&quot;``, ``&quot;max_k&quot;``, ``&quot;abstain:below_floor&quot;``).</span>
+<span class="sd">        signals: concrete, defined numbers behind the decision (``top_score``,</span>
+<span class="sd">            ``n_candidates``, ``n_selected``, ``min_ratio``) — the auditable</span>
+<span class="sd">            replacement for an opaque &quot;confidence&quot; float.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">selected</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]</span>
+    <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]</span>
+    <span class="n">abstained</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">signals</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">selected_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The committed artifact ids, best-first.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Selection.to_dict">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Selection.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form (scores cast to ``float``).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;selected&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">_hit_to_dict</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">],</span>
+            <span class="s2">&quot;selected_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="p">,</span>
+            <span class="s2">&quot;abstained&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>
+            <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+            <span class="s2">&quot;signals&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">),</span>
+            <span class="s2">&quot;n_candidates&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">candidates</span><span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_hit_to_dict</span><span class="p">(</span><span class="n">hit</span><span class="p">:</span> <span class="n">SearchHit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A SearchHit as a plain JSON-serializable dict.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;artifact_id&quot;</span><span class="p">:</span> <span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+        <span class="s2">&quot;surface_kind&quot;</span><span class="p">:</span> <span class="n">hit</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
+        <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+        <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">hit</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+        <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
+    <span class="p">}</span>
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Selectors — plain, composable factories</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<div class="viewcode-block" id="top_k">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.top_k">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">top_k</span><span class="p">(</span><span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The naive baseline: always commit to the first ``k`` hits.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">hits</span><span class="p">[:</span><span class="n">k</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">selector</span></div>
+
+
+
+<div class="viewcode-block" id="abs_threshold">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.abs_threshold">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">abs_threshold</span><span class="p">(</span><span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Keep every hit scoring at or above an absolute ``min_score``.</span>
+
+<span class="sd">    Mode-specific (cosine / RRF / BM25 scales differ); use when you have</span>
+<span class="sd">    calibrated a floor for one ranking mode.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span> <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;=</span> <span class="n">min_score</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">selector</span></div>
+
+
+
+<div class="viewcode-block" id="rel_threshold">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.rel_threshold">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rel_threshold</span><span class="p">(</span><span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_REL_THRESHOLD</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Keep hits scoring at least ``ratio`` × the top score (mode-agnostic).</span>
+
+<span class="sd">    Degenerate-input guard: a non-positive top score makes the ratio test</span>
+<span class="sd">    meaningless (e.g. a hashing embedder yielding negative cosines for an</span>
+<span class="sd">    unrelated query), so only the single best hit is kept.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hits</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">top</span> <span class="o">=</span> <span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span>
+        <span class="k">if</span> <span class="n">top</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span> <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;=</span> <span class="n">ratio</span> <span class="o">*</span> <span class="n">top</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">selector</span></div>
+
+
+
+<div class="viewcode-block" id="score_gap">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.score_gap">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">score_gap</span><span class="p">(</span><span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Elbow cut: keep hits until one drops below ``gap_ratio`` × the previous.</span>
+
+<span class="sd">    A sharp relative drop marks where the ranked signal ends. Flat or</span>
+<span class="sd">    non-positive distributions have no such elbow, so the whole list passes</span>
+<span class="sd">    (the floor for over-selection is the caller&#39;s ``max_k`` / threshold).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+        <span class="n">chosen</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">prev</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">prev</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">prev</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">h</span><span class="o">.</span><span class="n">score</span> <span class="o">&lt;</span> <span class="n">gap_ratio</span> <span class="o">*</span> <span class="n">prev</span><span class="p">):</span>
+                <span class="k">break</span>
+            <span class="n">chosen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+            <span class="n">prev</span> <span class="o">=</span> <span class="n">h</span><span class="o">.</span><span class="n">score</span>
+        <span class="k">return</span> <span class="n">chosen</span>
+
+    <span class="k">return</span> <span class="n">selector</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_conservative_select</span><span class="p">(</span>
+    <span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The default distractor-robust commit: ``(selected, reason, signals)``.</span>
+
+<span class="sd">    Keep the best hit, then admit each next hit only while it stays *close* to</span>
+<span class="sd">    the top score (``score_i &gt;= ratio * top``), up to ``max_k``. The test is</span>
+<span class="sd">    relative-to-top, so it is mode-agnostic (cosine / RRF / BM25 scales differ).</span>
+<span class="sd">    Abstain only when there are no candidates, or an explicit ``min_score`` floor</span>
+<span class="sd">    is set and even the top falls below it — relative structure alone cannot</span>
+<span class="sd">    justify &quot;nothing applies&quot;. (For an elbow cut on a consecutive cliff, use the</span>
+<span class="sd">    :func:`score_gap` strategy instead.)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
+    <span class="n">signals</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;n_candidates&quot;</span><span class="p">:</span> <span class="n">n</span><span class="p">,</span>
+        <span class="s2">&quot;top_score&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;min_ratio&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">&quot;n_selected&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[],</span> <span class="s2">&quot;abstain:no_candidates&quot;</span><span class="p">,</span> <span class="n">signals</span>
+
+    <span class="n">top</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+    <span class="n">signals</span><span class="p">[</span><span class="s2">&quot;top_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">top</span>
+    <span class="k">if</span> <span class="n">min_score</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">top</span> <span class="o">&lt;</span> <span class="n">min_score</span><span class="p">:</span>
+        <span class="n">signals</span><span class="p">[</span><span class="s2">&quot;min_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_score</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[],</span> <span class="s2">&quot;abstain:below_floor&quot;</span><span class="p">,</span> <span class="n">signals</span>
+
+    <span class="n">chosen</span> <span class="o">=</span> <span class="p">[</span><span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="n">limit</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">max_k</span><span class="p">)</span>
+    <span class="n">min_ratio</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">cut</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">top</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">):</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">hits</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="o">/</span> <span class="n">top</span>
+            <span class="k">if</span> <span class="n">r</span> <span class="o">&lt;</span> <span class="n">ratio</span><span class="p">:</span>
+                <span class="n">cut</span> <span class="o">=</span> <span class="s2">&quot;rel_threshold&quot;</span>
+                <span class="k">break</span>
+            <span class="n">chosen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hits</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="c1"># Track the edge only over *accepted* hits, so the signal reports how</span>
+            <span class="c1"># close the commit came to its threshold — not the rejected cliff.</span>
+            <span class="n">min_ratio</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">min_ratio</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+    <span class="c1"># top &lt;= 0 → the ratio test is meaningless; keep only the single best hit.</span>
+
+    <span class="k">if</span> <span class="n">cut</span><span class="p">:</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="n">cut</span>
+    <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;single&quot;</span>
+    <span class="k">elif</span> <span class="n">top</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;nonpositive_top&quot;</span>
+    <span class="k">elif</span> <span class="n">limit</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;max_k&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;exhausted&quot;</span>
+    <span class="n">signals</span><span class="p">[</span><span class="s2">&quot;min_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_ratio</span>
+    <span class="n">signals</span><span class="p">[</span><span class="s2">&quot;n_selected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">chosen</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">chosen</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">signals</span>
+
+
+<span class="c1">#: Named selector strategies that take no query (built from :func:`select` kwargs).</span>
+<span class="n">_NAMED</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Selector</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;top_k&quot;</span><span class="p">:</span> <span class="n">top_k</span><span class="p">,</span>
+    <span class="s2">&quot;abs_threshold&quot;</span><span class="p">:</span> <span class="n">abs_threshold</span><span class="p">,</span>
+    <span class="s2">&quot;rel_threshold&quot;</span><span class="p">:</span> <span class="n">rel_threshold</span><span class="p">,</span>
+    <span class="s2">&quot;score_gap&quot;</span><span class="p">:</span> <span class="n">score_gap</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="select">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.select">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span>
+    <span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Selector</span> <span class="o">=</span> <span class="s2">&quot;conservative&quot;</span><span class="p">,</span>
+    <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_K</span><span class="p">,</span>
+    <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_REL_THRESHOLD</span><span class="p">,</span>
+    <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">,</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selection</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Commit to a subset of ranked ``hits`` — the selection stage.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hits: ranked :class:`~ir.base.SearchHit`\\ s (best first), as returned by</span>
+<span class="sd">            :func:`ir.retrieve.search`.</span>
+<span class="sd">        strategy: ``&quot;conservative&quot;`` (the default distractor-robust commit),</span>
+<span class="sd">            one of ``&quot;top_k&quot;`` / ``&quot;abs_threshold&quot;`` / ``&quot;rel_threshold&quot;`` /</span>
+<span class="sd">            ``&quot;score_gap&quot;``, or any :data:`Selector` callable (``hits -&gt;</span>
+<span class="sd">            subset``) — e.g. one built by :func:`make_llm_selector`.</span>
+<span class="sd">        max_k: never commit to more than this many (caps distractor exposure).</span>
+<span class="sd">        rel: relative-to-top keep threshold for ``&quot;conservative&quot;`` / the ratio</span>
+<span class="sd">            for ``&quot;rel_threshold&quot;``.</span>
+<span class="sd">        gap_ratio: score-gap elbow ratio — used by the ``&quot;score_gap&quot;`` strategy</span>
+<span class="sd">            only (``&quot;conservative&quot;`` deliberately uses ``rel`` alone, not an</span>
+<span class="sd">            elbow; see this module&#39;s docstring).</span>
+<span class="sd">        min_score: optional absolute floor; with ``&quot;conservative&quot;`` the selector</span>
+<span class="sd">            abstains when even the top hit falls below it (also usable as the</span>
+<span class="sd">            ``&quot;abs_threshold&quot;`` floor).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a :class:`Selection`. ``abstained`` is True iff ``selected`` is empty.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;conservative&quot;</span><span class="p">:</span>
+        <span class="n">chosen</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">signals</span> <span class="o">=</span> <span class="n">_conservative_select</span><span class="p">(</span>
+            <span class="n">hits</span><span class="p">,</span> <span class="n">max_k</span><span class="o">=</span><span class="n">max_k</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="n">rel</span><span class="p">,</span> <span class="n">min_score</span><span class="o">=</span><span class="n">min_score</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Selection</span><span class="p">(</span>
+            <span class="n">selected</span><span class="o">=</span><span class="n">chosen</span><span class="p">,</span>
+            <span class="n">candidates</span><span class="o">=</span><span class="n">hits</span><span class="p">,</span>
+            <span class="n">abstained</span><span class="o">=</span><span class="ow">not</span> <span class="n">chosen</span><span class="p">,</span>
+            <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span>
+            <span class="n">signals</span><span class="o">=</span><span class="n">signals</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">selector</span> <span class="o">=</span> <span class="n">_resolve_selector</span><span class="p">(</span>
+        <span class="n">strategy</span><span class="p">,</span> <span class="n">max_k</span><span class="o">=</span><span class="n">max_k</span><span class="p">,</span> <span class="n">rel</span><span class="o">=</span><span class="n">rel</span><span class="p">,</span> <span class="n">gap_ratio</span><span class="o">=</span><span class="n">gap_ratio</span><span class="p">,</span> <span class="n">min_score</span><span class="o">=</span><span class="n">min_score</span>
+    <span class="p">)</span>
+    <span class="n">chosen</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">))[:</span><span class="n">max_k</span><span class="p">]</span>
+    <span class="n">top</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="k">if</span> <span class="n">hits</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">strategy</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span>
+    <span class="k">return</span> <span class="n">Selection</span><span class="p">(</span>
+        <span class="n">selected</span><span class="o">=</span><span class="n">chosen</span><span class="p">,</span>
+        <span class="n">candidates</span><span class="o">=</span><span class="n">hits</span><span class="p">,</span>
+        <span class="n">abstained</span><span class="o">=</span><span class="ow">not</span> <span class="n">chosen</span><span class="p">,</span>
+        <span class="n">reason</span><span class="o">=</span><span class="n">name</span> <span class="k">if</span> <span class="n">chosen</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;abstain:</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">signals</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;n_candidates&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">),</span>
+            <span class="s2">&quot;n_selected&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">chosen</span><span class="p">),</span>
+            <span class="s2">&quot;top_score&quot;</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_selector</span><span class="p">(</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Selector</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve a strategy name (or pass a callable through) to a :data:`Selector`.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">strategy</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">strategy</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_NAMED</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;unknown selection strategy </span><span class="si">{</span><span class="n">strategy</span><span class="si">!r}</span><span class="s2">; expected &#39;conservative&#39;, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;a callable, or one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_NAMED</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="n">factory</span> <span class="o">=</span> <span class="n">_NAMED</span><span class="p">[</span><span class="n">strategy</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;top_k&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">factory</span><span class="p">(</span><span class="n">max_k</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;abs_threshold&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">min_score</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;strategy=&#39;abs_threshold&#39; requires min_score=...&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">factory</span><span class="p">(</span><span class="n">min_score</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;rel_threshold&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">factory</span><span class="p">(</span><span class="n">rel</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">factory</span><span class="p">(</span><span class="n">gap_ratio</span><span class="p">)</span>  <span class="c1"># score_gap</span>
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># LLM-as-selector — optional, lazy, injectable (mirrors ir.eval_gen)</span>
+<span class="c1"># =========================================================================== #</span>
+
+<span class="n">SELECTION_PROMPT</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="s2">A user made this request:</span>
+
+<span class="si">{query}</span>
+
+<span class="s2">Below are candidate capabilities (id and description). Choose ONLY the ones that</span>
+<span class="s2">genuinely help with the request — prefer few, high-precision choices over many.</span>
+<span class="s2">If none apply, choose none.</span>
+
+<span class="si">{candidates}</span>
+
+<span class="s2">Reply with the chosen ids, one per line, and nothing else. No numbering, no prose.</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="make_llm_selector">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.make_llm_selector">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_llm_selector</span><span class="p">(</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">chooser</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SELECTION_PROMPT</span><span class="p">,</span>
+    <span class="n">max_candidates</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_FETCH_K</span><span class="p">,</span>
+    <span class="n">fallback</span><span class="p">:</span> <span class="n">Selector</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An LLM-as-selector :data:`Selector`, grounded in the research&#39;s caveats.</span>
+
+<span class="sd">    The model reads the candidates&#39; descriptions and commits to a subset.</span>
+<span class="sd">    ``chooser`` is an injectable ``(query, candidates) -&gt; [id, …]`` callable</span>
+<span class="sd">    (a test double, or your own router); when omitted it is built lazily on</span>
+<span class="sd">    :mod:`oa` (``oa.prompt_function``), so importing this module stays offline.</span>
+
+<span class="sd">    Robustness: any error or empty/garbled reply falls back to ``fallback``</span>
+<span class="sd">    (default: the ``&quot;conservative&quot;`` heuristic), because LLM selection is known</span>
+<span class="sd">    to be swayed by description phrasing (ir_01 §3) — it must never be the only</span>
+<span class="sd">    line of defense.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">choose</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">cands</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">hits</span><span class="p">)[:</span><span class="n">max_candidates</span><span class="p">]</span>
+        <span class="n">rendered</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">cands</span><span class="p">)</span>
+        <span class="n">fn</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">chooser</span>
+            <span class="k">if</span> <span class="n">chooser</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">_default_llm_chooser</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">candidates</span><span class="o">=</span><span class="n">rendered</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+        <span class="n">by_id</span> <span class="o">=</span> <span class="p">{</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">:</span> <span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">}</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">picked_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">choose</span><span class="p">(</span><span class="n">hits</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">picked_ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">chosen</span> <span class="o">=</span> <span class="p">[</span><span class="n">by_id</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">picked_ids</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">by_id</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">chosen</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">chosen</span>
+        <span class="n">fb</span> <span class="o">=</span> <span class="n">fallback</span> <span class="k">if</span> <span class="n">fallback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_conservative_selector</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">fb</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">selector</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_conservative_selector</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The default heuristic selector as a bare :data:`Selector` (for fallback).&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+        <span class="n">chosen</span><span class="p">,</span> <span class="n">_reason</span><span class="p">,</span> <span class="n">_signals</span> <span class="o">=</span> <span class="n">_conservative_select</span><span class="p">(</span>
+            <span class="n">hits</span><span class="p">,</span> <span class="n">max_k</span><span class="o">=</span><span class="n">DFLT_MAX_K</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="n">DFLT_REL_THRESHOLD</span><span class="p">,</span> <span class="n">min_score</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">chosen</span>
+
+    <span class="k">return</span> <span class="n">selector</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_llm_chooser</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the default LLM chooser on :mod:`oa` (lazy import).&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">oa</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_ids</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot; -</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">oa</span><span class="o">.</span><span class="n">prompt_function</span><span class="p">(</span>
+        <span class="n">prompt</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="n">_parse_ids</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;select_capabilities&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">choose</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">candidates</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">candidates</span><span class="o">=</span><span class="n">candidates</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">choose</span>
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Progressive disclosure</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<div class="viewcode-block" id="Disclosure">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Disclosure">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Disclosure</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The progressively-disclosed payload for one selected artifact.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        artifact_id: the artifact this payload belongs to.</span>
+<span class="sd">        level: how much was loaded — ``&quot;metadata&quot;`` (no I/O), ``&quot;body&quot;`` (the</span>
+<span class="sd">            pointer&#39;s full text), or ``&quot;bundled&quot;`` (body + extras).</span>
+<span class="sd">        name: a display name (the ``name`` filter field, else the id).</span>
+<span class="sd">        score: the selecting hit&#39;s score.</span>
+<span class="sd">        summary: the matched surface text — always present, always cheap.</span>
+<span class="sd">        body: the full payload (SKILL.md / file text); ``None`` below</span>
+<span class="sd">            ``&quot;body&quot;`` level or when the pointer could not be read.</span>
+<span class="sd">        pointer: the source pointer (``skill_path`` / ``path``) — the &quot;package</span>
+<span class="sd">            pointer&quot; an agent follows to act; ``None`` if the hit has none.</span>
+<span class="sd">        metadata: the hit&#39;s filter metadata, plus a ``disclosure`` note when a</span>
+<span class="sd">            pointer was present but unreadable (stale/moved/deleted).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">level</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">score</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">summary</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">body</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">pointer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Disclosure.to_dict">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Disclosure.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form (score cast to ``float``).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;artifact_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+            <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">,</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+            <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">,</span>
+            <span class="s2">&quot;body&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">,</span>
+            <span class="s2">&quot;pointer&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointer</span><span class="p">,</span>
+            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_pointer_of</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The disclosure pointer in a hit&#39;s metadata, if any (see :data:`POINTER_KEYS`).&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">POINTER_KEYS</span><span class="p">:</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">val</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_body_loader</span><span class="p">(</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_BODY_CHARS</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read the body a hit&#39;s pointer names, tolerating missing/moved targets.</span>
+
+<span class="sd">    A ``skill_path`` / file ``path`` is read directly; a directory ``path`` (a</span>
+<span class="sd">    package) discloses its README if present (the body), else stays ``None`` and</span>
+<span class="sd">    leaves the directory to serve as the actionable pointer. Any I/O error</span>
+<span class="sd">    returns ``None`` (the caller records the stale pointer); disclosure never</span>
+<span class="sd">    raises.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+    <span class="n">pointer</span> <span class="o">=</span> <span class="n">_pointer_of</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pointer</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">pointer</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">cand</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;README.md&quot;</span><span class="p">,</span> <span class="s2">&quot;README.rst&quot;</span><span class="p">,</span> <span class="s2">&quot;README.txt&quot;</span><span class="p">):</span>
+                <span class="n">rp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pointer</span><span class="p">,</span> <span class="n">cand</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">rp</span><span class="p">):</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">rp</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">max_chars</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">pointer</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pointer</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">max_chars</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="disclose">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.disclose">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">disclose</span><span class="p">(</span>
+    <span class="n">selection</span><span class="p">:</span> <span class="n">Selection</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;body&quot;</span><span class="p">,</span>
+    <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Disclosure</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reveal the payload of each selected hit at ``level`` — append-only, pure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        selection: a committed :class:`Selection`.</span>
+<span class="sd">        level: ``&quot;metadata&quot;`` (no I/O — summary + pointer only), ``&quot;body&quot;`` (load</span>
+<span class="sd">            the pointer&#39;s full text), or ``&quot;bundled&quot;`` (body + extras; today the</span>
+<span class="sd">            same as ``&quot;body&quot;``, reserved for bundled scripts/references).</span>
+<span class="sd">        loader: override the body resolver — ``metadata -&gt; str | None``. The</span>
+<span class="sd">            default reads the ``skill_path`` / ``path`` pointer from disk and</span>
+<span class="sd">            tolerates a missing target (returns ``None``, never raises).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        one :class:`Disclosure` per selected hit, best-first. This is a pure</span>
+<span class="sd">        read: the :class:`Selection` and its hits are never mutated, so a caller</span>
+<span class="sd">        can disclose append-only without disturbing a cached ranked prefix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">level</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">DISCLOSURE_LEVELS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;unknown disclosure level </span><span class="si">{</span><span class="n">level</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">DISCLOSURE_LEVELS</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="n">load</span> <span class="o">=</span> <span class="n">loader</span> <span class="k">if</span> <span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_default_body_loader</span>
+    <span class="n">out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Disclosure</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">selection</span><span class="o">.</span><span class="n">selected</span><span class="p">:</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="n">pointer</span> <span class="o">=</span> <span class="n">_pointer_of</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">level</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="s2">&quot;bundled&quot;</span><span class="p">):</span>
+            <span class="n">body</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">body</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;disclosure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;pointer_unreadable&quot;</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">Disclosure</span><span class="p">(</span>
+                <span class="n">artifact_id</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">),</span>
+                <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+                <span class="n">summary</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+                <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
+                <span class="n">pointer</span><span class="o">=</span><span class="n">pointer</span><span class="p">,</span>
+                <span class="n">metadata</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># discover — the single agent-callable search-and-select tool</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<div class="viewcode-block" id="DiscoveryResult">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.DiscoveryResult">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiscoveryResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The result of :func:`discover` — retrieve → select → (optional) disclose.</span>
+
+<span class="sd">    The qh-exposable payload: :meth:`to_dict` is fully JSON-serializable (lists</span>
+<span class="sd">    of dicts, floats, strings, bools — no numpy, no objects), so a FastAPI</span>
+<span class="sd">    facade can return it directly.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">disclose_level</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Disclosure</span><span class="p">]</span>
+    <span class="n">abstained</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">n_retrieved</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">signals</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The committed artifact ids, best-first.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">]</span>
+
+<div class="viewcode-block" id="DiscoveryResult.to_dict">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.DiscoveryResult.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable result for the qh / HTTP surface.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
+            <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+            <span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="p">,</span>
+            <span class="s2">&quot;disclose_level&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">disclose_level</span><span class="p">,</span>
+            <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">],</span>
+            <span class="s2">&quot;abstained&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>
+            <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+            <span class="s2">&quot;n_retrieved&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_retrieved</span><span class="p">,</span>
+            <span class="s2">&quot;n_selected&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">),</span>
+            <span class="s2">&quot;signals&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="discover">
+<a class="viewcode-back" href="../../module_docs/ir/select.html#ir.discover">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">discover</span><span class="p">(</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_FETCH_K</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Selector</span> <span class="o">=</span> <span class="s2">&quot;conservative&quot;</span><span class="p">,</span>
+    <span class="n">disclose_level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;metadata&quot;</span><span class="p">,</span>
+    <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_K</span><span class="p">,</span>
+    <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_REL_THRESHOLD</span><span class="p">,</span>
+    <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">,</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscoveryResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find and commit to the capabilities for ``query`` — the one search tool.</span>
+
+<span class="sd">    Retrieves ``k`` candidates, commits to a distractor-robust subset, and</span>
+<span class="sd">    (optionally) discloses each committed item&#39;s payload. This is the single</span>
+<span class="sd">    agent-callable surface the capability-discovery research argues for: one</span>
+<span class="sd">    tool that returns *few, high-precision* answers rather than a long candidate</span>
+<span class="sd">    list the model must then filter under context rot.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        corpus: a built :class:`~ir.index.Corpus`, or a registered corpus</span>
+<span class="sd">            **name** (resolved with :func:`ir.open_corpus`). Pass a *name* for</span>
+<span class="sd">            the qh / HTTP surface — it is the JSON-friendly form.</span>
+<span class="sd">        query: the user intent.</span>
+<span class="sd">        k: candidate depth retrieved before selection.</span>
+<span class="sd">        mode: ranking mode — ``&quot;hybrid&quot;`` (default; ``ir``&#39;s strongest overall),</span>
+<span class="sd">            ``&quot;dense&quot;``, or ``&quot;lexical&quot;``.</span>
+<span class="sd">        strategy: selection strategy (see :func:`select`).</span>
+<span class="sd">        disclose_level: ``&quot;metadata&quot;`` (default; cheap, no body I/O), ``&quot;body&quot;``,</span>
+<span class="sd">            or ``&quot;bundled&quot;``.</span>
+<span class="sd">        filter, surfaces: retrieval constraints (forwarded to</span>
+<span class="sd">            :func:`ir.retrieve.search`).</span>
+<span class="sd">        max_k, rel, gap_ratio, min_score: selection parameters (see</span>
+<span class="sd">            :func:`select`).</span>
+<span class="sd">        loader: optional body resolver for disclosure (see :func:`disclose`).</span>
+<span class="sd">        **search_kw: any other :func:`ir.retrieve.search` keyword (``rrf_k``,</span>
+<span class="sd">            ``rerank``, ``bm25``, …).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a :class:`DiscoveryResult` (``.to_dict()`` for JSON / qh).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
+
+        <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+
+    <span class="n">hits</span> <span class="o">=</span> <span class="n">_search</span><span class="p">(</span>
+        <span class="n">corpus</span><span class="p">,</span>
+        <span class="n">query</span><span class="p">,</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+        <span class="nb">filter</span><span class="o">=</span><span class="nb">filter</span><span class="p">,</span>
+        <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span>
+        <span class="n">per_artifact</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">selection</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span>
+        <span class="n">hits</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
+        <span class="n">max_k</span><span class="o">=</span><span class="n">max_k</span><span class="p">,</span>
+        <span class="n">rel</span><span class="o">=</span><span class="n">rel</span><span class="p">,</span>
+        <span class="n">gap_ratio</span><span class="o">=</span><span class="n">gap_ratio</span><span class="p">,</span>
+        <span class="n">min_score</span><span class="o">=</span><span class="n">min_score</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">disclose</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">DiscoveryResult</span><span class="p">(</span>
+        <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span><span class="p">,</span>
+        <span class="n">disclose_level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span>
+        <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
+        <span class="n">abstained</span><span class="o">=</span><span class="n">selection</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>
+        <span class="n">reason</span><span class="o">=</span><span class="n">selection</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+        <span class="n">n_retrieved</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">),</span>
+        <span class="n">signals</span><span class="o">=</span><span class="n">selection</span><span class="o">.</span><span class="n">signals</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

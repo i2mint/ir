@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.5 documentation</title>
+  <title>Index &mdash; ir 0.1.6 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=59fadc99"></script>
+      <script src="_static/documentation_options.js?v=6e0256f3"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -57,6 +57,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/store.html">ir.store</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/strategy.html">ir.strategy</a></li>
@@ -114,16 +115,34 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/select.html#ir.select.abs_threshold">abs_threshold() (in module ir.select)</a>
+</li>
+      <li><a href="module_docs/ir/select.html#ir.select.Selection.abstained">abstained (ir.select.Selection attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir.html#ir.Selection.abstained">(ir.Selection attribute)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.abstention_accuracy">abstention_accuracy (ir.eval.DiscoveryReport attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.abstention_accuracy">(ir.eval.SelectionReport attribute)</a>
 </li>
-      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.AbstentionGenerator">AbstentionGenerator (in module ir.eval_gen)</a>
-</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.AbstentionGenerator">AbstentionGenerator (in module ir.eval_gen)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.Artifact">Artifact (class in ir)</a>
 
       <ul>
         <li><a href="module_docs/ir/base.html#ir.base.Artifact">(class in ir.base)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir.html#ir.Disclosure.artifact_id">artifact_id (ir.Disclosure attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure.artifact_id">(ir.select.Disclosure attribute)</a>
 </li>
       </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.as_doc_retriever">as_doc_retriever() (in module ir.eval)</a>
@@ -136,6 +155,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/base.html#ir.base.best_per_artifact">best_per_artifact() (in module ir.base)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.Disclosure.body">body (ir.Disclosure attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure.body">(ir.select.Disclosure attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir/select.html#ir.select.BodyLoader">BodyLoader (in module ir.select)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.build">build() (in module ir)</a>
 
       <ul>
@@ -144,8 +173,6 @@
         <li><a href="module_docs/ir/index.html#ir.index.build">(in module ir.index)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.build_corpus">build_corpus() (in module ir)</a>
 </li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.build_eval_set">build_eval_set() (in module ir.eval_gen)</a>
@@ -158,6 +185,12 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/config.html#ir.config.cache_dir">cache_dir() (in module ir.config)</a>
 </li>
+      <li><a href="module_docs/ir/select.html#ir.select.Selection.candidates">candidates (ir.select.Selection attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir.html#ir.Selection.candidates">(ir.Selection attribute)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir.html#ir.CorpusSource.change_signal">change_signal() (ir.CorpusSource method)</a>
 
       <ul>
@@ -170,10 +203,14 @@
         <li><a href="module_docs/ir/strategy.html#ir.strategy.Chunked">(class in ir.strategy)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.conditional_commit_rate">conditional_commit_rate (ir.eval.SelectionReport attribute)</a>
+</li>
       <li><a href="module_docs/ir/config.html#ir.config.config_dir">config_dir() (in module ir.config)</a>
 </li>
       <li><a href="module_docs/ir/sources.html#ir.sources.content_hash_signal">content_hash_signal() (in module ir.sources)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.corpora">corpora() (in module ir)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.Corpus">Corpus (class in ir)</a>
@@ -182,8 +219,6 @@
         <li><a href="module_docs/ir/index.html#ir.index.Corpus">(class in ir.index)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.corpus">corpus (ir.eval.DiscoveryCase attribute)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.corpus_artifact_ids">corpus_artifact_ids() (in module ir.eval)</a>
@@ -220,24 +255,62 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_DISTRACTOR_SIZES">DFLT_DISTRACTOR_SIZES (in module ir.eval)</a>
 </li>
+      <li><a href="module_docs/ir/select.html#ir.select.DFLT_FETCH_K">DFLT_FETCH_K (in module ir.select)</a>
+</li>
+      <li><a href="module_docs/ir/select.html#ir.select.DFLT_GAP_RATIO">DFLT_GAP_RATIO (in module ir.select)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_K_VALUES">DFLT_K_VALUES (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/select.html#ir.select.DFLT_MAX_BODY_CHARS">DFLT_MAX_BODY_CHARS (in module ir.select)</a>
+</li>
+      <li><a href="module_docs/ir/select.html#ir.select.DFLT_MAX_K">DFLT_MAX_K (in module ir.select)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_METRICS">DFLT_METRICS (in module ir.eval)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_MIN_DESCRIPTION_CHARS">DFLT_MIN_DESCRIPTION_CHARS (in module ir.eval_gen)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_MODE">DFLT_MODE (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_QUERIES_PER_ARTIFACT">DFLT_QUERIES_PER_ARTIFACT (in module ir.eval_gen)</a>
 </li>
+      <li><a href="module_docs/ir/select.html#ir.select.DFLT_REL_THRESHOLD">DFLT_REL_THRESHOLD (in module ir.select)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_RRF_K">DFLT_RRF_K (in module ir.retrieve)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.disclose">disclose() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.disclose">(in module ir.select)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir.html#ir.Disclosure">Disclosure (class in ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure">(class in ir.select)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir/select.html#ir.select.DISCLOSURE_LEVELS">DISCLOSURE_LEVELS (in module ir.select)</a>
+</li>
+      <li><a href="module_docs/ir.html#ir.discover">discover() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/cli.html#ir.cli.discover">(in module ir.cli)</a>
+</li>
+        <li><a href="module_docs/ir/select.html#ir.select.discover">(in module ir.select)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase">DiscoveryCase (class in ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport">DiscoveryReport (class in ir.eval)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.DiscoveryResult">DiscoveryResult (class in ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.DiscoveryResult">(class in ir.select)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.distractor_curve_from_cases">distractor_curve_from_cases() (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.distractor_robustness_curve">distractor_robustness_curve() (in module ir.eval)</a>
@@ -252,11 +325,15 @@
 </li>
       <li><a href="module_docs/ir/cli.html#ir.cli.eval">eval() (in module ir.cli)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/cli.html#ir.cli.eval_gen">eval_gen() (in module ir.cli)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/cli.html#ir.cli.eval_select">eval_select() (in module ir.cli)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.evaluate_discovery">evaluate_discovery() (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.evaluate_selection">evaluate_selection() (in module ir.eval)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -326,6 +403,12 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir.html#ir.DiscoveryResult.ids">ids (ir.DiscoveryResult property)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.DiscoveryResult.ids">(ir.select.DiscoveryResult property)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir.html#ir.IndexingStrategy">IndexingStrategy (class in ir)</a>
 
       <ul>
@@ -420,6 +503,13 @@
 </li>
       </ul></li>
       <li>
+    ir.select
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#module-ir.select">module</a>
+</li>
+      </ul></li>
+      <li>
     ir.sources
 
       <ul>
@@ -446,16 +536,22 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir.html#ir.Disclosure.level">level (ir.Disclosure attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure.level">(ir.select.Disclosure attribute)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.load_cases">load_cases() (in module ir.eval)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.CorpusStore.local">local() (ir.CorpusStore class method)</a>
 
       <ul>
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.local">(ir.store.CorpusStore class method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/cli.html#ir.cli.ls">ls() (in module ir.cli)</a>
 </li>
   </ul></td>
@@ -474,6 +570,8 @@
         <li><a href="module_docs/ir.html#ir.Record.make_id">(ir.Record static method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/select.html#ir.select.make_llm_selector">make_llm_selector() (in module ir.select)</a>
+</li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.make_oa_abstention_generator">make_oa_abstention_generator() (in module ir.eval_gen)</a>
 </li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.make_oa_query_generator">make_oa_query_generator() (in module ir.eval_gen)</a>
@@ -486,20 +584,28 @@
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.matrix">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.mean_selected_size">mean_selected_size (ir.eval.SelectionReport attribute)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.CorpusStore.memory">memory() (ir.CorpusStore class method)</a>
 
       <ul>
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.memory">(ir.store.CorpusStore class method)</a>
 </li>
       </ul></li>
-      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.metadata">metadata (ir.eval.DiscoveryCase attribute)</a>
+      <li><a href="module_docs/ir.html#ir.Disclosure.metadata">metadata (ir.Disclosure attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.metadata">(ir.eval.DiscoveryCase attribute)</a>
 </li>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure.metadata">(ir.select.Disclosure attribute)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.mode">mode (ir.eval.DiscoveryReport attribute)</a>
-</li>
-      <li><a href="module_docs/ir/retrieve.html#ir.retrieve.MODES">MODES (in module ir.retrieve)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/retrieve.html#ir.retrieve.MODES">MODES (in module ir.retrieve)</a>
+</li>
       <li>
     module
 
@@ -526,6 +632,8 @@
 </li>
         <li><a href="module_docs/ir/retrieve.html#module-ir.retrieve">ir.retrieve</a>
 </li>
+        <li><a href="module_docs/ir/select.html#module-ir.select">ir.select</a>
+</li>
         <li><a href="module_docs/ir/sources.html#module-ir.sources">ir.sources</a>
 </li>
         <li><a href="module_docs/ir/store.html#module-ir.store">ir.store</a>
@@ -538,6 +646,16 @@
 
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.n_gold_retrieved">n_gold_retrieved (ir.eval.SelectionReport attribute)</a>
+</li>
+      <li><a href="module_docs/ir.html#ir.Disclosure.name">name (ir.Disclosure attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure.name">(ir.select.Disclosure attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.NAME_PLACEHOLDER">NAME_PLACEHOLDER (in module ir.eval_gen)</a>
 </li>
@@ -565,8 +683,16 @@
         <li><a href="module_docs/ir/strategy.html#ir.strategy.Package">(class in ir.strategy)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir.html#ir.Disclosure.pointer">pointer (ir.Disclosure attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure.pointer">(ir.select.Disclosure attribute)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/select.html#ir.select.POINTER_KEYS">POINTER_KEYS (in module ir.select)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.primary">primary (ir.eval.DiscoveryReport property)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.primary_k">primary_k (ir.eval.DiscoveryReport attribute)</a>
@@ -589,6 +715,12 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/select.html#ir.select.Selection.reason">reason (ir.select.Selection attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir.html#ir.Selection.reason">(ir.Selection attribute)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir.html#ir.Record">Record (class in ir)</a>
 
       <ul>
@@ -609,6 +741,8 @@
 </li>
       <li><a href="module_docs/ir/config.html#ir.config.registry_path">registry_path() (in module ir.config)</a>
 </li>
+      <li><a href="module_docs/ir/select.html#ir.select.rel_threshold">rel_threshold() (in module ir.select)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.retrieval">retrieval (ir.eval.DiscoveryReport attribute)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.retrieval_report">retrieval_report() (in module ir.eval)</a>
@@ -625,6 +759,14 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.save_cases">save_cases() (in module ir.eval)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.Disclosure.score">score (ir.Disclosure attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure.score">(ir.select.Disclosure attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir/select.html#ir.select.score_gap">score_gap() (in module ir.select)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.search">search() (in module ir)</a>
 
       <ul>
@@ -639,8 +781,48 @@
         <li><a href="module_docs/ir/base.html#ir.base.SearchHit">(class in ir.base)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir.html#ir.select">select() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.select">(in module ir.select)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir/select.html#ir.select.Selection.selected">selected (ir.select.Selection attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir.html#ir.Selection.selected">(ir.Selection attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir/select.html#ir.select.Selection.selected_ids">selected_ids (ir.select.Selection property)</a>
+
+      <ul>
+        <li><a href="module_docs/ir.html#ir.Selection.selected_ids">(ir.Selection property)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir.html#ir.Selection">Selection (class in ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.Selection">(class in ir.select)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.selection_f1">selection_f1 (ir.eval.SelectionReport attribute)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.selection_precision">selection_precision (ir.eval.SelectionReport attribute)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.selection_recall">selection_recall (ir.eval.SelectionReport attribute)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport">SelectionReport (class in ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/select.html#ir.select.Selector">Selector (in module ir.select)</a>
+</li>
+      <li><a href="module_docs/ir/select.html#ir.select.Selection.signals">signals (ir.select.Selection attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir.html#ir.Selection.signals">(ir.Selection attribute)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir.html#ir.Skill">Skill (class in ir)</a>
 
       <ul>
@@ -655,6 +837,12 @@
 </li>
       <li><a href="module_docs/ir/base.html#ir.base.storage_key">storage_key() (in module ir.base)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.Disclosure.summary">summary (ir.Disclosure attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure.summary">(ir.select.Disclosure attribute)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir.html#ir.Surface">Surface (class in ir)</a>
 
       <ul>
@@ -667,11 +855,29 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.to_dict">to_dict() (ir.eval.DiscoveryCase method)</a>
+      <li><a href="module_docs/ir.html#ir.Disclosure.to_dict">to_dict() (ir.Disclosure method)</a>
+
+      <ul>
+        <li><a href="module_docs/ir.html#ir.DiscoveryResult.to_dict">(ir.DiscoveryResult method)</a>
 </li>
+        <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.to_dict">(ir.eval.DiscoveryCase method)</a>
+</li>
+        <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.to_dict">(ir.eval.SelectionReport method)</a>
+</li>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure.to_dict">(ir.select.Disclosure method)</a>
+</li>
+        <li><a href="module_docs/ir/select.html#ir.select.DiscoveryResult.to_dict">(ir.select.DiscoveryResult method)</a>
+</li>
+        <li><a href="module_docs/ir/select.html#ir.select.Selection.to_dict">(ir.select.Selection method)</a>
+</li>
+        <li><a href="module_docs/ir.html#ir.Selection.to_dict">(ir.Selection method)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.to_qrels">to_qrels() (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/select.html#ir.select.top_k">top_k() (in module ir.select)</a>
 </li>
   </ul></td>
 </tr></table>

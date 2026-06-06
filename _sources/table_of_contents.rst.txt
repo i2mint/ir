@@ -13,6 +13,7 @@
    module_docs/ir/index
    module_docs/ir/registry
    module_docs/ir/retrieve
+   module_docs/ir/select
    module_docs/ir/sources
    module_docs/ir/store
    module_docs/ir/strategy

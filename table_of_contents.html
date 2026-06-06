@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>&lt;no title&gt; &mdash; ir 0.1.5 documentation</title>
+  <title>&lt;no title&gt; &mdash; ir 0.1.6 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=59fadc99"></script>
+      <script src="_static/documentation_options.js?v=6e0256f3"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -58,6 +58,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/store.html">ir.store</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/strategy.html">ir.strategy</a></li>
@@ -96,20 +97,26 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Corpus"><code class="docutils literal notranslate"><span class="pre">Corpus</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.CorpusSource"><code class="docutils literal notranslate"><span class="pre">CorpusSource</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.CorpusStore"><code class="docutils literal notranslate"><span class="pre">CorpusStore</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Disclosure"><code class="docutils literal notranslate"><span class="pre">Disclosure</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.DiscoveryResult"><code class="docutils literal notranslate"><span class="pre">DiscoveryResult</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.IndexPlan"><code class="docutils literal notranslate"><span class="pre">IndexPlan</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.IndexingStrategy"><code class="docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Package"><code class="docutils literal notranslate"><span class="pre">Package</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Record"><code class="docutils literal notranslate"><span class="pre">Record</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.SearchHit"><code class="docutils literal notranslate"><span class="pre">SearchHit</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Selection"><code class="docutils literal notranslate"><span class="pre">Selection</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.build_corpus"><code class="docutils literal notranslate"><span class="pre">build_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.corpora"><code class="docutils literal notranslate"><span class="pre">corpora()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.disclose"><code class="docutils literal notranslate"><span class="pre">disclose()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.select"><code class="docutils literal notranslate"><span class="pre">select()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/__main__.html">ir.__main__</a><ul>
@@ -129,8 +136,10 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/cli.html">ir.cli</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.eval"><code class="docutils literal notranslate"><span class="pre">eval()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.eval_gen"><code class="docutils literal notranslate"><span class="pre">eval_gen()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.eval_select"><code class="docutils literal notranslate"><span class="pre">eval_select()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.info"><code class="docutils literal notranslate"><span class="pre">info()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.ls"><code class="docutils literal notranslate"><span class="pre">ls()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
@@ -161,11 +170,13 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_MODE"><code class="docutils literal notranslate"><span class="pre">DFLT_MODE</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DiscoveryCase"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DiscoveryReport"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SelectionReport"><code class="docutils literal notranslate"><span class="pre">SelectionReport</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.as_doc_retriever"><code class="docutils literal notranslate"><span class="pre">as_doc_retriever()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.corpus_artifact_ids"><code class="docutils literal notranslate"><span class="pre">corpus_artifact_ids()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.distractor_curve_from_cases"><code class="docutils literal notranslate"><span class="pre">distractor_curve_from_cases()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.distractor_robustness_curve"><code class="docutils literal notranslate"><span class="pre">distractor_robustness_curve()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.evaluate_discovery"><code class="docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.evaluate_selection"><code class="docutils literal notranslate"><span class="pre">evaluate_selection()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.load_cases"><code class="docutils literal notranslate"><span class="pre">load_cases()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.retrieval_report"><code class="docutils literal notranslate"><span class="pre">retrieval_report()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.save_cases"><code class="docutils literal notranslate"><span class="pre">save_cases()</span></code></a></li>
@@ -209,6 +220,29 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_RRF_K"><code class="docutils literal notranslate"><span class="pre">DFLT_RRF_K</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.MODES"><code class="docutils literal notranslate"><span class="pre">MODES</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/select.html">ir.select</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.BodyLoader"><code class="docutils literal notranslate"><span class="pre">BodyLoader</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DFLT_FETCH_K"><code class="docutils literal notranslate"><span class="pre">DFLT_FETCH_K</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DFLT_GAP_RATIO"><code class="docutils literal notranslate"><span class="pre">DFLT_GAP_RATIO</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DFLT_MAX_BODY_CHARS"><code class="docutils literal notranslate"><span class="pre">DFLT_MAX_BODY_CHARS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DFLT_MAX_K"><code class="docutils literal notranslate"><span class="pre">DFLT_MAX_K</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DFLT_REL_THRESHOLD"><code class="docutils literal notranslate"><span class="pre">DFLT_REL_THRESHOLD</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DISCLOSURE_LEVELS"><code class="docutils literal notranslate"><span class="pre">DISCLOSURE_LEVELS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.Disclosure"><code class="docutils literal notranslate"><span class="pre">Disclosure</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DiscoveryResult"><code class="docutils literal notranslate"><span class="pre">DiscoveryResult</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.POINTER_KEYS"><code class="docutils literal notranslate"><span class="pre">POINTER_KEYS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.Selection"><code class="docutils literal notranslate"><span class="pre">Selection</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.Selector"><code class="docutils literal notranslate"><span class="pre">Selector</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.abs_threshold"><code class="docutils literal notranslate"><span class="pre">abs_threshold()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.disclose"><code class="docutils literal notranslate"><span class="pre">disclose()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.make_llm_selector"><code class="docutils literal notranslate"><span class="pre">make_llm_selector()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.rel_threshold"><code class="docutils literal notranslate"><span class="pre">rel_threshold()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.score_gap"><code class="docutils literal notranslate"><span class="pre">score_gap()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.select"><code class="docutils literal notranslate"><span class="pre">select()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.top_k"><code class="docutils literal notranslate"><span class="pre">top_k()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a><ul>
