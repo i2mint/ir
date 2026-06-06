@@ -26,6 +26,7 @@ never hard-fails a search.
 
 from __future__ import annotations
 
+import json
 import warnings
 from collections.abc import Iterable, Mapping
 from types import SimpleNamespace
@@ -100,32 +101,57 @@ def _dense_ranked(
     return [(ids[candidates[o]], float(scores[o])) for o in order]
 
 
-def _lexical_ranked(
-    ids: list[str],
-    metas: list[dict],
-    candidates: list[int],
-    query: str,
-    fetch: int,
-    bm25: Mapping[str, Any] | None,
-) -> list[tuple[str, float]]:
-    """Top-*fetch* ``(record_id, bm25)`` pairs via ``vd.bm25_lexical_search``.
+def _candidate_key(
+    surfaces: tuple[str, ...] | None, filter: Mapping[str, Any] | None
+) -> tuple:
+    """A hashable key identifying a candidate set (surface restriction + filter).
+
+    For a fixed :class:`~ir.index.Corpus` instance the candidate set is fully
+    determined by the surface restriction and the hard metadata filter, so two
+    searches sharing both can share one BM25 index. The filter is canonicalized
+    with sorted keys so logically-equal filters land on the same cache entry.
+    """
+    f = json.dumps(filter, sort_keys=True, default=str) if filter is not None else None
+    return (surfaces, f)
+
+
+def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
+    """A ``vd.BM25Index`` over the candidate texts, cached on the corpus instance.
+
+    BM25's term statistics (document frequencies, lengths) are
+    *query-independent*, so the index is built once per candidate set and reused
+    across queries. Rebuilding it on every query — re-tokenizing every document
+    each time — is the lexical/hybrid bottleneck for batch evaluation and the
+    reason large corpora did not scale. The cache lives on the corpus instance,
+    which is immutable during its lifetime and freshly created whenever the
+    corpus is (re)built or reopened, so the cache never goes stale.
 
     The candidate texts are exposed to ``vd`` as a zero-copy mapping view
     (``record_id -> obj`` with ``.text`` / ``.metadata``) so no vectors are
-    duplicated and BM25 runs only over the already-filtered candidates. Returns
-    ``[]`` (with a warning) if ``vd``'s lexical search is unavailable, letting
-    hybrid degrade to dense.
+    duplicated and BM25 covers only the already-filtered candidates. Returns
+    ``None`` (with a warning) if ``vd`` is unavailable, letting lexical mode
+    return nothing and hybrid degrade to dense.
     """
     try:
-        from vd import bm25_lexical_search
+        from vd import BM25Index
     except Exception:
         warnings.warn(
-            "vd.bm25_lexical_search unavailable; BM25 lexical ranking is "
-            "skipped. Hybrid falls back to dense; lexical mode returns no "
-            "results. Install `vd` for lexical/hybrid retrieval.",
+            "vd.BM25Index unavailable; BM25 lexical ranking is skipped. Hybrid "
+            "falls back to dense; lexical mode returns no results. Install `vd` "
+            "for lexical/hybrid retrieval.",
             stacklevel=3,
         )
-        return []
+        return None
+
+    cache = getattr(corpus, "_bm25_index_cache", None)
+    if cache is None:
+        cache = {}
+        try:
+            corpus._bm25_index_cache = cache
+        except Exception:
+            pass  # corpus doesn't admit attribute caching → build fresh each call
+    if cache_key in cache:
+        return cache[cache_key]
 
     collection = {
         ids[j]: SimpleNamespace(
@@ -133,7 +159,25 @@ def _lexical_ranked(
         )
         for j in candidates
     }
-    results = bm25_lexical_search(collection, query, limit=fetch, **(bm25 or {}))
+    index = BM25Index(collection)
+    cache[cache_key] = index
+    return index
+
+
+def _lexical_ranked(
+    index,
+    query: str,
+    fetch: int,
+    bm25: Mapping[str, Any] | None,
+) -> list[tuple[str, float]]:
+    """Top-*fetch* ``(record_id, bm25_score)`` pairs from a prebuilt BM25 index.
+
+    ``index`` is a ``vd.BM25Index`` (see :func:`_bm25_index_for`) or ``None``
+    when ``vd`` is unavailable, in which case lexical ranking is empty.
+    """
+    if index is None:
+        return []
+    results = index.search(query, limit=fetch, **(bm25 or {}))
     return [(r["id"], float(r["score"])) for r in results]
 
 
@@ -233,6 +277,10 @@ def search(
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
 
+    # Materialize once: surfaces may be a one-shot iterable, and it is both the
+    # filter input and part of the BM25 cache key.
+    surfaces = tuple(surfaces) if surfaces is not None else None
+
     ids, mat, metas = corpus.store.matrix()
     if not ids:
         return []
@@ -244,13 +292,19 @@ def search(
     fetch = fetch_k if fetch_k is not None else (max(k * 5, 50) if per_artifact else k)
 
     if mode == "lexical":
-        ranked = _lexical_ranked(ids, metas, candidates, query, fetch, bm25)
+        index = _bm25_index_for(
+            corpus, ids, metas, candidates, _candidate_key(surfaces, filter)
+        )
+        ranked = _lexical_ranked(index, query, fetch, bm25)
     else:
         dense = _dense_ranked(corpus, mat, ids, candidates, query, fetch)
         if mode == "dense":
             ranked = dense
         else:  # hybrid
-            lexical = _lexical_ranked(ids, metas, candidates, query, fetch, bm25)
+            index = _bm25_index_for(
+                corpus, ids, metas, candidates, _candidate_key(surfaces, filter)
+            )
+            lexical = _lexical_ranked(index, query, fetch, bm25)
             ranked = _rrf_fuse(dense, lexical, rrf_k, fetch)
 
     meta_by_id = {ids[j]: metas[j] for j in candidates}
