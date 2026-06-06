@@ -1,0 +1,591 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.eval_gen &mdash; ir 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=360bc84d"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../ir.html">ir</a></li>
+      <li class="breadcrumb-item active">ir.eval_gen</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ir.eval_gen</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;LLM-backed generation of evaluation cases for :mod:`ir.eval`.</span>
+
+<span class="sd">This is the **build-time** companion to the offline scoring harness: it turns a</span>
+<span class="sd">corpus into a set of :class:`~ir.eval.DiscoveryCase`\\ s by *back-translation* —</span>
+<span class="sd">given a capability&#39;s description, ask an LLM for the user intents that should</span>
+<span class="sd">route to it. The artifact&#39;s id is the free ground-truth label.</span>
+
+<span class="sd">Two ideas make the generated set honest:</span>
+
+<span class="sd">- **Name masking.** The artifact&#39;s *name* is stripped from the description</span>
+<span class="sd">  *before* it is shown to the generator (and any output that still leaks the</span>
+<span class="sd">  name is dropped). Otherwise a lexical retriever (the BM25 leg of hybrid) would</span>
+<span class="sd">  trivially match query→gold on surface name overlap and inflate scores. Many</span>
+<span class="sd">  real descriptions contain their own name, so masking the **input** — not just</span>
+<span class="sd">  filtering the output — is what matters.</span>
+<span class="sd">- **An abstention slice.** A fraction of cases are &quot;no artifact applies&quot; intents</span>
+<span class="sd">  (empty ``gold``), so the eval can measure correct refusal, not just hits.</span>
+
+<span class="sd">The LLM is **injected** (`query_generator` / `abstention_generator` callables),</span>
+<span class="sd">so the generation *logic* — masking, gold assignment, the leakage guard, the</span>
+<span class="sd">abstention fraction — is fully testable with a deterministic stub and no network.</span>
+<span class="sd">The default generators are built lazily on :mod:`oa` (`oa.prompt_function`), so</span>
+<span class="sd">``import ir.eval_gen`` stays cheap and offline; ``oa`` is only imported when you</span>
+<span class="sd">actually generate with the real LLM.</span>
+
+<span class="sd">The output is plain :class:`~ir.eval.DiscoveryCase` data — freeze it with</span>
+<span class="sd">:func:`ir.eval.save_cases` (stamping :func:`corpus_signature` into the</span>
+<span class="sd">``__meta__`` header) and score it with :mod:`ir.eval`. Generation needs a model;</span>
+<span class="sd">scoring never does.</span>
+
+<span class="sd">Quick start::</span>
+
+<span class="sd">    import ir</span>
+<span class="sd">    from ir import eval_gen as eg</span>
+
+<span class="sd">    source = ir.CorpusSource.from_skills()</span>
+<span class="sd">    cases = eg.build_eval_set(source, k=5, corpus_name=&quot;skills&quot;)   # uses oa</span>
+<span class="sd">    from ir.eval import save_cases</span>
+<span class="sd">    save_cases(cases, &quot;skills_eval.jsonl&quot;,</span>
+<span class="sd">               meta={&quot;corpus&quot;: &quot;skills&quot;, &quot;corpus_signature&quot;: eg.corpus_signature(source)})</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiscoveryCase</span>
+
+<span class="c1">#: Queries generated per artifact by default.</span>
+<span class="n">DFLT_QUERIES_PER_ARTIFACT</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="c1">#: Target share of the case set that is abstention (&quot;no artifact applies&quot;).</span>
+<span class="n">DFLT_ABSTENTION_FRAC</span> <span class="o">=</span> <span class="mf">0.15</span>
+
+<span class="c1">#: Minimum description length (chars) for an artifact to be back-translated.</span>
+<span class="n">DFLT_MIN_DESCRIPTION_CHARS</span> <span class="o">=</span> <span class="mi">20</span>
+
+<span class="c1">#: What a masked name is replaced with in a description / query.</span>
+<span class="n">NAME_PLACEHOLDER</span> <span class="o">=</span> <span class="s2">&quot;this capability&quot;</span>
+
+<span class="c1">#: Default theme used when generating abstention (&quot;out of scope&quot;) intents.</span>
+<span class="n">DFLT_ABSTENTION_THEME</span> <span class="o">=</span> <span class="s2">&quot;software developer tools&quot;</span>
+
+<span class="c1">#: A query generator: ``(description, *, n) -&gt; list[str]`` (n candidate intents).</span>
+<span class="n">QueryGenerator</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+
+<span class="c1">#: An abstention generator: ``(*, n, theme) -&gt; list[str]`` (n out-of-scope intents).</span>
+<span class="n">AbstentionGenerator</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+
+<span class="n">BACKTRANSLATION_PROMPT</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="s2">You are generating evaluation data for a tool-retrieval system.</span>
+
+<span class="s2">Below is a description of a capability (its name has been hidden on purpose):</span>
+
+<span class="si">{description}</span>
+
+<span class="s2">Write </span><span class="si">{n}</span><span class="s2"> natural, varied user requests that this capability should handle.</span>
+<span class="s2">Rules:</span>
+<span class="s2">- Do NOT mention any tool, function, skill, or package name.</span>
+<span class="s2">- Vary phrasing, specificity, and the implied (not explicit) parameters.</span>
+<span class="s2">- One request per line. No numbering, no quotes, no extra commentary.</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">ABSTENTION_PROMPT</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="s2">You are generating &quot;no applicable tool&quot; cases for a tool-retrieval evaluation.</span>
+
+<span class="s2">The tool catalog is about: </span><span class="si">{theme}</span><span class="s2">.</span>
+
+<span class="s2">Write </span><span class="si">{n}</span><span class="s2"> natural, plausible user requests that such a catalog should NOT be able</span>
+<span class="s2">to satisfy because they fall outside its scope.</span>
+<span class="s2">One request per line. No numbering, no quotes, no extra commentary.</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Name masking (label-leakage prevention)</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<span class="c1">#: Fallback placeholder used when the primary one would itself match the name.</span>
+<span class="n">_ALT_PLACEHOLDER</span> <span class="o">=</span> <span class="s2">&quot;the tool&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ordered_tokens</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The name&#39;s word tokens (split on whitespace/hyphen/underscore), lowercased.</span>
+
+<span class="sd">    Tokens shorter than two characters are dropped so a degenerate name (e.g.</span>
+<span class="sd">    ``&quot;a-&quot;`` or ``&quot;-x&quot;``) cannot collapse to a one-letter pattern that masks</span>
+<span class="sd">    articles or stray letters throughout the text.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[\s_-]+&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_name_pattern</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whole-word regex matching ``name`` as a contiguous phrase.</span>
+
+<span class="sd">    Tolerant of the separator *between* a multi-token name&#39;s tokens (any run of</span>
+<span class="sd">    whitespace / hyphen / underscore), plus the concatenated form — so</span>
+<span class="sd">    ``&quot;ci-advisor&quot;``, ``&quot;ci advisor&quot;``, ``&quot;ci_advisor&quot;`` and ``&quot;ciadvisor&quot;`` all</span>
+<span class="sd">    match. Returns ``None`` when nothing maskable survives (see</span>
+<span class="sd">    :func:`_ordered_tokens`).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">_ordered_tokens</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">tokens</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">phrase</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;[\s_-]+&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">)</span>
+    <span class="n">concat</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">)</span>
+    <span class="n">alts</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">({</span><span class="n">phrase</span><span class="p">,</span> <span class="n">concat</span><span class="p">},</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rf</span><span class="s2">&quot;\b(?:</span><span class="si">{</span><span class="n">alts</span><span class="si">}</span><span class="s2">)\b&quot;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="mask_name">
+<a class="viewcode-back" href="../../module_docs/ir/eval_gen.html#ir.eval_gen.mask_name">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mask_name</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">placeholder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">NAME_PLACEHOLDER</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Replace occurrences of ``name`` in ``text`` with ``placeholder``.</span>
+
+<span class="sd">    Matches the name as a contiguous phrase tolerant of the separator between its</span>
+<span class="sd">    tokens (``&quot;ci-advisor&quot;`` / ``&quot;ci advisor&quot;`` / ``&quot;ci_advisor&quot;`` all match),</span>
+<span class="sd">    case-insensitively and whole-word (a short token like ``&quot;ci&quot;`` does not blast</span>
+<span class="sd">    through ``&quot;specific&quot;``). If ``placeholder`` would itself match the name, a</span>
+<span class="sd">    neutral alternate is used so the masked text is not self-referential. Used to</span>
+<span class="sd">    scrub the artifact name out of a description *before* it is generated from.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="n">_name_pattern</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pattern</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">text</span>
+    <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">placeholder</span><span class="p">):</span>
+        <span class="n">placeholder</span> <span class="o">=</span> <span class="n">_ALT_PLACEHOLDER</span>
+    <span class="k">return</span> <span class="n">pattern</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">placeholder</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_leaks_name</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether ``text`` reuses the gold ``name`` — matching how BM25 would.</span>
+
+<span class="sd">    The lexical retriever is bag-of-words (order-insensitive), so two forms count</span>
+<span class="sd">    as a leak: (1) the name as a contiguous phrase (any separator), or (2) for a</span>
+<span class="sd">    multi-token name, *all* its distinctive tokens appearing anywhere (reordered</span>
+<span class="sd">    or separated). A single shared content word is **not** a leak — that is the</span>
+<span class="sd">    legitimate semantic overlap the eval is meant to measure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="n">_name_pattern</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pattern</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">_ordered_tokens</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">tokens</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\w+&quot;</span><span class="p">,</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()))</span>
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Default (oa-backed) generators — lazily built, only when actually used</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<span class="c1">#: A genuine leading list marker: a bullet or an ordinal *followed by whitespace*</span>
+<span class="c1">#: (``- ``, ``* ``, ``• ``, ``1. ``, ``2) ``). Anchored so it never eats a real</span>
+<span class="c1">#: leading token like ``3D``, ``-9 degrees``, ``.env`` or ``24/7``.</span>
+<span class="n">_LIST_MARKER</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^\s*(?:[-*•]|\d+[.)])\s+&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_lines</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse an LLM list response into clean, non-empty lines.</span>
+
+<span class="sd">    Strips only a genuine leading list marker (bullet or ordinal followed by</span>
+<span class="sd">    whitespace) and surrounding quotes — never an arbitrary leading character —</span>
+<span class="sd">    so a query like ``&quot;3D modeling help&quot;`` or ``&quot;-9 degrees, what to wear?&quot;``</span>
+<span class="sd">    keeps its first token intact.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">raw</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+        <span class="n">cleaned</span> <span class="o">=</span> <span class="n">_LIST_MARKER</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">raw</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\&quot;</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cleaned</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cleaned</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">lines</span>
+
+
+<div class="viewcode-block" id="make_oa_query_generator">
+<a class="viewcode-back" href="../../module_docs/ir/eval_gen.html#ir.eval_gen.make_oa_query_generator">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_oa_query_generator</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">BACKTRANSLATION_PROMPT</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QueryGenerator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the default back-translation generator on :mod:`oa` (lazy import).&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">oa</span>
+
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">oa</span><span class="o">.</span><span class="n">prompt_function</span><span class="p">(</span>
+        <span class="n">prompt</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="n">_parse_lines</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;backtranslate&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">))[:</span><span class="n">n</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">generate</span></div>
+
+
+
+<div class="viewcode-block" id="make_oa_abstention_generator">
+<a class="viewcode-back" href="../../module_docs/ir/eval_gen.html#ir.eval_gen.make_oa_abstention_generator">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_oa_abstention_generator</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">ABSTENTION_PROMPT</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AbstentionGenerator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the default abstention generator on :mod:`oa` (lazy import).&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">oa</span>
+
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">oa</span><span class="o">.</span><span class="n">prompt_function</span><span class="p">(</span>
+        <span class="n">prompt</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="n">_parse_lines</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;abstention&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">theme</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">theme</span><span class="o">=</span><span class="n">theme</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">))[:</span><span class="n">n</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">generate</span></div>
+
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Case generation</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_describe</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Best-effort describable text from a raw artifact payload.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">):</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">val</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">val</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">raw</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_name_of</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">raw</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The artifact&#39;s display name — a non-blank string ``name`` field, else the id.</span>
+
+<span class="sd">    A missing, blank, or non-string ``name`` is treated like absent (the id is</span>
+<span class="sd">    used), so masking and the leakage guard never operate on the literal</span>
+<span class="sd">    ``&quot;None&quot;`` or an empty string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">name</span>
+    <span class="k">return</span> <span class="n">artifact_id</span>
+
+
+<div class="viewcode-block" id="generate_cases">
+<a class="viewcode-back" href="../../module_docs/ir/eval_gen.html#ir.eval_gen.generate_cases">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_cases</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_QUERIES_PER_ARTIFACT</span><span class="p">,</span>
+    <span class="n">mask_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">query_generator</span><span class="p">:</span> <span class="n">QueryGenerator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">describe</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MIN_DESCRIPTION_CHARS</span><span class="p">,</span>
+    <span class="n">max_artifacts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">corpus_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Back-translate a corpus source into gold-bearing :class:`DiscoveryCase`\\ s.</span>
+
+<span class="sd">    For each artifact in ``source.scope`` (id → raw), extract a description,</span>
+<span class="sd">    mask the artifact&#39;s name out of it, ask ``query_generator`` for ``k`` user</span>
+<span class="sd">    intents, and emit one case per surviving intent (gold = the artifact id).</span>
+<span class="sd">    Intents that still leak the name are dropped; artifacts whose description is</span>
+<span class="sd">    shorter than ``min_chars`` are skipped (and the count is warned, never</span>
+<span class="sd">    silently dropped).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source: a :class:`~ir.sources.CorpusSource` (anything with ``.items()``).</span>
+<span class="sd">        k: intents to request per artifact.</span>
+<span class="sd">        mask_names: scrub the artifact name from the description before</span>
+<span class="sd">            generating, and drop any generated intent that still contains it.</span>
+<span class="sd">        query_generator: ``(description, *, n) -&gt; [intent, …]``. Defaults to the</span>
+<span class="sd">            :mod:`oa`-backed back-translator (built lazily; needs a model).</span>
+<span class="sd">        describe: ``raw -&gt; description`` (default: the ``description`` / ``text``</span>
+<span class="sd">            field, else the joined string fields).</span>
+<span class="sd">        min_chars: skip artifacts whose description is shorter than this.</span>
+<span class="sd">        max_artifacts: cap how many artifacts to process (for a quick/cheap run);</span>
+<span class="sd">            when set, artifacts are taken in sorted-id order so the subset is</span>
+<span class="sd">            deterministic even for filesystem-ordered (``dol``-backed) scopes.</span>
+<span class="sd">        corpus_name: stamped on each case&#39;s ``corpus`` field.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        the generated gold cases.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: if ``k`` is less than 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;k must be &gt;= 1, got </span><span class="si">{</span><span class="n">k</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
+    <span class="n">gen</span> <span class="o">=</span> <span class="n">query_generator</span> <span class="ow">or</span> <span class="n">make_oa_query_generator</span><span class="p">()</span>
+    <span class="n">describe</span> <span class="o">=</span> <span class="n">describe</span> <span class="ow">or</span> <span class="n">_default_describe</span>
+    <span class="n">cases</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">skipped</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">items</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">max_artifacts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Deterministic subset: sort by id so a capped run is reproducible across</span>
+        <span class="c1"># machines even when the scope iterates in filesystem order.</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">kv</span><span class="p">:</span> <span class="n">kv</span><span class="p">[</span><span class="mi">0</span><span class="p">])[:</span><span class="n">max_artifacts</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+        <span class="n">description</span> <span class="o">=</span> <span class="n">describe</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">description</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">description</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&lt;</span> <span class="n">min_chars</span><span class="p">:</span>
+            <span class="n">skipped</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">_name_of</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span>
+        <span class="n">prompt_text</span> <span class="o">=</span> <span class="n">mask_name</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">mask_names</span> <span class="k">else</span> <span class="n">description</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">intents</span> <span class="o">=</span> <span class="n">gen</span><span class="p">(</span><span class="n">prompt_text</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># a single artifact&#39;s generation failing is non-fatal</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;query generation failed for </span><span class="si">{</span><span class="n">artifact_id</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">skipped</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        <span class="k">for</span> <span class="n">intent</span> <span class="ow">in</span> <span class="n">intents</span><span class="p">:</span>
+            <span class="n">intent</span> <span class="o">=</span> <span class="p">(</span><span class="n">intent</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">intent</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">mask_names</span> <span class="ow">and</span> <span class="n">_leaks_name</span><span class="p">(</span><span class="n">intent</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+                <span class="k">continue</span>  <span class="c1"># output guard: never let the gold name leak into a query</span>
+            <span class="n">cases</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">DiscoveryCase</span><span class="p">(</span>
+                    <span class="n">query</span><span class="o">=</span><span class="n">intent</span><span class="p">,</span>
+                    <span class="n">gold</span><span class="o">=</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,),</span>
+                    <span class="n">corpus</span><span class="o">=</span><span class="n">corpus_name</span><span class="p">,</span>
+                    <span class="n">source_id</span><span class="o">=</span><span class="n">artifact_id</span><span class="p">,</span>
+                    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
+                        <span class="s2">&quot;generator&quot;</span><span class="p">:</span> <span class="s2">&quot;backtranslation&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;masked&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">mask_names</span><span class="p">),</span>
+                    <span class="p">},</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">skipped</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;generate_cases skipped </span><span class="si">{</span><span class="n">skipped</span><span class="si">}</span><span class="s2"> artifact(s) &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(description shorter than </span><span class="si">{</span><span class="n">min_chars</span><span class="si">}</span><span class="s2"> chars, or a generation error).&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">cases</span></div>
+
+
+
+<div class="viewcode-block" id="generate_abstention_cases">
+<a class="viewcode-back" href="../../module_docs/ir/eval_gen.html#ir.eval_gen.generate_abstention_cases">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_abstention_cases</span><span class="p">(</span>
+    <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">generator</span><span class="p">:</span> <span class="n">AbstentionGenerator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">theme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_ABSTENTION_THEME</span><span class="p">,</span>
+    <span class="n">corpus_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate ``n`` abstention cases — out-of-scope intents (empty ``gold``).&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">gen</span> <span class="o">=</span> <span class="n">generator</span> <span class="ow">or</span> <span class="n">make_oa_abstention_generator</span><span class="p">()</span>
+    <span class="n">intents</span> <span class="o">=</span> <span class="n">gen</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="n">theme</span><span class="p">)</span>
+    <span class="n">cases</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">DiscoveryCase</span><span class="p">(</span>
+            <span class="n">query</span><span class="o">=</span><span class="n">intent</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+            <span class="n">gold</span><span class="o">=</span><span class="p">(),</span>
+            <span class="n">corpus</span><span class="o">=</span><span class="n">corpus_name</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;generator&quot;</span><span class="p">:</span> <span class="s2">&quot;abstention&quot;</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">intent</span> <span class="ow">in</span> <span class="n">intents</span>
+        <span class="k">if</span> <span class="n">intent</span> <span class="ow">and</span> <span class="n">intent</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">cases</span><span class="p">[:</span><span class="n">n</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="build_eval_set">
+<a class="viewcode-back" href="../../module_docs/ir/eval_gen.html#ir.eval_gen.build_eval_set">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_eval_set</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_QUERIES_PER_ARTIFACT</span><span class="p">,</span>
+    <span class="n">abstention_frac</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_ABSTENTION_FRAC</span><span class="p">,</span>
+    <span class="n">query_generator</span><span class="p">:</span> <span class="n">QueryGenerator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">abstention_generator</span><span class="p">:</span> <span class="n">AbstentionGenerator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">theme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_ABSTENTION_THEME</span><span class="p">,</span>
+    <span class="n">corpus_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">gen_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a full eval set — gold cases plus an abstention slice.</span>
+
+<span class="sd">    The abstention count is chosen so abstention cases make up (at least)</span>
+<span class="sd">    ``abstention_frac`` of the returned set: ``ceil(frac * G / (1 - frac))`` for</span>
+<span class="sd">    ``G`` gold cases. Extra ``gen_kwargs`` flow to :func:`generate_cases`</span>
+<span class="sd">    (``mask_names``, ``min_chars``, ``max_artifacts``, ``describe``).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: if ``abstention_frac`` is outside ``[0, 1)`` (``frac=0``</span>
+<span class="sd">            means no abstention slice) or ``k`` is less than 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">abstention_frac</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;abstention_frac must be in [0, 1), got </span><span class="si">{</span><span class="n">abstention_frac</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span>
+    <span class="n">gold_cases</span> <span class="o">=</span> <span class="n">generate_cases</span><span class="p">(</span>
+        <span class="n">source</span><span class="p">,</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+        <span class="n">query_generator</span><span class="o">=</span><span class="n">query_generator</span><span class="p">,</span>
+        <span class="n">corpus_name</span><span class="o">=</span><span class="n">corpus_name</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">gen_kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">n_abstain</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">gold_cases</span> <span class="ow">and</span> <span class="mf">0.0</span> <span class="o">&lt;</span> <span class="n">abstention_frac</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="n">n_abstain</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+            <span class="n">abstention_frac</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">gold_cases</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">abstention_frac</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="n">abstain_cases</span> <span class="o">=</span> <span class="n">generate_abstention_cases</span><span class="p">(</span>
+        <span class="n">n_abstain</span><span class="p">,</span>
+        <span class="n">generator</span><span class="o">=</span><span class="n">abstention_generator</span><span class="p">,</span>
+        <span class="n">theme</span><span class="o">=</span><span class="n">theme</span><span class="p">,</span>
+        <span class="n">corpus_name</span><span class="o">=</span><span class="n">corpus_name</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">gold_cases</span> <span class="o">+</span> <span class="n">abstain_cases</span></div>
+
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Reproducibility anchor</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_artifact_ids</span><span class="p">(</span><span class="n">source_or_corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Artifact ids of a CorpusSource (its ``scope``) or a built Corpus.&quot;&quot;&quot;</span>
+    <span class="n">scope</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">source_or_corpus</span><span class="p">,</span> <span class="s2">&quot;scope&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">scope</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">scope</span><span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">corpus_artifact_ids</span>
+
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">corpus_artifact_ids</span><span class="p">(</span><span class="n">source_or_corpus</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="corpus_signature">
+<a class="viewcode-back" href="../../module_docs/ir/eval_gen.html#ir.eval_gen.corpus_signature">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">corpus_signature</span><span class="p">(</span><span class="n">source_or_corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A short, order-independent hash of a corpus&#39;s artifact ids.</span>
+
+<span class="sd">    Stamp this into a case file&#39;s ``__meta__`` header so a frozen eval set can be</span>
+<span class="sd">    checked against the (live, machine-specific) corpus it was generated from.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">blob</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_artifact_ids</span><span class="p">(</span><span class="n">source_or_corpus</span><span class="p">)))</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">blob</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

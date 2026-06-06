@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.2 documentation</title>
+  <title>Index &mdash; ir 0.1.3 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=92734c54"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -53,6 +53,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/config.html">ir.config</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
@@ -98,6 +99,7 @@
  | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#Q"><strong>Q</strong></a>
@@ -114,14 +116,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.abstention_accuracy">abstention_accuracy (ir.eval.DiscoveryReport attribute)</a>
 </li>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.AbstentionGenerator">AbstentionGenerator (in module ir.eval_gen)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.Artifact">Artifact (class in ir)</a>
 
       <ul>
         <li><a href="module_docs/ir/base.html#ir.base.Artifact">(class in ir.base)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.as_doc_retriever">as_doc_retriever() (in module ir.eval)</a>
 </li>
   </ul></td>
@@ -143,6 +147,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.build_corpus">build_corpus() (in module ir)</a>
+</li>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.build_eval_set">build_eval_set() (in module ir.eval_gen)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -170,19 +176,21 @@
 </li>
       <li><a href="module_docs/ir.html#ir.corpora">corpora() (in module ir)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.Corpus">Corpus (class in ir)</a>
 
       <ul>
         <li><a href="module_docs/ir/index.html#ir.index.Corpus">(class in ir.index)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.corpus">corpus (ir.eval.DiscoveryCase attribute)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.corpus_artifact_ids">corpus_artifact_ids() (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/config.html#ir.config.corpus_dir">corpus_dir() (in module ir.config)</a>
+</li>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.corpus_signature">corpus_signature() (in module ir.eval_gen)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.CorpusSource">CorpusSource (class in ir)</a>
 
@@ -204,6 +212,10 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/config.html#ir.config.data_dir">data_dir() (in module ir.config)</a>
 </li>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_ABSTENTION_FRAC">DFLT_ABSTENTION_FRAC (in module ir.eval_gen)</a>
+</li>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_ABSTENTION_THEME">DFLT_ABSTENTION_THEME (in module ir.eval_gen)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_CURVE_MODE">DFLT_CURVE_MODE (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_DISTRACTOR_SIZES">DFLT_DISTRACTOR_SIZES (in module ir.eval)</a>
@@ -214,7 +226,11 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_MIN_DESCRIPTION_CHARS">DFLT_MIN_DESCRIPTION_CHARS (in module ir.eval_gen)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_MODE">DFLT_MODE (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_QUERIES_PER_ARTIFACT">DFLT_QUERIES_PER_ARTIFACT (in module ir.eval_gen)</a>
 </li>
       <li><a href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_RRF_K">DFLT_RRF_K (in module ir.retrieve)</a>
 </li>
@@ -234,9 +250,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/config.html#ir.config.embeddings_cache_dir">embeddings_cache_dir() (in module ir.config)</a>
 </li>
+      <li><a href="module_docs/ir/cli.html#ir.cli.eval">eval() (in module ir.cli)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="module_docs/ir/cli.html#ir.cli.eval">eval() (in module ir.cli)</a>
+      <li><a href="module_docs/ir/cli.html#ir.cli.eval_gen">eval_gen() (in module ir.cli)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.evaluate_discovery">evaluate_discovery() (in module ir.eval)</a>
 </li>
@@ -290,10 +308,14 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="module_docs/ir/registry.html#ir.registry.get">get() (in module ir.registry)</a>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.generate_abstention_cases">generate_abstention_cases() (in module ir.eval_gen)</a>
+</li>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.generate_cases">generate_cases() (in module ir.eval_gen)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/registry.html#ir.registry.get">get() (in module ir.registry)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.gold">gold (ir.eval.DiscoveryCase attribute)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.gold_is_none">gold_is_none (ir.eval.DiscoveryCase property)</a>
@@ -353,8 +375,6 @@
         <li><a href="module_docs/ir/config.html#module-ir.config">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ir.embed
 
@@ -362,11 +382,20 @@
         <li><a href="module_docs/ir/embed.html#module-ir.embed">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ir.eval
 
       <ul>
         <li><a href="module_docs/ir/eval.html#module-ir.eval">module</a>
+</li>
+      </ul></li>
+      <li>
+    ir.eval_gen
+
+      <ul>
+        <li><a href="module_docs/ir/eval_gen.html#module-ir.eval_gen">module</a>
 </li>
       </ul></li>
       <li>
@@ -445,6 +474,12 @@
         <li><a href="module_docs/ir.html#ir.Record.make_id">(ir.Record static method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.make_oa_abstention_generator">make_oa_abstention_generator() (in module ir.eval_gen)</a>
+</li>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.make_oa_query_generator">make_oa_query_generator() (in module ir.eval_gen)</a>
+</li>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.mask_name">mask_name() (in module ir.eval_gen)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.CorpusStore.matrix">matrix() (ir.CorpusStore method)</a>
 
       <ul>
@@ -463,6 +498,8 @@
 </li>
       <li><a href="module_docs/ir/retrieve.html#ir.retrieve.MODES">MODES (in module ir.retrieve)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     module
 
@@ -481,6 +518,8 @@
 </li>
         <li><a href="module_docs/ir/eval.html#module-ir.eval">ir.eval</a>
 </li>
+        <li><a href="module_docs/ir/eval_gen.html#module-ir.eval_gen">ir.eval_gen</a>
+</li>
         <li><a href="module_docs/ir/index.html#module-ir.index">ir.index</a>
 </li>
         <li><a href="module_docs/ir/registry.html#module-ir.registry">ir.registry</a>
@@ -494,6 +533,14 @@
         <li><a href="module_docs/ir/strategy.html#module-ir.strategy">ir.strategy</a>
 </li>
       </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.NAME_PLACEHOLDER">NAME_PLACEHOLDER (in module ir.eval_gen)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -531,6 +578,10 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.query">query (ir.eval.DiscoveryCase attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.QueryGenerator">QueryGenerator (in module ir.eval_gen)</a>
 </li>
   </ul></td>
 </tr></table>
