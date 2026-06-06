@@ -9,6 +9,7 @@ Commands operate on **named** corpora from the registry (see
     ir info packages                # config + stats for a corpus
     ir register notes files --root ~/notes --pattern '.*\\.md$'
     ir rm notes                     # unregister (keeps built data)
+    ir eval-gen skills skills_eval.jsonl --k 5        # generate cases (needs oa/LLM)
     ir eval skills skills_eval.jsonl --mode hybrid   # score retrieval on a case file
 """
 
@@ -113,4 +114,34 @@ def eval(name, cases, *, mode="hybrid", k=10):
     return out
 
 
-COMMANDS = [ls, register, build, search, info, rm, eval]
+def eval_gen(name, out, *, k=5, abstention_frac=0.15, max_artifacts=None):
+    """Generate an eval-case file for a corpus by back-translation (needs oa/LLM).
+
+    Writes a DiscoveryCase JSONL set (gold cases + an abstention slice) for the
+    registered corpus *name* to *out*, stamping a corpus-signature into the
+    header so the frozen file can be checked against the live corpus later. This
+    command calls an LLM via oa; scoring it afterwards (`ir eval`) is offline.
+    """
+    from .eval import save_cases
+    from .eval_gen import build_eval_set, corpus_signature
+
+    source = registry.source_for(name)
+    kwargs = {}
+    if max_artifacts is not None:
+        kwargs["max_artifacts"] = int(max_artifacts)
+    cases = build_eval_set(
+        source, k=k, abstention_frac=abstention_frac, corpus_name=name, **kwargs
+    )
+    save_cases(
+        cases,
+        out,
+        meta={"corpus": name, "corpus_signature": corpus_signature(source), "k": k},
+    )
+    n_gold = sum(not c.gold_is_none for c in cases)
+    return (
+        f"wrote {len(cases)} cases ({n_gold} gold, {len(cases) - n_gold} abstention) "
+        f"to {out!r}"
+    )
+
+
+COMMANDS = [ls, register, build, search, info, rm, eval, eval_gen]

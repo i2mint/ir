@@ -75,5 +75,7 @@ def search(corpus, query, **kwargs):
 
 # The evaluation harness is reachable as ``ir.eval`` (its ``ef`` imports are
 # lazy, so this does not weigh down ``import ir``). Kept out of ``__all__`` so a
-# star-import does not shadow the ``eval`` builtin.
+# star-import does not shadow the ``eval`` builtin. ``ir.eval_gen`` is the
+# build-time case generator (its ``oa`` import is lazy too).
 from . import eval  # noqa: E402,F401  (submodule attribute: ir.eval)
+from . import eval_gen  # noqa: E402,F401  (submodule attribute: ir.eval_gen)
