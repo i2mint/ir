@@ -31,6 +31,14 @@ from . import registry
 from .base import Artifact, IndexPlan, Record, SearchHit, Surface
 from .index import Corpus, build, open_corpus
 from .retrieve import search as _search
+from .select import (
+    Disclosure,
+    DiscoveryResult,
+    Selection,
+    disclose,
+    discover,
+    select,
+)
 from .sources import CorpusSource
 from .store import CorpusStore
 from .strategy import Chunked, IndexingStrategy, Package, Skill, WholeText
@@ -52,6 +60,12 @@ __all__ = [
     "build",
     "open_corpus",
     "search",
+    "select",
+    "disclose",
+    "discover",
+    "Selection",
+    "Disclosure",
+    "DiscoveryResult",
     "register",
     "corpora",
     "build_corpus",

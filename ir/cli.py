@@ -4,13 +4,16 @@ Commands operate on **named** corpora from the registry (see
 :mod:`ir.registry`)::
 
     ir build skills                 # build/update the skills preset corpus
-    ir search skills "deploy app"   # query it
+    ir search skills "deploy app"   # rank candidates (retrieval only)
+    ir discover skills "deploy app" # retrieve -> commit to a high-precision subset
+    ir discover skills "deploy app" --disclose   # + load each selected item's body
     ir ls                           # list corpora + record counts
     ir info packages                # config + stats for a corpus
     ir register notes files --root ~/notes --pattern '.*\\.md$'
     ir rm notes                     # unregister (keeps built data)
     ir eval-gen skills skills_eval.jsonl --k 5        # generate cases (needs oa/LLM)
-    ir eval skills skills_eval.jsonl --mode hybrid   # score retrieval on a case file
+    ir eval skills skills_eval.jsonl --mode hybrid    # score retrieval on a case file
+    ir eval-select skills skills_eval.jsonl           # score the selection stage
 """
 
 from __future__ import annotations
@@ -69,6 +72,46 @@ def search(name, query, *, k=10, mode="dense"):
         # package name, or a report's relative path).
         lines.append(f"{h.score:+.3f}  {h.artifact_id}  [{h.surface_kind}]")
     return "\n".join(lines) or "(no matches)"
+
+
+def discover(
+    name, query, *, k=10, mode="hybrid", strategy="conservative", disclose=False
+):
+    """Search a corpus, commit to a distractor-robust subset, and show it.
+
+    Retrieves ``k`` candidates, then *selects* the few high-precision results an
+    agent should act on (or abstains). ``--disclose`` additionally loads each
+    selected item's body (SKILL.md / file text) via its stored pointer.
+    mode: dense | lexical | hybrid. strategy: conservative | top_k |
+    rel_threshold | score_gap.
+    """
+    from .select import discover as _discover
+
+    corpus = open_corpus(name)
+    if len(corpus) == 0:
+        return f"corpus {name!r} is empty; build it first: ir build {name}"
+    result = _discover(
+        corpus,
+        query,
+        k=k,
+        mode=mode,
+        strategy=strategy,
+        disclose_level="body" if disclose else "metadata",
+    )
+    if result.abstained:
+        return (
+            f"(abstained: {result.reason}; {result.n_retrieved} candidates retrieved)"
+        )
+    lines = [
+        f"selected {len(result.results)}/{result.n_retrieved} "
+        f"({result.strategy} / {result.mode}, {result.reason}):"
+    ]
+    for d in result.results:
+        lines.append(f"  {d.score:+.3f}  {d.name}")
+        if disclose and d.body:
+            preview = d.body.strip().replace("\n", " ")[:160]
+            lines.append(f"           {preview}…")
+    return "\n".join(lines)
 
 
 def info(name):
@@ -144,4 +187,42 @@ def eval_gen(name, out, *, k=5, abstention_frac=0.15, max_artifacts=None):
     )
 
 
-COMMANDS = [ls, register, build, search, info, rm, eval, eval_gen]
+def eval_select(name, cases, *, strategy="conservative", mode="hybrid", k=10):
+    """Score a selector against a DiscoveryCase JSONL file (selection quality).
+
+    Reports the conditional commit rate (the selection decision isolated from
+    retrieval) plus selection precision / recall / F1 and abstention accuracy.
+    strategy: conservative | top_k | rel_threshold | score_gap. mode: dense |
+    lexical | hybrid.
+    """
+    from .eval import evaluate_selection, load_cases, validate_cases
+
+    corpus = open_corpus(name)
+    if len(corpus) == 0:
+        return f"corpus {name!r} is empty; build it first: ir build {name}"
+    case_list = load_cases(cases)
+    if not case_list:
+        return f"no cases found in {cases!r}"
+    drift = validate_cases(corpus, case_list)
+    report = evaluate_selection(corpus, case_list, strategy=strategy, mode=mode, k=k)
+    out = str(report)
+    if drift:
+        out += (
+            f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
+            f"corpus {name!r} (stale fixture?); their misses are not real."
+        )
+    return out
+
+
+COMMANDS = [
+    ls,
+    register,
+    build,
+    search,
+    discover,
+    info,
+    rm,
+    eval,
+    eval_gen,
+    eval_select,
+]
