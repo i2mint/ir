@@ -679,3 +679,231 @@ def distractor_curve_from_cases(
     probes = [(case.query, case.gold[0]) for case in cases if len(case.gold) == 1]
     kwargs.setdefault("strategy", source.indexing_strategy)
     return distractor_robustness_curve(source.scope, probes, **kwargs)
+
+
+# =========================================================================== #
+# Selection evaluation — measuring the *commit*, isolated from retrieval
+# =========================================================================== #
+
+
+@dataclass(frozen=True)
+class SelectionReport:
+    """The outcome of :func:`evaluate_selection` — selection quality, isolated.
+
+    Where :func:`evaluate_discovery` scores the *ranking*, this scores the
+    *commit*: given the same ``k`` candidates, what subset did the selector keep?
+    The headline is :attr:`conditional_commit_rate` — accuracy of the selection
+    decision **conditioned on retrieval having surfaced the gold** — which is the
+    one number that separates a selection failure from a retrieval failure.
+
+    Every selection-quality metric shares that conditioning: precision, recall
+    and F1 are computed **only over the** :attr:`n_gold_retrieved` **cases** whose
+    gold reached the ``k`` candidates, so a retrieval miss is never charged to the
+    selector (it is :func:`evaluate_discovery`'s to report).
+
+    Attributes:
+        selection_precision: mean over committed gold-retrieved cases of
+            ``|selected ∩ gold| / |selected|`` (``None`` if nothing was ever
+            committed) — how clean the committed sets are.
+        selection_recall: mean over gold-retrieved cases of
+            ``|selected ∩ gold| / |gold ∩ retrieved|`` — of the gold the selector
+            was actually shown, how much it kept (denominator is the *retrievable*
+            gold, so retrieval misses do not depress it).
+        selection_f1: mean per-case F1 over gold-retrieved cases (an empty commit
+            scores 0).
+        conditional_commit_rate: among gold cases whose gold was in the ``k``
+            candidates, the fraction where the selector committed to ≥1 gold —
+            the selection decision isolated from retrieval recall (``None`` if
+            retrieval never surfaced any gold).
+        n_gold_retrieved: the shared denominator of every selection-quality
+            metric above (cases whose gold reached the ``k`` candidates).
+        abstention_accuracy: fraction of abstention cases (empty gold) the
+            selector correctly committed nothing to (``None`` if none).
+        mean_selected_size: mean committed-set size over gold-retrieved cases.
+        n_cases / n_gold / n_abstention: case counts.
+        strategy / mode / k: the configuration scored (so a number is never
+            mistaken for a different setup's).
+    """
+
+    selection_precision: float | None
+    selection_recall: float | None
+    selection_f1: float | None
+    conditional_commit_rate: float | None
+    n_gold_retrieved: int
+    abstention_accuracy: float | None
+    mean_selected_size: float | None
+    n_cases: int
+    n_gold: int
+    n_abstention: int
+    strategy: str = "conservative"
+    mode: str = DFLT_MODE
+    k: int = 10
+
+    def to_dict(self) -> dict:
+        """JSON-serializable form (for the qh / HTTP surface)."""
+        return {
+            "selection_precision": self.selection_precision,
+            "selection_recall": self.selection_recall,
+            "selection_f1": self.selection_f1,
+            "conditional_commit_rate": self.conditional_commit_rate,
+            "n_gold_retrieved": self.n_gold_retrieved,
+            "abstention_accuracy": self.abstention_accuracy,
+            "mean_selected_size": self.mean_selected_size,
+            "n_cases": self.n_cases,
+            "n_gold": self.n_gold,
+            "n_abstention": self.n_abstention,
+            "strategy": self.strategy,
+            "mode": self.mode,
+            "k": self.k,
+        }
+
+    def __str__(self) -> str:
+        def fmt(x: float | None) -> str:
+            return f"{x:.4f}" if x is not None else "n/a"
+
+        return "\n".join(
+            [
+                f"SelectionReport — {self.n_cases} cases "
+                f"({self.n_gold} gold, {self.n_abstention} abstention)",
+                f"  strategy: {self.strategy}  mode: {self.mode}  k: {self.k}",
+                f"  conditional commit rate: {fmt(self.conditional_commit_rate)} "
+                f"(over {self.n_gold_retrieved} gold-retrieved cases)",
+                f"  selection precision: {fmt(self.selection_precision)}",
+                f"  selection recall:    {fmt(self.selection_recall)}",
+                f"  selection F1:        {fmt(self.selection_f1)}",
+                f"  abstention accuracy: {fmt(self.abstention_accuracy)}",
+                f"  mean selected size:  {fmt(self.mean_selected_size)}",
+            ]
+        )
+
+
+def _f1(precision: float | None, recall: float) -> float:
+    """Per-case F1; an undefined precision (empty commit) scores 0."""
+    if not precision or not recall:
+        return 0.0
+    return 2 * precision * recall / (precision + recall)
+
+
+def evaluate_selection(
+    corpus: Any,
+    cases: Sequence[DiscoveryCase],
+    *,
+    strategy: str = "conservative",
+    mode: str = DFLT_MODE,
+    k: int = 10,
+    surfaces: Iterable[str] | None = None,
+    max_k: int = 5,
+    rel: float = 0.6,
+    gap_ratio: float = 0.5,
+    min_score: float | None = None,
+    **search_kw: Any,
+) -> SelectionReport:
+    """Score a selector against ``cases`` — selection quality, isolated.
+
+    Retrieves ``k`` candidates per case (the window the selector sees), commits
+    with :func:`ir.select.select`, and scores the *commit*. The key number,
+    :attr:`SelectionReport.conditional_commit_rate`, conditions on retrieval
+    having surfaced the gold among those ``k`` — so a low value means the
+    *selector* dropped a gold it was shown, not that retrieval missed it.
+
+    ``k`` is the candidate window; hold it equal to the ``k`` used with
+    :func:`evaluate_discovery` to compare the two stages on the same footing.
+
+    Args:
+        corpus: an :class:`~ir.index.Corpus` or a registered corpus *name*.
+        cases: the :class:`DiscoveryCase`\\ s (gold-bearing and/or abstention).
+        strategy: selection strategy (see :func:`ir.select.select`).
+        mode: ranking mode for retrieval.
+        k: candidate depth retrieved before selection.
+        surfaces: restrict retrieval to these surface kinds.
+        max_k, rel, gap_ratio, min_score: selection parameters.
+        **search_kw: any other :func:`ir.retrieve.search` keyword.
+
+    Returns:
+        a :class:`SelectionReport`.
+    """
+    from .select import select as _select
+
+    corpus = _as_corpus(corpus)
+
+    precisions: list[float] = []  # only over committed gold cases
+    recalls: list[float] = []
+    f1s: list[float] = []
+    selected_sizes: list[int] = []
+    n_gold = 0
+    n_gold_retrieved = 0
+    n_committed_given_retrieved = 0
+    n_abstention = 0
+    n_abstained_correct = 0
+
+    for case in cases:
+        hits = _search(
+            corpus,
+            case.query,
+            k=k,
+            mode=mode,
+            surfaces=surfaces,
+            per_artifact=True,
+            **search_kw,
+        )
+        selection = _select(
+            hits,
+            strategy=strategy,
+            max_k=max_k,
+            rel=rel,
+            gap_ratio=gap_ratio,
+            min_score=min_score,
+        )
+        selected = set(selection.selected_ids)
+
+        if case.gold_is_none:
+            n_abstention += 1
+            if not selected:
+                n_abstained_correct += 1
+            continue
+
+        n_gold += 1
+        gold = set(case.gold)
+        retrieved = {h.artifact_id for h in hits}
+        gold_retrieved = gold & retrieved
+        if not gold_retrieved:
+            # Retrieval never surfaced the gold → the selector had no chance.
+            # That is a *retrieval* miss (measured by evaluate_discovery), so it
+            # is excluded from every selection-quality metric here — keeping them
+            # all on the one shared denominator, n_gold_retrieved.
+            continue
+        n_gold_retrieved += 1
+        # selected ⊆ retrieved, so selected ∩ gold == selected ∩ gold_retrieved:
+        # recall is measured against the gold the selector could actually pick.
+        hit_gold = len(selected & gold)
+        recall = hit_gold / len(gold_retrieved)
+        precision = hit_gold / len(selected) if selected else None
+        recalls.append(recall)
+        f1s.append(_f1(precision, recall))
+        selected_sizes.append(len(selected))
+        if precision is not None:
+            precisions.append(precision)
+        if hit_gold:
+            n_committed_given_retrieved += 1
+
+    return SelectionReport(
+        selection_precision=(sum(precisions) / len(precisions) if precisions else None),
+        selection_recall=(sum(recalls) / len(recalls) if recalls else None),
+        selection_f1=(sum(f1s) / len(f1s) if f1s else None),
+        conditional_commit_rate=(
+            n_committed_given_retrieved / n_gold_retrieved if n_gold_retrieved else None
+        ),
+        n_gold_retrieved=n_gold_retrieved,
+        abstention_accuracy=(
+            n_abstained_correct / n_abstention if n_abstention else None
+        ),
+        mean_selected_size=(
+            sum(selected_sizes) / len(selected_sizes) if selected_sizes else None
+        ),
+        n_cases=len(cases),
+        n_gold=n_gold,
+        n_abstention=n_abstention,
+        strategy=strategy,
+        mode=mode,
+        k=k,
+    )
