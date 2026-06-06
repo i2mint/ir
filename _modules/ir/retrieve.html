@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.retrieve &mdash; ir 0.1.4 documentation</title>
+  <title>ir.retrieve &mdash; ir 0.1.5 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=fd825880"></script>
+      <script src="../../_static/documentation_options.js?v=59fadc99"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -116,6 +116,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span>
@@ -190,32 +191,57 @@
     <span class="k">return</span> <span class="p">[(</span><span class="n">ids</span><span class="p">[</span><span class="n">candidates</span><span class="p">[</span><span class="n">o</span><span class="p">]],</span> <span class="nb">float</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">o</span><span class="p">]))</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">order</span><span class="p">]</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_lexical_ranked</span><span class="p">(</span>
-    <span class="n">ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">metas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
-    <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">fetch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">bm25</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Top-*fetch* ``(record_id, bm25)`` pairs via ``vd.bm25_lexical_search``.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_candidate_key</span><span class="p">(</span>
+    <span class="n">surfaces</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A hashable key identifying a candidate set (surface restriction + filter).</span>
+
+<span class="sd">    For a fixed :class:`~ir.index.Corpus` instance the candidate set is fully</span>
+<span class="sd">    determined by the surface restriction and the hard metadata filter, so two</span>
+<span class="sd">    searches sharing both can share one BM25 index. The filter is canonicalized</span>
+<span class="sd">    with sorted keys so logically-equal filters land on the same cache entry.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="nb">filter</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span> <span class="k">if</span> <span class="nb">filter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">surfaces</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bm25_index_for</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">metas</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">cache_key</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A ``vd.BM25Index`` over the candidate texts, cached on the corpus instance.</span>
+
+<span class="sd">    BM25&#39;s term statistics (document frequencies, lengths) are</span>
+<span class="sd">    *query-independent*, so the index is built once per candidate set and reused</span>
+<span class="sd">    across queries. Rebuilding it on every query — re-tokenizing every document</span>
+<span class="sd">    each time — is the lexical/hybrid bottleneck for batch evaluation and the</span>
+<span class="sd">    reason large corpora did not scale. The cache lives on the corpus instance,</span>
+<span class="sd">    which is immutable during its lifetime and freshly created whenever the</span>
+<span class="sd">    corpus is (re)built or reopened, so the cache never goes stale.</span>
 
 <span class="sd">    The candidate texts are exposed to ``vd`` as a zero-copy mapping view</span>
 <span class="sd">    (``record_id -&gt; obj`` with ``.text`` / ``.metadata``) so no vectors are</span>
-<span class="sd">    duplicated and BM25 runs only over the already-filtered candidates. Returns</span>
-<span class="sd">    ``[]`` (with a warning) if ``vd``&#39;s lexical search is unavailable, letting</span>
-<span class="sd">    hybrid degrade to dense.</span>
+<span class="sd">    duplicated and BM25 covers only the already-filtered candidates. Returns</span>
+<span class="sd">    ``None`` (with a warning) if ``vd`` is unavailable, letting lexical mode</span>
+<span class="sd">    return nothing and hybrid degrade to dense.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">vd</span><span class="w"> </span><span class="kn">import</span> <span class="n">bm25_lexical_search</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">vd</span><span class="w"> </span><span class="kn">import</span> <span class="n">BM25Index</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-            <span class="s2">&quot;vd.bm25_lexical_search unavailable; BM25 lexical ranking is &quot;</span>
-            <span class="s2">&quot;skipped. Hybrid falls back to dense; lexical mode returns no &quot;</span>
-            <span class="s2">&quot;results. Install `vd` for lexical/hybrid retrieval.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;vd.BM25Index unavailable; BM25 lexical ranking is skipped. Hybrid &quot;</span>
+            <span class="s2">&quot;falls back to dense; lexical mode returns no results. Install `vd` &quot;</span>
+            <span class="s2">&quot;for lexical/hybrid retrieval.&quot;</span><span class="p">,</span>
             <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">cache</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;_bm25_index_cache&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">cache</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">corpus</span><span class="o">.</span><span class="n">_bm25_index_cache</span> <span class="o">=</span> <span class="n">cache</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>  <span class="c1"># corpus doesn&#39;t admit attribute caching → build fresh each call</span>
+    <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span>
 
     <span class="n">collection</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">ids</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span> <span class="n">SimpleNamespace</span><span class="p">(</span>
@@ -223,7 +249,25 @@
         <span class="p">)</span>
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">candidates</span>
     <span class="p">}</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">bm25_lexical_search</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">fetch</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">bm25</span> <span class="ow">or</span> <span class="p">{}))</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">BM25Index</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span>
+    <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">index</span>
+    <span class="k">return</span> <span class="n">index</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_lexical_ranked</span><span class="p">(</span>
+    <span class="n">index</span><span class="p">,</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">fetch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">bm25</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Top-*fetch* ``(record_id, bm25_score)`` pairs from a prebuilt BM25 index.</span>
+
+<span class="sd">    ``index`` is a ``vd.BM25Index`` (see :func:`_bm25_index_for`) or ``None``</span>
+<span class="sd">    when ``vd`` is unavailable, in which case lexical ranking is empty.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">fetch</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">bm25</span> <span class="ow">or</span> <span class="p">{}))</span>
     <span class="k">return</span> <span class="p">[(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="nb">float</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]))</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
 
 
@@ -325,6 +369,10 @@
     <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">MODES</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown mode </span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">MODES</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
+    <span class="c1"># Materialize once: surfaces may be a one-shot iterable, and it is both the</span>
+    <span class="c1"># filter input and part of the BM25 cache key.</span>
+    <span class="n">surfaces</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">surfaces</span><span class="p">)</span> <span class="k">if</span> <span class="n">surfaces</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
     <span class="n">ids</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">metas</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">matrix</span><span class="p">()</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ids</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
@@ -336,13 +384,19 @@
     <span class="n">fetch</span> <span class="o">=</span> <span class="n">fetch_k</span> <span class="k">if</span> <span class="n">fetch_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span> <span class="k">if</span> <span class="n">per_artifact</span> <span class="k">else</span> <span class="n">k</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;lexical&quot;</span><span class="p">:</span>
-        <span class="n">ranked</span> <span class="o">=</span> <span class="n">_lexical_ranked</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">metas</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">bm25</span><span class="p">)</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">_bm25_index_for</span><span class="p">(</span>
+            <span class="n">corpus</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">metas</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">_candidate_key</span><span class="p">(</span><span class="n">surfaces</span><span class="p">,</span> <span class="nb">filter</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">ranked</span> <span class="o">=</span> <span class="n">_lexical_ranked</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">bm25</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">dense</span> <span class="o">=</span> <span class="n">_dense_ranked</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">fetch</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;dense&quot;</span><span class="p">:</span>
             <span class="n">ranked</span> <span class="o">=</span> <span class="n">dense</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># hybrid</span>
-            <span class="n">lexical</span> <span class="o">=</span> <span class="n">_lexical_ranked</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">metas</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">bm25</span><span class="p">)</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">_bm25_index_for</span><span class="p">(</span>
+                <span class="n">corpus</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">metas</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">_candidate_key</span><span class="p">(</span><span class="n">surfaces</span><span class="p">,</span> <span class="nb">filter</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">lexical</span> <span class="o">=</span> <span class="n">_lexical_ranked</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">bm25</span><span class="p">)</span>
             <span class="n">ranked</span> <span class="o">=</span> <span class="n">_rrf_fuse</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="n">lexical</span><span class="p">,</span> <span class="n">rrf_k</span><span class="p">,</span> <span class="n">fetch</span><span class="p">)</span>
 
     <span class="n">meta_by_id</span> <span class="o">=</span> <span class="p">{</span><span class="n">ids</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span> <span class="n">metas</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">}</span>
