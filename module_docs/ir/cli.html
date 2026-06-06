@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.cli &mdash; ir 0.1.1 documentation</title>
+  <title>ir.cli &mdash; ir 0.1.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=a58bc63e"></script>
+      <script src="../../_static/documentation_options.js?v=92734c54"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -54,6 +54,7 @@
 <li class="toctree-l1"><a class="reference internal" href="base.html">ir.base</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.cli</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.cli.eval"><code class="docutils literal notranslate"><span class="pre">eval()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.info"><code class="docutils literal notranslate"><span class="pre">info()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.ls"><code class="docutils literal notranslate"><span class="pre">ls()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
@@ -63,6 +64,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
 <li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
@@ -106,12 +108,23 @@
 <span class="n">ir</span> <span class="n">info</span> <span class="n">packages</span>                <span class="c1"># config + stats for a corpus</span>
 <span class="n">ir</span> <span class="n">register</span> <span class="n">notes</span> <span class="n">files</span> <span class="o">--</span><span class="n">root</span> <span class="o">~/</span><span class="n">notes</span> <span class="o">--</span><span class="n">pattern</span> <span class="s1">&#39;.*\.md$&#39;</span>
 <span class="n">ir</span> <span class="n">rm</span> <span class="n">notes</span>                     <span class="c1"># unregister (keeps built data)</span>
+<span class="n">ir</span> <span class="nb">eval</span> <span class="n">skills</span> <span class="n">skills_eval</span><span class="o">.</span><span class="n">jsonl</span> <span class="o">--</span><span class="n">mode</span> <span class="n">hybrid</span>   <span class="c1"># score retrieval on a case file</span>
 </pre></div>
 </div>
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.cli.build">
 <span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.build" title="Link to this definition"></a></dt>
 <dd><p>Build or incrementally update a registered (or preset) corpus.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.cli.eval">
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cases</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.eval" title="Link to this definition"></a></dt>
+<dd><p>Score a built corpus’s retrieval against a DiscoveryCase JSONL file.</p>
+<p>cases: path to a JSONL file of cases (see <a class="reference internal" href="eval.html#module-ir.eval" title="ir.eval"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.eval</span></code></a>); each line is a
+<code class="docutils literal notranslate"><span class="pre">{&quot;query&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;gold&quot;:</span> <span class="pre">[artifact_id,</span> <span class="pre">...]}</span></code> record (empty <code class="docutils literal notranslate"><span class="pre">gold</span></code> = an
+abstention case). Prints recall&#64;k / NDCG&#64;k / MRR / MAP plus the failure-mode
+taxonomy. mode: dense | lexical | hybrid.</p>
 </dd></dl>
 
 <dl class="py function">

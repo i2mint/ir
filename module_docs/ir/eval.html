@@ -1,0 +1,597 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.eval &mdash; ir 0.1.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=92734c54"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ir.index" href="index.html" />
+    <link rel="prev" title="ir.embed" href="embed.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ir.eval</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#design-stance-retrieval-centric-reuse-ef">Design stance (retrieval-centric, reuse <code class="docutils literal notranslate"><span class="pre">ef</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.DFLT_CURVE_MODE"><code class="docutils literal notranslate"><span class="pre">DFLT_CURVE_MODE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.DFLT_DISTRACTOR_SIZES"><code class="docutils literal notranslate"><span class="pre">DFLT_DISTRACTOR_SIZES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.DFLT_K_VALUES"><code class="docutils literal notranslate"><span class="pre">DFLT_K_VALUES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.DFLT_METRICS"><code class="docutils literal notranslate"><span class="pre">DFLT_METRICS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.DFLT_MODE"><code class="docutils literal notranslate"><span class="pre">DFLT_MODE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.DiscoveryCase"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryCase.query"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase.query</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryCase.gold"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase.gold</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryCase.corpus"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase.corpus</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryCase.source_id"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase.source_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryCase.metadata"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryCase.from_dict"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase.from_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryCase.gold_is_none"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase.gold_is_none</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryCase.to_dict"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.DiscoveryReport"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryReport.retrieval"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport.retrieval</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryReport.failure_classes"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport.failure_classes</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryReport.primary_k"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport.primary_k</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryReport.abstention_accuracy"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport.abstention_accuracy</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryReport.mode"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport.mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryReport.vd_degraded"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport.vd_degraded</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryReport.primary"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport.primary</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.as_doc_retriever"><code class="docutils literal notranslate"><span class="pre">as_doc_retriever()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.corpus_artifact_ids"><code class="docutils literal notranslate"><span class="pre">corpus_artifact_ids()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.distractor_curve_from_cases"><code class="docutils literal notranslate"><span class="pre">distractor_curve_from_cases()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.distractor_robustness_curve"><code class="docutils literal notranslate"><span class="pre">distractor_robustness_curve()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.evaluate_discovery"><code class="docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.load_cases"><code class="docutils literal notranslate"><span class="pre">load_cases()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.retrieval_report"><code class="docutils literal notranslate"><span class="pre">retrieval_report()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.save_cases"><code class="docutils literal notranslate"><span class="pre">save_cases()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.to_qrels"><code class="docutils literal notranslate"><span class="pre">to_qrels()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.validate_cases"><code class="docutils literal notranslate"><span class="pre">validate_cases()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ir.eval</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/ir/eval.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ir.eval">
+<span id="ir-eval"></span><h1>ir.eval<a class="headerlink" href="#module-ir.eval" title="Link to this heading"></a></h1>
+<p>Capability-discovery evaluation — measuring how well a corpus is <em>found</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ir.eval</span></code> answers the question that the rest of <code class="docutils literal notranslate"><span class="pre">ir</span></code> raises: <em>does retrieval
+actually surface the right capability?</em> It is a thin, deterministic scoring layer
+over the substrate already in place — <code class="docutils literal notranslate"><span class="pre">ir.retrieve.search</span></code> for ranking and
+<code class="docutils literal notranslate"><span class="pre">ef.evaluation</span></code> for the metric mathematics — plus the genuinely new pieces a
+<em>capability-discovery</em> eval needs that generic retrieval evaluation does not.</p>
+<section id="design-stance-retrieval-centric-reuse-ef">
+<h2>Design stance (retrieval-centric, reuse <code class="docutils literal notranslate"><span class="pre">ef</span></code>)<a class="headerlink" href="#design-stance-retrieval-centric-reuse-ef" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ir</span></code>’s corpora are <strong>documents</strong> — skills, packages, reports — each a
+name + description (+ body), joined on a stable <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code>. They are <em>not</em>
+a typed function-calling registry with argument signatures. So the eval that
+fits is <strong>retrieval of the right artifact</strong>, not argument-dict scoring:</p>
+<ul class="simple">
+<li><p><strong>recall&#64;k / NDCG&#64;k / MRR / MAP</strong> — computed by <code class="docutils literal notranslate"><span class="pre">ef.evaluation</span></code>’s pure,
+tested primitives (<code class="xref py py-func docutils literal notranslate"><span class="pre">ef.evaluation.recall_at_k()</span></code>, … ) and driver
+(<code class="xref py py-func docutils literal notranslate"><span class="pre">ef.evaluation.evaluate_retrieval()</span></code>). <code class="docutils literal notranslate"><span class="pre">ir.eval</span></code> does not reimplement
+them; it adapts an <code class="docutils literal notranslate"><span class="pre">ir</span></code> corpus to <code class="docutils literal notranslate"><span class="pre">ef</span></code>’s retriever contract and reads back
+a <code class="xref py py-class docutils literal notranslate"><span class="pre">ef.evaluation.RetrievalEvalReport</span></code>.</p></li>
+<li><p><strong>distractor-robustness curve</strong> — retrieval accuracy as the catalog grows
+(1 gold + N−1 distractors). The single most diagnostic capability-discovery
+metric, and one <code class="docutils literal notranslate"><span class="pre">ef</span></code> does not provide.</p></li>
+<li><p><strong>failure-mode taxonomy</strong> — every gold case is classed <code class="docutils literal notranslate"><span class="pre">hit_rank_1</span></code> /
+<code class="docutils literal notranslate"><span class="pre">surfaced_low_rank</span></code> / <code class="docutils literal notranslate"><span class="pre">retrieval_miss</span></code> so a headline number decomposes
+into <em>why</em> it is what it is.</p></li>
+<li><p><strong>abstention</strong> — an optional score-threshold proxy for “no artifact applies”
+cases. True abstention is a <em>selection</em> concern (a selector commits or
+refuses); here it is a retrieval-side diagnostic, clearly labelled as such.</p></li>
+</ul>
+<p>The unit of evaluation is a <a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscoveryCase</span></code></a>: an intent (<code class="docutils literal notranslate"><span class="pre">query</span></code>) and
+the <code class="docutils literal notranslate"><span class="pre">gold</span></code> <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code>s that should answer it (empty <code class="docutils literal notranslate"><span class="pre">gold</span></code> = an
+abstention case). Cases are plain data — <a class="reference internal" href="#ir.eval.save_cases" title="ir.eval.save_cases"><code class="xref py py-func docutils literal notranslate"><span class="pre">save_cases()</span></code></a> / <a class="reference internal" href="#ir.eval.load_cases" title="ir.eval.load_cases"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_cases()</span></code></a>
+round-trip them as JSONL so an evaluation set is a committable, reproducible
+fixture (the corpora themselves are machine-specific and live, so freezing the
+cases is what makes a run repeatable; <a class="reference internal" href="#ir.eval.validate_cases" title="ir.eval.validate_cases"><code class="xref py py-func docutils literal notranslate"><span class="pre">validate_cases()</span></code></a> flags gold ids that
+have since drifted out of the corpus).</p>
+<p>Case <em>generation</em> (back-translation from a corpus with name-masking) needs an
+LLM and is deliberately <strong>out of scope here</strong> — this module scores a given set
+of cases offline, with no network and no model download. (Dense scoring needs
+only numpy; <code class="docutils literal notranslate"><span class="pre">lexical</span></code> / <code class="docutils literal notranslate"><span class="pre">hybrid</span></code> ranking additionally need the optional
+<code class="docutils literal notranslate"><span class="pre">vd</span></code> dependency — a hybrid run that silently fell back to dense because <code class="docutils literal notranslate"><span class="pre">vd</span></code>
+was absent is flagged in the report.)</p>
+<p>Quick start:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ir</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ir</span><span class="w"> </span><span class="kn">import</span> <span class="nb">eval</span> <span class="k">as</span> <span class="n">ev</span>
+
+<span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">ir</span><span class="o">.</span><span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_skills</span><span class="p">())</span>     <span class="c1"># or ir.open_corpus(&quot;skills&quot;)</span>
+<span class="n">cases</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">load_cases</span><span class="p">(</span><span class="s2">&quot;skills_eval.jsonl&quot;</span><span class="p">)</span>
+<span class="n">report</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">evaluate_discovery</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">report</span><span class="p">)</span>                                        <span class="c1"># NDCG@10 + taxonomy</span>
+
+<span class="c1"># Just the BEIR-shaped metrics (pure ef), e.g. to A/B dense vs hybrid:</span>
+<span class="n">ev</span><span class="o">.</span><span class="n">retrieval_report</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;dense&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">primary</span>    <span class="c1"># mean NDCG@10</span>
+<span class="n">ev</span><span class="o">.</span><span class="n">retrieval_report</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">primary</span>
+</pre></div>
+</div>
+</section>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.eval.DFLT_CURVE_MODE">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">DFLT_CURVE_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'dense'</span></span><a class="headerlink" href="#ir.eval.DFLT_CURVE_MODE" title="Link to this definition"></a></dt>
+<dd><p>Defaults for <a class="reference internal" href="#ir.eval.distractor_robustness_curve" title="ir.eval.distractor_robustness_curve"><code class="xref py py-func docutils literal notranslate"><span class="pre">distractor_robustness_curve()</span></code></a> — deliberately <em>not</em>
+<code class="docutils literal notranslate"><span class="pre">DFLT_MODE</span></code>: the curve builds throwaway in-memory sub-corpora, so it favours
+the fast, always-offline dense + hashing path. Pass <code class="docutils literal notranslate"><span class="pre">mode=&quot;hybrid&quot;</span></code> /
+<code class="docutils literal notranslate"><span class="pre">embedder=&quot;default&quot;</span></code> to measure the production configuration instead.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.eval.DFLT_DISTRACTOR_SIZES">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">DFLT_DISTRACTOR_SIZES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(1,</span> <span class="pre">4,</span> <span class="pre">8,</span> <span class="pre">16,</span> <span class="pre">32,</span> <span class="pre">64,</span> <span class="pre">128)</span></span><a class="headerlink" href="#ir.eval.DFLT_DISTRACTOR_SIZES" title="Link to this definition"></a></dt>
+<dd><p>Catalog sizes swept by <a class="reference internal" href="#ir.eval.distractor_robustness_curve" title="ir.eval.distractor_robustness_curve"><code class="xref py py-func docutils literal notranslate"><span class="pre">distractor_robustness_curve()</span></code></a> (RAG-MCP-style).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.eval.DFLT_K_VALUES">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">DFLT_K_VALUES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(1,</span> <span class="pre">5,</span> <span class="pre">10)</span></span><a class="headerlink" href="#ir.eval.DFLT_K_VALUES" title="Link to this definition"></a></dt>
+<dd><p>Rank cutoffs reported by default.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.eval.DFLT_METRICS">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">DFLT_METRICS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('ndcg',</span> <span class="pre">'recall',</span> <span class="pre">'precision',</span> <span class="pre">'mrr',</span> <span class="pre">'map')</span></span><a class="headerlink" href="#ir.eval.DFLT_METRICS" title="Link to this definition"></a></dt>
+<dd><p>Metrics reported by default — the <code class="docutils literal notranslate"><span class="pre">ef.evaluation</span></code> retrieval metric names.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.eval.DFLT_MODE">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">DFLT_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'hybrid'</span></span><a class="headerlink" href="#ir.eval.DFLT_MODE" title="Link to this definition"></a></dt>
+<dd><p>Default ranking mode for the eval adapter (hybrid is <code class="docutils literal notranslate"><span class="pre">ir</span></code>’s strongest).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryCase">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">DiscoveryCase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">...]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/eval.html#DiscoveryCase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.DiscoveryCase" title="Link to this definition"></a></dt>
+<dd><p>One discovery probe: an intent and the artifact(s) that should answer it.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryCase.query">
+<span class="sig-name descname"><span class="pre">query</span></span><a class="headerlink" href="#ir.eval.DiscoveryCase.query" title="Link to this definition"></a></dt>
+<dd><p>the user intent / search query.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryCase.gold">
+<span class="sig-name descname"><span class="pre">gold</span></span><a class="headerlink" href="#ir.eval.DiscoveryCase.gold" title="Link to this definition"></a></dt>
+<dd><p>the <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code>s that correctly answer <code class="docutils literal notranslate"><span class="pre">query</span></code> (one for a
+single-answer case, several when capabilities overlap). An <strong>empty</strong>
+tuple marks an <em>abstention</em> case — no artifact applies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[str, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryCase.corpus">
+<span class="sig-name descname"><span class="pre">corpus</span></span><a class="headerlink" href="#ir.eval.DiscoveryCase.corpus" title="Link to this definition"></a></dt>
+<dd><p>optional name of the corpus the case targets (provenance / for
+multi-corpus case files).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryCase.source_id">
+<span class="sig-name descname"><span class="pre">source_id</span></span><a class="headerlink" href="#ir.eval.DiscoveryCase.source_id" title="Link to this definition"></a></dt>
+<dd><p>optional <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code> the query was generated from
+(back-translation provenance).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryCase.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><a class="headerlink" href="#ir.eval.DiscoveryCase.metadata" title="Link to this definition"></a></dt>
+<dd><p>free-form per-case metadata (difficulty, generator, …).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryCase.from_dict">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a></span></span><a class="reference internal" href="../../_modules/ir/eval.html#DiscoveryCase.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.DiscoveryCase.from_dict" title="Link to this definition"></a></dt>
+<dd><p>Inverse of <a class="reference internal" href="#ir.eval.DiscoveryCase.to_dict" title="ir.eval.DiscoveryCase.to_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code></a>; <code class="docutils literal notranslate"><span class="pre">gold</span></code> may be a string or a list.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryCase.gold_is_none">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">gold_is_none</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></span><a class="headerlink" href="#ir.eval.DiscoveryCase.gold_is_none" title="Link to this definition"></a></dt>
+<dd><p>True when no artifact should match — an abstention case.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryCase.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#DiscoveryCase.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.DiscoveryCase.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable form (omitting empty optional fields).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryReport">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">DiscoveryReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">retrieval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">failure_classes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_gold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_abstention</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary_k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">abstention_accuracy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vd_degraded</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/eval.html#DiscoveryReport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.DiscoveryReport" title="Link to this definition"></a></dt>
+<dd><p>The outcome of <a class="reference internal" href="#ir.eval.evaluate_discovery" title="ir.eval.evaluate_discovery"><code class="xref py py-func docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a>.</p>
+<p>Bundles the standard retrieval metrics with the capability-discovery extras:</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryReport.retrieval">
+<span class="sig-name descname"><span class="pre">retrieval</span></span><a class="headerlink" href="#ir.eval.DiscoveryReport.retrieval" title="Link to this definition"></a></dt>
+<dd><p>the <code class="xref py py-class docutils literal notranslate"><span class="pre">ef.evaluation.RetrievalEvalReport</span></code> over the
+gold-bearing cases.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Any</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryReport.failure_classes">
+<span class="sig-name descname"><span class="pre">failure_classes</span></span><a class="headerlink" href="#ir.eval.DiscoveryReport.failure_classes" title="Link to this definition"></a></dt>
+<dd><p>counts per failure class (<code class="docutils literal notranslate"><span class="pre">hit_rank_1</span></code> /
+<code class="docutils literal notranslate"><span class="pre">surfaced_low_rank</span></code> / <code class="docutils literal notranslate"><span class="pre">retrieval_miss</span></code> for gold cases;
+<code class="docutils literal notranslate"><span class="pre">abstention_ok</span></code> / <code class="docutils literal notranslate"><span class="pre">false_action</span></code> / <code class="docutils literal notranslate"><span class="pre">abstention_unscored</span></code> for
+abstention cases).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">n_cases</span> <span class="pre">/</span> <span class="pre">n_gold</span> <span class="pre">/</span> <span class="pre">n_abstention</span></span></dt>
+<dd><p>case counts.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryReport.primary_k">
+<span class="sig-name descname"><span class="pre">primary_k</span></span><a class="headerlink" href="#ir.eval.DiscoveryReport.primary_k" title="Link to this definition"></a></dt>
+<dd><p>the cutoff <code class="docutils literal notranslate"><span class="pre">primary</span></code> reports at (default 10).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryReport.abstention_accuracy">
+<span class="sig-name descname"><span class="pre">abstention_accuracy</span></span><a class="headerlink" href="#ir.eval.DiscoveryReport.abstention_accuracy" title="Link to this definition"></a></dt>
+<dd><p>accuracy on the abstention slice when an
+<code class="docutils literal notranslate"><span class="pre">abstain_threshold</span></code> was supplied, else <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryReport.mode">
+<span class="sig-name descname"><span class="pre">mode</span></span><a class="headerlink" href="#ir.eval.DiscoveryReport.mode" title="Link to this definition"></a></dt>
+<dd><p>the ranking mode the report was produced with — recorded so a
+number is never mistaken for a different configuration’s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryReport.vd_degraded">
+<span class="sig-name descname"><span class="pre">vd_degraded</span></span><a class="headerlink" href="#ir.eval.DiscoveryReport.vd_degraded" title="Link to this definition"></a></dt>
+<dd><p>True when <code class="docutils literal notranslate"><span class="pre">mode</span></code> was <code class="docutils literal notranslate"><span class="pre">lexical</span></code> / <code class="docutils literal notranslate"><span class="pre">hybrid</span></code> but <code class="docutils literal notranslate"><span class="pre">vd</span></code>
+was unavailable, so ranking silently fell back to dense (the scores
+are <em>not</em> the requested configuration’s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ir.eval.DiscoveryReport.primary">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">primary</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#ir.eval.DiscoveryReport.primary" title="Link to this definition"></a></dt>
+<dd><p>The headline number — mean NDCG&#64;``primary_k`` (<code class="docutils literal notranslate"><span class="pre">None</span></code> if not computed).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.as_doc_retriever">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">as_doc_retriever</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#as_doc_retriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.as_doc_retriever" title="Link to this definition"></a></dt>
+<dd><p>Adapt an <code class="docutils literal notranslate"><span class="pre">ir</span></code> corpus to <code class="docutils literal notranslate"><span class="pre">ef</span></code>’s retriever contract.</p>
+<p>Returns a callable <code class="docutils literal notranslate"><span class="pre">retriever(query,</span> <span class="pre">*,</span> <span class="pre">limit=10)</span> <span class="pre">-&gt;</span> <span class="pre">[artifact_id,</span> <span class="pre">…]</span></code> —
+bare doc-id strings, best-ranked first, one per artifact. That is exactly
+what <code class="xref py py-func docutils literal notranslate"><span class="pre">ef.evaluation.evaluate_retrieval()</span></code> consumes (it maps a bare
+string straight to a document id), so the returned callable can be handed to
+<code class="docutils literal notranslate"><span class="pre">ef</span></code> with no further adaptation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>corpus</strong> – an <a class="reference internal" href="index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a> or a registered corpus <em>name</em>.</p></li>
+<li><p><strong>mode</strong> – ranking mode — <code class="docutils literal notranslate"><span class="pre">&quot;dense&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;lexical&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;hybrid&quot;</span></code>.</p></li>
+<li><p><strong>surfaces</strong> – restrict to these surface kinds (e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;description&quot;}</span></code>).</p></li>
+<li><p><strong>**search_kw</strong> – any other <a class="reference internal" href="retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a> keyword (<code class="docutils literal notranslate"><span class="pre">filter</span></code>,
+<code class="docutils literal notranslate"><span class="pre">rrf_k</span></code>, <code class="docutils literal notranslate"><span class="pre">rerank</span></code>, <code class="docutils literal notranslate"><span class="pre">bm25</span></code>, …).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.corpus_artifact_ids">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">corpus_artifact_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#corpus_artifact_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.corpus_artifact_ids" title="Link to this definition"></a></dt>
+<dd><p>The set of <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code>s present in a built corpus.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.distractor_curve_from_cases">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">distractor_curve_from_cases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#distractor_curve_from_cases"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.distractor_curve_from_cases" title="Link to this definition"></a></dt>
+<dd><p>Convenience: a distractor curve over a source’s scope from single-gold cases.</p>
+<p>Probes are the single-gold cases (<code class="docutils literal notranslate"><span class="pre">(query,</span> <span class="pre">gold[0])</span></code>); the source’s
+<code class="docutils literal notranslate"><span class="pre">scope</span></code> is the distractor pool and its <code class="docutils literal notranslate"><span class="pre">indexing_strategy</span></code> is reused
+unless a <code class="docutils literal notranslate"><span class="pre">strategy</span></code> is passed in <code class="docutils literal notranslate"><span class="pre">kwargs</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.distractor_robustness_curve">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">distractor_robustness_curve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scope</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'light'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'dense'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sizes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(1,</span> <span class="pre">4,</span> <span class="pre">8,</span> <span class="pre">16,</span> <span class="pre">32,</span> <span class="pre">64,</span> <span class="pre">128)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trials</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#distractor_robustness_curve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.distractor_robustness_curve" title="Link to this definition"></a></dt>
+<dd><p>Retrieval accuracy as the catalog grows — the needle-in-a-haystack curve.</p>
+<p>For each catalog size <code class="docutils literal notranslate"><span class="pre">N</span></code> and each <code class="docutils literal notranslate"><span class="pre">(query,</span> <span class="pre">gold_id)</span></code> probe, build many
+<code class="docutils literal notranslate"><span class="pre">N</span></code>-artifact sub-corpora (the gold artifact plus <code class="docutils literal notranslate"><span class="pre">N−1</span></code> distractors
+sampled from <code class="docutils literal notranslate"><span class="pre">scope</span></code>) and measure how often the gold artifact lands in the
+top <code class="docutils literal notranslate"><span class="pre">k</span></code>. The accuracy at each <code class="docutils literal notranslate"><span class="pre">N</span></code> is averaged over the probes and over
+<code class="docutils literal notranslate"><span class="pre">trials</span></code> random distractor draws. <code class="docutils literal notranslate"><span class="pre">N=1</span></code> is the trivial anchor (gold
+alone) and is always 1.0; a steep decline as <code class="docutils literal notranslate"><span class="pre">N</span></code> grows is the signature of
+retrieval that does not discriminate.</p>
+<p>Sub-corpora are built in-memory with the <code class="docutils literal notranslate"><span class="pre">&quot;light&quot;</span></code> (numpy-only) embedder
+by default, so the curve is fast and offline; pass <code class="docutils literal notranslate"><span class="pre">embedder=&quot;default&quot;</span></code>
+(and <code class="docutils literal notranslate"><span class="pre">mode=&quot;hybrid&quot;</span></code>) to measure the production configuration.</p>
+<p>Sizes larger than the corpus are <strong>capped</strong> at <code class="docutils literal notranslate"><span class="pre">len(scope)</span></code> (the largest
+catalog the pool can fill) and de-duplicated, so the returned keys are the
+catalog sizes actually built — the x-axis never claims an <code class="docutils literal notranslate"><span class="pre">N</span></code> larger than
+the corpus could supply.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scope</strong> – the full <code class="docutils literal notranslate"><span class="pre">{artifact_id:</span> <span class="pre">raw}</span></code> pool to draw the catalog from.</p></li>
+<li><p><strong>probes</strong> – <code class="docutils literal notranslate"><span class="pre">(query,</span> <span class="pre">gold_id)</span></code> pairs; <code class="docutils literal notranslate"><span class="pre">gold_id</span></code> must be a key of <code class="docutils literal notranslate"><span class="pre">scope</span></code>.</p></li>
+<li><p><strong>strategy</strong> – the <a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a> to index with
+(default <a class="reference internal" href="strategy.html#ir.strategy.WholeText" title="ir.strategy.WholeText"><code class="xref py py-class docutils literal notranslate"><span class="pre">WholeText</span></code></a>).</p></li>
+<li><p><strong>embedder</strong> – embedder spec for the sub-corpora.</p></li>
+<li><p><strong>mode</strong> – ranking mode for the probe searches.</p></li>
+<li><p><strong>sizes</strong> – the catalog sizes to sweep (capped at <code class="docutils literal notranslate"><span class="pre">len(scope)</span></code>, deduped).</p></li>
+<li><p><strong>trials</strong> – random distractor draws averaged per size (a size that consumes
+the whole pool has no sampling freedom, so it runs a single trial).</p></li>
+<li><p><strong>seed</strong> – base RNG seed (reproducible; varied per size).</p></li>
+<li><p><strong>k</strong> – the top-<code class="docutils literal notranslate"><span class="pre">k</span></code> the gold must reach to count as a hit.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{N:</span> <span class="pre">accuracy}</span></code> for each <em>achievable</em> <code class="docutils literal notranslate"><span class="pre">N</span></code> (the requested sizes capped
+at <code class="docutils literal notranslate"><span class="pre">len(scope)</span></code> and de-duplicated).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.evaluate_discovery">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">evaluate_discovery</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(1,</span> <span class="pre">5,</span> <span class="pre">10)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary_k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">('ndcg',</span> <span class="pre">'recall',</span> <span class="pre">'precision',</span> <span class="pre">'mrr',</span> <span class="pre">'map')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">abstain_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.eval.DiscoveryReport" title="ir.eval.DiscoveryReport"><span class="pre">DiscoveryReport</span></a></span></span><a class="reference internal" href="../../_modules/ir/eval.html#evaluate_discovery"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.evaluate_discovery" title="Link to this definition"></a></dt>
+<dd><p>Score a corpus against <code class="docutils literal notranslate"><span class="pre">cases</span></code> — metrics, failure taxonomy, abstention.</p>
+<p>Runs retrieval <strong>once per case</strong> and, from each ranking, computes the
+<code class="docutils literal notranslate"><span class="pre">ef.evaluation</span></code> metric primitives (so the numbers match the pure-<code class="docutils literal notranslate"><span class="pre">ef</span></code>
+path) <em>and</em> the capability-discovery extras in one pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>corpus</strong> – an <a class="reference internal" href="index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a> or a registered corpus <em>name</em>.</p></li>
+<li><p><strong>k_values</strong> – rank cutoffs to report (<code class="docutils literal notranslate"><span class="pre">primary_k</span></code> is always included).</p></li>
+<li><p><strong>primary_k</strong> – the cutoff the headline <code class="docutils literal notranslate"><span class="pre">primary</span></code> reports at.</p></li>
+<li><p><strong>metrics</strong> – which <code class="docutils literal notranslate"><span class="pre">ef</span></code> metrics to compute (<code class="docutils literal notranslate"><span class="pre">ndcg</span></code> / <code class="docutils literal notranslate"><span class="pre">recall</span></code> /
+<code class="docutils literal notranslate"><span class="pre">precision</span></code> / <code class="docutils literal notranslate"><span class="pre">mrr</span></code> / <code class="docutils literal notranslate"><span class="pre">map</span></code>).</p></li>
+<li><p><strong>mode</strong> – ranking mode passed to <a class="reference internal" href="retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a>.</p></li>
+<li><p><strong>surfaces</strong> – restrict to these surface kinds.</p></li>
+<li><p><strong>abstain_threshold</strong> – if given, an abstention case is scored <em>correct</em> when
+the top hit’s score is below this threshold (a retrieval-side proxy
+for “no artifact applies”); leave <code class="docutils literal notranslate"><span class="pre">None</span></code> to only count abstention
+cases without scoring them.</p></li>
+<li><p><strong>**search_kw</strong> – any other <a class="reference internal" href="retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a> keyword.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a <a class="reference internal" href="#ir.eval.DiscoveryReport" title="ir.eval.DiscoveryReport"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscoveryReport</span></code></a>. If no case carries gold (an empty or
+all-abstention set) the retrieval metrics are omitted — <code class="docutils literal notranslate"><span class="pre">report.primary</span></code>
+is <code class="docutils literal notranslate"><span class="pre">None</span></code> — but the taxonomy and abstention counts are still returned
+(unlike <a class="reference internal" href="#ir.eval.retrieval_report" title="ir.eval.retrieval_report"><code class="xref py py-func docutils literal notranslate"><span class="pre">retrieval_report()</span></code></a>, which raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> on that
+input).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.load_cases">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">load_cases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#load_cases"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.load_cases" title="Link to this definition"></a></dt>
+<dd><p>Read <a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscoveryCase</span></code></a>s from a JSONL file (skips a <code class="docutils literal notranslate"><span class="pre">__meta__</span></code> header).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.retrieval_report">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">retrieval_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(1,</span> <span class="pre">5,</span> <span class="pre">10)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">('ndcg',</span> <span class="pre">'recall',</span> <span class="pre">'precision',</span> <span class="pre">'mrr',</span> <span class="pre">'map')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#retrieval_report"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.retrieval_report" title="Link to this definition"></a></dt>
+<dd><p>Score a corpus’s retrieval against the cases — the pure-<code class="docutils literal notranslate"><span class="pre">ef</span></code> path.</p>
+<p>A thin wrapper that builds the retriever adapter and hands it, with the
+cases’ <code class="docutils literal notranslate"><span class="pre">(queries,</span> <span class="pre">qrels)</span></code>, to <code class="xref py py-func docutils literal notranslate"><span class="pre">ef.evaluation.evaluate_retrieval()</span></code>.
+Returns its <code class="xref py py-class docutils literal notranslate"><span class="pre">ef.evaluation.RetrievalEvalReport</span></code> (<code class="docutils literal notranslate"><span class="pre">.primary</span></code> is mean
+<a class="reference external" href="mailto:NDCG&#37;&#52;&#48;10">NDCG<span>&#64;</span>10</a>). Use this to A/B configurations — dense vs hybrid, with vs without
+a reranker — on the standard BEIR/MTEB metrics.</p>
+<p>For the richer report (taxonomy + abstention) use <a class="reference internal" href="#ir.eval.evaluate_discovery" title="ir.eval.evaluate_discovery"><code class="xref py py-func docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – if no case carries gold (<code class="docutils literal notranslate"><span class="pre">ef</span></code> requires at least one
+    positively-judged query). <a class="reference internal" href="#ir.eval.evaluate_discovery" title="ir.eval.evaluate_discovery"><code class="xref py py-func docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a> instead
+    tolerates an all-abstention set — the two paths differ only on that
+    degenerate input.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.save_cases">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">save_cases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#save_cases"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.save_cases" title="Link to this definition"></a></dt>
+<dd><p>Write <code class="docutils literal notranslate"><span class="pre">cases</span></code> to a JSONL file (one case per line).</p>
+<p>An optional <code class="docutils literal notranslate"><span class="pre">meta</span></code> mapping is written as a leading <code class="docutils literal notranslate"><span class="pre">{&quot;__meta__&quot;:</span> <span class="pre">…}</span></code>
+line — the natural home for a corpus-version anchor that pins the cases to
+the corpus snapshot they were generated against.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.to_qrels">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">to_qrels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">grade</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#to_qrels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.to_qrels" title="Link to this definition"></a></dt>
+<dd><p>Build <code class="docutils literal notranslate"><span class="pre">ef</span></code>’s <code class="docutils literal notranslate"><span class="pre">(queries,</span> <span class="pre">qrels)</span></code> from the gold-bearing cases.</p>
+<p>Abstention cases (empty <code class="docutils literal notranslate"><span class="pre">gold</span></code>) are skipped — <code class="docutils literal notranslate"><span class="pre">ef</span></code>’s retrieval metrics
+require at least one positively-judged document per query. Query ids are
+derived from each case’s position so they stay stable across the gap left
+by skipped abstention cases.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.validate_cases">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">validate_cases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#validate_cases"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.validate_cases" title="Link to this definition"></a></dt>
+<dd><p>Gold ids a case references that are absent from the corpus.</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">{case_index:</span> <span class="pre">[missing_artifact_id,</span> <span class="pre">…]}</span></code> for every case whose gold
+has drifted out of the corpus (an empty dict means the cases are aligned).
+The eval corpora are live and machine-specific, so a committed case file can
+quietly fall out of sync; run this before trusting a report.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="embed.html" class="btn btn-neutral float-left" title="ir.embed" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-right" title="ir.index" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

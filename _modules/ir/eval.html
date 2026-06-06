@@ -1,0 +1,842 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.eval &mdash; ir 0.1.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=92734c54"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../ir.html">ir</a></li>
+      <li class="breadcrumb-item active">ir.eval</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ir.eval</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Capability-discovery evaluation — measuring how well a corpus is *found*.</span>
+
+<span class="sd">``ir.eval`` answers the question that the rest of ``ir`` raises: *does retrieval</span>
+<span class="sd">actually surface the right capability?* It is a thin, deterministic scoring layer</span>
+<span class="sd">over the substrate already in place — ``ir.retrieve.search`` for ranking and</span>
+<span class="sd">``ef.evaluation`` for the metric mathematics — plus the genuinely new pieces a</span>
+<span class="sd">*capability-discovery* eval needs that generic retrieval evaluation does not.</span>
+
+<span class="sd">Design stance (retrieval-centric, reuse ``ef``)</span>
+<span class="sd">-----------------------------------------------</span>
+<span class="sd">``ir``&#39;s corpora are **documents** — skills, packages, reports — each a</span>
+<span class="sd">name + description (+ body), joined on a stable ``artifact_id``. They are *not*</span>
+<span class="sd">a typed function-calling registry with argument signatures. So the eval that</span>
+<span class="sd">fits is **retrieval of the right artifact**, not argument-dict scoring:</span>
+
+<span class="sd">- **recall@k / NDCG@k / MRR / MAP** — computed by ``ef.evaluation``&#39;s pure,</span>
+<span class="sd">  tested primitives (:func:`ef.evaluation.recall_at_k`, … ) and driver</span>
+<span class="sd">  (:func:`ef.evaluation.evaluate_retrieval`). ``ir.eval`` does not reimplement</span>
+<span class="sd">  them; it adapts an ``ir`` corpus to ``ef``&#39;s retriever contract and reads back</span>
+<span class="sd">  a :class:`ef.evaluation.RetrievalEvalReport`.</span>
+<span class="sd">- **distractor-robustness curve** — retrieval accuracy as the catalog grows</span>
+<span class="sd">  (1 gold + N−1 distractors). The single most diagnostic capability-discovery</span>
+<span class="sd">  metric, and one ``ef`` does not provide.</span>
+<span class="sd">- **failure-mode taxonomy** — every gold case is classed ``hit_rank_1`` /</span>
+<span class="sd">  ``surfaced_low_rank`` / ``retrieval_miss`` so a headline number decomposes</span>
+<span class="sd">  into *why* it is what it is.</span>
+<span class="sd">- **abstention** — an optional score-threshold proxy for &quot;no artifact applies&quot;</span>
+<span class="sd">  cases. True abstention is a *selection* concern (a selector commits or</span>
+<span class="sd">  refuses); here it is a retrieval-side diagnostic, clearly labelled as such.</span>
+
+<span class="sd">The unit of evaluation is a :class:`DiscoveryCase`: an intent (``query``) and</span>
+<span class="sd">the ``gold`` ``artifact_id``\\ s that should answer it (empty ``gold`` = an</span>
+<span class="sd">abstention case). Cases are plain data — :func:`save_cases` / :func:`load_cases`</span>
+<span class="sd">round-trip them as JSONL so an evaluation set is a committable, reproducible</span>
+<span class="sd">fixture (the corpora themselves are machine-specific and live, so freezing the</span>
+<span class="sd">cases is what makes a run repeatable; :func:`validate_cases` flags gold ids that</span>
+<span class="sd">have since drifted out of the corpus).</span>
+
+<span class="sd">Case *generation* (back-translation from a corpus with name-masking) needs an</span>
+<span class="sd">LLM and is deliberately **out of scope here** — this module scores a given set</span>
+<span class="sd">of cases offline, with no network and no model download. (Dense scoring needs</span>
+<span class="sd">only numpy; ``lexical`` / ``hybrid`` ranking additionally need the optional</span>
+<span class="sd">``vd`` dependency — a hybrid run that silently fell back to dense because ``vd``</span>
+<span class="sd">was absent is flagged in the report.)</span>
+
+<span class="sd">Quick start::</span>
+
+<span class="sd">    import ir</span>
+<span class="sd">    from ir import eval as ev</span>
+
+<span class="sd">    corpus = ir.build(ir.CorpusSource.from_skills())     # or ir.open_corpus(&quot;skills&quot;)</span>
+<span class="sd">    cases = ev.load_cases(&quot;skills_eval.jsonl&quot;)</span>
+<span class="sd">    report = ev.evaluate_discovery(corpus, cases, mode=&quot;hybrid&quot;)</span>
+<span class="sd">    print(report)                                        # NDCG@10 + taxonomy</span>
+
+<span class="sd">    # Just the BEIR-shaped metrics (pure ef), e.g. to A/B dense vs hybrid:</span>
+<span class="sd">    ev.retrieval_report(corpus, cases, mode=&quot;dense&quot;).primary    # mean NDCG@10</span>
+<span class="sd">    ev.retrieval_report(corpus, cases, mode=&quot;hybrid&quot;).primary</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span> <span class="k">as</span> <span class="n">_search</span>
+
+<span class="c1">#: Rank cutoffs reported by default.</span>
+<span class="n">DFLT_K_VALUES</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="c1">#: Metrics reported by default — the ``ef.evaluation`` retrieval metric names.</span>
+<span class="n">DFLT_METRICS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;ndcg&quot;</span><span class="p">,</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;mrr&quot;</span><span class="p">,</span> <span class="s2">&quot;map&quot;</span><span class="p">)</span>
+
+<span class="c1">#: Default ranking mode for the eval adapter (hybrid is ``ir``&#39;s strongest).</span>
+<span class="n">DFLT_MODE</span> <span class="o">=</span> <span class="s2">&quot;hybrid&quot;</span>
+
+<span class="c1">#: Catalog sizes swept by :func:`distractor_robustness_curve` (RAG-MCP-style).</span>
+<span class="n">DFLT_DISTRACTOR_SIZES</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">)</span>
+
+<span class="c1">#: Defaults for :func:`distractor_robustness_curve` — deliberately *not*</span>
+<span class="c1">#: ``DFLT_MODE``: the curve builds throwaway in-memory sub-corpora, so it favours</span>
+<span class="c1">#: the fast, always-offline dense + hashing path. Pass ``mode=&quot;hybrid&quot;`` /</span>
+<span class="c1">#: ``embedder=&quot;default&quot;`` to measure the production configuration instead.</span>
+<span class="n">DFLT_CURVE_MODE</span> <span class="o">=</span> <span class="s2">&quot;dense&quot;</span>
+<span class="n">DFLT_CURVE_EMBEDDER</span> <span class="o">=</span> <span class="s2">&quot;light&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_vd_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether ``vd`` (needed for ``lexical`` / ``hybrid`` ranking) is importable.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">vd</span><span class="w"> </span><span class="kn">import</span> <span class="n">bm25_lexical_search</span><span class="p">,</span> <span class="n">reciprocal_rank_fusion</span>  <span class="c1"># noqa: F401</span>
+
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># The unit of evaluation</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<div class="viewcode-block" id="DiscoveryCase">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.DiscoveryCase">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiscoveryCase</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;One discovery probe: an intent and the artifact(s) that should answer it.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        query: the user intent / search query.</span>
+<span class="sd">        gold: the ``artifact_id``\\ s that correctly answer ``query`` (one for a</span>
+<span class="sd">            single-answer case, several when capabilities overlap). An **empty**</span>
+<span class="sd">            tuple marks an *abstention* case — no artifact applies.</span>
+<span class="sd">        corpus: optional name of the corpus the case targets (provenance / for</span>
+<span class="sd">            multi-corpus case files).</span>
+<span class="sd">        source_id: optional ``artifact_id`` the query was generated from</span>
+<span class="sd">            (back-translation provenance).</span>
+<span class="sd">        metadata: free-form per-case metadata (difficulty, generator, …).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">gold</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">source_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gold_is_none</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;True when no artifact should match — an abstention case.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">gold</span>
+
+<div class="viewcode-block" id="DiscoveryCase.to_dict">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.DiscoveryCase.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form (omitting empty optional fields).&quot;&quot;&quot;</span>
+        <span class="n">out</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="s2">&quot;gold&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gold</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">corpus</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span><span class="p">[</span><span class="s2">&quot;corpus&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corpus</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span><span class="p">[</span><span class="s2">&quot;source_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_id</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+            <span class="n">out</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="DiscoveryCase.from_dict">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.DiscoveryCase.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;DiscoveryCase&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Inverse of :meth:`to_dict`; ``gold`` may be a string or a list.&quot;&quot;&quot;</span>
+        <span class="n">gold</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gold&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gold</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">gold</span> <span class="o">=</span> <span class="p">(</span><span class="n">gold</span><span class="p">,)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">query</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">],</span>
+            <span class="n">gold</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">gold</span><span class="p">),</span>
+            <span class="n">corpus</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;corpus&quot;</span><span class="p">),</span>
+            <span class="n">source_id</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source_id&quot;</span><span class="p">),</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}),</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="save_cases">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.save_cases">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">save_cases</span><span class="p">(</span>
+    <span class="n">cases</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">],</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">meta</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write ``cases`` to a JSONL file (one case per line).</span>
+
+<span class="sd">    An optional ``meta`` mapping is written as a leading ``{&quot;__meta__&quot;: …}``</span>
+<span class="sd">    line — the natural home for a corpus-version anchor that pins the cases to</span>
+<span class="sd">    the corpus snapshot they were generated against.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">meta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;__meta__&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">meta</span><span class="p">)})</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">case</span> <span class="ow">in</span> <span class="n">cases</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">case</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="load_cases">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.load_cases">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_cases</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read :class:`DiscoveryCase`\\ s from a JSONL file (skips a ``__meta__`` header).&quot;&quot;&quot;</span>
+    <span class="n">cases</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;__meta__&quot;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">cases</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DiscoveryCase</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">cases</span></div>
+
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Bridge: an ir corpus as an ef retriever</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_as_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve a corpus *name* to a built :class:`~ir.index.Corpus` (pass-through otherwise).&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
+
+        <span class="k">return</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">corpus</span>
+
+
+<div class="viewcode-block" id="as_doc_retriever">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.as_doc_retriever">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">as_doc_retriever</span><span class="p">(</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_MODE</span><span class="p">,</span>
+    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adapt an ``ir`` corpus to ``ef``&#39;s retriever contract.</span>
+
+<span class="sd">    Returns a callable ``retriever(query, *, limit=10) -&gt; [artifact_id, …]`` —</span>
+<span class="sd">    bare doc-id strings, best-ranked first, one per artifact. That is exactly</span>
+<span class="sd">    what :func:`ef.evaluation.evaluate_retrieval` consumes (it maps a bare</span>
+<span class="sd">    string straight to a document id), so the returned callable can be handed to</span>
+<span class="sd">    ``ef`` with no further adaptation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        corpus: an :class:`~ir.index.Corpus` or a registered corpus *name*.</span>
+<span class="sd">        mode: ranking mode — ``&quot;dense&quot;`` / ``&quot;lexical&quot;`` / ``&quot;hybrid&quot;``.</span>
+<span class="sd">        surfaces: restrict to these surface kinds (e.g. ``{&quot;description&quot;}``).</span>
+<span class="sd">        **search_kw: any other :func:`ir.retrieve.search` keyword (``filter``,</span>
+<span class="sd">            ``rrf_k``, ``rerank``, ``bm25``, …).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">retriever</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">hits</span> <span class="o">=</span> <span class="n">_search</span><span class="p">(</span>
+            <span class="n">corpus</span><span class="p">,</span>
+            <span class="n">query</span><span class="p">,</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+            <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span>
+            <span class="n">per_artifact</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">retriever</span></div>
+
+
+
+<div class="viewcode-block" id="to_qrels">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.to_qrels">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_qrels</span><span class="p">(</span>
+    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">grade</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build ``ef``&#39;s ``(queries, qrels)`` from the gold-bearing cases.</span>
+
+<span class="sd">    Abstention cases (empty ``gold``) are skipped — ``ef``&#39;s retrieval metrics</span>
+<span class="sd">    require at least one positively-judged document per query. Query ids are</span>
+<span class="sd">    derived from each case&#39;s position so they stay stable across the gap left</span>
+<span class="sd">    by skipped abstention cases.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">queries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">qrels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">case</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cases</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">case</span><span class="o">.</span><span class="n">gold_is_none</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">qid</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;q</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">05d</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">queries</span><span class="p">[</span><span class="n">qid</span><span class="p">]</span> <span class="o">=</span> <span class="n">case</span><span class="o">.</span><span class="n">query</span>
+        <span class="n">qrels</span><span class="p">[</span><span class="n">qid</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">aid</span><span class="p">:</span> <span class="n">grade</span> <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">case</span><span class="o">.</span><span class="n">gold</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">queries</span><span class="p">,</span> <span class="n">qrels</span></div>
+
+
+
+<div class="viewcode-block" id="retrieval_report">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.retrieval_report">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">retrieval_report</span><span class="p">(</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">k_values</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_K_VALUES</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_METRICS</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_MODE</span><span class="p">,</span>
+    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score a corpus&#39;s retrieval against the cases — the pure-``ef`` path.</span>
+
+<span class="sd">    A thin wrapper that builds the retriever adapter and hands it, with the</span>
+<span class="sd">    cases&#39; ``(queries, qrels)``, to :func:`ef.evaluation.evaluate_retrieval`.</span>
+<span class="sd">    Returns its :class:`ef.evaluation.RetrievalEvalReport` (``.primary`` is mean</span>
+<span class="sd">    NDCG@10). Use this to A/B configurations — dense vs hybrid, with vs without</span>
+<span class="sd">    a reranker — on the standard BEIR/MTEB metrics.</span>
+
+<span class="sd">    For the richer report (taxonomy + abstention) use :func:`evaluate_discovery`.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: if no case carries gold (``ef`` requires at least one</span>
+<span class="sd">            positively-judged query). :func:`evaluate_discovery` instead</span>
+<span class="sd">            tolerates an all-abstention set — the two paths differ only on that</span>
+<span class="sd">            degenerate input.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ef.evaluation</span><span class="w"> </span><span class="kn">import</span> <span class="n">evaluate_retrieval</span>
+
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="n">queries</span><span class="p">,</span> <span class="n">qrels</span> <span class="o">=</span> <span class="n">to_qrels</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span>
+    <span class="n">retriever</span> <span class="o">=</span> <span class="n">as_doc_retriever</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span> <span class="o">**</span><span class="n">search_kw</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">evaluate_retrieval</span><span class="p">(</span>
+        <span class="n">retriever</span><span class="p">,</span>
+        <span class="n">qrels</span><span class="p">,</span>
+        <span class="n">queries</span><span class="p">,</span>
+        <span class="n">k_values</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">k_values</span><span class="p">),</span>
+        <span class="n">metrics</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">metrics</span><span class="p">),</span>
+        <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Corpus introspection — drift detection</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<div class="viewcode-block" id="corpus_artifact_ids">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.corpus_artifact_ids">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">corpus_artifact_ids</span><span class="p">(</span><span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The set of ``artifact_id``\\ s present in a built corpus.&quot;&quot;&quot;</span>
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="n">_ids</span><span class="p">,</span> <span class="n">_matrix</span><span class="p">,</span> <span class="n">metas</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">matrix</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;artifact_id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">meta</span> <span class="ow">in</span> <span class="n">metas</span><span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="validate_cases">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.validate_cases">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_cases</span><span class="p">(</span><span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gold ids a case references that are absent from the corpus.</span>
+
+<span class="sd">    Returns ``{case_index: [missing_artifact_id, …]}`` for every case whose gold</span>
+<span class="sd">    has drifted out of the corpus (an empty dict means the cases are aligned).</span>
+<span class="sd">    The eval corpora are live and machine-specific, so a committed case file can</span>
+<span class="sd">    quietly fall out of sync; run this before trusting a report.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">present</span> <span class="o">=</span> <span class="n">corpus_artifact_ids</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="n">missing</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">case</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cases</span><span class="p">):</span>
+        <span class="n">absent</span> <span class="o">=</span> <span class="p">[</span><span class="n">aid</span> <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">case</span><span class="o">.</span><span class="n">gold</span> <span class="k">if</span> <span class="n">aid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">present</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">absent</span><span class="p">:</span>
+            <span class="n">missing</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">absent</span>
+    <span class="k">return</span> <span class="n">missing</span></div>
+
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># The rich report: metrics + failure taxonomy + abstention</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_gold_rank</span><span class="p">(</span><span class="n">ranking</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">gold</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;1-based rank of the best-placed gold id in ``ranking`` (0 if none present).&quot;&quot;&quot;</span>
+    <span class="n">gold_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">gold</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">aid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranking</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">gold_set</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="DiscoveryReport">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.DiscoveryReport">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DiscoveryReport</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The outcome of :func:`evaluate_discovery`.</span>
+
+<span class="sd">    Bundles the standard retrieval metrics with the capability-discovery extras:</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        retrieval: the :class:`ef.evaluation.RetrievalEvalReport` over the</span>
+<span class="sd">            gold-bearing cases.</span>
+<span class="sd">        failure_classes: counts per failure class (``hit_rank_1`` /</span>
+<span class="sd">            ``surfaced_low_rank`` / ``retrieval_miss`` for gold cases;</span>
+<span class="sd">            ``abstention_ok`` / ``false_action`` / ``abstention_unscored`` for</span>
+<span class="sd">            abstention cases).</span>
+<span class="sd">        n_cases / n_gold / n_abstention: case counts.</span>
+<span class="sd">        primary_k: the cutoff ``primary`` reports at (default 10).</span>
+<span class="sd">        abstention_accuracy: accuracy on the abstention slice when an</span>
+<span class="sd">            ``abstain_threshold`` was supplied, else ``None``.</span>
+<span class="sd">        mode: the ranking mode the report was produced with — recorded so a</span>
+<span class="sd">            number is never mistaken for a different configuration&#39;s.</span>
+<span class="sd">        vd_degraded: True when ``mode`` was ``lexical`` / ``hybrid`` but ``vd``</span>
+<span class="sd">            was unavailable, so ranking silently fell back to dense (the scores</span>
+<span class="sd">            are *not* the requested configuration&#39;s).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">retrieval</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="n">failure_classes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+    <span class="n">n_cases</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">n_gold</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">n_abstention</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">primary_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">abstention_accuracy</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_MODE</span>
+    <span class="n">vd_degraded</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">primary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The headline number — mean NDCG@``primary_k`` (``None`` if not computed).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieval</span><span class="o">.</span><span class="n">primary_at</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">primary_k</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">primary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">primary</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;DiscoveryReport — </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_cases</span><span class="si">}</span><span class="s2"> cases &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_gold</span><span class="si">}</span><span class="s2"> gold, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_abstention</span><span class="si">}</span><span class="s2"> abstention)&quot;</span>
+        <span class="p">)</span>
+        <span class="n">mode_line</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;  mode: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="p">(</span>
+            <span class="s2">&quot;  (DEGRADED: vd unavailable -&gt; dense fallback)&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vd_degraded</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">head</span><span class="p">,</span>
+            <span class="n">mode_line</span><span class="p">,</span>
+            <span class="s2">&quot;  primary NDCG@</span><span class="si">%d</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span>
+            <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">primary_k</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">primary</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">primary</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;n/a&quot;</span><span class="p">),</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieval</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">failure_classes</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;  failure classes:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">failure_classes</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">kv</span><span class="p">:</span> <span class="o">-</span><span class="n">kv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="p">):</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    </span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstention_accuracy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  abstention accuracy: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">abstention_accuracy</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="evaluate_discovery">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.evaluate_discovery">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">evaluate_discovery</span><span class="p">(</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">k_values</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_K_VALUES</span><span class="p">,</span>
+    <span class="n">primary_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_METRICS</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_MODE</span><span class="p">,</span>
+    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">abstain_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscoveryReport</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score a corpus against ``cases`` — metrics, failure taxonomy, abstention.</span>
+
+<span class="sd">    Runs retrieval **once per case** and, from each ranking, computes the</span>
+<span class="sd">    ``ef.evaluation`` metric primitives (so the numbers match the pure-``ef``</span>
+<span class="sd">    path) *and* the capability-discovery extras in one pass.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        corpus: an :class:`~ir.index.Corpus` or a registered corpus *name*.</span>
+<span class="sd">        k_values: rank cutoffs to report (``primary_k`` is always included).</span>
+<span class="sd">        primary_k: the cutoff the headline ``primary`` reports at.</span>
+<span class="sd">        metrics: which ``ef`` metrics to compute (``ndcg`` / ``recall`` /</span>
+<span class="sd">            ``precision`` / ``mrr`` / ``map``).</span>
+<span class="sd">        mode: ranking mode passed to :func:`ir.retrieve.search`.</span>
+<span class="sd">        surfaces: restrict to these surface kinds.</span>
+<span class="sd">        abstain_threshold: if given, an abstention case is scored *correct* when</span>
+<span class="sd">            the top hit&#39;s score is below this threshold (a retrieval-side proxy</span>
+<span class="sd">            for &quot;no artifact applies&quot;); leave ``None`` to only count abstention</span>
+<span class="sd">            cases without scoring them.</span>
+<span class="sd">        **search_kw: any other :func:`ir.retrieve.search` keyword.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a :class:`DiscoveryReport`. If no case carries gold (an empty or</span>
+<span class="sd">        all-abstention set) the retrieval metrics are omitted — ``report.primary``</span>
+<span class="sd">        is ``None`` — but the taxonomy and abstention counts are still returned</span>
+<span class="sd">        (unlike :func:`retrieval_report`, which raises ``ValueError`` on that</span>
+<span class="sd">        input).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ef.evaluation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">RetrievalEvalReport</span><span class="p">,</span>
+        <span class="n">average_precision</span><span class="p">,</span>
+        <span class="n">ndcg_at_k</span><span class="p">,</span>
+        <span class="n">precision_at_k</span><span class="p">,</span>
+        <span class="n">recall_at_k</span><span class="p">,</span>
+        <span class="n">reciprocal_rank</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Deliberate mirror of ef.evaluation._RETRIEVAL_METRICS (private, so it cannot</span>
+    <span class="c1"># be imported). The metric *functions* are ef&#39;s — only this name-&gt;fn map and</span>
+    <span class="c1"># the unknown-name check are duplicated; ef exposing a public registry would</span>
+    <span class="c1"># let this go away.</span>
+    <span class="n">metric_fns</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;ndcg&quot;</span><span class="p">:</span> <span class="n">ndcg_at_k</span><span class="p">,</span>
+        <span class="s2">&quot;recall&quot;</span><span class="p">:</span> <span class="n">recall_at_k</span><span class="p">,</span>
+        <span class="s2">&quot;precision&quot;</span><span class="p">:</span> <span class="n">precision_at_k</span><span class="p">,</span>
+        <span class="s2">&quot;mrr&quot;</span><span class="p">:</span> <span class="n">reciprocal_rank</span><span class="p">,</span>
+        <span class="s2">&quot;map&quot;</span><span class="p">:</span> <span class="n">average_precision</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">unknown</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">metrics</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metric_fns</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Unknown metric(s) </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">. Choose from </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">metric_fns</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="c1"># primary_k is always reported; sort+dedupe so report keys are canonical.</span>
+    <span class="n">k_values</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">k_values</span><span class="p">)</span> <span class="o">|</span> <span class="p">{</span><span class="n">primary_k</span><span class="p">}))</span>
+    <span class="n">limit</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">k_values</span><span class="p">)</span>
+    <span class="n">vd_degraded</span> <span class="o">=</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span> <span class="s2">&quot;lexical&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_vd_available</span><span class="p">()</span>
+
+    <span class="n">per_query</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">taxonomy</span><span class="p">:</span> <span class="n">Counter</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+    <span class="n">n_abstention</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">abstain_correct</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">case</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cases</span><span class="p">):</span>
+        <span class="c1"># per_artifact=True yields one id per artifact (its best surface) — the</span>
+        <span class="c1"># same shape ef.evaluate_retrieval produces after its internal _dedup, so</span>
+        <span class="c1"># the metric primitives below score the same ranking as the pure-ef path.</span>
+        <span class="n">hits</span> <span class="o">=</span> <span class="n">_search</span><span class="p">(</span>
+            <span class="n">corpus</span><span class="p">,</span>
+            <span class="k">case</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+            <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span>
+            <span class="n">per_artifact</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">ranking</span> <span class="o">=</span> <span class="p">[</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">]</span>
+        <span class="n">top_score</span> <span class="o">=</span> <span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span> <span class="k">if</span> <span class="n">hits</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">case</span><span class="o">.</span><span class="n">gold_is_none</span><span class="p">:</span>
+            <span class="n">n_abstention</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">abstain_threshold</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">taxonomy</span><span class="p">[</span><span class="s2">&quot;abstention_unscored&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">top_score</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">top_score</span> <span class="o">&lt;</span> <span class="n">abstain_threshold</span><span class="p">:</span>
+                <span class="n">taxonomy</span><span class="p">[</span><span class="s2">&quot;abstention_ok&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">abstain_correct</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">taxonomy</span><span class="p">[</span><span class="s2">&quot;false_action&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="n">relevant</span> <span class="o">=</span> <span class="p">{</span><span class="n">aid</span><span class="p">:</span> <span class="mf">1.0</span> <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">case</span><span class="o">.</span><span class="n">gold</span><span class="p">}</span>
+        <span class="n">per_query</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;q</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">05d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">metric_fns</span><span class="p">[</span><span class="n">name</span><span class="p">](</span><span class="n">ranking</span><span class="p">,</span> <span class="n">relevant</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">metrics</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">k_values</span>
+        <span class="p">}</span>
+
+        <span class="n">rank</span> <span class="o">=</span> <span class="n">_gold_rank</span><span class="p">(</span><span class="n">ranking</span><span class="p">,</span> <span class="n">case</span><span class="o">.</span><span class="n">gold</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">rank</span> <span class="o">&gt;</span> <span class="n">primary_k</span><span class="p">:</span>
+            <span class="n">taxonomy</span><span class="p">[</span><span class="s2">&quot;retrieval_miss&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">taxonomy</span><span class="p">[</span><span class="s2">&quot;hit_rank_1&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">taxonomy</span><span class="p">[</span><span class="s2">&quot;surfaced_low_rank&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">metric_keys</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">metrics</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">k_values</span><span class="p">]</span>
+    <span class="n">n_gold</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">per_query</span><span class="p">)</span>
+    <span class="c1"># With no gold-bearing case, leave metrics empty so RetrievalEvalReport.</span>
+    <span class="c1"># primary_at(...) returns None (the &quot;not computed&quot; contract) rather than NaN.</span>
+    <span class="n">aggregated</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">{</span>
+            <span class="n">key</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">scores</span> <span class="ow">in</span> <span class="n">per_query</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">/</span> <span class="n">n_gold</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">metric_keys</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">n_gold</span>
+        <span class="k">else</span> <span class="p">{}</span>
+    <span class="p">)</span>
+    <span class="n">retrieval</span> <span class="o">=</span> <span class="n">RetrievalEvalReport</span><span class="p">(</span>
+        <span class="n">metrics</span><span class="o">=</span><span class="n">aggregated</span><span class="p">,</span>
+        <span class="n">per_query</span><span class="o">=</span><span class="n">per_query</span><span class="p">,</span>
+        <span class="n">n_queries</span><span class="o">=</span><span class="n">n_gold</span><span class="p">,</span>
+        <span class="n">k_values</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">k_values</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">abstention_accuracy</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">abstain_correct</span> <span class="o">/</span> <span class="n">n_abstention</span>
+        <span class="k">if</span> <span class="n">abstain_threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">n_abstention</span>
+        <span class="k">else</span> <span class="kc">None</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">DiscoveryReport</span><span class="p">(</span>
+        <span class="n">retrieval</span><span class="o">=</span><span class="n">retrieval</span><span class="p">,</span>
+        <span class="n">failure_classes</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">taxonomy</span><span class="p">),</span>
+        <span class="n">n_cases</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">),</span>
+        <span class="n">n_gold</span><span class="o">=</span><span class="n">n_gold</span><span class="p">,</span>
+        <span class="n">n_abstention</span><span class="o">=</span><span class="n">n_abstention</span><span class="p">,</span>
+        <span class="n">primary_k</span><span class="o">=</span><span class="n">primary_k</span><span class="p">,</span>
+        <span class="n">abstention_accuracy</span><span class="o">=</span><span class="n">abstention_accuracy</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+        <span class="n">vd_degraded</span><span class="o">=</span><span class="n">vd_degraded</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Distractor-robustness curve</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<div class="viewcode-block" id="distractor_robustness_curve">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.distractor_robustness_curve">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">distractor_robustness_curve</span><span class="p">(</span>
+    <span class="n">scope</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">probes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">embedder</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">DFLT_CURVE_EMBEDDER</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_CURVE_MODE</span><span class="p">,</span>
+    <span class="n">sizes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_DISTRACTOR_SIZES</span><span class="p">,</span>
+    <span class="n">trials</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieval accuracy as the catalog grows — the needle-in-a-haystack curve.</span>
+
+<span class="sd">    For each catalog size ``N`` and each ``(query, gold_id)`` probe, build many</span>
+<span class="sd">    ``N``-artifact sub-corpora (the gold artifact plus ``N−1`` distractors</span>
+<span class="sd">    sampled from ``scope``) and measure how often the gold artifact lands in the</span>
+<span class="sd">    top ``k``. The accuracy at each ``N`` is averaged over the probes and over</span>
+<span class="sd">    ``trials`` random distractor draws. ``N=1`` is the trivial anchor (gold</span>
+<span class="sd">    alone) and is always 1.0; a steep decline as ``N`` grows is the signature of</span>
+<span class="sd">    retrieval that does not discriminate.</span>
+
+<span class="sd">    Sub-corpora are built in-memory with the ``&quot;light&quot;`` (numpy-only) embedder</span>
+<span class="sd">    by default, so the curve is fast and offline; pass ``embedder=&quot;default&quot;``</span>
+<span class="sd">    (and ``mode=&quot;hybrid&quot;``) to measure the production configuration.</span>
+
+<span class="sd">    Sizes larger than the corpus are **capped** at ``len(scope)`` (the largest</span>
+<span class="sd">    catalog the pool can fill) and de-duplicated, so the returned keys are the</span>
+<span class="sd">    catalog sizes actually built — the x-axis never claims an ``N`` larger than</span>
+<span class="sd">    the corpus could supply.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        scope: the full ``{artifact_id: raw}`` pool to draw the catalog from.</span>
+<span class="sd">        probes: ``(query, gold_id)`` pairs; ``gold_id`` must be a key of ``scope``.</span>
+<span class="sd">        strategy: the :class:`~ir.strategy.IndexingStrategy` to index with</span>
+<span class="sd">            (default :class:`~ir.strategy.WholeText`).</span>
+<span class="sd">        embedder: embedder spec for the sub-corpora.</span>
+<span class="sd">        mode: ranking mode for the probe searches.</span>
+<span class="sd">        sizes: the catalog sizes to sweep (capped at ``len(scope)``, deduped).</span>
+<span class="sd">        trials: random distractor draws averaged per size (a size that consumes</span>
+<span class="sd">            the whole pool has no sampling freedom, so it runs a single trial).</span>
+<span class="sd">        seed: base RNG seed (reproducible; varied per size).</span>
+<span class="sd">        k: the top-``k`` the gold must reach to count as a hit.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``{N: accuracy}`` for each *achievable* ``N`` (the requested sizes capped</span>
+<span class="sd">        at ``len(scope)`` and de-duplicated).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">build</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusSource</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusStore</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">WholeText</span>
+
+    <span class="n">scope</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">scope</span><span class="p">)</span>
+    <span class="n">strategy</span> <span class="o">=</span> <span class="n">strategy</span> <span class="ow">or</span> <span class="n">WholeText</span><span class="p">()</span>
+    <span class="n">all_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">scope</span><span class="p">)</span>
+    <span class="n">max_catalog</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_ids</span><span class="p">)</span>
+    <span class="n">effective_sizes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="nb">min</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">max_catalog</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">sizes</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">})</span>
+    <span class="n">curve</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">size</span> <span class="ow">in</span> <span class="n">effective_sizes</span><span class="p">:</span>
+        <span class="n">rng</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="n">seed</span> <span class="o">+</span> <span class="n">size</span><span class="p">)</span>
+        <span class="n">hits</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">query</span><span class="p">,</span> <span class="n">gold_id</span> <span class="ow">in</span> <span class="n">probes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">gold_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">scope</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">pool</span> <span class="o">=</span> <span class="p">[</span><span class="n">aid</span> <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">all_ids</span> <span class="k">if</span> <span class="n">aid</span> <span class="o">!=</span> <span class="n">gold_id</span><span class="p">]</span>
+            <span class="n">n_distractors</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pool</span><span class="p">))</span>
+            <span class="c1"># The full pool admits no sampling freedom — every trial would build</span>
+            <span class="c1"># the same catalog — so one representative trial suffices.</span>
+            <span class="n">n_trials</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">n_distractors</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span> <span class="k">else</span> <span class="n">trials</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_trials</span><span class="p">):</span>
+                <span class="n">sample</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">n_distractors</span><span class="p">)</span> <span class="k">if</span> <span class="n">n_distractors</span> <span class="k">else</span> <span class="p">[]</span>
+                <span class="n">sub</span> <span class="o">=</span> <span class="p">{</span><span class="n">aid</span><span class="p">:</span> <span class="n">scope</span><span class="p">[</span><span class="n">aid</span><span class="p">]</span> <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="p">(</span><span class="n">gold_id</span><span class="p">,</span> <span class="o">*</span><span class="n">sample</span><span class="p">)}</span>
+                <span class="n">source</span> <span class="o">=</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_mapping</span><span class="p">(</span>
+                    <span class="n">sub</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;_distractor&quot;</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span>
+                <span class="p">)</span>
+                <span class="n">corpus</span> <span class="o">=</span> <span class="n">build</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">CorpusStore</span><span class="o">.</span><span class="n">memory</span><span class="p">(),</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">)</span>
+                <span class="n">ranking</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">_search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+                <span class="p">]</span>
+                <span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">gold_id</span> <span class="ow">in</span> <span class="n">ranking</span><span class="p">[:</span><span class="n">k</span><span class="p">]:</span>
+                    <span class="n">hits</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">curve</span><span class="p">[</span><span class="n">size</span><span class="p">]</span> <span class="o">=</span> <span class="n">hits</span> <span class="o">/</span> <span class="n">total</span> <span class="k">if</span> <span class="n">total</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">curve</span></div>
+
+
+
+<div class="viewcode-block" id="distractor_curve_from_cases">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.distractor_curve_from_cases">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">distractor_curve_from_cases</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convenience: a distractor curve over a source&#39;s scope from single-gold cases.</span>
+
+<span class="sd">    Probes are the single-gold cases (``(query, gold[0])``); the source&#39;s</span>
+<span class="sd">    ``scope`` is the distractor pool and its ``indexing_strategy`` is reused</span>
+<span class="sd">    unless a ``strategy`` is passed in ``kwargs``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">probes</span> <span class="o">=</span> <span class="p">[(</span><span class="n">case</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">case</span><span class="o">.</span><span class="n">gold</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">case</span> <span class="ow">in</span> <span class="n">cases</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">case</span><span class="o">.</span><span class="n">gold</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">.</span><span class="n">indexing_strategy</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">distractor_robustness_curve</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">scope</span><span class="p">,</span> <span class="n">probes</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

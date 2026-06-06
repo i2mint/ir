@@ -8,6 +8,7 @@
    module_docs/ir/cli
    module_docs/ir/config
    module_docs/ir/embed
+   module_docs/ir/eval
    module_docs/ir/index
    module_docs/ir/registry
    module_docs/ir/retrieve

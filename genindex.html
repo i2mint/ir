@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.1 documentation</title>
+  <title>Index &mdash; ir 0.1.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=a58bc63e"></script>
+      <script src="_static/documentation_options.js?v=92734c54"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -52,6 +52,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/cli.html">ir.cli</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/config.html">ir.config</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
@@ -99,21 +100,30 @@
  | <a href="#M"><strong>M</strong></a>
  | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
+ | <a href="#Q"><strong>Q</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
  
 </div>
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.abstention_accuracy">abstention_accuracy (ir.eval.DiscoveryReport attribute)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.Artifact">Artifact (class in ir)</a>
 
       <ul>
         <li><a href="module_docs/ir/base.html#ir.base.Artifact">(class in ir.base)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.as_doc_retriever">as_doc_retriever() (in module ir.eval)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -158,16 +168,20 @@
 </li>
       <li><a href="module_docs/ir/sources.html#ir.sources.content_hash_signal">content_hash_signal() (in module ir.sources)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.corpora">corpora() (in module ir)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.Corpus">Corpus (class in ir)</a>
 
       <ul>
         <li><a href="module_docs/ir/index.html#ir.index.Corpus">(class in ir.index)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.corpus">corpus (ir.eval.DiscoveryCase attribute)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.corpus_artifact_ids">corpus_artifact_ids() (in module ir.eval)</a>
+</li>
       <li><a href="module_docs/ir/config.html#ir.config.corpus_dir">corpus_dir() (in module ir.config)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.CorpusSource">CorpusSource (class in ir)</a>
@@ -190,9 +204,27 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/config.html#ir.config.data_dir">data_dir() (in module ir.config)</a>
 </li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_CURVE_MODE">DFLT_CURVE_MODE (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_DISTRACTOR_SIZES">DFLT_DISTRACTOR_SIZES (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_K_VALUES">DFLT_K_VALUES (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_METRICS">DFLT_METRICS (in module ir.eval)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_MODE">DFLT_MODE (in module ir.eval)</a>
+</li>
       <li><a href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_RRF_K">DFLT_RRF_K (in module ir.retrieve)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase">DiscoveryCase (class in ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport">DiscoveryReport (class in ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.distractor_curve_from_cases">distractor_curve_from_cases() (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.distractor_robustness_curve">distractor_robustness_curve() (in module ir.eval)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -203,12 +235,22 @@
       <li><a href="module_docs/ir/config.html#ir.config.embeddings_cache_dir">embeddings_cache_dir() (in module ir.config)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/cli.html#ir.cli.eval">eval() (in module ir.cli)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.evaluate_discovery">evaluate_discovery() (in module ir.eval)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.failure_classes">failure_classes (ir.eval.DiscoveryReport attribute)</a>
+</li>
       <li><a href="module_docs/ir/base.html#ir.base.FilterFields">FilterFields (in module ir.base)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.from_dict">from_dict() (ir.eval.DiscoveryCase class method)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.CorpusSource.from_files">from_files() (ir.CorpusSource class method)</a>
 
@@ -249,6 +291,12 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/registry.html#ir.registry.get">get() (in module ir.registry)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.gold">gold (ir.eval.DiscoveryCase attribute)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.gold_is_none">gold_is_none (ir.eval.DiscoveryCase property)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -315,6 +363,13 @@
 </li>
       </ul></li>
       <li>
+    ir.eval
+
+      <ul>
+        <li><a href="module_docs/ir/eval.html#module-ir.eval">module</a>
+</li>
+      </ul></li>
+      <li>
     ir.index
 
       <ul>
@@ -362,6 +417,8 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.load_cases">load_cases() (in module ir.eval)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.CorpusStore.local">local() (ir.CorpusStore class method)</a>
 
       <ul>
@@ -400,6 +457,10 @@
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.memory">(ir.store.CorpusStore class method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.metadata">metadata (ir.eval.DiscoveryCase attribute)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.mode">mode (ir.eval.DiscoveryReport attribute)</a>
+</li>
       <li><a href="module_docs/ir/retrieve.html#ir.retrieve.MODES">MODES (in module ir.retrieve)</a>
 </li>
       <li>
@@ -417,6 +478,8 @@
         <li><a href="module_docs/ir/config.html#module-ir.config">ir.config</a>
 </li>
         <li><a href="module_docs/ir/embed.html#module-ir.embed">ir.embed</a>
+</li>
+        <li><a href="module_docs/ir/eval.html#module-ir.eval">ir.eval</a>
 </li>
         <li><a href="module_docs/ir/index.html#module-ir.index">ir.index</a>
 </li>
@@ -456,6 +519,20 @@
 </li>
       </ul></li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.primary">primary (ir.eval.DiscoveryReport property)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.primary_k">primary_k (ir.eval.DiscoveryReport attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Q">Q</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.query">query (ir.eval.DiscoveryCase attribute)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="R">R</h2>
@@ -481,6 +558,10 @@
 </li>
       <li><a href="module_docs/ir/config.html#ir.config.registry_path">registry_path() (in module ir.config)</a>
 </li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.retrieval">retrieval (ir.eval.DiscoveryReport attribute)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.retrieval_report">retrieval_report() (in module ir.eval)</a>
+</li>
       <li><a href="module_docs/ir/cli.html#ir.cli.rm">rm() (in module ir.cli)</a>
 </li>
   </ul></td>
@@ -490,6 +571,8 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/config.html#ir.config.safe_name">safe_name() (in module ir.config)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.save_cases">save_cases() (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.search">search() (in module ir)</a>
 
@@ -517,6 +600,8 @@
 </li>
       <li><a href="module_docs/ir/registry.html#ir.registry.source_from_entry">source_from_entry() (in module ir.registry)</a>
 </li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.source_id">source_id (ir.eval.DiscoveryCase attribute)</a>
+</li>
       <li><a href="module_docs/ir/base.html#ir.base.storage_key">storage_key() (in module ir.base)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.Surface">Surface (class in ir)</a>
@@ -528,10 +613,34 @@
   </ul></td>
 </tr></table>
 
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.to_dict">to_dict() (ir.eval.DiscoveryCase method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.to_qrels">to_qrels() (in module ir.eval)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/registry.html#ir.registry.unregister">unregister() (in module ir.registry)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.validate_cases">validate_cases() (in module ir.eval)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.vd_degraded">vd_degraded (ir.eval.DiscoveryReport attribute)</a>
 </li>
   </ul></td>
 </tr></table>

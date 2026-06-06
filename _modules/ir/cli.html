@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.cli &mdash; ir 0.1.1 documentation</title>
+  <title>ir.cli &mdash; ir 0.1.2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=a58bc63e"></script>
+      <script src="../../_static/documentation_options.js?v=92734c54"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -52,6 +52,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/cli.html">ir.cli</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
@@ -97,6 +98,7 @@
 <span class="sd">    ir info packages                # config + stats for a corpus</span>
 <span class="sd">    ir register notes files --root ~/notes --pattern &#39;.*\\.md$&#39;</span>
 <span class="sd">    ir rm notes                     # unregister (keeps built data)</span>
+<span class="sd">    ir eval skills skills_eval.jsonl --mode hybrid   # score retrieval on a case file</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -189,7 +191,39 @@
 
 
 
-<span class="n">COMMANDS</span> <span class="o">=</span> <span class="p">[</span><span class="n">ls</span><span class="p">,</span> <span class="n">register</span><span class="p">,</span> <span class="n">build</span><span class="p">,</span> <span class="n">search</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">rm</span><span class="p">]</span>
+<div class="viewcode-block" id="eval">
+<a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.eval">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">eval</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score a built corpus&#39;s retrieval against a DiscoveryCase JSONL file.</span>
+
+<span class="sd">    cases: path to a JSONL file of cases (see :mod:`ir.eval`); each line is a</span>
+<span class="sd">    ``{&quot;query&quot;: ..., &quot;gold&quot;: [artifact_id, ...]}`` record (empty ``gold`` = an</span>
+<span class="sd">    abstention case). Prints recall@k / NDCG@k / MRR / MAP plus the failure-mode</span>
+<span class="sd">    taxonomy. mode: dense | lexical | hybrid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">evaluate_discovery</span><span class="p">,</span> <span class="n">load_cases</span><span class="p">,</span> <span class="n">validate_cases</span>
+
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is empty; build it first: ir build </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">case_list</span> <span class="o">=</span> <span class="n">load_cases</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">case_list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;no cases found in </span><span class="si">{</span><span class="n">cases</span><span class="si">!r}</span><span class="s2">&quot;</span>
+    <span class="n">drift</span> <span class="o">=</span> <span class="n">validate_cases</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">case_list</span><span class="p">)</span>
+    <span class="n">report</span> <span class="o">=</span> <span class="n">evaluate_discovery</span><span class="p">(</span>
+        <span class="n">corpus</span><span class="p">,</span> <span class="n">case_list</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">primary_k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">k_values</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">k</span><span class="p">}))</span>
+    <span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">report</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">drift</span><span class="p">:</span>
+        <span class="n">out</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  WARNING: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">drift</span><span class="p">)</span><span class="si">}</span><span class="s2"> case(s) reference gold ids absent from &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> (stale fixture?); their misses are not real.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="n">COMMANDS</span> <span class="o">=</span> <span class="p">[</span><span class="n">ls</span><span class="p">,</span> <span class="n">register</span><span class="p">,</span> <span class="n">build</span><span class="p">,</span> <span class="n">search</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">rm</span><span class="p">,</span> <span class="nb">eval</span><span class="p">]</span>
 </pre></div>
 
            </div>
