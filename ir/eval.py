@@ -68,7 +68,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
+from .base import SearchHit
 from .retrieve import search as _search
+from .select import DFLT_GAP_RATIO, DFLT_MAX_K, DFLT_REL_THRESHOLD
 
 #: Rank cutoffs reported by default.
 DFLT_K_VALUES = (1, 5, 10)
@@ -88,6 +90,35 @@ DFLT_DISTRACTOR_SIZES = (1, 4, 8, 16, 32, 64, 128)
 #: ``embedder="default"`` to measure the production configuration instead.
 DFLT_CURVE_MODE = "dense"
 DFLT_CURVE_EMBEDDER = "light"
+
+#: ``max_k`` values swept by :func:`sweep_selector` (the commit-size cap).
+DFLT_SWEEP_MAX_K = (1, 2, 3, 5, 8)
+
+#: ``rel`` values swept by :func:`sweep_selector` (relative-to-top keep band).
+DFLT_SWEEP_REL = (0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+
+#: ``min_score`` floors swept by :func:`sweep_selector`. Default ``(None,)`` —
+#: the absolute floor is mode-specific (cosine / RRF / BM25 scales differ), so
+#: it is left off unless the caller supplies calibrated values to sweep.
+DFLT_SWEEP_MIN_SCORE = (None,)
+
+#: Default objective :func:`SelectionSweep.best` optimizes — the standard
+#: precision/recall balance. ``mean_selected_size`` is the only metric minimized;
+#: every other is maximized (see :data:`_SWEEP_MINIMIZE`).
+DFLT_SWEEP_OBJECTIVE = "selection_f1"
+
+#: Selection metrics where *smaller is better* (all others: larger is better).
+_SWEEP_MINIMIZE = frozenset({"mean_selected_size"})
+
+#: The scalar selection metrics a sweep can optimize / rank by.
+SWEEP_METRICS = (
+    "selection_f1",
+    "selection_precision",
+    "selection_recall",
+    "conditional_commit_rate",
+    "abstention_accuracy",
+    "mean_selected_size",
+)
 
 
 def _vd_available() -> bool:
@@ -792,9 +823,9 @@ def evaluate_selection(
     mode: str = DFLT_MODE,
     k: int = 10,
     surfaces: Iterable[str] | None = None,
-    max_k: int = 5,
-    rel: float = 0.6,
-    gap_ratio: float = 0.5,
+    max_k: int = DFLT_MAX_K,
+    rel: float = DFLT_REL_THRESHOLD,
+    gap_ratio: float = DFLT_GAP_RATIO,
     min_score: float | None = None,
     **search_kw: Any,
 ) -> SelectionReport:
@@ -822,9 +853,75 @@ def evaluate_selection(
     Returns:
         a :class:`SelectionReport`.
     """
-    from .select import select as _select
-
     corpus = _as_corpus(corpus)
+    scored = _retrieve_for_cases(
+        corpus, cases, mode=mode, k=k, surfaces=surfaces, **search_kw
+    )
+    return _score_selection(
+        scored,
+        strategy=strategy,
+        max_k=max_k,
+        rel=rel,
+        gap_ratio=gap_ratio,
+        min_score=min_score,
+        mode=mode,
+        k=k,
+    )
+
+
+def _retrieve_for_cases(
+    corpus: Any,
+    cases: Sequence[DiscoveryCase],
+    *,
+    mode: str,
+    k: int,
+    surfaces: Iterable[str] | None,
+    **search_kw: Any,
+) -> list[tuple[DiscoveryCase, list[SearchHit]]]:
+    """Retrieve each case's ``k`` candidate hits — once per case.
+
+    Returns ``[(case, hits), …]``. Selector parameters do not affect retrieval,
+    so a sweep over them (:func:`sweep_selector`) reuses one such pass across the
+    whole grid; this is the expensive step, paid exactly once.
+    """
+    return [
+        (
+            case,
+            _search(
+                corpus,
+                case.query,
+                k=k,
+                mode=mode,
+                surfaces=surfaces,
+                per_artifact=True,
+                **search_kw,
+            ),
+        )
+        for case in cases
+    ]
+
+
+def _score_selection(
+    scored: Sequence[tuple[DiscoveryCase, Sequence[SearchHit]]],
+    *,
+    strategy: str | Any,
+    max_k: int,
+    rel: float,
+    gap_ratio: float,
+    min_score: float | None,
+    mode: str,
+    k: int,
+) -> SelectionReport:
+    """Score one selector setting over pre-retrieved ``(case, hits)`` pairs.
+
+    The retrieval-free heart of :func:`evaluate_selection`: commit each case's
+    candidates with :func:`ir.select.select` and accumulate the selection-quality
+    metrics. Conditioning is identical to :func:`evaluate_selection` (a retrieval
+    miss is excluded from every metric, keeping them on the shared
+    ``n_gold_retrieved`` denominator). Factored out so :func:`sweep_selector` can
+    score a whole parameter grid against a single retrieval pass.
+    """
+    from .select import select as _select
 
     precisions: list[float] = []  # only over committed gold cases
     recalls: list[float] = []
@@ -836,16 +933,7 @@ def evaluate_selection(
     n_abstention = 0
     n_abstained_correct = 0
 
-    for case in cases:
-        hits = _search(
-            corpus,
-            case.query,
-            k=k,
-            mode=mode,
-            surfaces=surfaces,
-            per_artifact=True,
-            **search_kw,
-        )
+    for case, hits in scored:
         selection = _select(
             hits,
             strategy=strategy,
@@ -900,10 +988,330 @@ def evaluate_selection(
         mean_selected_size=(
             sum(selected_sizes) / len(selected_sizes) if selected_sizes else None
         ),
-        n_cases=len(cases),
+        n_cases=len(scored),
         n_gold=n_gold,
         n_abstention=n_abstention,
+        strategy=strategy if isinstance(strategy, str) else "custom",
+        mode=mode,
+        k=k,
+    )
+
+
+# =========================================================================== #
+# Selector tuning — sweep the commit knobs against the cases
+# =========================================================================== #
+
+
+def _metric_value(report: SelectionReport, metric: str) -> float | None:
+    """A named scalar metric off a :class:`SelectionReport` (``None`` if undefined)."""
+    if metric not in SWEEP_METRICS:
+        raise ValueError(
+            f"unknown selection metric {metric!r}; expected one of {SWEEP_METRICS}"
+        )
+    return getattr(report, metric)
+
+
+def _rank_key(value: float | None, metric: str) -> float:
+    """Sort key for *maximizing desirability* of a metric (``None`` → worst).
+
+    A metric in :data:`_SWEEP_MINIMIZE` (only ``mean_selected_size``) is negated
+    so that "smaller is better" still sorts as "bigger key is better"; a ``None``
+    maps to ``-inf`` so an undefined metric never wins.
+    """
+    if value is None:
+        return float("-inf")
+    return -value if metric in _SWEEP_MINIMIZE else value
+
+
+@dataclass(frozen=True)
+class SelectionGridPoint:
+    """One cell of a selector sweep: a parameter setting and the report it scored.
+
+    Attributes:
+        max_k / rel / min_score: the swept selection parameters at this cell.
+        report: the :class:`SelectionReport` for those parameters.
+    """
+
+    max_k: int
+    rel: float
+    min_score: float | None
+    report: SelectionReport
+
+    @property
+    def params(self) -> dict[str, Any]:
+        """The swept parameters as a plain dict (``max_k`` / ``rel`` / ``min_score``)."""
+        return {"max_k": self.max_k, "rel": self.rel, "min_score": self.min_score}
+
+    def to_dict(self) -> dict:
+        """JSON-serializable form: the params plus the full report dict."""
+        return {**self.params, "report": self.report.to_dict()}
+
+
+@dataclass(frozen=True)
+class SelectionSweep:
+    """The outcome of :func:`sweep_selector` — a grid of selector settings scored.
+
+    Every point shares the same cases, retrieval ``mode`` / candidate depth ``k``
+    and ``strategy``; they differ only in the swept selection knobs (``max_k``,
+    ``rel``, ``min_score``). :meth:`best` picks a single setting by an objective;
+    :meth:`frontier` returns the precision/recall Pareto front for the honest
+    trade-off view; :meth:`table` renders the whole grid.
+
+    Attributes:
+        points: one :class:`SelectionGridPoint` per grid cell (grid order).
+        objective: the default metric :meth:`best` optimizes.
+        strategy / mode / k: the shared configuration the grid was scored under.
+        n_cases / n_gold / n_abstention / n_gold_retrieved: case counts (echoed
+            from the reports; selection metrics share the ``n_gold_retrieved``
+            denominator, so it is surfaced here too).
+    """
+
+    points: list[SelectionGridPoint]
+    objective: str
+    strategy: str
+    mode: str
+    k: int
+    n_cases: int
+    n_gold: int
+    n_abstention: int
+    n_gold_retrieved: int
+
+    def best(
+        self, metric: str | None = None, *, minimize: bool | None = None
+    ) -> SelectionGridPoint:
+        """The grid point that optimizes ``metric`` (default :attr:`objective`).
+
+        Ties are broken toward the *cheaper, tighter* commit — smaller
+        ``mean_selected_size``, then smaller ``max_k``, then larger ``rel`` —
+        encoding the capability-discovery stance that fewer, higher-precision
+        commits beat more (ir_01 §3). ``minimize`` is inferred from the metric
+        (only ``mean_selected_size`` minimizes) but can be forced.
+
+        Raises:
+            ValueError: if the sweep is empty or ``metric`` is unknown.
+        """
+        if not self.points:
+            raise ValueError("cannot pick best of an empty sweep")
+        metric = metric or self.objective
+        if metric not in SWEEP_METRICS:
+            raise ValueError(
+                f"unknown selection metric {metric!r}; expected one of {SWEEP_METRICS}"
+            )
+        do_min = (metric in _SWEEP_MINIMIZE) if minimize is None else minimize
+
+        def desirability(p: SelectionGridPoint) -> float:
+            v = _metric_value(p.report, metric)
+            if v is None:
+                return float("-inf")
+            return -v if do_min else v
+
+        def sort_key(p: SelectionGridPoint) -> tuple:
+            size = p.report.mean_selected_size
+            return (
+                -desirability(p),  # primary: best objective first
+                size if size is not None else float("inf"),  # then smaller commit
+                p.max_k,  # then a tighter cap
+                -p.rel,  # then a stricter band
+            )
+
+        return min(self.points, key=sort_key)
+
+    def frontier(
+        self, *, x: str = "selection_recall", y: str = "selection_precision"
+    ) -> list[SelectionGridPoint]:
+        """The Pareto-optimal points trading ``x`` off against ``y`` (both maximized).
+
+        A point is on the frontier when no other point is at least as good on both
+        axes and strictly better on one. ``mean_selected_size`` on an axis is read
+        as "smaller is better" automatically. Returned sorted by ``x`` ascending.
+        """
+        for m in (x, y):
+            if m not in SWEEP_METRICS:
+                raise ValueError(
+                    f"unknown selection metric {m!r}; expected one of {SWEEP_METRICS}"
+                )
+
+        def coords(p: SelectionGridPoint) -> tuple[float, float]:
+            return (
+                _rank_key(_metric_value(p.report, x), x),
+                _rank_key(_metric_value(p.report, y), y),
+            )
+
+        front: list[SelectionGridPoint] = []
+        for p in self.points:
+            px, py = coords(p)
+            dominated = any(
+                (qx >= px and qy >= py) and (qx > px or qy > py)
+                for q in self.points
+                for qx, qy in [coords(q)]
+                if q is not p
+            )
+            if not dominated:
+                front.append(p)
+        return sorted(front, key=lambda p: coords(p)[0])
+
+    def table(self, *, sort_by: str | None = None) -> str:
+        """A human-readable grid table, one row per setting (best objective first).
+
+        ``sort_by`` defaults to :attr:`objective`. ``min_score`` is shown only
+        when any cell sets one (an all-``None`` column is elided as noise).
+        """
+        sort_by = sort_by or self.objective
+        show_floor = any(p.min_score is not None for p in self.points)
+        # _rank_key already maps "more desirable" → larger, so a single
+        # descending sort orders the grid most-desirable-first for any metric.
+        rows = sorted(
+            self.points,
+            key=lambda p: _rank_key(_metric_value(p.report, sort_by), sort_by),
+            reverse=True,
+        )
+
+        def fmt(v: float | None) -> str:
+            return f"{v:.4f}" if v is not None else "n/a"
+
+        head = ["max_k", "rel"]
+        if show_floor:
+            head.append("min_score")
+        head += ["cond_commit", "precision", "recall", "F1", "sel_size"]
+        lines = ["  ".join(f"{h:>11}" for h in head)]
+        for p in rows:
+            r = p.report
+            cells = [str(p.max_k), f"{p.rel:.2f}"]
+            if show_floor:
+                cells.append("none" if p.min_score is None else f"{p.min_score:.3f}")
+            cells += [
+                fmt(r.conditional_commit_rate),
+                fmt(r.selection_precision),
+                fmt(r.selection_recall),
+                fmt(r.selection_f1),
+                fmt(r.mean_selected_size),
+            ]
+            lines.append("  ".join(f"{c:>11}" for c in cells))
+        return "\n".join(lines)
+
+    def to_dict(self) -> dict:
+        """JSON-serializable form: the grid, the best point, and the config."""
+        best = self.best()
+        return {
+            "objective": self.objective,
+            "strategy": self.strategy,
+            "mode": self.mode,
+            "k": self.k,
+            "n_cases": self.n_cases,
+            "n_gold": self.n_gold,
+            "n_abstention": self.n_abstention,
+            "n_gold_retrieved": self.n_gold_retrieved,
+            "best": best.to_dict(),
+            "points": [p.to_dict() for p in self.points],
+        }
+
+    def __str__(self) -> str:
+        best = self.best()
+        return "\n".join(
+            [
+                f"SelectionSweep — {len(self.points)} settings  "
+                f"(strategy={self.strategy}, mode={self.mode}, k={self.k})",
+                f"  {self.n_cases} cases ({self.n_gold} gold, "
+                f"{self.n_abstention} abstention; {self.n_gold_retrieved} gold-retrieved)",
+                f"  objective: {self.objective}",
+                self.table(),
+                f"  best ({self.objective}): max_k={best.max_k} rel={best.rel:.2f}"
+                + (
+                    f" min_score={best.min_score:.3f}"
+                    if best.min_score is not None
+                    else ""
+                )
+                + f"  →  {self.objective}="
+                + (
+                    f"{_metric_value(best.report, self.objective):.4f}"
+                    if _metric_value(best.report, self.objective) is not None
+                    else "n/a"
+                ),
+            ]
+        )
+
+
+def sweep_selector(
+    corpus: Any,
+    cases: Sequence[DiscoveryCase],
+    *,
+    strategy: str = "conservative",
+    mode: str = DFLT_MODE,
+    k: int = 10,
+    surfaces: Iterable[str] | None = None,
+    max_k_grid: Sequence[int] = DFLT_SWEEP_MAX_K,
+    rel_grid: Sequence[float] = DFLT_SWEEP_REL,
+    min_score_grid: Sequence[float | None] = DFLT_SWEEP_MIN_SCORE,
+    gap_ratio: float = DFLT_GAP_RATIO,
+    objective: str = DFLT_SWEEP_OBJECTIVE,
+    **search_kw: Any,
+) -> SelectionSweep:
+    """Tune the selector: score a grid of commit knobs against the cases.
+
+    The selection defaults (``max_k=5``, ``rel=0.6``) are documented *starting
+    points*, not tuned optima. This sweeps ``max_k × rel × min_score`` and scores
+    each cell with :func:`evaluate_selection`'s exact metric, so the right
+    defaults for a given corpus can be read off empirically (precision vs recall
+    vs commit size) rather than guessed.
+
+    Retrieval is run **once per case** (selector parameters do not change the
+    ranking) and the cached candidates are reused across the whole grid, so a
+    6×5 grid costs one retrieval pass, not thirty.
+
+    Args:
+        corpus: an :class:`~ir.index.Corpus` or a registered corpus *name*.
+        cases: the :class:`DiscoveryCase`\\ s to score against.
+        strategy: the selection strategy held fixed across the grid (the swept
+            knobs are ``conservative``'s; a non-``conservative`` strategy that
+            ignores some knobs simply yields duplicate rows).
+        mode: ranking mode for retrieval.
+        k: candidate depth retrieved before selection (the selector's window).
+        surfaces: restrict retrieval to these surface kinds.
+        max_k_grid / rel_grid / min_score_grid: the axes of the sweep.
+        gap_ratio: held fixed (used only by the ``score_gap`` strategy).
+        objective: the default metric :meth:`SelectionSweep.best` optimizes.
+        **search_kw: any other :func:`ir.retrieve.search` keyword.
+
+    Returns:
+        a :class:`SelectionSweep` (``.best()`` / ``.frontier()`` / ``.table()`` /
+        ``.to_dict()``).
+    """
+    if objective not in SWEEP_METRICS:
+        raise ValueError(
+            f"unknown objective {objective!r}; expected one of {SWEEP_METRICS}"
+        )
+    corpus = _as_corpus(corpus)
+    scored = _retrieve_for_cases(
+        corpus, cases, mode=mode, k=k, surfaces=surfaces, **search_kw
+    )
+    points: list[SelectionGridPoint] = []
+    for max_k in max_k_grid:
+        for rel in rel_grid:
+            for min_score in min_score_grid:
+                report = _score_selection(
+                    scored,
+                    strategy=strategy,
+                    max_k=max_k,
+                    rel=rel,
+                    gap_ratio=gap_ratio,
+                    min_score=min_score,
+                    mode=mode,
+                    k=k,
+                )
+                points.append(
+                    SelectionGridPoint(
+                        max_k=max_k, rel=rel, min_score=min_score, report=report
+                    )
+                )
+    first = points[0].report if points else None
+    return SelectionSweep(
+        points=points,
+        objective=objective,
         strategy=strategy,
         mode=mode,
         k=k,
+        n_cases=first.n_cases if first else len(cases),
+        n_gold=first.n_gold if first else 0,
+        n_abstention=first.n_abstention if first else 0,
+        n_gold_retrieved=first.n_gold_retrieved if first else 0,
     )

@@ -139,6 +139,7 @@ def test_evaluate_discovery_matches_pure_ef_path():
 def test_abstention_separation_and_accuracy():
     corpus = _corpus()
     cases = ev.load_cases(FIXTURE)
+
     # The abstention query shares no tokens with any doc -> near-zero top score.
     def top_score(query):
         hits = ir.search(corpus, query, k=1, mode="dense")
@@ -175,7 +176,7 @@ def test_unknown_metric_raises():
 
 def test_validate_cases_flags_drift():
     cases = [
-        ev.DiscoveryCase("q", gold=("python",)),      # present
+        ev.DiscoveryCase("q", gold=("python",)),  # present
         ev.DiscoveryCase("q", gold=("gone", "docker")),  # 'gone' absent
     ]
     missing = ev.validate_cases(_corpus(), cases)
@@ -307,7 +308,9 @@ def test_cli_eval_paths(tmp_path, monkeypatch):
     (docs / "deploy.md").write_text("deploy the app to the server with systemd units")
     (docs / "baking.md").write_text("bake a cake in the oven with flour and sugar")
     cli.register("notes", "files", root=str(docs), pattern=r".*\.md$")
-    cli.build("notes", embedder="light")  # built with light -> open_corpus stays offline
+    cli.build(
+        "notes", embedder="light"
+    )  # built with light -> open_corpus stays offline
 
     cases = tmp_path / "cases.jsonl"
     cases.write_text(
@@ -339,3 +342,200 @@ def test_cli_eval_paths(tmp_path, monkeypatch):
 def test_eval_reachable_via_ir_namespace():
     assert hasattr(ir, "eval")
     assert ir.eval.DiscoveryCase is ev.DiscoveryCase
+
+
+# --------------------------------------------------------------------------- #
+# sweep_selector — tuning the commit knobs against the cases
+# --------------------------------------------------------------------------- #
+
+
+def _sel_report(*, precision=None, recall=None, f1=None, size=None, commit=None):
+    """A minimal SelectionReport for testing the sweep's ranking/frontier logic."""
+    return ev.SelectionReport(
+        selection_precision=precision,
+        selection_recall=recall,
+        selection_f1=f1,
+        conditional_commit_rate=commit,
+        n_gold_retrieved=1,
+        abstention_accuracy=None,
+        mean_selected_size=size,
+        n_cases=1,
+        n_gold=1,
+        n_abstention=0,
+    )
+
+
+def _sweep_of(points, *, objective="selection_f1"):
+    """Wrap hand-made grid points in a SelectionSweep (counts are placeholders)."""
+    return ev.SelectionSweep(
+        points=list(points),
+        objective=objective,
+        strategy="conservative",
+        mode="dense",
+        k=10,
+        n_cases=1,
+        n_gold=1,
+        n_abstention=0,
+        n_gold_retrieved=1,
+    )
+
+
+def test_sweep_grid_shape_and_params_recorded():
+    sweep = ev.sweep_selector(
+        _corpus(),
+        _gold_cases(),
+        mode="dense",
+        k=4,
+        max_k_grid=(1, 3, 5),
+        rel_grid=(0.5, 0.7),
+    )
+    # one point per (max_k, rel, min_score) cell — 3 × 2 × 1
+    assert len(sweep.points) == 6
+    assert {(p.max_k, p.rel) for p in sweep.points} == {
+        (mk, r) for mk in (1, 3, 5) for r in (0.5, 0.7)
+    }
+    assert all(p.min_score is None for p in sweep.points)
+    assert sweep.objective == "selection_f1"
+
+
+def test_sweep_reuses_one_retrieval_pass(monkeypatch):
+    # The whole point of the sweep: retrieval is paid ONCE per case, then the
+    # cached candidates are reused across every grid cell.
+    cases = _gold_cases()
+    real_search = ev._search
+    calls = {"n": 0}
+
+    def counting(*a, **k):
+        calls["n"] += 1
+        return real_search(*a, **k)
+
+    monkeypatch.setattr(ev, "_search", counting)
+    sweep = ev.sweep_selector(
+        _corpus(),
+        cases,
+        mode="dense",
+        k=4,
+        max_k_grid=(1, 3, 5),
+        rel_grid=(0.5, 0.7, 0.9),
+    )
+    assert len(sweep.points) == 9
+    assert calls["n"] == len(cases)  # NOT len(cases) * 9
+
+
+def test_sweep_best_on_disjoint_corpus_is_perfect():
+    sweep = ev.sweep_selector(_corpus(), _gold_cases(), mode="dense", k=4)
+    best = sweep.best()
+    assert isinstance(best, ev.SelectionGridPoint)
+    # disjoint vocab → the selector keeps exactly the one gold per query
+    assert best.report.selection_f1 == pytest.approx(1.0)
+    assert best.report.mean_selected_size == pytest.approx(1.0)
+
+
+def test_sweep_best_respects_metric_and_unknown_raises():
+    sweep = ev.sweep_selector(_corpus(), _gold_cases(), mode="dense", k=4)
+    assert sweep.best("selection_precision").report.selection_precision is not None
+    with pytest.raises(ValueError):
+        sweep.best("not_a_metric")
+    with pytest.raises(ValueError):
+        ev.sweep_selector(_corpus(), _gold_cases(), mode="dense", objective="bogus")
+
+
+def test_sweep_best_tiebreak_prefers_smaller_commit():
+    # Two settings tie on F1; the cheaper (smaller mean_selected_size) wins,
+    # encoding "fewer, higher-precision commits beat more".
+    big = ev.SelectionGridPoint(
+        max_k=8, rel=0.4, min_score=None, report=_sel_report(f1=0.8, size=3.0)
+    )
+    small = ev.SelectionGridPoint(
+        max_k=3, rel=0.6, min_score=None, report=_sel_report(f1=0.8, size=1.5)
+    )
+    best = _sweep_of([big, small]).best()
+    assert best is small
+
+
+def test_sweep_best_treats_none_metric_as_worst():
+    defined = ev.SelectionGridPoint(
+        max_k=3, rel=0.6, min_score=None, report=_sel_report(f1=0.2, size=1.0)
+    )
+    undefined = ev.SelectionGridPoint(
+        max_k=1, rel=0.9, min_score=None, report=_sel_report(f1=None, size=None)
+    )
+    assert _sweep_of([defined, undefined]).best() is defined
+
+
+def test_sweep_frontier_excludes_dominated_points():
+    dominated = ev.SelectionGridPoint(
+        max_k=1, rel=0.5, min_score=None, report=_sel_report(precision=0.5, recall=0.5)
+    )
+    dominator = ev.SelectionGridPoint(
+        max_k=2, rel=0.6, min_score=None, report=_sel_report(precision=0.9, recall=0.9)
+    )
+    tradeoff = ev.SelectionGridPoint(
+        max_k=3, rel=0.7, min_score=None, report=_sel_report(precision=1.0, recall=0.3)
+    )
+    front = _sweep_of([dominated, dominator, tradeoff]).frontier(
+        x="selection_recall", y="selection_precision"
+    )
+    on = {p.max_k for p in front}
+    assert 1 not in on  # dominated by (0.9, 0.9)
+    assert on == {2, 3}
+    # returned sorted by x (recall) ascending
+    recalls = [p.report.selection_recall for p in front]
+    assert recalls == sorted(recalls)
+
+
+def test_sweep_table_elides_all_none_min_score_column():
+    no_floor = ev.sweep_selector(
+        _corpus(), _gold_cases(), mode="dense", k=4, max_k_grid=(3,), rel_grid=(0.6,)
+    )
+    assert "min_score" not in no_floor.table()
+    with_floor = ev.sweep_selector(
+        _corpus(),
+        _gold_cases(),
+        mode="dense",
+        k=4,
+        max_k_grid=(3,),
+        rel_grid=(0.6,),
+        min_score_grid=(0.0, 0.5),
+    )
+    assert "min_score" in with_floor.table()
+
+
+def test_sweep_to_dict_is_json_serializable_and_str_renders():
+    import json
+
+    sweep = ev.sweep_selector(
+        _corpus(), _gold_cases(), mode="dense", k=4, max_k_grid=(1, 5), rel_grid=(0.6,)
+    )
+    d = json.loads(json.dumps(sweep.to_dict()))
+    assert d["objective"] == "selection_f1"
+    assert "best" in d and len(d["points"]) == 2
+    s = str(sweep)
+    assert "SelectionSweep" in s and "best (selection_f1)" in s
+
+
+def test_cli_sweep_select(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.setenv("IR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("IR_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("IR_CACHE_DIR", str(tmp_path / "cache"))
+    from ir import cli
+
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "deploy.md").write_text("deploy the app to the server with systemd units")
+    (docs / "baking.md").write_text("bake a cake in the oven with flour and sugar")
+    cli.register("notes", "files", root=str(docs), pattern=r".*\.md$")
+    cli.build("notes", embedder="light")
+
+    cases = tmp_path / "cases.jsonl"
+    cases.write_text(
+        json.dumps({"query": "deploy app systemd", "gold": ["deploy.md"]}) + "\n"
+    )
+    out = cli.sweep_select("notes", str(cases), mode="dense", k=3)
+    assert "SelectionSweep" in out and "best (selection_f1)" in out
+
+    # eval_select now threads max_k / rel / min_score through
+    tuned = cli.eval_select("notes", str(cases), mode="dense", k=3, max_k=1, rel=0.9)
+    assert "SelectionReport" in tuned

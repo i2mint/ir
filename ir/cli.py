@@ -14,6 +14,7 @@ Commands operate on **named** corpora from the registry (see
     ir eval-gen skills skills_eval.jsonl --k 5        # generate cases (needs oa/LLM)
     ir eval skills skills_eval.jsonl --mode hybrid    # score retrieval on a case file
     ir eval-select skills skills_eval.jsonl           # score the selection stage
+    ir sweep-select skills skills_eval.jsonl          # tune max_k/rel for the selector
 """
 
 from __future__ import annotations
@@ -187,13 +188,24 @@ def eval_gen(name, out, *, k=5, abstention_frac=0.15, max_artifacts=None):
     )
 
 
-def eval_select(name, cases, *, strategy="conservative", mode="hybrid", k=10):
+def eval_select(
+    name,
+    cases,
+    *,
+    strategy="conservative",
+    mode="hybrid",
+    k=10,
+    max_k=3,
+    rel=0.9,
+    min_score=None,
+):
     """Score a selector against a DiscoveryCase JSONL file (selection quality).
 
     Reports the conditional commit rate (the selection decision isolated from
     retrieval) plus selection precision / recall / F1 and abstention accuracy.
     strategy: conservative | top_k | rel_threshold | score_gap. mode: dense |
-    lexical | hybrid.
+    lexical | hybrid. max_k / rel / min_score tune the commit (see `ir.select`);
+    `ir sweep-select` sweeps them to find good values.
     """
     from .eval import evaluate_selection, load_cases, validate_cases
 
@@ -204,8 +216,55 @@ def eval_select(name, cases, *, strategy="conservative", mode="hybrid", k=10):
     if not case_list:
         return f"no cases found in {cases!r}"
     drift = validate_cases(corpus, case_list)
-    report = evaluate_selection(corpus, case_list, strategy=strategy, mode=mode, k=k)
+    report = evaluate_selection(
+        corpus,
+        case_list,
+        strategy=strategy,
+        mode=mode,
+        k=k,
+        max_k=int(max_k),
+        rel=float(rel),
+        min_score=None if min_score is None else float(min_score),
+    )
     out = str(report)
+    if drift:
+        out += (
+            f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
+            f"corpus {name!r} (stale fixture?); their misses are not real."
+        )
+    return out
+
+
+def sweep_select(
+    name,
+    cases,
+    *,
+    strategy="conservative",
+    mode="hybrid",
+    k=10,
+    objective="selection_f1",
+):
+    """Sweep selector knobs (max_k × rel) against a case file; print the grid + best.
+
+    Retrieves once per case and reuses the candidates across the whole grid, so
+    the sweep is cheap. Prints a table (one row per setting, best objective first)
+    and the winning max_k / rel. Use it to pick `ir.select` defaults empirically.
+    objective: selection_f1 | selection_precision | selection_recall |
+    conditional_commit_rate | mean_selected_size. mode: dense | lexical | hybrid.
+    """
+    from .eval import load_cases, sweep_selector, validate_cases
+
+    corpus = open_corpus(name)
+    if len(corpus) == 0:
+        return f"corpus {name!r} is empty; build it first: ir build {name}"
+    case_list = load_cases(cases)
+    if not case_list:
+        return f"no cases found in {cases!r}"
+    drift = validate_cases(corpus, case_list)
+    sweep = sweep_selector(
+        corpus, case_list, strategy=strategy, mode=mode, k=k, objective=objective
+    )
+    out = str(sweep)
     if drift:
         out += (
             f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
@@ -225,4 +284,5 @@ COMMANDS = [
     eval,
     eval_gen,
     eval_select,
+    sweep_select,
 ]

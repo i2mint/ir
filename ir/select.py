@@ -61,14 +61,19 @@ BodyLoader = Callable[[Mapping[str, Any]], "str | None"]
 
 #: Max items the conservative selector will ever commit to. Small on purpose:
 #: ir_01 §3 ("fewer, higher-precision candidates beat more"), echoing MCP-Atlas's
-#: 3–7 target tools per task. Tune up only if your eval's distractor curve allows.
-DFLT_MAX_K = 5
+#: 3–7 target tools per task. Tuned to 3 in ir_06 (the F1-optimal commit cap over
+#: real skills/packages/reports corpora); leaves headroom for genuine multi-gold
+#: queries while the strict ``rel`` band keeps padding out.
+DFLT_MAX_K = 3
 
 #: Keep a follow-on hit only if its score is at least this fraction of the top.
-#: 0.6 is a deliberately strict "stay close to the best" band (a distractor a bit
-#: behind the top is dropped); loosen toward 0 to admit more, tighten toward 1 to
-#: admit only near-ties. A starting default to tune against your distractor curve.
-DFLT_REL_THRESHOLD = 0.6
+#: 0.9 is a strict "near-tie only" band: for MiniLM cosine and RRF hybrid the
+#: informative second-best sits within ~10–15% of the top, while the distractor
+#: tail starts below ~0.8×top, so a looser band just rakes in distractors. Tuned
+#: empirically in ir_06 (``sweep_selector`` over three real corpora, both modes —
+#: ``rel=0.6`` was dominated everywhere). Loosen toward 0 to admit more recall at
+#: the cost of precision; ``ir sweep-select`` re-tunes against your own corpus.
+DFLT_REL_THRESHOLD = 0.9
 
 #: Cut before a hit whose score drops below this fraction of the previous one
 #: (the score-gap "elbow"): a sharp relative drop marks the end of the signal.

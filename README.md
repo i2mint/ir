@@ -56,6 +56,10 @@ sel = ir.select(hits, min_score=0.4)       # opt in to abstention ("nothing appl
 sel = ir.select(hits, strategy="score_gap")  # elbow cut, or "top_k" / "rel_threshold" / a callable
 ```
 
+The conservative defaults (`max_k=3`, `rel=0.9`) are tuned, not guessed — see
+[`ir_06`](misc/docs/ir_06%20--%20Selector%20Tuning%20--%20Picking%20conservative-selector%20defaults%20from%20the%20data.md);
+re-tune for your own corpus with `ev.sweep_selector` / `ir sweep-select`.
+
 Selection is *relative* (ratios to the top score), so one selector works across
 `dense` / `hybrid` / `lexical` whose absolute scales differ by orders of
 magnitude. The result carries auditable `signals` and a `reason` — no opaque
@@ -85,13 +89,16 @@ from ir import eval as ev
 cases = ev.load_cases("skills_eval.jsonl")               # query + gold artifact_id(s)
 ev.evaluate_discovery(corpus, cases, mode="hybrid")      # recall@k / NDCG@k / MRR / MAP + failure taxonomy
 ev.evaluate_selection(corpus, cases, strategy="conservative")  # conditional commit rate + selection P/R/F1
+ev.sweep_selector(corpus, cases)                         # tune max_k × rel; .best() / .frontier() / .table()
 ev.distractor_robustness_curve(source.scope, probes)     # accuracy vs catalog size
 ```
 
 `evaluate_selection`'s headline is the **conditional commit rate** — the
 selection decision *isolated* from retrieval (did the selector keep the gold,
-*given* retrieval surfaced it?). Generate cases by back-translation with
-`ir.eval_gen` (needs an LLM; scoring stays offline).
+*given* retrieval surfaced it?). `sweep_selector` scores a whole `max_k × rel`
+grid against the cases off **one** retrieval pass, so the selector defaults can
+be read off the data (`.best()`) rather than guessed. Generate cases by
+back-translation with `ir.eval_gen` (needs an LLM; scoring stays offline).
 
 ## CLI
 
@@ -100,6 +107,7 @@ ir build skills                          # build/update a preset corpus
 ir discover skills "deploy the app"      # retrieve -> select
 ir discover skills "deploy the app" --disclose   # + load bodies
 ir eval-select skills skills_eval.jsonl  # score the selection stage
+ir sweep-select skills skills_eval.jsonl # tune the selector (max_k × rel) on your corpus
 ir ls                                    # list corpora
 ```
 
