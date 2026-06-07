@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>&lt;no title&gt; &mdash; ir 0.1.6 documentation</title>
+  <title>&lt;no title&gt; &mdash; ir 0.1.7 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=6e0256f3"></script>
+      <script src="_static/documentation_options.js?v=ca7ad2ea"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -145,6 +145,7 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.rm"><code class="docutils literal notranslate"><span class="pre">rm()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.sweep_select"><code class="docutils literal notranslate"><span class="pre">sweep_select()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/config.html">ir.config</a><ul>
@@ -168,9 +169,16 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_K_VALUES"><code class="docutils literal notranslate"><span class="pre">DFLT_K_VALUES</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_METRICS"><code class="docutils literal notranslate"><span class="pre">DFLT_METRICS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_MODE"><code class="docutils literal notranslate"><span class="pre">DFLT_MODE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_MAX_K"><code class="docutils literal notranslate"><span class="pre">DFLT_SWEEP_MAX_K</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_MIN_SCORE"><code class="docutils literal notranslate"><span class="pre">DFLT_SWEEP_MIN_SCORE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_OBJECTIVE"><code class="docutils literal notranslate"><span class="pre">DFLT_SWEEP_OBJECTIVE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_REL"><code class="docutils literal notranslate"><span class="pre">DFLT_SWEEP_REL</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DiscoveryCase"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DiscoveryReport"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SWEEP_METRICS"><code class="docutils literal notranslate"><span class="pre">SWEEP_METRICS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint"><code class="docutils literal notranslate"><span class="pre">SelectionGridPoint</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SelectionReport"><code class="docutils literal notranslate"><span class="pre">SelectionReport</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SelectionSweep"><code class="docutils literal notranslate"><span class="pre">SelectionSweep</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.as_doc_retriever"><code class="docutils literal notranslate"><span class="pre">as_doc_retriever()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.corpus_artifact_ids"><code class="docutils literal notranslate"><span class="pre">corpus_artifact_ids()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.distractor_curve_from_cases"><code class="docutils literal notranslate"><span class="pre">distractor_curve_from_cases()</span></code></a></li>
@@ -180,6 +188,7 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.load_cases"><code class="docutils literal notranslate"><span class="pre">load_cases()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.retrieval_report"><code class="docutils literal notranslate"><span class="pre">retrieval_report()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.save_cases"><code class="docutils literal notranslate"><span class="pre">save_cases()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.sweep_selector"><code class="docutils literal notranslate"><span class="pre">sweep_selector()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.to_qrels"><code class="docutils literal notranslate"><span class="pre">to_qrels()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.validate_cases"><code class="docutils literal notranslate"><span class="pre">validate_cases()</span></code></a></li>
 </ul>

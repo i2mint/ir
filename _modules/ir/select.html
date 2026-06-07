@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.select &mdash; ir 0.1.6 documentation</title>
+  <title>ir.select &mdash; ir 0.1.7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=6e0256f3"></script>
+      <script src="../../_static/documentation_options.js?v=ca7ad2ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -152,14 +152,19 @@
 
 <span class="c1">#: Max items the conservative selector will ever commit to. Small on purpose:</span>
 <span class="c1">#: ir_01 §3 (&quot;fewer, higher-precision candidates beat more&quot;), echoing MCP-Atlas&#39;s</span>
-<span class="c1">#: 3–7 target tools per task. Tune up only if your eval&#39;s distractor curve allows.</span>
-<span class="n">DFLT_MAX_K</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="c1">#: 3–7 target tools per task. Tuned to 3 in ir_06 (the F1-optimal commit cap over</span>
+<span class="c1">#: real skills/packages/reports corpora); leaves headroom for genuine multi-gold</span>
+<span class="c1">#: queries while the strict ``rel`` band keeps padding out.</span>
+<span class="n">DFLT_MAX_K</span> <span class="o">=</span> <span class="mi">3</span>
 
 <span class="c1">#: Keep a follow-on hit only if its score is at least this fraction of the top.</span>
-<span class="c1">#: 0.6 is a deliberately strict &quot;stay close to the best&quot; band (a distractor a bit</span>
-<span class="c1">#: behind the top is dropped); loosen toward 0 to admit more, tighten toward 1 to</span>
-<span class="c1">#: admit only near-ties. A starting default to tune against your distractor curve.</span>
-<span class="n">DFLT_REL_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.6</span>
+<span class="c1">#: 0.9 is a strict &quot;near-tie only&quot; band: for MiniLM cosine and RRF hybrid the</span>
+<span class="c1">#: informative second-best sits within ~10–15% of the top, while the distractor</span>
+<span class="c1">#: tail starts below ~0.8×top, so a looser band just rakes in distractors. Tuned</span>
+<span class="c1">#: empirically in ir_06 (``sweep_selector`` over three real corpora, both modes —</span>
+<span class="c1">#: ``rel=0.6`` was dominated everywhere). Loosen toward 0 to admit more recall at</span>
+<span class="c1">#: the cost of precision; ``ir sweep-select`` re-tunes against your own corpus.</span>
+<span class="n">DFLT_REL_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.9</span>
 
 <span class="c1">#: Cut before a hit whose score drops below this fraction of the previous one</span>
 <span class="c1">#: (the score-gap &quot;elbow&quot;): a sharp relative drop marks the end of the signal.</span>

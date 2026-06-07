@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.eval &mdash; ir 0.1.6 documentation</title>
+  <title>ir.eval &mdash; ir 0.1.7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=6e0256f3"></script>
+      <script src="../../_static/documentation_options.js?v=ca7ad2ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -159,7 +159,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchHit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span> <span class="k">as</span> <span class="n">_search</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.select</span><span class="w"> </span><span class="kn">import</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">,</span> <span class="n">DFLT_MAX_K</span><span class="p">,</span> <span class="n">DFLT_REL_THRESHOLD</span>
 
 <span class="c1">#: Rank cutoffs reported by default.</span>
 <span class="n">DFLT_K_VALUES</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
@@ -179,6 +181,35 @@
 <span class="c1">#: ``embedder=&quot;default&quot;`` to measure the production configuration instead.</span>
 <span class="n">DFLT_CURVE_MODE</span> <span class="o">=</span> <span class="s2">&quot;dense&quot;</span>
 <span class="n">DFLT_CURVE_EMBEDDER</span> <span class="o">=</span> <span class="s2">&quot;light&quot;</span>
+
+<span class="c1">#: ``max_k`` values swept by :func:`sweep_selector` (the commit-size cap).</span>
+<span class="n">DFLT_SWEEP_MAX_K</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+
+<span class="c1">#: ``rel`` values swept by :func:`sweep_selector` (relative-to-top keep band).</span>
+<span class="n">DFLT_SWEEP_REL</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">)</span>
+
+<span class="c1">#: ``min_score`` floors swept by :func:`sweep_selector`. Default ``(None,)`` —</span>
+<span class="c1">#: the absolute floor is mode-specific (cosine / RRF / BM25 scales differ), so</span>
+<span class="c1">#: it is left off unless the caller supplies calibrated values to sweep.</span>
+<span class="n">DFLT_SWEEP_MIN_SCORE</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,)</span>
+
+<span class="c1">#: Default objective :func:`SelectionSweep.best` optimizes — the standard</span>
+<span class="c1">#: precision/recall balance. ``mean_selected_size`` is the only metric minimized;</span>
+<span class="c1">#: every other is maximized (see :data:`_SWEEP_MINIMIZE`).</span>
+<span class="n">DFLT_SWEEP_OBJECTIVE</span> <span class="o">=</span> <span class="s2">&quot;selection_f1&quot;</span>
+
+<span class="c1">#: Selection metrics where *smaller is better* (all others: larger is better).</span>
+<span class="n">_SWEEP_MINIMIZE</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">&quot;mean_selected_size&quot;</span><span class="p">})</span>
+
+<span class="c1">#: The scalar selection metrics a sweep can optimize / rank by.</span>
+<span class="n">SWEEP_METRICS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;selection_f1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;selection_precision&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;selection_recall&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;conditional_commit_rate&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;abstention_accuracy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mean_selected_size&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_vd_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -933,9 +964,9 @@
     <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_MODE</span><span class="p">,</span>
     <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
     <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-    <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span><span class="p">,</span>
-    <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_K</span><span class="p">,</span>
+    <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_REL_THRESHOLD</span><span class="p">,</span>
+    <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">,</span>
     <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SelectionReport</span><span class="p">:</span>
@@ -963,9 +994,76 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        a :class:`SelectionReport`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.select</span><span class="w"> </span><span class="kn">import</span> <span class="n">select</span> <span class="k">as</span> <span class="n">_select</span>
-
     <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="n">scored</span> <span class="o">=</span> <span class="n">_retrieve_for_cases</span><span class="p">(</span>
+        <span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span> <span class="o">**</span><span class="n">search_kw</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_score_selection</span><span class="p">(</span>
+        <span class="n">scored</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
+        <span class="n">max_k</span><span class="o">=</span><span class="n">max_k</span><span class="p">,</span>
+        <span class="n">rel</span><span class="o">=</span><span class="n">rel</span><span class="p">,</span>
+        <span class="n">gap_ratio</span><span class="o">=</span><span class="n">gap_ratio</span><span class="p">,</span>
+        <span class="n">min_score</span><span class="o">=</span><span class="n">min_score</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_retrieve_for_cases</span><span class="p">(</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve each case&#39;s ``k`` candidate hits — once per case.</span>
+
+<span class="sd">    Returns ``[(case, hits), …]``. Selector parameters do not affect retrieval,</span>
+<span class="sd">    so a sweep over them (:func:`sweep_selector`) reuses one such pass across the</span>
+<span class="sd">    whole grid; this is the expensive step, paid exactly once.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">(</span>
+            <span class="n">case</span><span class="p">,</span>
+            <span class="n">_search</span><span class="p">(</span>
+                <span class="n">corpus</span><span class="p">,</span>
+                <span class="k">case</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
+                <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+                <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span>
+                <span class="n">per_artifact</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">case</span> <span class="ow">in</span> <span class="n">cases</span>
+    <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_score_selection</span><span class="p">(</span>
+    <span class="n">scored</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]]],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SelectionReport</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score one selector setting over pre-retrieved ``(case, hits)`` pairs.</span>
+
+<span class="sd">    The retrieval-free heart of :func:`evaluate_selection`: commit each case&#39;s</span>
+<span class="sd">    candidates with :func:`ir.select.select` and accumulate the selection-quality</span>
+<span class="sd">    metrics. Conditioning is identical to :func:`evaluate_selection` (a retrieval</span>
+<span class="sd">    miss is excluded from every metric, keeping them on the shared</span>
+<span class="sd">    ``n_gold_retrieved`` denominator). Factored out so :func:`sweep_selector` can</span>
+<span class="sd">    score a whole parameter grid against a single retrieval pass.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.select</span><span class="w"> </span><span class="kn">import</span> <span class="n">select</span> <span class="k">as</span> <span class="n">_select</span>
 
     <span class="n">precisions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># only over committed gold cases</span>
     <span class="n">recalls</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -977,16 +1075,7 @@
     <span class="n">n_abstention</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">n_abstained_correct</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="k">for</span> <span class="n">case</span> <span class="ow">in</span> <span class="n">cases</span><span class="p">:</span>
-        <span class="n">hits</span> <span class="o">=</span> <span class="n">_search</span><span class="p">(</span>
-            <span class="n">corpus</span><span class="p">,</span>
-            <span class="k">case</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
-            <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
-            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
-            <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span>
-            <span class="n">per_artifact</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
-        <span class="p">)</span>
+    <span class="k">for</span> <span class="n">case</span><span class="p">,</span> <span class="n">hits</span> <span class="ow">in</span> <span class="n">scored</span><span class="p">:</span>
         <span class="n">selection</span> <span class="o">=</span> <span class="n">_select</span><span class="p">(</span>
             <span class="n">hits</span><span class="p">,</span>
             <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
@@ -1041,12 +1130,355 @@
         <span class="n">mean_selected_size</span><span class="o">=</span><span class="p">(</span>
             <span class="nb">sum</span><span class="p">(</span><span class="n">selected_sizes</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_sizes</span><span class="p">)</span> <span class="k">if</span> <span class="n">selected_sizes</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="p">),</span>
-        <span class="n">n_cases</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">),</span>
+        <span class="n">n_cases</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">scored</span><span class="p">),</span>
         <span class="n">n_gold</span><span class="o">=</span><span class="n">n_gold</span><span class="p">,</span>
         <span class="n">n_abstention</span><span class="o">=</span><span class="n">n_abstention</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Selector tuning — sweep the commit knobs against the cases</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_metric_value</span><span class="p">(</span><span class="n">report</span><span class="p">:</span> <span class="n">SelectionReport</span><span class="p">,</span> <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A named scalar metric off a :class:`SelectionReport` (``None`` if undefined).&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">metric</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SWEEP_METRICS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;unknown selection metric </span><span class="si">{</span><span class="n">metric</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">SWEEP_METRICS</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">report</span><span class="p">,</span> <span class="n">metric</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rank_key</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sort key for *maximizing desirability* of a metric (``None`` → worst).</span>
+
+<span class="sd">    A metric in :data:`_SWEEP_MINIMIZE` (only ``mean_selected_size``) is negated</span>
+<span class="sd">    so that &quot;smaller is better&quot; still sorts as &quot;bigger key is better&quot;; a ``None``</span>
+<span class="sd">    maps to ``-inf`` so an undefined metric never wins.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">value</span> <span class="k">if</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">_SWEEP_MINIMIZE</span> <span class="k">else</span> <span class="n">value</span>
+
+
+<div class="viewcode-block" id="SelectionGridPoint">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.SelectionGridPoint">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SelectionGridPoint</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;One cell of a selector sweep: a parameter setting and the report it scored.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        max_k / rel / min_score: the swept selection parameters at this cell.</span>
+<span class="sd">        report: the :class:`SelectionReport` for those parameters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">report</span><span class="p">:</span> <span class="n">SelectionReport</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The swept parameters as a plain dict (``max_k`` / ``rel`` / ``min_score``).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;max_k&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_k</span><span class="p">,</span> <span class="s2">&quot;rel&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rel</span><span class="p">,</span> <span class="s2">&quot;min_score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span><span class="p">}</span>
+
+<div class="viewcode-block" id="SelectionGridPoint.to_dict">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.SelectionGridPoint.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form: the params plus the full report dict.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;report&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SelectionSweep">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.SelectionSweep">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SelectionSweep</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The outcome of :func:`sweep_selector` — a grid of selector settings scored.</span>
+
+<span class="sd">    Every point shares the same cases, retrieval ``mode`` / candidate depth ``k``</span>
+<span class="sd">    and ``strategy``; they differ only in the swept selection knobs (``max_k``,</span>
+<span class="sd">    ``rel``, ``min_score``). :meth:`best` picks a single setting by an objective;</span>
+<span class="sd">    :meth:`frontier` returns the precision/recall Pareto front for the honest</span>
+<span class="sd">    trade-off view; :meth:`table` renders the whole grid.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        points: one :class:`SelectionGridPoint` per grid cell (grid order).</span>
+<span class="sd">        objective: the default metric :meth:`best` optimizes.</span>
+<span class="sd">        strategy / mode / k: the shared configuration the grid was scored under.</span>
+<span class="sd">        n_cases / n_gold / n_abstention / n_gold_retrieved: case counts (echoed</span>
+<span class="sd">            from the reports; selection metrics share the ``n_gold_retrieved``</span>
+<span class="sd">            denominator, so it is surfaced here too).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">points</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SelectionGridPoint</span><span class="p">]</span>
+    <span class="n">objective</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">n_cases</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">n_gold</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">n_abstention</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">n_gold_retrieved</span><span class="p">:</span> <span class="nb">int</span>
+
+<div class="viewcode-block" id="SelectionSweep.best">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.SelectionSweep.best">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">best</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">minimize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SelectionGridPoint</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The grid point that optimizes ``metric`` (default :attr:`objective`).</span>
+
+<span class="sd">        Ties are broken toward the *cheaper, tighter* commit — smaller</span>
+<span class="sd">        ``mean_selected_size``, then smaller ``max_k``, then larger ``rel`` —</span>
+<span class="sd">        encoding the capability-discovery stance that fewer, higher-precision</span>
+<span class="sd">        commits beat more (ir_01 §3). ``minimize`` is inferred from the metric</span>
+<span class="sd">        (only ``mean_selected_size`` minimizes) but can be forced.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: if the sweep is empty or ``metric`` is unknown.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cannot pick best of an empty sweep&quot;</span><span class="p">)</span>
+        <span class="n">metric</span> <span class="o">=</span> <span class="n">metric</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">objective</span>
+        <span class="k">if</span> <span class="n">metric</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SWEEP_METRICS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;unknown selection metric </span><span class="si">{</span><span class="n">metric</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">SWEEP_METRICS</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="n">do_min</span> <span class="o">=</span> <span class="p">(</span><span class="n">metric</span> <span class="ow">in</span> <span class="n">_SWEEP_MINIMIZE</span><span class="p">)</span> <span class="k">if</span> <span class="n">minimize</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">minimize</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">desirability</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">SelectionGridPoint</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">_metric_value</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">report</span><span class="p">,</span> <span class="n">metric</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="o">-</span><span class="n">v</span> <span class="k">if</span> <span class="n">do_min</span> <span class="k">else</span> <span class="n">v</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">sort_key</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">SelectionGridPoint</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">report</span><span class="o">.</span><span class="n">mean_selected_size</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="o">-</span><span class="n">desirability</span><span class="p">(</span><span class="n">p</span><span class="p">),</span>  <span class="c1"># primary: best objective first</span>
+                <span class="n">size</span> <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">),</span>  <span class="c1"># then smaller commit</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">max_k</span><span class="p">,</span>  <span class="c1"># then a tighter cap</span>
+                <span class="o">-</span><span class="n">p</span><span class="o">.</span><span class="n">rel</span><span class="p">,</span>  <span class="c1"># then a stricter band</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">sort_key</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SelectionSweep.frontier">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.SelectionSweep.frontier">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">frontier</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;selection_recall&quot;</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;selection_precision&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SelectionGridPoint</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The Pareto-optimal points trading ``x`` off against ``y`` (both maximized).</span>
+
+<span class="sd">        A point is on the frontier when no other point is at least as good on both</span>
+<span class="sd">        axes and strictly better on one. ``mean_selected_size`` on an axis is read</span>
+<span class="sd">        as &quot;smaller is better&quot; automatically. Returned sorted by ``x`` ascending.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">m</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SWEEP_METRICS</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;unknown selection metric </span><span class="si">{</span><span class="n">m</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">SWEEP_METRICS</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">coords</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">SelectionGridPoint</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">_rank_key</span><span class="p">(</span><span class="n">_metric_value</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">report</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">x</span><span class="p">),</span>
+                <span class="n">_rank_key</span><span class="p">(</span><span class="n">_metric_value</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">report</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">y</span><span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="n">front</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SelectionGridPoint</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">:</span>
+            <span class="n">px</span><span class="p">,</span> <span class="n">py</span> <span class="o">=</span> <span class="n">coords</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">dominated</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">qx</span> <span class="o">&gt;=</span> <span class="n">px</span> <span class="ow">and</span> <span class="n">qy</span> <span class="o">&gt;=</span> <span class="n">py</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">qx</span> <span class="o">&gt;</span> <span class="n">px</span> <span class="ow">or</span> <span class="n">qy</span> <span class="o">&gt;</span> <span class="n">py</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span>
+                <span class="k">for</span> <span class="n">qx</span><span class="p">,</span> <span class="n">qy</span> <span class="ow">in</span> <span class="p">[</span><span class="n">coords</span><span class="p">(</span><span class="n">q</span><span class="p">)]</span>
+                <span class="k">if</span> <span class="n">q</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">p</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">dominated</span><span class="p">:</span>
+                <span class="n">front</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">front</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">coords</span><span class="p">(</span><span class="n">p</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="SelectionSweep.table">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.SelectionSweep.table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sort_by</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A human-readable grid table, one row per setting (best objective first).</span>
+
+<span class="sd">        ``sort_by`` defaults to :attr:`objective`. ``min_score`` is shown only</span>
+<span class="sd">        when any cell sets one (an all-``None`` column is elided as noise).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sort_by</span> <span class="o">=</span> <span class="n">sort_by</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">objective</span>
+        <span class="n">show_floor</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">min_score</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="c1"># _rank_key already maps &quot;more desirable&quot; → larger, so a single</span>
+        <span class="c1"># descending sort orders the grid most-desirable-first for any metric.</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">,</span>
+            <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">_rank_key</span><span class="p">(</span><span class="n">_metric_value</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">report</span><span class="p">,</span> <span class="n">sort_by</span><span class="p">),</span> <span class="n">sort_by</span><span class="p">),</span>
+            <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">fmt</span><span class="p">(</span><span class="n">v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;n/a&quot;</span>
+
+        <span class="n">head</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;max_k&quot;</span><span class="p">,</span> <span class="s2">&quot;rel&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">show_floor</span><span class="p">:</span>
+            <span class="n">head</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;min_score&quot;</span><span class="p">)</span>
+        <span class="n">head</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;cond_commit&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;F1&quot;</span><span class="p">,</span> <span class="s2">&quot;sel_size&quot;</span><span class="p">]</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">h</span><span class="si">:</span><span class="s2">&gt;11</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">head</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">report</span>
+            <span class="n">cells</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">max_k</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">rel</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">show_floor</span><span class="p">:</span>
+                <span class="n">cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;none&quot;</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">min_score</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">min_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">cells</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="n">fmt</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">conditional_commit_rate</span><span class="p">),</span>
+                <span class="n">fmt</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">selection_precision</span><span class="p">),</span>
+                <span class="n">fmt</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">selection_recall</span><span class="p">),</span>
+                <span class="n">fmt</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">selection_f1</span><span class="p">),</span>
+                <span class="n">fmt</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">mean_selected_size</span><span class="p">),</span>
+            <span class="p">]</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;  &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">:</span><span class="s2">&gt;11</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SelectionSweep.to_dict">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.SelectionSweep.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form: the grid, the best point, and the config.&quot;&quot;&quot;</span>
+        <span class="n">best</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;objective&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">objective</span><span class="p">,</span>
+            <span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="p">,</span>
+            <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+            <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">,</span>
+            <span class="s2">&quot;n_cases&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_cases</span><span class="p">,</span>
+            <span class="s2">&quot;n_gold&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_gold</span><span class="p">,</span>
+            <span class="s2">&quot;n_abstention&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_abstention</span><span class="p">,</span>
+            <span class="s2">&quot;n_gold_retrieved&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_gold_retrieved</span><span class="p">,</span>
+            <span class="s2">&quot;best&quot;</span><span class="p">:</span> <span class="n">best</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">&quot;points&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">],</span>
+        <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">best</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best</span><span class="p">()</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="sa">f</span><span class="s2">&quot;SelectionSweep — </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span><span class="si">}</span><span class="s2"> settings  &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;(strategy=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="si">}</span><span class="s2">, mode=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">, k=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_cases</span><span class="si">}</span><span class="s2"> cases (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_gold</span><span class="si">}</span><span class="s2"> gold, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_abstention</span><span class="si">}</span><span class="s2"> abstention; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_gold_retrieved</span><span class="si">}</span><span class="s2"> gold-retrieved)&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;  objective: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">objective</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">(),</span>
+                <span class="sa">f</span><span class="s2">&quot;  best (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">objective</span><span class="si">}</span><span class="s2">): max_k=</span><span class="si">{</span><span class="n">best</span><span class="o">.</span><span class="n">max_k</span><span class="si">}</span><span class="s2"> rel=</span><span class="si">{</span><span class="n">best</span><span class="o">.</span><span class="n">rel</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="o">+</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot; min_score=</span><span class="si">{</span><span class="n">best</span><span class="o">.</span><span class="n">min_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="k">if</span> <span class="n">best</span><span class="o">.</span><span class="n">min_score</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                <span class="p">)</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;  →  </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">objective</span><span class="si">}</span><span class="s2">=&quot;</span>
+                <span class="o">+</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_metric_value</span><span class="p">(</span><span class="n">best</span><span class="o">.</span><span class="n">report</span><span class="p">,</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">objective</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="k">if</span> <span class="n">_metric_value</span><span class="p">(</span><span class="n">best</span><span class="o">.</span><span class="n">report</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">objective</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="k">else</span> <span class="s2">&quot;n/a&quot;</span>
+                <span class="p">),</span>
+            <span class="p">]</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="sweep_selector">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.sweep_selector">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sweep_selector</span><span class="p">(</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;conservative&quot;</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_MODE</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_k_grid</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_SWEEP_MAX_K</span><span class="p">,</span>
+    <span class="n">rel_grid</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_SWEEP_REL</span><span class="p">,</span>
+    <span class="n">min_score_grid</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_SWEEP_MIN_SCORE</span><span class="p">,</span>
+    <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">,</span>
+    <span class="n">objective</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_SWEEP_OBJECTIVE</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SelectionSweep</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Tune the selector: score a grid of commit knobs against the cases.</span>
+
+<span class="sd">    The selection defaults (``max_k=5``, ``rel=0.6``) are documented *starting</span>
+<span class="sd">    points*, not tuned optima. This sweeps ``max_k × rel × min_score`` and scores</span>
+<span class="sd">    each cell with :func:`evaluate_selection`&#39;s exact metric, so the right</span>
+<span class="sd">    defaults for a given corpus can be read off empirically (precision vs recall</span>
+<span class="sd">    vs commit size) rather than guessed.</span>
+
+<span class="sd">    Retrieval is run **once per case** (selector parameters do not change the</span>
+<span class="sd">    ranking) and the cached candidates are reused across the whole grid, so a</span>
+<span class="sd">    6×5 grid costs one retrieval pass, not thirty.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        corpus: an :class:`~ir.index.Corpus` or a registered corpus *name*.</span>
+<span class="sd">        cases: the :class:`DiscoveryCase`\\ s to score against.</span>
+<span class="sd">        strategy: the selection strategy held fixed across the grid (the swept</span>
+<span class="sd">            knobs are ``conservative``&#39;s; a non-``conservative`` strategy that</span>
+<span class="sd">            ignores some knobs simply yields duplicate rows).</span>
+<span class="sd">        mode: ranking mode for retrieval.</span>
+<span class="sd">        k: candidate depth retrieved before selection (the selector&#39;s window).</span>
+<span class="sd">        surfaces: restrict retrieval to these surface kinds.</span>
+<span class="sd">        max_k_grid / rel_grid / min_score_grid: the axes of the sweep.</span>
+<span class="sd">        gap_ratio: held fixed (used only by the ``score_gap`` strategy).</span>
+<span class="sd">        objective: the default metric :meth:`SelectionSweep.best` optimizes.</span>
+<span class="sd">        **search_kw: any other :func:`ir.retrieve.search` keyword.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a :class:`SelectionSweep` (``.best()`` / ``.frontier()`` / ``.table()`` /</span>
+<span class="sd">        ``.to_dict()``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">objective</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SWEEP_METRICS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;unknown objective </span><span class="si">{</span><span class="n">objective</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">SWEEP_METRICS</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="n">scored</span> <span class="o">=</span> <span class="n">_retrieve_for_cases</span><span class="p">(</span>
+        <span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span> <span class="o">**</span><span class="n">search_kw</span>
+    <span class="p">)</span>
+    <span class="n">points</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SelectionGridPoint</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">max_k</span> <span class="ow">in</span> <span class="n">max_k_grid</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">rel</span> <span class="ow">in</span> <span class="n">rel_grid</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">min_score</span> <span class="ow">in</span> <span class="n">min_score_grid</span><span class="p">:</span>
+                <span class="n">report</span> <span class="o">=</span> <span class="n">_score_selection</span><span class="p">(</span>
+                    <span class="n">scored</span><span class="p">,</span>
+                    <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
+                    <span class="n">max_k</span><span class="o">=</span><span class="n">max_k</span><span class="p">,</span>
+                    <span class="n">rel</span><span class="o">=</span><span class="n">rel</span><span class="p">,</span>
+                    <span class="n">gap_ratio</span><span class="o">=</span><span class="n">gap_ratio</span><span class="p">,</span>
+                    <span class="n">min_score</span><span class="o">=</span><span class="n">min_score</span><span class="p">,</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+                    <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">SelectionGridPoint</span><span class="p">(</span>
+                        <span class="n">max_k</span><span class="o">=</span><span class="n">max_k</span><span class="p">,</span> <span class="n">rel</span><span class="o">=</span><span class="n">rel</span><span class="p">,</span> <span class="n">min_score</span><span class="o">=</span><span class="n">min_score</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">report</span> <span class="k">if</span> <span class="n">points</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">SelectionSweep</span><span class="p">(</span>
+        <span class="n">points</span><span class="o">=</span><span class="n">points</span><span class="p">,</span>
+        <span class="n">objective</span><span class="o">=</span><span class="n">objective</span><span class="p">,</span>
         <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
         <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
         <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+        <span class="n">n_cases</span><span class="o">=</span><span class="n">first</span><span class="o">.</span><span class="n">n_cases</span> <span class="k">if</span> <span class="n">first</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">),</span>
+        <span class="n">n_gold</span><span class="o">=</span><span class="n">first</span><span class="o">.</span><span class="n">n_gold</span> <span class="k">if</span> <span class="n">first</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">n_abstention</span><span class="o">=</span><span class="n">first</span><span class="o">.</span><span class="n">n_abstention</span> <span class="k">if</span> <span class="n">first</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">n_gold_retrieved</span><span class="o">=</span><span class="n">first</span><span class="o">.</span><span class="n">n_gold_retrieved</span> <span class="k">if</span> <span class="n">first</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 </pre></div>

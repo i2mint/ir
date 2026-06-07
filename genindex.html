@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.6 documentation</title>
+  <title>Index &mdash; ir 0.1.7 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=6e0256f3"></script>
+      <script src="_static/documentation_options.js?v=ca7ad2ea"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -153,6 +153,8 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.best">best() (ir.eval.SelectionSweep method)</a>
+</li>
       <li><a href="module_docs/ir/base.html#ir.base.best_per_artifact">best_per_artifact() (in module ir.base)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.Disclosure.body">body (ir.Disclosure attribute)</a>
@@ -275,9 +277,17 @@
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.DFLT_REL_THRESHOLD">DFLT_REL_THRESHOLD (in module ir.select)</a>
 </li>
+      <li><a href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_RRF_K">DFLT_RRF_K (in module ir.retrieve)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_MAX_K">DFLT_SWEEP_MAX_K (in module ir.eval)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_RRF_K">DFLT_RRF_K (in module ir.retrieve)</a>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_MIN_SCORE">DFLT_SWEEP_MIN_SCORE (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_OBJECTIVE">DFLT_SWEEP_OBJECTIVE (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_REL">DFLT_SWEEP_REL (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.disclose">disclose() (in module ir)</a>
 
@@ -379,6 +389,8 @@
         <li><a href="module_docs/ir/sources.html#ir.sources.CorpusSource.from_skills">(ir.sources.CorpusSource class method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.frontier">frontier() (ir.eval.SelectionSweep method)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -665,6 +677,10 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.objective">objective (ir.eval.SelectionSweep attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.open_corpus">open_corpus() (in module ir)</a>
 
       <ul>
@@ -683,6 +699,8 @@
         <li><a href="module_docs/ir/strategy.html#ir.strategy.Package">(class in ir.strategy)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint.params">params (ir.eval.SelectionGridPoint property)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.Disclosure.pointer">pointer (ir.Disclosure attribute)</a>
 
       <ul>
@@ -692,6 +710,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/select.html#ir.select.POINTER_KEYS">POINTER_KEYS (in module ir.select)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.points">points (ir.eval.SelectionSweep attribute)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.primary">primary (ir.eval.DiscoveryReport property)</a>
 </li>
@@ -742,6 +762,8 @@
       <li><a href="module_docs/ir/config.html#ir.config.registry_path">registry_path() (in module ir.config)</a>
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.rel_threshold">rel_threshold() (in module ir.select)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint.report">report (ir.eval.SelectionGridPoint attribute)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.retrieval">retrieval (ir.eval.DiscoveryReport attribute)</a>
 </li>
@@ -805,15 +827,19 @@
         <li><a href="module_docs/ir/select.html#ir.select.Selection">(class in ir.select)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.selection_f1">selection_f1 (ir.eval.SelectionReport attribute)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.selection_precision">selection_precision (ir.eval.SelectionReport attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.selection_recall">selection_recall (ir.eval.SelectionReport attribute)</a>
 </li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint">SelectionGridPoint (class in ir.eval)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport">SelectionReport (class in ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep">SelectionSweep (class in ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.Selector">Selector (in module ir.select)</a>
 </li>
@@ -849,12 +875,20 @@
         <li><a href="module_docs/ir/base.html#ir.base.Surface">(class in ir.base)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SWEEP_METRICS">SWEEP_METRICS (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/cli.html#ir.cli.sweep_select">sweep_select() (in module ir.cli)</a>
+</li>
+      <li><a href="module_docs/ir/eval.html#ir.eval.sweep_selector">sweep_selector() (in module ir.eval)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.table">table() (ir.eval.SelectionSweep method)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.Disclosure.to_dict">to_dict() (ir.Disclosure method)</a>
 
       <ul>
@@ -862,7 +896,11 @@
 </li>
         <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.to_dict">(ir.eval.DiscoveryCase method)</a>
 </li>
+        <li><a href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint.to_dict">(ir.eval.SelectionGridPoint method)</a>
+</li>
         <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.to_dict">(ir.eval.SelectionReport method)</a>
+</li>
+        <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.to_dict">(ir.eval.SelectionSweep method)</a>
 </li>
         <li><a href="module_docs/ir/select.html#ir.select.Disclosure.to_dict">(ir.select.Disclosure method)</a>
 </li>
