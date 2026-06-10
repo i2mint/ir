@@ -61,7 +61,9 @@ Quick start::
 from __future__ import annotations
 
 import json
+import math
 import random
+import statistics
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -119,6 +121,14 @@ SWEEP_METRICS = (
     "abstention_accuracy",
     "mean_selected_size",
 )
+
+#: Weight on *sensitivity* (catch true positives) vs *specificity* (reject
+#: out-of-scope queries) when :func:`calibrate_min_score` picks the abstention
+#: floor: ``objective = w·sensitivity + (1−w)·specificity``. ``0.5`` is balanced
+#: (its argmax matches Youden's J / balanced accuracy). Lower it to lean
+#: *precision* — abstain more readily — per ir_01 §3's stance that a padded
+#: commit is the costlier failure for an agent surface than a dropped gold.
+DFLT_CALIB_SENSITIVITY_WEIGHT = 0.5
 
 
 def _vd_available() -> bool:
@@ -1315,3 +1325,429 @@ def sweep_selector(
         n_abstention=first.n_abstention if first else 0,
         n_gold_retrieved=first.n_gold_retrieved if first else 0,
     )
+
+
+# =========================================================================== #
+# Abstention-floor calibration — separating in-scope from out-of-scope queries
+# =========================================================================== #
+#
+# The conservative selector is *relative* (ratios to the top score), so it is
+# mode-agnostic but cannot tell "all candidates irrelevant" from "all relevant":
+# both look like a high-scoring top with the tail falling off. Absolute
+# abstention ("nothing applies") needs an *absolute* ``min_score`` floor — and
+# that floor is mode-specific (dense cosine ∈ ~[0,1], hybrid RRF ∈ ~[0,0.033],
+# lexical BM25 ∈ ~[0,30+]) and corpus/embedder-specific, so it cannot be a
+# committed global constant. It must be *calibrated* per (corpus, mode).
+#
+# Calibration is a 1-D threshold-separation problem, NOT a selector sweep: an
+# in-scope (gold-bearing, gold-retrieved) query produces a HIGH top score; an
+# out-of-scope (empty-gold) query produces a LOWER top score (the best of a bad
+# lot). The floor that best separates the two distributions is the abstention
+# floor. (Optimizing ``sweep_selector(objective="abstention_accuracy")`` instead
+# is degenerate: floor → ∞ abstains on everything, scoring 100% — at the cost of
+# all recall. Separation is the honest objective.)
+
+
+@dataclass(frozen=True)
+class MinScoreCalibration:
+    """A calibrated absolute abstention floor for one ``(corpus, mode)``.
+
+    Produced by :func:`calibrate_min_score`. ``min_score`` is the floor to pass to
+    :func:`ir.select.select` / :func:`ir.discover` (``discover(min_score="auto")``
+    loads it): the conservative selector abstains when even the top hit scores
+    below it. ``None`` means no floor could be calibrated (one of the two query
+    classes was missing — see :attr:`reason`); the selector then never abstains
+    by absolute score, exactly as before.
+
+    The quality numbers treat ``top_score ≥ min_score → commit`` as a binary
+    classifier over in-scope (label *commit*) vs out-of-scope (label *abstain*)
+    queries:
+
+    Attributes:
+        min_score: the calibrated floor (``None`` if not calibratable).
+        sensitivity: TPR — fraction of in-scope queries kept (``top ≥ floor``).
+        specificity: TNR — fraction of out-of-scope queries abstained
+            (``top < floor``).
+        youden_j: ``sensitivity + specificity − 1`` (0 = no separation, 1 = perfect).
+        balanced_accuracy: ``(sensitivity + specificity) / 2``.
+        separable: whether the two score distributions are perfectly separable
+            (some floor reaches ``youden_j == 1``).
+        sensitivity_weight: the ``w`` used to pick the floor (see
+            :data:`DFLT_CALIB_SENSITIVITY_WEIGHT`).
+        n_positive: in-scope cases used (gold-bearing **and** gold-retrieved).
+        n_abstention: out-of-scope (empty-gold) cases used.
+        n_retrieval_miss: gold-bearing cases whose gold never reached the ``k``
+            candidates — excluded (a *retrieval* failure, not an abstention
+            signal), mirroring :func:`evaluate_selection`'s conditioning.
+        positive_scores / abstention_scores: ``{min, median, max}`` summaries of
+            each class's top-score distribution (the auditable evidence the floor
+            sits between them).
+        grid: every evaluated floor, ``{min_score, sensitivity, specificity,
+            youden_j, objective}`` — the full sweep behind the choice.
+        reason: why ``min_score`` is what it is (``"calibrated"``,
+            ``"no_positive_cases"``, ``"no_abstention_cases"``, ``"no_cases"``).
+        corpus_name / mode / k / embedder_id: the configuration scored — and the
+            ``embedder_id`` stamp lets a consumer detect a stale floor after a
+            rebuild with a different embedder.
+        vd_degraded: True when ``mode`` was ``lexical`` / ``hybrid`` but ``vd``
+            was unavailable, so ranking fell back to dense and the floor is on the
+            *dense* scale, not the requested mode's — recalibrate once ``vd`` is
+            installed.
+    """
+
+    corpus_name: str
+    mode: str
+    k: int
+    min_score: float | None
+    sensitivity: float | None
+    specificity: float | None
+    youden_j: float | None
+    balanced_accuracy: float | None
+    separable: bool
+    sensitivity_weight: float
+    n_positive: int
+    n_abstention: int
+    n_retrieval_miss: int
+    positive_scores: Mapping[str, float]
+    abstention_scores: Mapping[str, float]
+    grid: list[dict]
+    reason: str
+    embedder_id: str | None = None
+    strategy: str = "conservative"
+    vd_degraded: bool = False
+
+    def to_dict(self) -> dict:
+        """JSON-serializable form (for persistence and the qh / HTTP surface)."""
+        return {
+            "corpus_name": self.corpus_name,
+            "mode": self.mode,
+            "k": self.k,
+            "min_score": self.min_score,
+            "sensitivity": self.sensitivity,
+            "specificity": self.specificity,
+            "youden_j": self.youden_j,
+            "balanced_accuracy": self.balanced_accuracy,
+            "separable": self.separable,
+            "sensitivity_weight": self.sensitivity_weight,
+            "n_positive": self.n_positive,
+            "n_abstention": self.n_abstention,
+            "n_retrieval_miss": self.n_retrieval_miss,
+            "positive_scores": dict(self.positive_scores),
+            "abstention_scores": dict(self.abstention_scores),
+            "grid": [dict(g) for g in self.grid],
+            "reason": self.reason,
+            "embedder_id": self.embedder_id,
+            "strategy": self.strategy,
+            "vd_degraded": self.vd_degraded,
+        }
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "MinScoreCalibration":
+        """Inverse of :meth:`to_dict` (tolerant of a persisted record's defaults)."""
+        return cls(
+            corpus_name=d.get("corpus_name", ""),
+            mode=d.get("mode", DFLT_MODE),
+            k=int(d.get("k", 10)),
+            min_score=d.get("min_score"),
+            sensitivity=d.get("sensitivity"),
+            specificity=d.get("specificity"),
+            youden_j=d.get("youden_j"),
+            balanced_accuracy=d.get("balanced_accuracy"),
+            separable=bool(d.get("separable", False)),
+            sensitivity_weight=float(
+                d.get("sensitivity_weight", DFLT_CALIB_SENSITIVITY_WEIGHT)
+            ),
+            n_positive=int(d.get("n_positive", 0)),
+            n_abstention=int(d.get("n_abstention", 0)),
+            n_retrieval_miss=int(d.get("n_retrieval_miss", 0)),
+            positive_scores=dict(d.get("positive_scores", {})),
+            abstention_scores=dict(d.get("abstention_scores", {})),
+            grid=[dict(g) for g in d.get("grid", [])],
+            reason=d.get("reason", "calibrated"),
+            embedder_id=d.get("embedder_id"),
+            strategy=d.get("strategy", "conservative"),
+            vd_degraded=bool(d.get("vd_degraded", False)),
+        )
+
+    def save(self, corpus: Any) -> "MinScoreCalibration":
+        """Persist this calibration on ``corpus`` (keyed by mode); returns self.
+
+        Stored in the corpus's ``calibration`` view (not its build ``config``), so
+        it survives reopen and is loaded by ``discover(min_score="auto")``. The
+        floor is machine-local (derived from a live corpus + embedder) and is
+        never committed to source control.
+        """
+        corpus = _as_corpus(corpus)
+        corpus.store.set_calibration(self.mode, self.to_dict())
+        return self
+
+    def __str__(self) -> str:
+        def fmt(x: float | None) -> str:
+            return f"{x:.4f}" if x is not None else "n/a"
+
+        def span(s: Mapping[str, float]) -> str:
+            if not s:
+                return "n/a"
+            return (
+                f"[{s.get('min', float('nan')):.4f} … {s.get('max', float('nan')):.4f}]"
+            )
+
+        floor = "none" if self.min_score is None else f"{self.min_score:.4f}"
+        return "\n".join(
+            [
+                f"MinScoreCalibration — corpus={self.corpus_name!r} mode={self.mode} "
+                f"k={self.k}",
+                f"  min_score floor: {floor}  ({self.reason})",
+                f"  in-scope:  {self.n_positive} cases  top-score {span(self.positive_scores)}",
+                f"  out-scope: {self.n_abstention} cases  top-score "
+                f"{span(self.abstention_scores)}",
+                f"  sensitivity: {fmt(self.sensitivity)}  "
+                f"specificity: {fmt(self.specificity)}  "
+                f"Youden J: {fmt(self.youden_j)}"
+                + ("  (perfectly separable)" if self.separable else ""),
+                f"  retrieval misses excluded: {self.n_retrieval_miss}  "
+                f"(w={self.sensitivity_weight})"
+                + (
+                    "\n  DEGRADED: vd unavailable → scored on dense fallback, not "
+                    f"{self.mode!r}; install vd and recalibrate"
+                    if self.vd_degraded
+                    else ""
+                ),
+            ]
+        )
+
+
+def calibrate_min_score(
+    corpus: Any,
+    cases: Sequence[DiscoveryCase],
+    *,
+    mode: str = DFLT_MODE,
+    k: int = 10,
+    surfaces: Iterable[str] | None = None,
+    sensitivity_weight: float = DFLT_CALIB_SENSITIVITY_WEIGHT,
+    floor_grid: Sequence[float] | None = None,
+    persist: bool = False,
+    **search_kw: Any,
+) -> MinScoreCalibration:
+    """Calibrate the absolute abstention ``min_score`` floor for one ``mode``.
+
+    Retrieves ``k`` candidates per case **once** (reusing :func:`evaluate_selection`'s
+    retrieval pass), then treats floor-picking as a 1-D separation between the
+    *in-scope* top scores (gold-bearing cases whose gold reached the candidates)
+    and the *out-of-scope* top scores (empty-gold abstention cases). The floor
+    that best separates them — by ``w·sensitivity + (1−w)·specificity`` — is the
+    calibrated ``min_score``.
+
+    ``cases`` must contain **both** gold-bearing and abstention cases; with only
+    one class the floor is undefined (``min_score=None``, ``reason`` records which
+    class was missing). Generate abstention cases with :mod:`ir.eval_gen` (its
+    ``abstention`` slice) — this module does not synthesize them.
+
+    Args:
+        corpus: an :class:`~ir.index.Corpus` or a registered corpus *name*.
+        cases: mixed :class:`DiscoveryCase`\\ s (gold-bearing + abstention).
+        mode: ranking mode to calibrate (a floor is mode-specific).
+        k: candidate depth retrieved before selection (match your ``discover`` k).
+        surfaces: restrict retrieval to these surface kinds.
+        sensitivity_weight: ``w`` in the pick objective (see
+            :data:`DFLT_CALIB_SENSITIVITY_WEIGHT`); ``0.5`` is balanced.
+        floor_grid: candidate floors to evaluate; default derives them from the
+            observed top scores (midpoints between adjacent values + the
+            commit-all / abstain-all extremes), which is exact for a 1-D split.
+        persist: when True, :meth:`MinScoreCalibration.save` the result on the
+            corpus so ``discover(min_score="auto")`` will load it.
+        **search_kw: any other :func:`ir.retrieve.search` keyword.
+
+    Returns:
+        a :class:`MinScoreCalibration`.
+    """
+    corpus = _as_corpus(corpus)
+    if floor_grid is not None:
+        floor_grid = list(floor_grid)
+        bad = [f for f in floor_grid if not math.isfinite(f)]
+        if not floor_grid or bad:
+            raise ValueError(
+                "floor_grid must be a non-empty sequence of finite floats "
+                f"(got {floor_grid!r}); pass floor_grid=None to derive candidates "
+                "from the observed scores."
+            )
+    # lexical / hybrid ranking silently falls back to dense when vd is missing
+    # (ir.retrieve), so the scores — and thus the floor — would be on the dense
+    # scale, not the requested mode's. Flag it so the calibration is auditable
+    # and a consumer can recalibrate once vd is installed.
+    vd_degraded = mode in ("hybrid", "lexical") and not _vd_available()
+    scored = _retrieve_for_cases(
+        corpus, cases, mode=mode, k=k, surfaces=surfaces, **search_kw
+    )
+
+    # Split cases into the two score distributions the floor must separate.
+    # An empty retrieval already commits nothing, so it abstains at any finite
+    # floor → represent its top score as −inf (below every candidate floor).
+    pos: list[float] = []  # in-scope: gold-bearing AND gold reached the candidates
+    neg: list[float] = []  # out-of-scope: abstention (empty-gold) cases
+    n_retrieval_miss = 0
+    for case, hits in scored:
+        top = float(hits[0].score) if hits else float("-inf")
+        if case.gold_is_none:
+            neg.append(top)
+            continue
+        retrieved = {h.artifact_id for h in hits}
+        if set(case.gold) & retrieved:
+            pos.append(top)
+        else:
+            # Gold never surfaced → a retrieval miss, not an abstention signal.
+            # Excluded so the floor is not blamed for retrieval's recall gap
+            # (the same conditioning evaluate_selection uses).
+            n_retrieval_miss += 1
+
+    reason = "calibrated"
+    if not pos and not neg:
+        reason = "no_cases"
+    elif not pos:
+        reason = "no_positive_cases"
+    elif not neg:
+        reason = "no_abstention_cases"
+
+    pos_summary = _score_summary(pos)
+    neg_summary = _score_summary([s for s in neg if s != float("-inf")])
+
+    if reason != "calibrated":
+        # Cannot separate without both classes → no floor (selector never
+        # abstains by absolute score, exactly as with min_score=None).
+        return MinScoreCalibration(
+            corpus_name=corpus.name,
+            mode=mode,
+            k=k,
+            min_score=None,
+            sensitivity=(1.0 if pos else None),
+            specificity=(1.0 if neg else None),
+            youden_j=None,
+            balanced_accuracy=None,
+            separable=False,
+            sensitivity_weight=sensitivity_weight,
+            n_positive=len(pos),
+            n_abstention=len(neg),
+            n_retrieval_miss=n_retrieval_miss,
+            positive_scores=pos_summary,
+            abstention_scores=neg_summary,
+            grid=[],
+            reason=reason,
+            embedder_id=getattr(corpus, "embedder_id", None),
+            vd_degraded=vd_degraded,
+        )
+
+    floors = (
+        list(floor_grid) if floor_grid is not None else _candidate_floors(pos + neg)
+    )
+    grid = [_score_floor(f, pos, neg) for f in floors]
+    best = _pick_floor(grid, sensitivity_weight)
+    separable = any(g["youden_j"] >= 1.0 - 1e-9 for g in grid)
+
+    calib = MinScoreCalibration(
+        corpus_name=corpus.name,
+        mode=mode,
+        k=k,
+        min_score=best["min_score"],
+        sensitivity=best["sensitivity"],
+        specificity=best["specificity"],
+        youden_j=best["youden_j"],
+        balanced_accuracy=(best["sensitivity"] + best["specificity"]) / 2,
+        separable=separable,
+        sensitivity_weight=sensitivity_weight,
+        n_positive=len(pos),
+        n_abstention=len(neg),
+        n_retrieval_miss=n_retrieval_miss,
+        positive_scores=pos_summary,
+        abstention_scores=neg_summary,
+        grid=grid,
+        reason=reason,
+        embedder_id=getattr(corpus, "embedder_id", None),
+        vd_degraded=vd_degraded,
+    )
+    if persist:
+        calib.save(corpus)
+    return calib
+
+
+def load_calibration(corpus: Any, mode: str) -> MinScoreCalibration | None:
+    """Load a persisted :class:`MinScoreCalibration` for ``(corpus, mode)``.
+
+    Returns ``None`` when no calibration has been stored for that mode. Does not
+    validate the embedder stamp — that staleness check lives at the
+    ``discover(min_score="auto")`` boundary, which knows the live corpus's
+    embedder id.
+    """
+    corpus = _as_corpus(corpus)
+    rec = corpus.store.get_calibration(mode)
+    return MinScoreCalibration.from_dict(rec) if rec else None
+
+
+def _score_summary(scores: Sequence[float]) -> dict[str, float]:
+    """``{min, median, max}`` of a score list (non-finite dropped; empty → ``{}``).
+
+    Drops ``±inf`` / ``NaN`` (a NaN never equals itself) so the summary stays
+    JSON-serializable and never poisons the persisted record.
+    """
+    finite = [s for s in scores if math.isfinite(s)]
+    if not finite:
+        return {}
+    return {
+        "min": float(min(finite)),
+        "median": float(statistics.median(finite)),
+        "max": float(max(finite)),
+    }
+
+
+def _candidate_floors(scores: Sequence[float]) -> list[float]:
+    """Candidate floors for a 1-D split: midpoints of adjacent observed scores.
+
+    The optimal threshold separating two sets of reals always lies between two
+    adjacent observed values, so the midpoints (plus a commit-all floor below the
+    minimum and an abstain-all floor above the maximum) are an *exact* search
+    grid — no resolution to tune. ``−inf`` scores (empty retrievals) are dropped:
+    they abstain at any finite floor and so never constrain the choice.
+    """
+    finite = sorted({s for s in scores if s != float("-inf") and s == s})
+    if not finite:
+        return [0.0]
+    if len(finite) == 1:
+        v = finite[0]
+        margin = abs(v) * 0.5 + 1.0
+        return [v - margin, v + margin]
+    span = finite[-1] - finite[0]
+    margin = (span / len(finite)) if span > 0 else 1.0
+    mids = [(finite[i] + finite[i + 1]) / 2 for i in range(len(finite) - 1)]
+    return [finite[0] - margin, *mids, finite[-1] + margin]
+
+
+def _score_floor(floor: float, pos: Sequence[float], neg: Sequence[float]) -> dict:
+    """Confusion of ``top_score ≥ floor → commit`` over the two classes.
+
+    Sensitivity (TPR) is the in-scope commit rate; specificity (TNR) is the
+    out-of-scope abstain rate. A ``−inf`` abstention score (empty retrieval)
+    is below every finite floor, so it always abstains correctly.
+    """
+    sens = sum(s >= floor for s in pos) / len(pos) if pos else 0.0
+    spec = sum(s < floor for s in neg) / len(neg) if neg else 0.0
+    return {
+        "min_score": float(floor),
+        "sensitivity": float(sens),
+        "specificity": float(spec),
+        "youden_j": float(sens + spec - 1.0),
+    }
+
+
+def _pick_floor(grid: Sequence[dict], sensitivity_weight: float) -> dict:
+    """Pick the grid floor maximizing ``w·sensitivity + (1−w)·specificity``.
+
+    Ties (common — every floor inside one gap scores identically) break toward
+    the *higher* floor: the precision-leaning choice (ir_01 §3 — a padded commit
+    costs more than a dropped gold), and the more robust separator when the gap
+    above the out-of-scope scores is wide.
+    """
+    w = sensitivity_weight
+
+    def objective(g: dict) -> float:
+        return w * g["sensitivity"] + (1.0 - w) * g["specificity"]
+
+    return max(grid, key=lambda g: (objective(g), g["min_score"]))

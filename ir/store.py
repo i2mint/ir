@@ -8,8 +8,13 @@ A :class:`CorpusStore` bundles three ``MutableMapping`` views, so *where* and
 - ``ledger`` : ``artifact_id -> dict`` (version, embedder id, record ids) —
   drives incremental maintenance.
 - ``config`` : ``key -> dict`` (one entry: the corpus build settings).
+- ``calibration`` : ``mode -> dict`` (a per-ranking-mode calibrated record, today
+  the abstention ``min_score`` floor from :func:`ir.eval.calibrate_min_score`).
+  Kept apart from ``config`` on purpose — a calibration is regenerable, derived
+  from an eval run, and not part of the corpus's build identity, so it must never
+  clobber (or be clobbered by) the build settings.
 
-The default factory :meth:`CorpusStore.local` roots all four under
+The default factory :meth:`CorpusStore.local` roots all five under
 ``~/.local/share/ir/corpora/<name>`` via ``dol`` file stores;
 :meth:`CorpusStore.memory` gives a dependency-free in-memory store for tests.
 Brute-force search reads vectors into a single normalized matrix
@@ -18,6 +23,7 @@ Brute-force search reads vectors into a single normalized matrix
 
 from __future__ import annotations
 
+import copy
 import io
 import os
 from collections.abc import Iterator, Mapping, MutableMapping
@@ -65,11 +71,15 @@ class CorpusStore:
         vectors: MutableMapping[str, np.ndarray],
         ledger: MutableMapping[str, Any],
         config: MutableMapping[str, Any],
+        calibration: MutableMapping[str, Any] | None = None,
     ):
         self.meta = meta
         self.vectors = vectors
         self.ledger = ledger
         self.config = config
+        # Optional 5th view (defaults to an in-memory dict so older call sites and
+        # tests that construct a store with four views keep working unchanged).
+        self.calibration = {} if calibration is None else calibration
         self._matrix_cache: tuple | None = None
 
     # ----- factories ------------------------------------------------------ #
@@ -85,6 +95,7 @@ class CorpusStore:
             vectors=_ndarray_store(root / "vectors"),
             ledger=_json_store(root / "ledger"),
             config=_json_store(root / "config"),
+            calibration=_json_store(root / "calibration"),
         )
 
     @classmethod
@@ -153,6 +164,35 @@ class CorpusStore:
 
     def set_config(self, settings: Mapping[str, Any]) -> None:
         self.config["config"] = dict(settings)
+
+    # ----- calibration (per-mode) ----------------------------------------- #
+
+    def get_calibration(self, mode: str) -> dict | None:
+        """The stored calibration record for ranking ``mode`` (``None`` if absent).
+
+        A deep copy, so a caller cannot mutate the nested ``grid`` back into the
+        stored record (in-memory stores share their objects by reference).
+        """
+        rec = self.calibration.get(mode)
+        return copy.deepcopy(rec) if rec is not None else None
+
+    def set_calibration(self, mode: str, record: Mapping[str, Any]) -> None:
+        """Persist a calibration ``record`` for ranking ``mode`` (one per mode).
+
+        ``mode`` keys a file in the calibration store, so it must be a non-empty
+        string with no path separator (the real modes — ``dense`` / ``lexical`` /
+        ``hybrid`` — already satisfy this).
+        """
+        if not mode or "/" in mode or "\\" in mode:
+            raise ValueError(
+                f"calibration mode must be a non-empty string without a path "
+                f"separator; got {mode!r}"
+            )
+        self.calibration[mode] = dict(record)
+
+    def calibration_modes(self) -> list[str]:
+        """The ranking modes that currently have a stored calibration."""
+        return list(self.calibration)
 
     # ----- search matrix -------------------------------------------------- #
 

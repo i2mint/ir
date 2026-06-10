@@ -15,11 +15,14 @@ Commands operate on **named** corpora from the registry (see
     ir eval skills skills_eval.jsonl --mode hybrid    # score retrieval on a case file
     ir eval-select skills skills_eval.jsonl           # score the selection stage
     ir sweep-select skills skills_eval.jsonl          # tune max_k/rel for the selector
+    ir calibrate-min-score skills skills_eval.jsonl --persist  # abstention floor
+    ir discover skills "deploy app" --min-score auto  # use the calibrated floor
 """
 
 from __future__ import annotations
 
 from . import registry
+from .eval import DFLT_CALIB_SENSITIVITY_WEIGHT
 from .index import build as _build
 from .index import open_corpus
 
@@ -76,21 +79,34 @@ def search(name, query, *, k=10, mode="dense"):
 
 
 def discover(
-    name, query, *, k=10, mode="hybrid", strategy="conservative", disclose=False
+    name,
+    query,
+    *,
+    k=10,
+    mode="hybrid",
+    strategy="conservative",
+    disclose=False,
+    min_score=None,
 ):
     """Search a corpus, commit to a distractor-robust subset, and show it.
 
     Retrieves ``k`` candidates, then *selects* the few high-precision results an
     agent should act on (or abstains). ``--disclose`` additionally loads each
     selected item's body (SKILL.md / file text) via its stored pointer.
-    mode: dense | lexical | hybrid. strategy: conservative | top_k |
-    rel_threshold | score_gap.
+    ``--min-score auto`` turns on absolute abstention using the floor calibrated
+    by ``ir calibrate-min-score`` (or pass a float). mode: dense | lexical |
+    hybrid. strategy: conservative | top_k | rel_threshold | score_gap.
     """
     from .select import discover as _discover
 
     corpus = open_corpus(name)
     if len(corpus) == 0:
         return f"corpus {name!r} is empty; build it first: ir build {name}"
+    floor = (
+        "auto"
+        if min_score == "auto"
+        else (None if min_score is None else float(min_score))
+    )
     result = _discover(
         corpus,
         query,
@@ -98,6 +114,7 @@ def discover(
         mode=mode,
         strategy=strategy,
         disclose_level="body" if disclose else "metadata",
+        min_score=floor,
     )
     if result.abstained:
         return (
@@ -116,11 +133,16 @@ def discover(
 
 
 def info(name):
-    """Show a corpus's stored config and stats."""
+    """Show a corpus's stored config, stats, and any calibrated abstention floors."""
     corpus = open_corpus(name)
     cfg = corpus.store.get_config()
     reg = registry.get(name)
-    return f"name: {name}\nregistered: {reg}\nrecords: {len(corpus)}\nconfig: {cfg}"
+    calibrated = corpus.store.calibration_modes()
+    floors = {m: corpus.store.get_calibration(m).get("min_score") for m in calibrated}
+    cal = f"\nmin_score floors: {floors}" if floors else ""
+    return (
+        f"name: {name}\nregistered: {reg}\nrecords: {len(corpus)}\nconfig: {cfg}{cal}"
+    )
 
 
 def rm(name):
@@ -273,6 +295,61 @@ def sweep_select(
     return out
 
 
+def calibrate_min_score(
+    name,
+    cases,
+    *,
+    mode="hybrid",
+    k=10,
+    sensitivity_weight=DFLT_CALIB_SENSITIVITY_WEIGHT,
+    persist=False,
+):
+    """Calibrate the absolute abstention min_score floor for a corpus + mode.
+
+    Separates in-scope (gold-bearing) from out-of-scope (empty-gold) query top
+    scores and reports the floor that best splits them, with sensitivity /
+    specificity / Youden's J. ``cases`` must include BOTH gold-bearing and
+    abstention cases — generate them with ``ir eval-gen`` (it adds an abstention
+    slice). ``--persist`` stores the floor so ``ir discover ... --min-score auto``
+    will abstain by it. ``--sensitivity-weight`` (0..1, balanced default);
+    lower it to abstain more readily (precision-leaning). Calibrate on dense or
+    lexical, not hybrid (its RRF scores barely separate). mode: dense | lexical
+    | hybrid.
+    """
+    from .eval import calibrate_min_score as _calibrate
+    from .eval import load_cases, validate_cases
+
+    corpus = open_corpus(name)
+    if len(corpus) == 0:
+        return f"corpus {name!r} is empty; build it first: ir build {name}"
+    case_list = load_cases(cases)
+    if not case_list:
+        return f"no cases found in {cases!r}"
+    drift = validate_cases(corpus, case_list)
+    calib = _calibrate(
+        corpus,
+        case_list,
+        mode=mode,
+        k=int(k),
+        sensitivity_weight=float(sensitivity_weight),
+        persist=bool(persist),
+    )
+    out = str(calib)
+    if persist and calib.min_score is not None:
+        out += f"\n  persisted → ir discover {name} ... --mode {mode} --min-score auto"
+    if calib.min_score is None:
+        out += (
+            f"\n  NOTE: no floor calibrated ({calib.reason}); a floor needs both "
+            f"gold-bearing and abstention cases. Add abstention cases via ir eval-gen."
+        )
+    if drift:
+        out += (
+            f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
+            f"corpus {name!r} (stale fixture?); their misses are not real."
+        )
+    return out
+
+
 COMMANDS = [
     ls,
     register,
@@ -285,4 +362,5 @@ COMMANDS = [
     eval_gen,
     eval_select,
     sweep_select,
+    calibrate_min_score,
 ]

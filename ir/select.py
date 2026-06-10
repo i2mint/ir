@@ -41,11 +41,18 @@ same selector works across ``dense`` cosine, ``hybrid`` RRF, and ``lexical``
 BM25 — whose absolute scales differ by orders of magnitude — without
 per-mode calibration. Absolute abstention (``"nothing applies"``) requires
 either an explicit ``min_score`` floor or an LLM selector; pure relative
-structure cannot tell "all irrelevant" from "all relevant".
+structure cannot tell "all irrelevant" from "all relevant". Because a useful
+floor is mode- and corpus-specific, it is *calibrated* rather than guessed:
+:func:`ir.eval.calibrate_min_score` separates in-scope from out-of-scope query
+scores and persists the floor, and :func:`discover` loads it on
+``min_score="auto"`` — the opt-in that turns relative selection into one that
+can also abstain.
 """
 
 from __future__ import annotations
 
+import math
+import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -660,6 +667,61 @@ class DiscoveryResult:
         }
 
 
+def _resolve_auto_min_score(corpus: Any, mode: str) -> float | None:
+    """Load the calibrated abstention floor for ``(corpus, mode)``, or ``None``.
+
+    Reads the per-mode record persisted by :func:`ir.eval.calibrate_min_score`
+    from the corpus's ``calibration`` store. Returns ``None`` (and warns) when no
+    calibration is stored for the mode, or when the stored ``embedder_id`` no
+    longer matches the live corpus (a stale floor after a rebuild) — so
+    ``min_score="auto"`` degrades safely to "no absolute abstention" rather than
+    abstaining on a mis-scaled floor. Kept here (not in :mod:`ir.eval`) so the
+    common ``discover`` path stays free of the eval module's heavier imports.
+    """
+    # stacklevel=3: warn → _resolve_auto_min_score → discover → the user's call.
+    store = getattr(corpus, "store", None)
+    get = getattr(store, "get_calibration", None)
+    rec = get(mode) if callable(get) else None
+    name = getattr(corpus, "name", "?")
+    if not rec:
+        warnings.warn(
+            f"discover(min_score='auto'): no calibration stored for corpus "
+            f"{name!r} mode {mode!r}; not abstaining by absolute score. Calibrate "
+            f"with ir.eval.calibrate_min_score(corpus, cases, mode={mode!r}, "
+            f"persist=True).",
+            stacklevel=3,
+        )
+        return None
+    stored_emb = rec.get("embedder_id")
+    live_emb = getattr(corpus, "embedder_id", None)
+    # Any presence/value mismatch is treated as stale: an unstamped or
+    # differently-stamped floor cannot be confirmed to match the live scale.
+    if (stored_emb or live_emb) and stored_emb != live_emb:
+        warnings.warn(
+            f"discover(min_score='auto'): calibration for corpus {name!r} mode "
+            f"{mode!r} was made with embedder {stored_emb!r} but the corpus now "
+            f"uses {live_emb!r}; ignoring the stale (possibly mis-scaled) floor. "
+            f"Re-run ir.eval.calibrate_min_score(..., persist=True).",
+            stacklevel=3,
+        )
+        return None
+    floor = rec.get("min_score")
+    if floor is None:
+        return None
+    floor = float(floor)
+    if not math.isfinite(floor):
+        # A corrupted/hand-edited ±inf floor would abstain (or commit) on
+        # everything; refuse it rather than silently breaking abstention.
+        warnings.warn(
+            f"discover(min_score='auto'): calibration for corpus {name!r} mode "
+            f"{mode!r} has a non-finite floor ({floor}); ignoring it. Re-run "
+            f"ir.eval.calibrate_min_score(..., persist=True).",
+            stacklevel=3,
+        )
+        return None
+    return floor
+
+
 def discover(
     corpus: Any,
     query: str,
@@ -673,7 +735,7 @@ def discover(
     max_k: int = DFLT_MAX_K,
     rel: float = DFLT_REL_THRESHOLD,
     gap_ratio: float = DFLT_GAP_RATIO,
-    min_score: float | None = None,
+    min_score: float | str | None = None,
     loader: BodyLoader | None = None,
     **search_kw: Any,
 ) -> DiscoveryResult:
@@ -699,7 +761,11 @@ def discover(
         filter, surfaces: retrieval constraints (forwarded to
             :func:`ir.retrieve.search`).
         max_k, rel, gap_ratio, min_score: selection parameters (see
-            :func:`select`).
+            :func:`select`). ``min_score="auto"`` loads the floor calibrated for
+            this ``(corpus, mode)`` by :func:`ir.eval.calibrate_min_score` and
+            persisted on the corpus — the opt-in that turns on absolute
+            abstention; it falls back to no floor (with a warning) when no
+            calibration is stored or it is stale (a different embedder).
         loader: optional body resolver for disclosure (see :func:`disclose`).
         **search_kw: any other :func:`ir.retrieve.search` keyword (``rrf_k``,
             ``rerank``, ``bm25``, …).
@@ -711,6 +777,14 @@ def discover(
         from .index import open_corpus
 
         corpus = open_corpus(corpus)
+
+    if isinstance(min_score, str):
+        if min_score != "auto":
+            raise ValueError(
+                f"invalid min_score {min_score!r}; expected a float, None, or the "
+                f"sentinel 'auto' (load the calibrated floor for this corpus/mode)."
+            )
+        min_score = _resolve_auto_min_score(corpus, mode)
 
     hits = _search(
         corpus,
