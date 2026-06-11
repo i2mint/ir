@@ -72,6 +72,11 @@ class Corpus:
     embedder_id: str
 
     def search(self, query, **kwargs):
+        """Search this corpus for *query*.
+
+        ``**kwargs`` (``k`` / ``mode`` / ``filter`` / ``surfaces`` /
+        ``per_artifact`` / ...) are forwarded to :func:`ir.retrieve.search`.
+        """
         from .retrieve import search
 
         return search(self, query, **kwargs)
@@ -130,13 +135,15 @@ def build(
     vectors = _embed_batched(emb, [s.text for _, _, s in flat], "document", batch_size)
 
     # Replace records of changed artifacts (delete-then-write).
-    for artifact_id, (_k, _v, prev, _plan) in changed.items():
+    for _artifact_id, (_k, _v, prev, _plan) in changed.items():
         if prev:
             for rid in prev.get("record_ids", []):
                 store.delete_record(rid)
 
     record_ids: dict[str, list[str]] = defaultdict(list)
-    for (artifact_id, i, surface), vec in zip(flat, vectors):
+    # strict=True asserts one embedding row per surface (a short/long embedder
+    # output is a bug we want to surface, not silently truncate).
+    for (artifact_id, i, surface), vec in zip(flat, vectors, strict=True):
         rid = Record.make_id(artifact_id, surface.kind, i)
         plan = changed[artifact_id][3]
         metadata = {**plan.filter_fields, **dict(surface.metadata)}

@@ -175,7 +175,9 @@ def abs_threshold(min_score: float) -> Selector:
     """Keep every hit scoring at or above an absolute ``min_score``.
 
     Mode-specific (cosine / RRF / BM25 scales differ); use when you have
-    calibrated a floor for one ranking mode.
+    calibrated a floor for one ranking mode. Like :func:`rel_threshold` /
+    :func:`score_gap`, this does **not** cap how many hits it keeps — bound the
+    commit size with the caller's ``max_k`` (:func:`select` already applies it).
     """
 
     def selector(hits: Sequence[SearchHit]) -> list[SearchHit]:

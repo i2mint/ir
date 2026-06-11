@@ -106,6 +106,7 @@ class CorpusStore:
     # ----- record CRUD ---------------------------------------------------- #
 
     def put_record(self, record: Record) -> None:
+        """Persist *record*'s metadata + vector, invalidating the search matrix."""
         self.meta[record.id] = {
             "artifact_id": record.artifact_id,
             "surface_kind": record.surface_kind,
@@ -117,6 +118,7 @@ class CorpusStore:
         self._matrix_cache = None
 
     def delete_record(self, record_id: str) -> None:
+        """Remove a record's metadata + vector; a missing id is tolerated."""
         self.meta.pop(record_id, None)
         try:
             del self.vectors[record_id]
@@ -125,9 +127,11 @@ class CorpusStore:
         self._matrix_cache = None
 
     def record_ids(self) -> Iterator[str]:
+        """Iterate the record ids currently stored."""
         return iter(self.meta)
 
     def get_record(self, record_id: str) -> Record:
+        """Reassemble the :class:`~ir.base.Record` for *record_id* (``KeyError`` if absent)."""
         m = self.meta[record_id]
         return Record(
             id=record_id,
@@ -140,29 +144,36 @@ class CorpusStore:
         )
 
     def __len__(self) -> int:
+        """The number of records stored."""
         return len(self.meta)
 
     # ----- ledger --------------------------------------------------------- #
 
     def get_ledger_entry(self, key: str) -> dict | None:
+        """The ledger entry for *key* (``None`` if absent)."""
         return self.ledger.get(key)
 
     def set_ledger_entry(self, key: str, entry: Mapping[str, Any]) -> None:
+        """Write the ledger *entry* (version / embedder id / record ids) for *key*."""
         self.ledger[key] = dict(entry)
 
     def delete_ledger_entry(self, key: str) -> None:
+        """Remove a ledger entry; a missing key is tolerated."""
         self.ledger.pop(key, None)
 
     def ledger_items(self) -> Iterator[tuple[str, dict]]:
+        """Iterate ``(key, entry)`` ledger pairs (the ledger may be mutated while iterating)."""
         # Materialize to a list so callers may mutate the ledger while iterating.
         return iter(list(self.ledger.items()))
 
     # ----- config --------------------------------------------------------- #
 
     def get_config(self) -> dict:
+        """The persisted corpus build settings (empty dict if never written)."""
         return dict(self.config.get("config", {}))
 
     def set_config(self, settings: Mapping[str, Any]) -> None:
+        """Persist the corpus build *settings* (name / embedder spec + id)."""
         self.config["config"] = dict(settings)
 
     # ----- calibration (per-mode) ----------------------------------------- #

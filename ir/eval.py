@@ -132,9 +132,15 @@ DFLT_CALIB_SENSITIVITY_WEIGHT = 0.5
 
 
 def _vd_available() -> bool:
-    """Whether ``vd`` (needed for ``lexical`` / ``hybrid`` ranking) is importable."""
+    """Whether ``vd`` provides what ``lexical`` / ``hybrid`` ranking needs.
+
+    Probes the exact symbols :mod:`ir.retrieve` imports at query time
+    (:class:`vd.BM25Index` for lexical, :func:`vd.reciprocal_rank_fusion` for
+    hybrid fusion) — keep this in sync with that module so the eval layer's
+    ``vd_degraded`` flag matches the runtime's actual capability.
+    """
     try:
-        from vd import bm25_lexical_search, reciprocal_rank_fusion  # noqa: F401
+        from vd import BM25Index, reciprocal_rank_fusion  # noqa: F401
 
         return True
     except Exception:
@@ -1258,11 +1264,12 @@ def sweep_selector(
 ) -> SelectionSweep:
     """Tune the selector: score a grid of commit knobs against the cases.
 
-    The selection defaults (``max_k=5``, ``rel=0.6``) are documented *starting
-    points*, not tuned optima. This sweeps ``max_k × rel × min_score`` and scores
-    each cell with :func:`evaluate_selection`'s exact metric, so the right
-    defaults for a given corpus can be read off empirically (precision vs recall
-    vs commit size) rather than guessed.
+    The selection defaults (:data:`~ir.select.DFLT_MAX_K`,
+    :data:`~ir.select.DFLT_REL_THRESHOLD`) were tuned on real corpora (see
+    ir_06), not guessed. This sweeps ``max_k × rel × min_score`` and scores each
+    cell with :func:`evaluate_selection`'s exact metric, so the right defaults
+    for a *given* corpus can be read off empirically (precision vs recall vs
+    commit size) rather than assumed.
 
     Retrieval is run **once per case** (selector parameters do not change the
     ranking) and the cached candidates are reused across the whole grid, so a

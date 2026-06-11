@@ -325,7 +325,9 @@ def generate_cases(
         try:
             intents = gen(prompt_text, n=k)
         except Exception as exc:  # a single artifact's generation failing is non-fatal
-            warnings.warn(f"query generation failed for {artifact_id!r}: {exc}")
+            warnings.warn(
+                f"query generation failed for {artifact_id!r}: {exc}", stacklevel=2
+            )
             skipped += 1
             continue
         for intent in intents:
@@ -350,7 +352,8 @@ def generate_cases(
     if skipped:
         warnings.warn(
             f"generate_cases skipped {skipped} artifact(s) "
-            f"(description shorter than {min_chars} chars, or a generation error)."
+            f"(description shorter than {min_chars} chars, or a generation error).",
+            stacklevel=2,
         )
     return cases
 

@@ -7,11 +7,20 @@ build-backend = "hatchling.build"
 [project]
 name = "ir"
 version = "0.1.8"
-description = "Information Retrieval"
+description = "An information-retrieval substrate for agentic systems"
 readme = "README.md"
 requires-python = ">=3.10"
-keywords = []
-authors = []
+keywords = [
+    "information-retrieval",
+    "retrieval",
+    "embeddings",
+    "semantic-search",
+    "agents",
+    "rag",
+]
+authors = [
+    { name = "Thor Whalen" },
+]
 dependencies = [
     "numpy",
     "dol",
@@ -24,7 +33,7 @@ dependencies = [
 ir = "ir.__main__:main"
 
 [project.license]
-text = "mit"
+text = "MIT"
 
 [project.urls]
 Homepage = "https://github.com/i2mint/ir"
@@ -40,6 +49,9 @@ dev = [
 docs = [
     "sphinx>=6.0",
     "sphinx-rtd-theme>=1.0",
+]
+llm = [
+    "oa",
 ]
 
 [tool.ruff]
@@ -57,13 +69,20 @@ exclude = [
 ]
 
 [tool.ruff.lint]
+# Real lint rules, not just docstring presence: pyflakes (F), pycodestyle
+# errors/warnings (E/W), and flake8-bugbear (B) catch genuine defects. E501
+# (line length) stays off — long descriptive docstrings are a deliberate choice
+# at line-length 88. Tests are excluded from linting (below) for now.
 select = [
     "D100",
+    "F",
+    "E",
+    "W",
+    "B",
 ]
 ignore = [
     "D203",
     "E501",
-    "B905",
 ]
 
 [tool.ruff.lint.pydocstyle]
