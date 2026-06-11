@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.eval &mdash; ir 0.1.7 documentation</title>
+  <title>ir.eval &mdash; ir 0.1.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=ca7ad2ea"></script>
+      <script src="../../_static/documentation_options.js?v=22607128"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -152,7 +152,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">statistics</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
@@ -210,6 +212,14 @@
     <span class="s2">&quot;abstention_accuracy&quot;</span><span class="p">,</span>
     <span class="s2">&quot;mean_selected_size&quot;</span><span class="p">,</span>
 <span class="p">)</span>
+
+<span class="c1">#: Weight on *sensitivity* (catch true positives) vs *specificity* (reject</span>
+<span class="c1">#: out-of-scope queries) when :func:`calibrate_min_score` picks the abstention</span>
+<span class="c1">#: floor: ``objective = w·sensitivity + (1−w)·specificity``. ``0.5`` is balanced</span>
+<span class="c1">#: (its argmax matches Youden&#39;s J / balanced accuracy). Lower it to lean</span>
+<span class="c1">#: *precision* — abstain more readily — per ir_01 §3&#39;s stance that a padded</span>
+<span class="c1">#: commit is the costlier failure for an agent surface than a dropped gold.</span>
+<span class="n">DFLT_CALIB_SENSITIVITY_WEIGHT</span> <span class="o">=</span> <span class="mf">0.5</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_vd_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -1481,6 +1491,450 @@
         <span class="n">n_gold_retrieved</span><span class="o">=</span><span class="n">first</span><span class="o">.</span><span class="n">n_gold_retrieved</span> <span class="k">if</span> <span class="n">first</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
     <span class="p">)</span></div>
 
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Abstention-floor calibration — separating in-scope from out-of-scope queries</span>
+<span class="c1"># =========================================================================== #</span>
+<span class="c1">#</span>
+<span class="c1"># The conservative selector is *relative* (ratios to the top score), so it is</span>
+<span class="c1"># mode-agnostic but cannot tell &quot;all candidates irrelevant&quot; from &quot;all relevant&quot;:</span>
+<span class="c1"># both look like a high-scoring top with the tail falling off. Absolute</span>
+<span class="c1"># abstention (&quot;nothing applies&quot;) needs an *absolute* ``min_score`` floor — and</span>
+<span class="c1"># that floor is mode-specific (dense cosine ∈ ~[0,1], hybrid RRF ∈ ~[0,0.033],</span>
+<span class="c1"># lexical BM25 ∈ ~[0,30+]) and corpus/embedder-specific, so it cannot be a</span>
+<span class="c1"># committed global constant. It must be *calibrated* per (corpus, mode).</span>
+<span class="c1">#</span>
+<span class="c1"># Calibration is a 1-D threshold-separation problem, NOT a selector sweep: an</span>
+<span class="c1"># in-scope (gold-bearing, gold-retrieved) query produces a HIGH top score; an</span>
+<span class="c1"># out-of-scope (empty-gold) query produces a LOWER top score (the best of a bad</span>
+<span class="c1"># lot). The floor that best separates the two distributions is the abstention</span>
+<span class="c1"># floor. (Optimizing ``sweep_selector(objective=&quot;abstention_accuracy&quot;)`` instead</span>
+<span class="c1"># is degenerate: floor → ∞ abstains on everything, scoring 100% — at the cost of</span>
+<span class="c1"># all recall. Separation is the honest objective.)</span>
+
+
+<div class="viewcode-block" id="MinScoreCalibration">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.MinScoreCalibration">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MinScoreCalibration</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A calibrated absolute abstention floor for one ``(corpus, mode)``.</span>
+
+<span class="sd">    Produced by :func:`calibrate_min_score`. ``min_score`` is the floor to pass to</span>
+<span class="sd">    :func:`ir.select.select` / :func:`ir.discover` (``discover(min_score=&quot;auto&quot;)``</span>
+<span class="sd">    loads it): the conservative selector abstains when even the top hit scores</span>
+<span class="sd">    below it. ``None`` means no floor could be calibrated (one of the two query</span>
+<span class="sd">    classes was missing — see :attr:`reason`); the selector then never abstains</span>
+<span class="sd">    by absolute score, exactly as before.</span>
+
+<span class="sd">    The quality numbers treat ``top_score ≥ min_score → commit`` as a binary</span>
+<span class="sd">    classifier over in-scope (label *commit*) vs out-of-scope (label *abstain*)</span>
+<span class="sd">    queries:</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        min_score: the calibrated floor (``None`` if not calibratable).</span>
+<span class="sd">        sensitivity: TPR — fraction of in-scope queries kept (``top ≥ floor``).</span>
+<span class="sd">        specificity: TNR — fraction of out-of-scope queries abstained</span>
+<span class="sd">            (``top &lt; floor``).</span>
+<span class="sd">        youden_j: ``sensitivity + specificity − 1`` (0 = no separation, 1 = perfect).</span>
+<span class="sd">        balanced_accuracy: ``(sensitivity + specificity) / 2``.</span>
+<span class="sd">        separable: whether the two score distributions are perfectly separable</span>
+<span class="sd">            (some floor reaches ``youden_j == 1``).</span>
+<span class="sd">        sensitivity_weight: the ``w`` used to pick the floor (see</span>
+<span class="sd">            :data:`DFLT_CALIB_SENSITIVITY_WEIGHT`).</span>
+<span class="sd">        n_positive: in-scope cases used (gold-bearing **and** gold-retrieved).</span>
+<span class="sd">        n_abstention: out-of-scope (empty-gold) cases used.</span>
+<span class="sd">        n_retrieval_miss: gold-bearing cases whose gold never reached the ``k``</span>
+<span class="sd">            candidates — excluded (a *retrieval* failure, not an abstention</span>
+<span class="sd">            signal), mirroring :func:`evaluate_selection`&#39;s conditioning.</span>
+<span class="sd">        positive_scores / abstention_scores: ``{min, median, max}`` summaries of</span>
+<span class="sd">            each class&#39;s top-score distribution (the auditable evidence the floor</span>
+<span class="sd">            sits between them).</span>
+<span class="sd">        grid: every evaluated floor, ``{min_score, sensitivity, specificity,</span>
+<span class="sd">            youden_j, objective}`` — the full sweep behind the choice.</span>
+<span class="sd">        reason: why ``min_score`` is what it is (``&quot;calibrated&quot;``,</span>
+<span class="sd">            ``&quot;no_positive_cases&quot;``, ``&quot;no_abstention_cases&quot;``, ``&quot;no_cases&quot;``).</span>
+<span class="sd">        corpus_name / mode / k / embedder_id: the configuration scored — and the</span>
+<span class="sd">            ``embedder_id`` stamp lets a consumer detect a stale floor after a</span>
+<span class="sd">            rebuild with a different embedder.</span>
+<span class="sd">        vd_degraded: True when ``mode`` was ``lexical`` / ``hybrid`` but ``vd``</span>
+<span class="sd">            was unavailable, so ranking fell back to dense and the floor is on the</span>
+<span class="sd">            *dense* scale, not the requested mode&#39;s — recalibrate once ``vd`` is</span>
+<span class="sd">            installed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">corpus_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">sensitivity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">specificity</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">youden_j</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">balanced_accuracy</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">separable</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">sensitivity_weight</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">n_positive</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">n_abstention</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">n_retrieval_miss</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">positive_scores</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+    <span class="n">abstention_scores</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+    <span class="n">grid</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>
+    <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">embedder_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;conservative&quot;</span>
+    <span class="n">vd_degraded</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="MinScoreCalibration.to_dict">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.MinScoreCalibration.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form (for persistence and the qh / HTTP surface).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;corpus_name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">corpus_name</span><span class="p">,</span>
+            <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+            <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">,</span>
+            <span class="s2">&quot;min_score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span><span class="p">,</span>
+            <span class="s2">&quot;sensitivity&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sensitivity</span><span class="p">,</span>
+            <span class="s2">&quot;specificity&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">specificity</span><span class="p">,</span>
+            <span class="s2">&quot;youden_j&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">youden_j</span><span class="p">,</span>
+            <span class="s2">&quot;balanced_accuracy&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">balanced_accuracy</span><span class="p">,</span>
+            <span class="s2">&quot;separable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">separable</span><span class="p">,</span>
+            <span class="s2">&quot;sensitivity_weight&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sensitivity_weight</span><span class="p">,</span>
+            <span class="s2">&quot;n_positive&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_positive</span><span class="p">,</span>
+            <span class="s2">&quot;n_abstention&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_abstention</span><span class="p">,</span>
+            <span class="s2">&quot;n_retrieval_miss&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_retrieval_miss</span><span class="p">,</span>
+            <span class="s2">&quot;positive_scores&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positive_scores</span><span class="p">),</span>
+            <span class="s2">&quot;abstention_scores&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">abstention_scores</span><span class="p">),</span>
+            <span class="s2">&quot;grid&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">],</span>
+            <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+            <span class="s2">&quot;embedder_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedder_id</span><span class="p">,</span>
+            <span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="p">,</span>
+            <span class="s2">&quot;vd_degraded&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">vd_degraded</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="MinScoreCalibration.from_dict">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.MinScoreCalibration.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;MinScoreCalibration&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Inverse of :meth:`to_dict` (tolerant of a persisted record&#39;s defaults).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">corpus_name</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;corpus_name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="n">DFLT_MODE</span><span class="p">),</span>
+            <span class="n">k</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)),</span>
+            <span class="n">min_score</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;min_score&quot;</span><span class="p">),</span>
+            <span class="n">sensitivity</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sensitivity&quot;</span><span class="p">),</span>
+            <span class="n">specificity</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;specificity&quot;</span><span class="p">),</span>
+            <span class="n">youden_j</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;youden_j&quot;</span><span class="p">),</span>
+            <span class="n">balanced_accuracy</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;balanced_accuracy&quot;</span><span class="p">),</span>
+            <span class="n">separable</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;separable&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+            <span class="n">sensitivity_weight</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span>
+                <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sensitivity_weight&quot;</span><span class="p">,</span> <span class="n">DFLT_CALIB_SENSITIVITY_WEIGHT</span><span class="p">)</span>
+            <span class="p">),</span>
+            <span class="n">n_positive</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_positive&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="n">n_abstention</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_abstention&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="n">n_retrieval_miss</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;n_retrieval_miss&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)),</span>
+            <span class="n">positive_scores</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;positive_scores&quot;</span><span class="p">,</span> <span class="p">{})),</span>
+            <span class="n">abstention_scores</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;abstention_scores&quot;</span><span class="p">,</span> <span class="p">{})),</span>
+            <span class="n">grid</span><span class="o">=</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span> <span class="p">[])],</span>
+            <span class="n">reason</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="s2">&quot;calibrated&quot;</span><span class="p">),</span>
+            <span class="n">embedder_id</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_id&quot;</span><span class="p">),</span>
+            <span class="n">strategy</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="s2">&quot;conservative&quot;</span><span class="p">),</span>
+            <span class="n">vd_degraded</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;vd_degraded&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MinScoreCalibration.save">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.MinScoreCalibration.save">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MinScoreCalibration&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Persist this calibration on ``corpus`` (keyed by mode); returns self.</span>
+
+<span class="sd">        Stored in the corpus&#39;s ``calibration`` view (not its build ``config``), so</span>
+<span class="sd">        it survives reopen and is loaded by ``discover(min_score=&quot;auto&quot;)``. The</span>
+<span class="sd">        floor is machine-local (derived from a live corpus + embedder) and is</span>
+<span class="sd">        never committed to source control.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+        <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">set_calibration</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">fmt</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;n/a&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">span</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;n/a&quot;</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;min&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">))</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> … </span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;max&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">))</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">]&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">floor</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_score</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min_score</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="sa">f</span><span class="s2">&quot;MinScoreCalibration — corpus=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">corpus_name</span><span class="si">!r}</span><span class="s2"> mode=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;k=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;  min_score floor: </span><span class="si">{</span><span class="n">floor</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;  in-scope:  </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_positive</span><span class="si">}</span><span class="s2"> cases  top-score </span><span class="si">{</span><span class="n">span</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">positive_scores</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;  out-scope: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_abstention</span><span class="si">}</span><span class="s2"> cases  top-score &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">span</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">abstention_scores</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;  sensitivity: </span><span class="si">{</span><span class="n">fmt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sensitivity</span><span class="p">)</span><span class="si">}</span><span class="s2">  &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;specificity: </span><span class="si">{</span><span class="n">fmt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">specificity</span><span class="p">)</span><span class="si">}</span><span class="s2">  &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Youden J: </span><span class="si">{</span><span class="n">fmt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">youden_j</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;  (perfectly separable)&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">separable</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                <span class="sa">f</span><span class="s2">&quot;  retrieval misses excluded: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_retrieval_miss</span><span class="si">}</span><span class="s2">  &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;(w=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sensitivity_weight</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="o">+</span> <span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  DEGRADED: vd unavailable → scored on dense fallback, not &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">; install vd and recalibrate&quot;</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vd_degraded</span>
+                    <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                <span class="p">),</span>
+            <span class="p">]</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calibrate_min_score">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.calibrate_min_score">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calibrate_min_score</span><span class="p">(</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DiscoveryCase</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_MODE</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">sensitivity_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_CALIB_SENSITIVITY_WEIGHT</span><span class="p">,</span>
+    <span class="n">floor_grid</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">persist</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MinScoreCalibration</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calibrate the absolute abstention ``min_score`` floor for one ``mode``.</span>
+
+<span class="sd">    Retrieves ``k`` candidates per case **once** (reusing :func:`evaluate_selection`&#39;s</span>
+<span class="sd">    retrieval pass), then treats floor-picking as a 1-D separation between the</span>
+<span class="sd">    *in-scope* top scores (gold-bearing cases whose gold reached the candidates)</span>
+<span class="sd">    and the *out-of-scope* top scores (empty-gold abstention cases). The floor</span>
+<span class="sd">    that best separates them — by ``w·sensitivity + (1−w)·specificity`` — is the</span>
+<span class="sd">    calibrated ``min_score``.</span>
+
+<span class="sd">    ``cases`` must contain **both** gold-bearing and abstention cases; with only</span>
+<span class="sd">    one class the floor is undefined (``min_score=None``, ``reason`` records which</span>
+<span class="sd">    class was missing). Generate abstention cases with :mod:`ir.eval_gen` (its</span>
+<span class="sd">    ``abstention`` slice) — this module does not synthesize them.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        corpus: an :class:`~ir.index.Corpus` or a registered corpus *name*.</span>
+<span class="sd">        cases: mixed :class:`DiscoveryCase`\\ s (gold-bearing + abstention).</span>
+<span class="sd">        mode: ranking mode to calibrate (a floor is mode-specific).</span>
+<span class="sd">        k: candidate depth retrieved before selection (match your ``discover`` k).</span>
+<span class="sd">        surfaces: restrict retrieval to these surface kinds.</span>
+<span class="sd">        sensitivity_weight: ``w`` in the pick objective (see</span>
+<span class="sd">            :data:`DFLT_CALIB_SENSITIVITY_WEIGHT`); ``0.5`` is balanced.</span>
+<span class="sd">        floor_grid: candidate floors to evaluate; default derives them from the</span>
+<span class="sd">            observed top scores (midpoints between adjacent values + the</span>
+<span class="sd">            commit-all / abstain-all extremes), which is exact for a 1-D split.</span>
+<span class="sd">        persist: when True, :meth:`MinScoreCalibration.save` the result on the</span>
+<span class="sd">            corpus so ``discover(min_score=&quot;auto&quot;)`` will load it.</span>
+<span class="sd">        **search_kw: any other :func:`ir.retrieve.search` keyword.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a :class:`MinScoreCalibration`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">floor_grid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">floor_grid</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">floor_grid</span><span class="p">)</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">floor_grid</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">f</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">floor_grid</span> <span class="ow">or</span> <span class="n">bad</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;floor_grid must be a non-empty sequence of finite floats &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;(got </span><span class="si">{</span><span class="n">floor_grid</span><span class="si">!r}</span><span class="s2">); pass floor_grid=None to derive candidates &quot;</span>
+                <span class="s2">&quot;from the observed scores.&quot;</span>
+            <span class="p">)</span>
+    <span class="c1"># lexical / hybrid ranking silently falls back to dense when vd is missing</span>
+    <span class="c1"># (ir.retrieve), so the scores — and thus the floor — would be on the dense</span>
+    <span class="c1"># scale, not the requested mode&#39;s. Flag it so the calibration is auditable</span>
+    <span class="c1"># and a consumer can recalibrate once vd is installed.</span>
+    <span class="n">vd_degraded</span> <span class="o">=</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span> <span class="s2">&quot;lexical&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_vd_available</span><span class="p">()</span>
+    <span class="n">scored</span> <span class="o">=</span> <span class="n">_retrieve_for_cases</span><span class="p">(</span>
+        <span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span> <span class="o">**</span><span class="n">search_kw</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Split cases into the two score distributions the floor must separate.</span>
+    <span class="c1"># An empty retrieval already commits nothing, so it abstains at any finite</span>
+    <span class="c1"># floor → represent its top score as −inf (below every candidate floor).</span>
+    <span class="n">pos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># in-scope: gold-bearing AND gold reached the candidates</span>
+    <span class="n">neg</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># out-of-scope: abstention (empty-gold) cases</span>
+    <span class="n">n_retrieval_miss</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">case</span><span class="p">,</span> <span class="n">hits</span> <span class="ow">in</span> <span class="n">scored</span><span class="p">:</span>
+        <span class="n">top</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="k">if</span> <span class="n">hits</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">case</span><span class="o">.</span><span class="n">gold_is_none</span><span class="p">:</span>
+            <span class="n">neg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">top</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">retrieved</span> <span class="o">=</span> <span class="p">{</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">}</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">case</span><span class="o">.</span><span class="n">gold</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">retrieved</span><span class="p">:</span>
+            <span class="n">pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">top</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Gold never surfaced → a retrieval miss, not an abstention signal.</span>
+            <span class="c1"># Excluded so the floor is not blamed for retrieval&#39;s recall gap</span>
+            <span class="c1"># (the same conditioning evaluate_selection uses).</span>
+            <span class="n">n_retrieval_miss</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;calibrated&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">pos</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">neg</span><span class="p">:</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;no_cases&quot;</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">pos</span><span class="p">:</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;no_positive_cases&quot;</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">neg</span><span class="p">:</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;no_abstention_cases&quot;</span>
+
+    <span class="n">pos_summary</span> <span class="o">=</span> <span class="n">_score_summary</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+    <span class="n">neg_summary</span> <span class="o">=</span> <span class="n">_score_summary</span><span class="p">([</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">neg</span> <span class="k">if</span> <span class="n">s</span> <span class="o">!=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)])</span>
+
+    <span class="k">if</span> <span class="n">reason</span> <span class="o">!=</span> <span class="s2">&quot;calibrated&quot;</span><span class="p">:</span>
+        <span class="c1"># Cannot separate without both classes → no floor (selector never</span>
+        <span class="c1"># abstains by absolute score, exactly as with min_score=None).</span>
+        <span class="k">return</span> <span class="n">MinScoreCalibration</span><span class="p">(</span>
+            <span class="n">corpus_name</span><span class="o">=</span><span class="n">corpus</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+            <span class="n">min_score</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">sensitivity</span><span class="o">=</span><span class="p">(</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">pos</span> <span class="k">else</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="n">specificity</span><span class="o">=</span><span class="p">(</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">neg</span> <span class="k">else</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="n">youden_j</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">balanced_accuracy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">separable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">sensitivity_weight</span><span class="o">=</span><span class="n">sensitivity_weight</span><span class="p">,</span>
+            <span class="n">n_positive</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">pos</span><span class="p">),</span>
+            <span class="n">n_abstention</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">neg</span><span class="p">),</span>
+            <span class="n">n_retrieval_miss</span><span class="o">=</span><span class="n">n_retrieval_miss</span><span class="p">,</span>
+            <span class="n">positive_scores</span><span class="o">=</span><span class="n">pos_summary</span><span class="p">,</span>
+            <span class="n">abstention_scores</span><span class="o">=</span><span class="n">neg_summary</span><span class="p">,</span>
+            <span class="n">grid</span><span class="o">=</span><span class="p">[],</span>
+            <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span>
+            <span class="n">embedder_id</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;embedder_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="n">vd_degraded</span><span class="o">=</span><span class="n">vd_degraded</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">floors</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">floor_grid</span><span class="p">)</span> <span class="k">if</span> <span class="n">floor_grid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_candidate_floors</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="n">neg</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="p">[</span><span class="n">_score_floor</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">neg</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">floors</span><span class="p">]</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="n">_pick_floor</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">sensitivity_weight</span><span class="p">)</span>
+    <span class="n">separable</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s2">&quot;youden_j&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="mf">1e-9</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">grid</span><span class="p">)</span>
+
+    <span class="n">calib</span> <span class="o">=</span> <span class="n">MinScoreCalibration</span><span class="p">(</span>
+        <span class="n">corpus_name</span><span class="o">=</span><span class="n">corpus</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+        <span class="n">min_score</span><span class="o">=</span><span class="n">best</span><span class="p">[</span><span class="s2">&quot;min_score&quot;</span><span class="p">],</span>
+        <span class="n">sensitivity</span><span class="o">=</span><span class="n">best</span><span class="p">[</span><span class="s2">&quot;sensitivity&quot;</span><span class="p">],</span>
+        <span class="n">specificity</span><span class="o">=</span><span class="n">best</span><span class="p">[</span><span class="s2">&quot;specificity&quot;</span><span class="p">],</span>
+        <span class="n">youden_j</span><span class="o">=</span><span class="n">best</span><span class="p">[</span><span class="s2">&quot;youden_j&quot;</span><span class="p">],</span>
+        <span class="n">balanced_accuracy</span><span class="o">=</span><span class="p">(</span><span class="n">best</span><span class="p">[</span><span class="s2">&quot;sensitivity&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">best</span><span class="p">[</span><span class="s2">&quot;specificity&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">separable</span><span class="o">=</span><span class="n">separable</span><span class="p">,</span>
+        <span class="n">sensitivity_weight</span><span class="o">=</span><span class="n">sensitivity_weight</span><span class="p">,</span>
+        <span class="n">n_positive</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">pos</span><span class="p">),</span>
+        <span class="n">n_abstention</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">neg</span><span class="p">),</span>
+        <span class="n">n_retrieval_miss</span><span class="o">=</span><span class="n">n_retrieval_miss</span><span class="p">,</span>
+        <span class="n">positive_scores</span><span class="o">=</span><span class="n">pos_summary</span><span class="p">,</span>
+        <span class="n">abstention_scores</span><span class="o">=</span><span class="n">neg_summary</span><span class="p">,</span>
+        <span class="n">grid</span><span class="o">=</span><span class="n">grid</span><span class="p">,</span>
+        <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span>
+        <span class="n">embedder_id</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;embedder_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="n">vd_degraded</span><span class="o">=</span><span class="n">vd_degraded</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">persist</span><span class="p">:</span>
+        <span class="n">calib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">calib</span></div>
+
+
+
+<div class="viewcode-block" id="load_calibration">
+<a class="viewcode-back" href="../../module_docs/ir/eval.html#ir.eval.load_calibration">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_calibration</span><span class="p">(</span><span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MinScoreCalibration</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a persisted :class:`MinScoreCalibration` for ``(corpus, mode)``.</span>
+
+<span class="sd">    Returns ``None`` when no calibration has been stored for that mode. Does not</span>
+<span class="sd">    validate the embedder stamp — that staleness check lives at the</span>
+<span class="sd">    ``discover(min_score=&quot;auto&quot;)`` boundary, which knows the live corpus&#39;s</span>
+<span class="sd">    embedder id.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="n">rec</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_calibration</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">MinScoreCalibration</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span> <span class="k">if</span> <span class="n">rec</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_score_summary</span><span class="p">(</span><span class="n">scores</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;``{min, median, max}`` of a score list (non-finite dropped; empty → ``{}``).</span>
+
+<span class="sd">    Drops ``±inf`` / ``NaN`` (a NaN never equals itself) so the summary stays</span>
+<span class="sd">    JSON-serializable and never poisons the persisted record.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">finite</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">scores</span> <span class="k">if</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">s</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">finite</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">finite</span><span class="p">)),</span>
+        <span class="s2">&quot;median&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">statistics</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">finite</span><span class="p">)),</span>
+        <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">finite</span><span class="p">)),</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_candidate_floors</span><span class="p">(</span><span class="n">scores</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Candidate floors for a 1-D split: midpoints of adjacent observed scores.</span>
+
+<span class="sd">    The optimal threshold separating two sets of reals always lies between two</span>
+<span class="sd">    adjacent observed values, so the midpoints (plus a commit-all floor below the</span>
+<span class="sd">    minimum and an abstain-all floor above the maximum) are an *exact* search</span>
+<span class="sd">    grid — no resolution to tune. ``−inf`` scores (empty retrievals) are dropped:</span>
+<span class="sd">    they abstain at any finite floor and so never constrain the choice.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">finite</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">scores</span> <span class="k">if</span> <span class="n">s</span> <span class="o">!=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">==</span> <span class="n">s</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">finite</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">finite</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">finite</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">margin</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.5</span> <span class="o">+</span> <span class="mf">1.0</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">v</span> <span class="o">-</span> <span class="n">margin</span><span class="p">,</span> <span class="n">v</span> <span class="o">+</span> <span class="n">margin</span><span class="p">]</span>
+    <span class="n">span</span> <span class="o">=</span> <span class="n">finite</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">finite</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">margin</span> <span class="o">=</span> <span class="p">(</span><span class="n">span</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">finite</span><span class="p">))</span> <span class="k">if</span> <span class="n">span</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1.0</span>
+    <span class="n">mids</span> <span class="o">=</span> <span class="p">[(</span><span class="n">finite</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">finite</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">finite</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">finite</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">margin</span><span class="p">,</span> <span class="o">*</span><span class="n">mids</span><span class="p">,</span> <span class="n">finite</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">margin</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_score_floor</span><span class="p">(</span><span class="n">floor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">neg</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Confusion of ``top_score ≥ floor → commit`` over the two classes.</span>
+
+<span class="sd">    Sensitivity (TPR) is the in-scope commit rate; specificity (TNR) is the</span>
+<span class="sd">    out-of-scope abstain rate. A ``−inf`` abstention score (empty retrieval)</span>
+<span class="sd">    is below every finite floor, so it always abstains correctly.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sens</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">s</span> <span class="o">&gt;=</span> <span class="n">floor</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">pos</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span> <span class="k">if</span> <span class="n">pos</span> <span class="k">else</span> <span class="mf">0.0</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">s</span> <span class="o">&lt;</span> <span class="n">floor</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">neg</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg</span><span class="p">)</span> <span class="k">if</span> <span class="n">neg</span> <span class="k">else</span> <span class="mf">0.0</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;min_score&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">floor</span><span class="p">),</span>
+        <span class="s2">&quot;sensitivity&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">sens</span><span class="p">),</span>
+        <span class="s2">&quot;specificity&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span>
+        <span class="s2">&quot;youden_j&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">sens</span> <span class="o">+</span> <span class="n">spec</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">),</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_pick_floor</span><span class="p">(</span><span class="n">grid</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">sensitivity_weight</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pick the grid floor maximizing ``w·sensitivity + (1−w)·specificity``.</span>
+
+<span class="sd">    Ties (common — every floor inside one gap scores identically) break toward</span>
+<span class="sd">    the *higher* floor: the precision-leaning choice (ir_01 §3 — a padded commit</span>
+<span class="sd">    costs more than a dropped gold), and the more robust separator when the gap</span>
+<span class="sd">    above the out-of-scope scores is wide.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">sensitivity_weight</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">objective</span><span class="p">(</span><span class="n">g</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">w</span> <span class="o">*</span> <span class="n">g</span><span class="p">[</span><span class="s2">&quot;sensitivity&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">w</span><span class="p">)</span> <span class="o">*</span> <span class="n">g</span><span class="p">[</span><span class="s2">&quot;specificity&quot;</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">grid</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">g</span><span class="p">:</span> <span class="p">(</span><span class="n">objective</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">g</span><span class="p">[</span><span class="s2">&quot;min_score&quot;</span><span class="p">]))</span>
 </pre></div>
 
            </div>

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to ir’s documentation! &mdash; ir 0.1.7 documentation</title>
+  <title>Welcome to ir’s documentation! &mdash; ir 0.1.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=ca7ad2ea"></script>
+      <script src="_static/documentation_options.js?v=22607128"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -139,6 +139,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/cli.html">ir.cli</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.calibrate_min_score"><code class="docutils literal notranslate"><span class="pre">calibrate_min_score()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.eval"><code class="docutils literal notranslate"><span class="pre">eval()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.eval_gen"><code class="docutils literal notranslate"><span class="pre">eval_gen()</span></code></a></li>
@@ -167,6 +168,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval.html">ir.eval</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#design-stance-retrieval-centric-reuse-ef">Design stance (retrieval-centric, reuse <code class="docutils literal notranslate"><span class="pre">ef</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_CALIB_SENSITIVITY_WEIGHT"><code class="docutils literal notranslate"><span class="pre">DFLT_CALIB_SENSITIVITY_WEIGHT</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_CURVE_MODE"><code class="docutils literal notranslate"><span class="pre">DFLT_CURVE_MODE</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_DISTRACTOR_SIZES"><code class="docutils literal notranslate"><span class="pre">DFLT_DISTRACTOR_SIZES</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_K_VALUES"><code class="docutils literal notranslate"><span class="pre">DFLT_K_VALUES</span></code></a></li>
@@ -178,16 +180,19 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_REL"><code class="docutils literal notranslate"><span class="pre">DFLT_SWEEP_REL</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DiscoveryCase"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DiscoveryReport"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration"><code class="docutils literal notranslate"><span class="pre">MinScoreCalibration</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SWEEP_METRICS"><code class="docutils literal notranslate"><span class="pre">SWEEP_METRICS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint"><code class="docutils literal notranslate"><span class="pre">SelectionGridPoint</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SelectionReport"><code class="docutils literal notranslate"><span class="pre">SelectionReport</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SelectionSweep"><code class="docutils literal notranslate"><span class="pre">SelectionSweep</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.as_doc_retriever"><code class="docutils literal notranslate"><span class="pre">as_doc_retriever()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.calibrate_min_score"><code class="docutils literal notranslate"><span class="pre">calibrate_min_score()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.corpus_artifact_ids"><code class="docutils literal notranslate"><span class="pre">corpus_artifact_ids()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.distractor_curve_from_cases"><code class="docutils literal notranslate"><span class="pre">distractor_curve_from_cases()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.distractor_robustness_curve"><code class="docutils literal notranslate"><span class="pre">distractor_robustness_curve()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.evaluate_discovery"><code class="docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.evaluate_selection"><code class="docutils literal notranslate"><span class="pre">evaluate_selection()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.load_calibration"><code class="docutils literal notranslate"><span class="pre">load_calibration()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.load_cases"><code class="docutils literal notranslate"><span class="pre">load_cases()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.retrieval_report"><code class="docutils literal notranslate"><span class="pre">retrieval_report()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.save_cases"><code class="docutils literal notranslate"><span class="pre">save_cases()</span></code></a></li>
@@ -284,8 +289,8 @@
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-<p>Release: 0.1.7</p>
-<p>Last change: Jun 07, 2026</p>
+<p>Release: 0.1.8</p>
+<p>Last change: Jun 11, 2026</p>
 </section>
 
 

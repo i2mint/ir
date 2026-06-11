@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.store &mdash; ir 0.1.7 documentation</title>
+  <title>ir.store &mdash; ir 0.1.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=ca7ad2ea"></script>
+      <script src="../../_static/documentation_options.js?v=22607128"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -99,8 +99,13 @@
 <span class="sd">- ``ledger`` : ``artifact_id -&gt; dict`` (version, embedder id, record ids) —</span>
 <span class="sd">  drives incremental maintenance.</span>
 <span class="sd">- ``config`` : ``key -&gt; dict`` (one entry: the corpus build settings).</span>
+<span class="sd">- ``calibration`` : ``mode -&gt; dict`` (a per-ranking-mode calibrated record, today</span>
+<span class="sd">  the abstention ``min_score`` floor from :func:`ir.eval.calibrate_min_score`).</span>
+<span class="sd">  Kept apart from ``config`` on purpose — a calibration is regenerable, derived</span>
+<span class="sd">  from an eval run, and not part of the corpus&#39;s build identity, so it must never</span>
+<span class="sd">  clobber (or be clobbered by) the build settings.</span>
 
-<span class="sd">The default factory :meth:`CorpusStore.local` roots all four under</span>
+<span class="sd">The default factory :meth:`CorpusStore.local` roots all five under</span>
 <span class="sd">``~/.local/share/ir/corpora/&lt;name&gt;`` via ``dol`` file stores;</span>
 <span class="sd">:meth:`CorpusStore.memory` gives a dependency-free in-memory store for tests.</span>
 <span class="sd">Brute-force search reads vectors into a single normalized matrix</span>
@@ -109,6 +114,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
@@ -158,11 +164,15 @@
         <span class="n">vectors</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">ledger</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">calibration</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vectors</span> <span class="o">=</span> <span class="n">vectors</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ledger</span> <span class="o">=</span> <span class="n">ledger</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="c1"># Optional 5th view (defaults to an in-memory dict so older call sites and</span>
+        <span class="c1"># tests that construct a store with four views keep working unchanged).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calibration</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">calibration</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">calibration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="c1"># ----- factories ------------------------------------------------------ #</span>
@@ -180,6 +190,7 @@
             <span class="n">vectors</span><span class="o">=</span><span class="n">_ndarray_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;vectors&quot;</span><span class="p">),</span>
             <span class="n">ledger</span><span class="o">=</span><span class="n">_json_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;ledger&quot;</span><span class="p">),</span>
             <span class="n">config</span><span class="o">=</span><span class="n">_json_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;config&quot;</span><span class="p">),</span>
+            <span class="n">calibration</span><span class="o">=</span><span class="n">_json_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;calibration&quot;</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -252,6 +263,44 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">set_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+
+    <span class="c1"># ----- calibration (per-mode) ----------------------------------------- #</span>
+
+<div class="viewcode-block" id="CorpusStore.get_calibration">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.get_calibration">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_calibration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The stored calibration record for ranking ``mode`` (``None`` if absent).</span>
+
+<span class="sd">        A deep copy, so a caller cannot mutate the nested ``grid`` back into the</span>
+<span class="sd">        stored record (in-memory stores share their objects by reference).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calibration</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span> <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="CorpusStore.set_calibration">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.set_calibration">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_calibration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Persist a calibration ``record`` for ranking ``mode`` (one per mode).</span>
+
+<span class="sd">        ``mode`` keys a file in the calibration store, so it must be a non-empty</span>
+<span class="sd">        string with no path separator (the real modes — ``dense`` / ``lexical`` /</span>
+<span class="sd">        ``hybrid`` — already satisfy this).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">mode</span> <span class="ow">or</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">mode</span> <span class="ow">or</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span> <span class="ow">in</span> <span class="n">mode</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;calibration mode must be a non-empty string without a path &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;separator; got </span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">record</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CorpusStore.calibration_modes">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.calibration_modes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calibration_modes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The ranking modes that currently have a stored calibration.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calibration</span><span class="p">)</span></div>
+
 
     <span class="c1"># ----- search matrix -------------------------------------------------- #</span>
 

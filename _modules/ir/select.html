@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.select &mdash; ir 0.1.7 documentation</title>
+  <title>ir.select &mdash; ir 0.1.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=ca7ad2ea"></script>
+      <script src="../../_static/documentation_options.js?v=22607128"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -132,11 +132,18 @@
 <span class="sd">BM25 — whose absolute scales differ by orders of magnitude — without</span>
 <span class="sd">per-mode calibration. Absolute abstention (``&quot;nothing applies&quot;``) requires</span>
 <span class="sd">either an explicit ``min_score`` floor or an LLM selector; pure relative</span>
-<span class="sd">structure cannot tell &quot;all irrelevant&quot; from &quot;all relevant&quot;.</span>
+<span class="sd">structure cannot tell &quot;all irrelevant&quot; from &quot;all relevant&quot;. Because a useful</span>
+<span class="sd">floor is mode- and corpus-specific, it is *calibrated* rather than guessed:</span>
+<span class="sd">:func:`ir.eval.calibrate_min_score` separates in-scope from out-of-scope query</span>
+<span class="sd">scores and persists the floor, and :func:`discover` loads it on</span>
+<span class="sd">``min_score=&quot;auto&quot;`` — the opt-in that turns relative selection into one that</span>
+<span class="sd">can also abstain.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
@@ -790,6 +797,61 @@
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_auto_min_score</span><span class="p">(</span><span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the calibrated abstention floor for ``(corpus, mode)``, or ``None``.</span>
+
+<span class="sd">    Reads the per-mode record persisted by :func:`ir.eval.calibrate_min_score`</span>
+<span class="sd">    from the corpus&#39;s ``calibration`` store. Returns ``None`` (and warns) when no</span>
+<span class="sd">    calibration is stored for the mode, or when the stored ``embedder_id`` no</span>
+<span class="sd">    longer matches the live corpus (a stale floor after a rebuild) — so</span>
+<span class="sd">    ``min_score=&quot;auto&quot;`` degrades safely to &quot;no absolute abstention&quot; rather than</span>
+<span class="sd">    abstaining on a mis-scaled floor. Kept here (not in :mod:`ir.eval`) so the</span>
+<span class="sd">    common ``discover`` path stays free of the eval module&#39;s heavier imports.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># stacklevel=3: warn → _resolve_auto_min_score → discover → the user&#39;s call.</span>
+    <span class="n">store</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;store&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">get</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;get_calibration&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">rec</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">get</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;?&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">rec</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;discover(min_score=&#39;auto&#39;): no calibration stored for corpus &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> mode </span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">; not abstaining by absolute score. Calibrate &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;with ir.eval.calibrate_min_score(corpus, cases, mode=</span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;persist=True).&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">stored_emb</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_id&quot;</span><span class="p">)</span>
+    <span class="n">live_emb</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;embedder_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="c1"># Any presence/value mismatch is treated as stale: an unstamped or</span>
+    <span class="c1"># differently-stamped floor cannot be confirmed to match the live scale.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">stored_emb</span> <span class="ow">or</span> <span class="n">live_emb</span><span class="p">)</span> <span class="ow">and</span> <span class="n">stored_emb</span> <span class="o">!=</span> <span class="n">live_emb</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;discover(min_score=&#39;auto&#39;): calibration for corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> mode &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2"> was made with embedder </span><span class="si">{</span><span class="n">stored_emb</span><span class="si">!r}</span><span class="s2"> but the corpus now &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;uses </span><span class="si">{</span><span class="n">live_emb</span><span class="si">!r}</span><span class="s2">; ignoring the stale (possibly mis-scaled) floor. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Re-run ir.eval.calibrate_min_score(..., persist=True).&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">floor</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;min_score&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">floor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">floor</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">floor</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">floor</span><span class="p">):</span>
+        <span class="c1"># A corrupted/hand-edited ±inf floor would abstain (or commit) on</span>
+        <span class="c1"># everything; refuse it rather than silently breaking abstention.</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;discover(min_score=&#39;auto&#39;): calibration for corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> mode &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2"> has a non-finite floor (</span><span class="si">{</span><span class="n">floor</span><span class="si">}</span><span class="s2">); ignoring it. Re-run &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;ir.eval.calibrate_min_score(..., persist=True).&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">floor</span>
+
+
 <div class="viewcode-block" id="discover">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.discover">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">discover</span><span class="p">(</span>
@@ -805,7 +867,7 @@
     <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_K</span><span class="p">,</span>
     <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_REL_THRESHOLD</span><span class="p">,</span>
     <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">,</span>
-    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscoveryResult</span><span class="p">:</span>
@@ -831,7 +893,11 @@
 <span class="sd">        filter, surfaces: retrieval constraints (forwarded to</span>
 <span class="sd">            :func:`ir.retrieve.search`).</span>
 <span class="sd">        max_k, rel, gap_ratio, min_score: selection parameters (see</span>
-<span class="sd">            :func:`select`).</span>
+<span class="sd">            :func:`select`). ``min_score=&quot;auto&quot;`` loads the floor calibrated for</span>
+<span class="sd">            this ``(corpus, mode)`` by :func:`ir.eval.calibrate_min_score` and</span>
+<span class="sd">            persisted on the corpus — the opt-in that turns on absolute</span>
+<span class="sd">            abstention; it falls back to no floor (with a warning) when no</span>
+<span class="sd">            calibration is stored or it is stale (a different embedder).</span>
 <span class="sd">        loader: optional body resolver for disclosure (see :func:`disclose`).</span>
 <span class="sd">        **search_kw: any other :func:`ir.retrieve.search` keyword (``rrf_k``,</span>
 <span class="sd">            ``rerank``, ``bm25``, …).</span>
@@ -843,6 +909,14 @@
         <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
 
         <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_score</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">min_score</span> <span class="o">!=</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;invalid min_score </span><span class="si">{</span><span class="n">min_score</span><span class="si">!r}</span><span class="s2">; expected a float, None, or the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;sentinel &#39;auto&#39; (load the calibrated floor for this corpus/mode).&quot;</span>
+            <span class="p">)</span>
+        <span class="n">min_score</span> <span class="o">=</span> <span class="n">_resolve_auto_min_score</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
 
     <span class="n">hits</span> <span class="o">=</span> <span class="n">_search</span><span class="p">(</span>
         <span class="n">corpus</span><span class="p">,</span>
