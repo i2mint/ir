@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.cli &mdash; ir 0.1.10 documentation</title>
+  <title>ir.cli &mdash; ir 0.1.11 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=bafade30"></script>
+      <script src="../../_static/documentation_options.js?v=1e825a29"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -183,16 +183,18 @@
 
 <div class="viewcode-block" id="search">
 <a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.search">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;dense&quot;</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;dense&quot;</span><span class="p">,</span> <span class="n">fusion</span><span class="o">=</span><span class="s2">&quot;rrf&quot;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Search a built corpus and print the top-k hits.</span>
 
-<span class="sd">    mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused via RRF).</span>
+<span class="sd">    mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused). fusion</span>
+<span class="sd">    (hybrid only): rrf (rank-based, default) | blend (magnitude-preserving;</span>
+<span class="sd">    better abstention separability — see ir_08).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_empty_corpus_msg</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">corpus</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">corpus</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">fusion</span><span class="o">=</span><span class="n">fusion</span><span class="p">):</span>
         <span class="c1"># artifact_id is the unique label across corpora (skill name[@parent],</span>
         <span class="c1"># package name, or a report&#39;s relative path).</span>
         <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">score</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="si">}</span><span class="s2">  [</span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">surface_kind</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
@@ -211,6 +213,7 @@
     <span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;conservative&quot;</span><span class="p">,</span>
     <span class="n">disclose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">min_score</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">fusion</span><span class="o">=</span><span class="s2">&quot;rrf&quot;</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Search a corpus, commit to a distractor-robust subset, and show it.</span>
 
@@ -219,7 +222,9 @@
 <span class="sd">    selected item&#39;s body (SKILL.md / file text) via its stored pointer.</span>
 <span class="sd">    ``--min-score auto`` turns on absolute abstention using the floor calibrated</span>
 <span class="sd">    by ``ir calibrate-min-score`` (or pass a float). mode: dense | lexical |</span>
-<span class="sd">    hybrid. strategy: conservative | top_k | rel_threshold | score_gap.</span>
+<span class="sd">    hybrid. fusion (hybrid only): rrf (default) | blend (magnitude-preserving;</span>
+<span class="sd">    pair with --min-score for abstention — see ir_08). strategy: conservative |</span>
+<span class="sd">    top_k | rel_threshold | score_gap.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.select</span><span class="w"> </span><span class="kn">import</span> <span class="n">discover</span> <span class="k">as</span> <span class="n">_discover</span>
 
@@ -239,6 +244,7 @@
         <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
         <span class="n">disclose_level</span><span class="o">=</span><span class="s2">&quot;body&quot;</span> <span class="k">if</span> <span class="n">disclose</span> <span class="k">else</span> <span class="s2">&quot;metadata&quot;</span><span class="p">,</span>
         <span class="n">min_score</span><span class="o">=</span><span class="n">floor</span><span class="p">,</span>
+        <span class="n">fusion</span><span class="o">=</span><span class="n">fusion</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">abstained</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span>
@@ -436,6 +442,7 @@
     <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="n">sensitivity_weight</span><span class="o">=</span><span class="n">DFLT_CALIB_SENSITIVITY_WEIGHT</span><span class="p">,</span>
     <span class="n">persist</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">fusion</span><span class="o">=</span><span class="s2">&quot;rrf&quot;</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Calibrate the absolute abstention min_score floor for a corpus + mode.</span>
 
@@ -445,9 +452,10 @@
 <span class="sd">    abstention cases — generate them with ``ir eval-gen`` (it adds an abstention</span>
 <span class="sd">    slice). ``--persist`` stores the floor so ``ir discover ... --min-score auto``</span>
 <span class="sd">    will abstain by it. ``--sensitivity-weight`` (0..1, balanced default);</span>
-<span class="sd">    lower it to abstain more readily (precision-leaning). Calibrate on dense or</span>
-<span class="sd">    lexical, not hybrid (its RRF scores barely separate). mode: dense | lexical</span>
-<span class="sd">    | hybrid.</span>
+<span class="sd">    lower it to abstain more readily (precision-leaning). For hybrid, calibrate</span>
+<span class="sd">    with ``--fusion blend`` (rank-based RRF barely separates — see ir_08) and</span>
+<span class="sd">    query under the same fusion. mode: dense | lexical | hybrid. fusion (hybrid</span>
+<span class="sd">    only): rrf | blend.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">calibrate_min_score</span> <span class="k">as</span> <span class="n">_calibrate</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_cases</span><span class="p">,</span> <span class="n">validate_cases</span>
@@ -466,10 +474,17 @@
         <span class="n">k</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="p">),</span>
         <span class="n">sensitivity_weight</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">sensitivity_weight</span><span class="p">),</span>
         <span class="n">persist</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">persist</span><span class="p">),</span>
+        <span class="n">fusion</span><span class="o">=</span><span class="n">fusion</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">out</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">calib</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">persist</span> <span class="ow">and</span> <span class="n">calib</span><span class="o">.</span><span class="n">min_score</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">out</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  persisted → ir discover </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> ... --mode </span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s2"> --min-score auto&quot;</span>
+        <span class="n">fusion_hint</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot; --fusion </span><span class="si">{</span><span class="n">fusion</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;hybrid&quot;</span> <span class="ow">and</span> <span class="n">fusion</span> <span class="o">!=</span> <span class="s2">&quot;rrf&quot;</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="p">)</span>
+        <span class="n">out</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  persisted → ir discover </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> ... --mode </span><span class="si">{</span><span class="n">mode</span><span class="si">}{</span><span class="n">fusion_hint</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;--min-score auto&quot;</span>
+        <span class="p">)</span>
     <span class="k">if</span> <span class="n">calib</span><span class="o">.</span><span class="n">min_score</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">out</span> <span class="o">+=</span> <span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  NOTE: no floor calibrated (</span><span class="si">{</span><span class="n">calib</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">); a floor needs both &quot;</span>

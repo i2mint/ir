@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.retrieve &mdash; ir 0.1.10 documentation</title>
+  <title>ir.retrieve &mdash; ir 0.1.11 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=bafade30"></script>
+      <script src="../../_static/documentation_options.js?v=1e825a29"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -98,9 +98,11 @@
 
 <span class="sd">- ``&quot;dense&quot;`` (default) — exact brute-force cosine over the embedding matrix.</span>
 <span class="sd">- ``&quot;lexical&quot;`` — Okapi BM25 over the candidates&#39; text (``vd.bm25_lexical_search``).</span>
-<span class="sd">- ``&quot;hybrid&quot;`` — dense and lexical fused by Reciprocal Rank Fusion</span>
-<span class="sd">  (``vd.reciprocal_rank_fusion``), the rank-based fuse that sidesteps the</span>
-<span class="sd">  cosine/BM25 score-scale mismatch.</span>
+<span class="sd">- ``&quot;hybrid&quot;`` — dense and lexical fused, either by Reciprocal Rank Fusion</span>
+<span class="sd">  (``fusion=&quot;rrf&quot;``, the default ``vd.reciprocal_rank_fusion`` rank-based fuse</span>
+<span class="sd">  that sidesteps the cosine/BM25 score-scale mismatch) or by a</span>
+<span class="sd">  magnitude-preserving convex blend (``fusion=&quot;blend&quot;``) that keeps the dense</span>
+<span class="sd">  cosine&#39;s absolute scale for better abstention separability (see ir_08).</span>
 
 <span class="sd">Hybrid matters for short, identifier-heavy capability text (skill / package /</span>
 <span class="sd">tool names), the regime where dense-only retrieval fails silently on exact</span>
@@ -130,8 +132,22 @@
 <span class="c1">#: Ranking modes accepted by :func:`search`.</span>
 <span class="n">MODES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;dense&quot;</span><span class="p">,</span> <span class="s2">&quot;lexical&quot;</span><span class="p">,</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">)</span>
 
+<span class="c1">#: Hybrid fusion methods accepted by :func:`search` (``mode=&quot;hybrid&quot;``).</span>
+<span class="c1">#: ``&quot;rrf&quot;`` is the rank-based default; ``&quot;blend&quot;`` preserves score magnitude</span>
+<span class="c1">#: (see :func:`_blend_fuse` and ir_08) for better abstention separability.</span>
+<span class="n">FUSIONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;rrf&quot;</span><span class="p">,</span> <span class="s2">&quot;blend&quot;</span><span class="p">)</span>
+
 <span class="c1">#: RRF rank constant — the ``k`` of ``1 / (k + rank)`` (standard default 60).</span>
 <span class="n">DFLT_RRF_K</span> <span class="o">=</span> <span class="mi">60</span>
+
+<span class="c1">#: Dense weight in the ``&quot;blend&quot;`` fusion convex combination (``1-alpha`` on the</span>
+<span class="c1">#: bounded lexical term). ``0.5`` weighs the two equally.</span>
+<span class="n">DFLT_BLEND_ALPHA</span> <span class="o">=</span> <span class="mf">0.5</span>
+
+<span class="c1">#: BM25 saturation constant for ``&quot;blend&quot;`` fusion: ``bm25 -&gt; bm25/(bm25+k)``, a</span>
+<span class="c1">#: bounded squash to ``[0, 1)`` that needs no *per-query* normalization (which</span>
+<span class="c1">#: would erase the absolute-magnitude signal abstention calibration depends on).</span>
+<span class="n">DFLT_BM25_SAT_K</span> <span class="o">=</span> <span class="mf">8.0</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_matches</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -305,6 +321,48 @@
     <span class="k">return</span> <span class="p">[(</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="nb">float</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;rrf_score&quot;</span><span class="p">]))</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">fused</span><span class="p">[:</span><span class="n">fetch</span><span class="p">]]</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_blend_fuse</span><span class="p">(</span>
+    <span class="n">dense</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
+    <span class="n">lexical</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
+    <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">bm25_sat_k</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">fetch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fuse dense + lexical by a magnitude-preserving convex blend.</span>
+
+<span class="sd">    ``fused = alpha * cosine + (1 - alpha) * bm25 / (bm25 + bm25_sat_k)``.</span>
+
+<span class="sd">    Unlike :func:`_rrf_fuse` (rank-only — every query&#39;s top hit collapses to ~the</span>
+<span class="sd">    same fused score, which destroys the score-distribution separability that</span>
+<span class="sd">    abstention calibration relies on; see ir_07/ir_08), this keeps the dense</span>
+<span class="sd">    cosine&#39;s **absolute** magnitude. The dense term carries the in-scope /</span>
+<span class="sd">    out-of-scope signal (it is low across the board for an irrelevant query),</span>
+<span class="sd">    while the BM25 term is squashed into a bounded ``[0, 1)`` range with a *fixed*</span>
+<span class="sd">    constant — deliberately **not** per-query min-max normalized, which would</span>
+<span class="sd">    rescale every query&#39;s best hit to 1.0 and wash that signal out. Cosine is</span>
+<span class="sd">    already on a fixed ``[-1, 1]`` scale, so the two terms are commensurable.</span>
+
+<span class="sd">    Falls back to the single non-empty ranking (dense, when ``vd`` is missing) so</span>
+<span class="sd">    it degrades exactly like :func:`_rrf_fuse`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">lexical</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dense</span><span class="p">[:</span><span class="n">fetch</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">dense</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">lexical</span><span class="p">[:</span><span class="n">fetch</span><span class="p">]</span>
+    <span class="n">dense_score</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dense</span><span class="p">)</span>
+    <span class="n">lex_score</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">lexical</span><span class="p">)</span>
+    <span class="c1"># Preserve first-seen order for deterministic tie-breaking (dense first).</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">([</span><span class="n">rid</span> <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dense</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">rid</span> <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">lexical</span><span class="p">]))</span>
+    <span class="n">fused</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">dense_score</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rid</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">lex_score</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rid</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">b_sat</span> <span class="o">=</span> <span class="n">b</span> <span class="o">/</span> <span class="p">(</span><span class="n">b</span> <span class="o">+</span> <span class="n">bm25_sat_k</span><span class="p">)</span> <span class="k">if</span> <span class="n">b</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="n">fused</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">rid</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">d</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">b_sat</span><span class="p">))</span>
+    <span class="n">fused</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">kv</span><span class="p">:</span> <span class="o">-</span><span class="n">kv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">fused</span><span class="p">[:</span><span class="n">fetch</span><span class="p">]</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_apply_rerank</span><span class="p">(</span>
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">ranked</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
@@ -340,7 +398,10 @@
     <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">per_artifact</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;dense&quot;</span><span class="p">,</span>
+    <span class="n">fusion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rrf&quot;</span><span class="p">,</span>
     <span class="n">rrf_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_RRF_K</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_BLEND_ALPHA</span><span class="p">,</span>
+    <span class="n">bm25_sat_k</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_BM25_SAT_K</span><span class="p">,</span>
     <span class="n">fetch_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">rerank</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">bm25</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -354,10 +415,16 @@
 <span class="sd">    surfaces : restrict to these surface kinds (e.g. ``{&quot;description&quot;}``).</span>
 <span class="sd">    per_artifact : collapse to the best surface per artifact (default True).</span>
 <span class="sd">    mode : ``&quot;dense&quot;`` (default, cosine), ``&quot;lexical&quot;`` (BM25), or ``&quot;hybrid&quot;``</span>
-<span class="sd">        (dense + BM25 fused by Reciprocal Rank Fusion). Hybrid is the strongest</span>
-<span class="sd">        default for short, identifier-heavy text; ``&quot;dense&quot;`` is the historical</span>
-<span class="sd">        behavior and is kept as the default for backward compatibility.</span>
-<span class="sd">    rrf_k : the RRF rank constant for ``&quot;hybrid&quot;`` (standard default 60).</span>
+<span class="sd">        (dense + BM25 fused). Hybrid is the strongest default for short,</span>
+<span class="sd">        identifier-heavy text; ``&quot;dense&quot;`` is the historical behavior and is</span>
+<span class="sd">        kept as the default for backward compatibility.</span>
+<span class="sd">    fusion : how ``&quot;hybrid&quot;`` fuses dense + lexical — ``&quot;rrf&quot;`` (default,</span>
+<span class="sd">        rank-based Reciprocal Rank Fusion) or ``&quot;blend&quot;`` (magnitude-preserving</span>
+<span class="sd">        convex blend; better abstention separability — see ir_08). Ignored for</span>
+<span class="sd">        non-hybrid modes.</span>
+<span class="sd">    rrf_k : the RRF rank constant for ``fusion=&quot;rrf&quot;`` (standard default 60).</span>
+<span class="sd">    alpha : dense weight for ``fusion=&quot;blend&quot;`` (``1-alpha`` on lexical).</span>
+<span class="sd">    bm25_sat_k : BM25 saturation constant for ``fusion=&quot;blend&quot;``.</span>
 <span class="sd">    fetch_k : candidate depth before fusion / reranking / dedupe</span>
 <span class="sd">        (default ``max(k*5, 50)`` when collapsing per artifact, else ``k``).</span>
 <span class="sd">    rerank : an optional :class:`ef.Reranker` (``(query, segments) -&gt; scores``)</span>
@@ -369,6 +436,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">MODES</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown mode </span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">MODES</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fusion</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">FUSIONS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unknown fusion </span><span class="si">{</span><span class="n">fusion</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">FUSIONS</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="c1"># Materialize once: surfaces may be a one-shot iterable, and it is both the</span>
     <span class="c1"># filter input and part of the BM25 cache key.</span>
@@ -398,7 +467,10 @@
                 <span class="n">corpus</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">metas</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">_candidate_key</span><span class="p">(</span><span class="n">surfaces</span><span class="p">,</span> <span class="nb">filter</span><span class="p">)</span>
             <span class="p">)</span>
             <span class="n">lexical</span> <span class="o">=</span> <span class="n">_lexical_ranked</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">bm25</span><span class="p">)</span>
-            <span class="n">ranked</span> <span class="o">=</span> <span class="n">_rrf_fuse</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="n">lexical</span><span class="p">,</span> <span class="n">rrf_k</span><span class="p">,</span> <span class="n">fetch</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fusion</span> <span class="o">==</span> <span class="s2">&quot;blend&quot;</span><span class="p">:</span>
+                <span class="n">ranked</span> <span class="o">=</span> <span class="n">_blend_fuse</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="n">lexical</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">bm25_sat_k</span><span class="p">,</span> <span class="n">fetch</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ranked</span> <span class="o">=</span> <span class="n">_rrf_fuse</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="n">lexical</span><span class="p">,</span> <span class="n">rrf_k</span><span class="p">,</span> <span class="n">fetch</span><span class="p">)</span>
 
     <span class="n">meta_by_id</span> <span class="o">=</span> <span class="p">{</span><span class="n">ids</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span> <span class="n">metas</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">}</span>
 

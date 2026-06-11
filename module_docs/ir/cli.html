@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.cli &mdash; ir 0.1.10 documentation</title>
+  <title>ir.cli &mdash; ir 0.1.11 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=bafade30"></script>
+      <script src="../../_static/documentation_options.js?v=1e825a29"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -133,7 +133,7 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.cli.calibrate_min_score">
-<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">calibrate_min_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cases</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#calibrate_min_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.calibrate_min_score" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">calibrate_min_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cases</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fusion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rrf'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#calibrate_min_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.calibrate_min_score" title="Link to this definition"></a></dt>
 <dd><p>Calibrate the absolute abstention min_score floor for a corpus + mode.</p>
 <p>Separates in-scope (gold-bearing) from out-of-scope (empty-gold) query top
 scores and reports the floor that best splits them, with sensitivity /
@@ -141,21 +141,24 @@ specificity / Youden’s J. <code class="docutils literal notranslate"><span cla
 abstention cases — generate them with <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">eval-gen</span></code> (it adds an abstention
 slice). <code class="docutils literal notranslate"><span class="pre">--persist</span></code> stores the floor so <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">discover</span> <span class="pre">...</span> <span class="pre">--min-score</span> <span class="pre">auto</span></code>
 will abstain by it. <code class="docutils literal notranslate"><span class="pre">--sensitivity-weight</span></code> (0..1, balanced default);
-lower it to abstain more readily (precision-leaning). Calibrate on dense or
-lexical, not hybrid (its RRF scores barely separate). mode: dense | lexical
-| hybrid.</p>
+lower it to abstain more readily (precision-leaning). For hybrid, calibrate
+with <code class="docutils literal notranslate"><span class="pre">--fusion</span> <span class="pre">blend</span></code> (rank-based RRF barely separates — see ir_08) and
+query under the same fusion. mode: dense | lexical | hybrid. fusion (hybrid
+only): rrf | blend.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.cli.discover">
-<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">discover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'conservative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disclose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_score</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#discover"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.discover" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">discover</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'conservative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disclose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_score</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fusion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rrf'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#discover"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.discover" title="Link to this definition"></a></dt>
 <dd><p>Search a corpus, commit to a distractor-robust subset, and show it.</p>
 <p>Retrieves <code class="docutils literal notranslate"><span class="pre">k</span></code> candidates, then <em>selects</em> the few high-precision results an
 agent should act on (or abstains). <code class="docutils literal notranslate"><span class="pre">--disclose</span></code> additionally loads each
 selected item’s body (SKILL.md / file text) via its stored pointer.
 <code class="docutils literal notranslate"><span class="pre">--min-score</span> <span class="pre">auto</span></code> turns on absolute abstention using the floor calibrated
 by <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">calibrate-min-score</span></code> (or pass a float). mode: dense | lexical |
-hybrid. strategy: conservative | top_k | rel_threshold | score_gap.</p>
+hybrid. fusion (hybrid only): rrf (default) | blend (magnitude-preserving;
+pair with –min-score for abstention — see ir_08). strategy: conservative |
+top_k | rel_threshold | score_gap.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -215,9 +218,11 @@ lexical | hybrid. max_k / rel / min_score tune the commit (see <cite>ir.select</
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.cli.search">
-<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dense'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.search" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dense'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fusion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'rrf'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.search" title="Link to this definition"></a></dt>
 <dd><p>Search a built corpus and print the top-k hits.</p>
-<p>mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused via RRF).</p>
+<p>mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused). fusion
+(hybrid only): rrf (rank-based, default) | blend (magnitude-preserving;
+better abstention separability — see ir_08).</p>
 </dd></dl>
 
 <dl class="py function">
