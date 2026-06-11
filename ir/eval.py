@@ -505,26 +505,30 @@ def evaluate_discovery(
         (unlike :func:`retrieval_report`, which raises ``ValueError`` on that
         input).
     """
-    from ef.evaluation import (
-        RetrievalEvalReport,
-        average_precision,
-        ndcg_at_k,
-        precision_at_k,
-        recall_at_k,
-        reciprocal_rank,
-    )
+    from ef.evaluation import RetrievalEvalReport
 
-    # Deliberate mirror of ef.evaluation._RETRIEVAL_METRICS (private, so it cannot
-    # be imported). The metric *functions* are ef's — only this name->fn map and
-    # the unknown-name check are duplicated; ef exposing a public registry would
-    # let this go away.
-    metric_fns: dict[str, Callable[..., float]] = {
-        "ndcg": ndcg_at_k,
-        "recall": recall_at_k,
-        "precision": precision_at_k,
-        "mrr": reciprocal_rank,
-        "map": average_precision,
-    }
+    # Consume ef's public metric registry — the single source of truth for the
+    # metric name -> function map and the set of valid metric names. The fallback
+    # is a byte-identical local copy for ef versions predating RETRIEVAL_METRICS,
+    # so behavior is identical on any ef; drop it once ir's minimum ef is raised.
+    try:
+        from ef.evaluation import RETRIEVAL_METRICS as metric_fns
+    except ImportError:  # ef without the public registry
+        from ef.evaluation import (
+            average_precision,
+            ndcg_at_k,
+            precision_at_k,
+            recall_at_k,
+            reciprocal_rank,
+        )
+
+        metric_fns: dict[str, Callable[..., float]] = {
+            "ndcg": ndcg_at_k,
+            "recall": recall_at_k,
+            "precision": precision_at_k,
+            "mrr": reciprocal_rank,
+            "map": average_precision,
+        }
     unknown = [name for name in metrics if name not in metric_fns]
     if unknown:
         raise ValueError(
