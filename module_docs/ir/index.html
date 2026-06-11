@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.index &mdash; ir 0.1.8 documentation</title>
+  <title>ir.index &mdash; ir 0.1.9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=22607128"></script>
+      <script src="../../_static/documentation_options.js?v=8618f531"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -58,7 +58,10 @@
 <li class="toctree-l1"><a class="reference internal" href="eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="eval_gen.html">ir.eval_gen</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.index</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#ir.index.Corpus"><code class="docutils literal notranslate"><span class="pre">Corpus</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.index.Corpus"><code class="docutils literal notranslate"><span class="pre">Corpus</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.index.Corpus.search"><code class="docutils literal notranslate"><span class="pre">Corpus.search()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.index.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.index.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
 </ul>
@@ -113,6 +116,14 @@ upgrade for corpora large enough that recomputing surfaces is the bottleneck.</p
 <dt class="sig sig-object py" id="ir.index.Corpus">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.index.</span></span><span class="sig-name descname"><span class="pre">Corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="store.html#ir.store.CorpusStore" title="ir.store.CorpusStore"><span class="pre">CorpusStore</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/index.html#Corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.index.Corpus" title="Link to this definition"></a></dt>
 <dd><p>A built, queryable corpus: a store plus its embedder.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.index.Corpus.search">
+<span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/index.html#Corpus.search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.index.Corpus.search" title="Link to this definition"></a></dt>
+<dd><p>Search this corpus for <em>query</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> (<code class="docutils literal notranslate"><span class="pre">k</span></code> / <code class="docutils literal notranslate"><span class="pre">mode</span></code> / <code class="docutils literal notranslate"><span class="pre">filter</span></code> / <code class="docutils literal notranslate"><span class="pre">surfaces</span></code> /
+<code class="docutils literal notranslate"><span class="pre">per_artifact</span></code> / …) are forwarded to <a class="reference internal" href="retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a>.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">

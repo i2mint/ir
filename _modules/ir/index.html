@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.index &mdash; ir 0.1.8 documentation</title>
+  <title>ir.index &mdash; ir 0.1.9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=22607128"></script>
+      <script src="../../_static/documentation_options.js?v=8618f531"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -164,10 +164,18 @@
     <span class="n">embedder</span><span class="p">:</span> <span class="n">Callable</span>
     <span class="n">embedder_id</span><span class="p">:</span> <span class="nb">str</span>
 
+<div class="viewcode-block" id="Corpus.search">
+<a class="viewcode-back" href="../../module_docs/ir/index.html#ir.Corpus.search">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Search this corpus for *query*.</span>
+
+<span class="sd">        ``**kwargs`` (``k`` / ``mode`` / ``filter`` / ``surfaces`` /</span>
+<span class="sd">        ``per_artifact`` / ...) are forwarded to :func:`ir.retrieve.search`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span>
 
-        <span class="k">return</span> <span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">)</span></div>
@@ -226,13 +234,15 @@
     <span class="n">vectors</span> <span class="o">=</span> <span class="n">_embed_batched</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">flat</span><span class="p">],</span> <span class="s2">&quot;document&quot;</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
 
     <span class="c1"># Replace records of changed artifacts (delete-then-write).</span>
-    <span class="k">for</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="p">(</span><span class="n">_k</span><span class="p">,</span> <span class="n">_v</span><span class="p">,</span> <span class="n">prev</span><span class="p">,</span> <span class="n">_plan</span><span class="p">)</span> <span class="ow">in</span> <span class="n">changed</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">_artifact_id</span><span class="p">,</span> <span class="p">(</span><span class="n">_k</span><span class="p">,</span> <span class="n">_v</span><span class="p">,</span> <span class="n">prev</span><span class="p">,</span> <span class="n">_plan</span><span class="p">)</span> <span class="ow">in</span> <span class="n">changed</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">prev</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;record_ids&quot;</span><span class="p">,</span> <span class="p">[]):</span>
                 <span class="n">store</span><span class="o">.</span><span class="n">delete_record</span><span class="p">(</span><span class="n">rid</span><span class="p">)</span>
 
     <span class="n">record_ids</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">surface</span><span class="p">),</span> <span class="n">vec</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">flat</span><span class="p">,</span> <span class="n">vectors</span><span class="p">):</span>
+    <span class="c1"># strict=True asserts one embedding row per surface (a short/long embedder</span>
+    <span class="c1"># output is a bug we want to surface, not silently truncate).</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">surface</span><span class="p">),</span> <span class="n">vec</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">flat</span><span class="p">,</span> <span class="n">vectors</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="n">rid</span> <span class="o">=</span> <span class="n">Record</span><span class="o">.</span><span class="n">make_id</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">surface</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="n">changed</span><span class="p">[</span><span class="n">artifact_id</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
         <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">plan</span><span class="o">.</span><span class="n">filter_fields</span><span class="p">,</span> <span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">surface</span><span class="o">.</span><span class="n">metadata</span><span class="p">)}</span>

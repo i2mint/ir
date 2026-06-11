@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.8 documentation</title>
+  <title>ir &mdash; ir 0.1.9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=22607128"></script>
+      <script src="../_static/documentation_options.js?v=8618f531"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -168,7 +168,12 @@
 <div class="viewcode-block" id="build_corpus">
 <a class="viewcode-back" href="../module_docs/ir.html#ir.build_corpus">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">build_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build (or update) a registered/preset corpus by name; returns a Corpus.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build (or update) a registered/preset corpus by *name*; returns a :class:`~ir.index.Corpus`.</span>
+
+<span class="sd">    ``**kwargs`` are forwarded to :func:`ir.build` — notably ``store``,</span>
+<span class="sd">    ``embedder`` (e.g. ``&quot;light&quot;`` for the numpy-only hashing embedder),</span>
+<span class="sd">    ``full`` (prune artifacts no longer in the source), and ``batch_size``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">build</span><span class="p">(</span><span class="n">registry</span><span class="o">.</span><span class="n">source_for</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
@@ -176,7 +181,15 @@
 <div class="viewcode-block" id="search">
 <a class="viewcode-back" href="../module_docs/ir.html#ir.search">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search a :class:`~ir.index.Corpus`, or a corpus *name* (reopened lazily).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search a :class:`~ir.index.Corpus` (or a corpus *name*, reopened lazily).</span>
+
+<span class="sd">    Thin facade over :func:`ir.retrieve.search`; ``**kwargs`` are forwarded to</span>
+<span class="sd">    it — the useful ones are ``k`` (how many hits), ``mode`` (``&quot;dense&quot;`` /</span>
+<span class="sd">    ``&quot;lexical&quot;`` / ``&quot;hybrid&quot;``), ``filter`` (a ``vd`` Mongo-style metadata</span>
+<span class="sd">    filter), ``surfaces`` (restrict to surface kinds), and ``per_artifact``</span>
+<span class="sd">    (collapse to the best surface per artifact). See :func:`ir.retrieve.search`</span>
+<span class="sd">    for the full signature and defaults.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">_search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>

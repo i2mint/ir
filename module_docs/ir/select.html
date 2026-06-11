@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.select &mdash; ir 0.1.8 documentation</title>
+  <title>ir.select &mdash; ir 0.1.9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=22607128"></script>
+      <script src="../../_static/documentation_options.js?v=8618f531"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -472,7 +472,9 @@ replacement for an opaque “confidence” float.</p>
 <span class="sig-prename descclassname"><span class="pre">ir.select.</span></span><span class="sig-name descname"><span class="pre">abs_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/select.html#abs_threshold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.select.abs_threshold" title="Link to this definition"></a></dt>
 <dd><p>Keep every hit scoring at or above an absolute <code class="docutils literal notranslate"><span class="pre">min_score</span></code>.</p>
 <p>Mode-specific (cosine / RRF / BM25 scales differ); use when you have
-calibrated a floor for one ranking mode.</p>
+calibrated a floor for one ranking mode. Like <a class="reference internal" href="#ir.select.rel_threshold" title="ir.select.rel_threshold"><code class="xref py py-func docutils literal notranslate"><span class="pre">rel_threshold()</span></code></a> /
+<a class="reference internal" href="#ir.select.score_gap" title="ir.select.score_gap"><code class="xref py py-func docutils literal notranslate"><span class="pre">score_gap()</span></code></a>, this does <strong>not</strong> cap how many hits it keeps — bound the
+commit size with the caller’s <code class="docutils literal notranslate"><span class="pre">max_k</span></code> (<a class="reference internal" href="#ir.select.select" title="ir.select.select"><code class="xref py py-func docutils literal notranslate"><span class="pre">select()</span></code></a> already applies it).</p>
 </dd></dl>
 
 <dl class="py function">

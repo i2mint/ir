@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.store &mdash; ir 0.1.8 documentation</title>
+  <title>ir.store &mdash; ir 0.1.9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=22607128"></script>
+      <script src="../../_static/documentation_options.js?v=8618f531"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -204,7 +204,10 @@
 
     <span class="c1"># ----- record CRUD ---------------------------------------------------- #</span>
 
+<div class="viewcode-block" id="CorpusStore.put_record">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.put_record">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">put_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">Record</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Persist *record*&#39;s metadata + vector, invalidating the search matrix.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;artifact_id&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
             <span class="s2">&quot;surface_kind&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
@@ -213,20 +216,32 @@
             <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
         <span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">[</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">vector</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="kc">None</span></div>
 
+
+<div class="viewcode-block" id="CorpusStore.delete_record">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.delete_record">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">delete_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a record&#39;s metadata + vector; a missing id is tolerated.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">record_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">[</span><span class="n">record_id</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="k">pass</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="kc">None</span></div>
 
+
+<div class="viewcode-block" id="CorpusStore.record_ids">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.record_ids">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">record_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate the record ids currently stored.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="CorpusStore.get_record">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.get_record">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Record</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reassemble the :class:`~ir.base.Record` for *record_id* (``KeyError`` if absent).&quot;&quot;&quot;</span>
         <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="n">record_id</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">Record</span><span class="p">(</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">record_id</span><span class="p">,</span>
@@ -236,33 +251,59 @@
             <span class="n">text</span><span class="o">=</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
             <span class="n">vector</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">[</span><span class="n">record_id</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
             <span class="n">metadata</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{}),</span>
-        <span class="p">)</span>
+        <span class="p">)</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The number of records stored.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
 
     <span class="c1"># ----- ledger --------------------------------------------------------- #</span>
 
+<div class="viewcode-block" id="CorpusStore.get_ledger_entry">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.get_ledger_entry">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_ledger_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ledger</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The ledger entry for *key* (``None`` if absent).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ledger</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="CorpusStore.set_ledger_entry">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.set_ledger_entry">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_ledger_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ledger</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write the ledger *entry* (version / embedder id / record ids) for *key*.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ledger</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="CorpusStore.delete_ledger_entry">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.delete_ledger_entry">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">delete_ledger_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ledger</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a ledger entry; a missing key is tolerated.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ledger</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="CorpusStore.ledger_items">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.ledger_items">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">ledger_items</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate ``(key, entry)`` ledger pairs (the ledger may be mutated while iterating).&quot;&quot;&quot;</span>
         <span class="c1"># Materialize to a list so callers may mutate the ledger while iterating.</span>
-        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ledger</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ledger</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span></div>
+
 
     <span class="c1"># ----- config --------------------------------------------------------- #</span>
 
+<div class="viewcode-block" id="CorpusStore.get_config">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.get_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="p">{}))</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The persisted corpus build settings (empty dict if never written).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="p">{}))</span></div>
 
+
+<div class="viewcode-block" id="CorpusStore.set_config">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.set_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Persist the corpus build *settings* (name / embedder spec + id).&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span></div>
+
 
     <span class="c1"># ----- calibration (per-mode) ----------------------------------------- #</span>
 

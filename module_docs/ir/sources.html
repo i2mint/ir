@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.sources &mdash; ir 0.1.8 documentation</title>
+  <title>ir.sources &mdash; ir 0.1.9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=22607128"></script>
+      <script src="../../_static/documentation_options.js?v=8618f531"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -69,6 +69,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ir.sources.CorpusSource.from_md_reports"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_md_reports()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ir.sources.CorpusSource.from_packages"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_packages()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ir.sources.CorpusSource.from_skills"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_skills()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.sources.CorpusSource.items"><code class="docutils literal notranslate"><span class="pre">CorpusSource.items()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.sources.content_hash_signal"><code class="docutils literal notranslate"><span class="pre">content_hash_signal()</span></code></a></li>
@@ -162,6 +163,12 @@ is a project-tagged document; ids are paths relative to the projects root.</p>
 <p><code class="docutils literal notranslate"><span class="pre">fetcher</span></code> overrides the source of skill records (each a mapping with
 <code class="docutils literal notranslate"><span class="pre">name</span></code>/<code class="docutils literal notranslate"><span class="pre">description</span></code>/<code class="docutils literal notranslate"><span class="pre">parent</span></code>) — inject a test double to avoid the
 <code class="docutils literal notranslate"><span class="pre">priv</span></code> dependency.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.sources.CorpusSource.items">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/sources.html#CorpusSource.items"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.sources.CorpusSource.items" title="Link to this definition"></a></dt>
+<dd><p>Iterate <code class="docutils literal notranslate"><span class="pre">(artifact_id,</span> <span class="pre">raw)</span></code> pairs over the corpus scope.</p>
 </dd></dl>
 
 </dd></dl>
