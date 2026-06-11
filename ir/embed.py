@@ -47,7 +47,6 @@ def _hashing():
 
 
 def _sentence_transformers(model_name: str):
-    import ef
     from ef import embedder_adapters
 
     emb = embedder_adapters.sentence_transformers_embedder(model_name, normalize=True)

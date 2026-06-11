@@ -22,6 +22,31 @@ for item in result.results:
 print(result.to_dict())                       # JSON-serializable (qh / HTTP ready)
 ```
 
+## Install
+
+```bash
+pip install ir
+```
+
+`ir` is **light by default** — `numpy` + [`dol`](https://github.com/i2mint/dol)
+for storage, plus [`ef`](https://github.com/thorwhalen/ef) /
+[`vd`](https://github.com/i2mint/vd) for embedding and lexical/hybrid retrieval.
+Python ≥ 3.10.
+
+Notes for the default (semantic) path:
+
+- The default embedder is `all-MiniLM-L6-v2` (384-dim, via
+  `sentence-transformers`), **downloaded on first build** (needs network) and
+  cached under `~/.cache/ir`. For a fast, offline, dependency-light run — tests,
+  CI, quick experiments — pass `embedder="light"` (a numpy-only hashing
+  embedder): `ir.build(source, embedder="light")`.
+- `ir` sets `USE_TF=0` on import so `transformers` does not pull in TensorFlow
+  (which crashes on some numpy ABIs); import `ir` before anything that imports
+  `transformers`.
+- Case generation (`ir.eval_gen`) and the optional LLM selector need an LLM via
+  [`oa`](https://github.com/thorwhalen/oa) — install the extra,
+  `pip install "ir[llm]"`. Scoring and evaluation themselves stay offline.
+
 ## The pipeline
 
 `ir` is a five-stage pipeline, each stage a small, swappable seam:
@@ -55,6 +80,21 @@ sel = ir.select(hits)                      # conservative default: stay within r
 sel = ir.select(hits, min_score=0.4)       # opt in to abstention ("nothing applies")
 sel = ir.select(hits, strategy="score_gap")  # elbow cut, or "top_k" / "rel_threshold" / a callable
 ```
+
+The abstention floor is mode-specific (dense cosine, BM25, and RRF live on
+different scales), so rather than guess `min_score`, **calibrate** it from a case
+file and let `discover` load it:
+
+```python
+ev.calibrate_min_score(corpus, cases, mode="dense", persist=True)  # learn + store the floor
+ir.discover(corpus, query, mode="dense", min_score="auto")         # abstain by the calibrated floor
+```
+
+Calibration separates in-scope from out-of-scope query top-scores and picks the
+floor that best splits them — see
+[`ir_07`](misc/docs/ir_07%20--%20Min-Score%20Calibration%20--%20Abstention%20floors%20from%20score-distribution%20separability.md);
+it works best on `dense` / `lexical` (hybrid's RRF scores barely separate).
+`min_score` defaults to `None` (never abstain), so abstention stays fully opt-in.
 
 The conservative defaults (`max_k=3`, `rel=0.9`) are tuned, not guessed — see
 [`ir_06`](misc/docs/ir_06%20--%20Selector%20Tuning%20--%20Picking%20conservative-selector%20defaults%20from%20the%20data.md);
@@ -104,11 +144,19 @@ back-translation with `ir.eval_gen` (needs an LLM; scoring stays offline).
 
 ```bash
 ir build skills                          # build/update a preset corpus
+ir search skills "deploy the app"        # rank candidates (retrieval only)
 ir discover skills "deploy the app"      # retrieve -> select
-ir discover skills "deploy the app" --disclose   # + load bodies
+ir discover skills "deploy the app" --disclose       # + load bodies
+ir discover skills "deploy the app" --min-score auto # + calibrated abstention
+ir ls                                    # list corpora + record counts
+ir info skills                           # config, stats, calibrated floors
+ir register notes files --root ~/notes --pattern '.*\.md$'  # register a custom corpus
+ir rm notes                              # unregister (keeps built data)
+ir eval-gen skills skills_eval.jsonl     # generate eval cases (needs oa/LLM)
+ir eval skills skills_eval.jsonl         # score retrieval on a case file
 ir eval-select skills skills_eval.jsonl  # score the selection stage
 ir sweep-select skills skills_eval.jsonl # tune the selector (max_k × rel) on your corpus
-ir ls                                    # list corpora
+ir calibrate-min-score skills skills_eval.jsonl --persist  # calibrate the abstention floor
 ```
 
 ## Design

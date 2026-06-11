@@ -27,6 +27,25 @@ from .index import build as _build
 from .index import open_corpus
 
 
+def _empty_corpus_msg(name) -> str:
+    """The shared 'corpus is empty, build it first' guard message."""
+    return f"corpus {name!r} is empty; build it first: ir build {name}"
+
+
+def _drift_warning(drift, name) -> str:
+    """A warning suffix when cases reference gold ids absent from the corpus.
+
+    Returns ``""`` when there is no drift, so call sites can ``out +=`` it
+    unconditionally.
+    """
+    if not drift:
+        return ""
+    return (
+        f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
+        f"corpus {name!r} (stale fixture?); their misses are not real."
+    )
+
+
 def ls():
     """List registered corpora with their kind, embedder, and record count."""
     entries = registry.registered()
@@ -69,7 +88,7 @@ def search(name, query, *, k=10, mode="dense"):
     """
     corpus = open_corpus(name)
     if len(corpus) == 0:
-        return f"corpus {name!r} is empty; build it first: ir build {name}"
+        return _empty_corpus_msg(name)
     lines = []
     for h in corpus.search(query, k=k, mode=mode):
         # artifact_id is the unique label across corpora (skill name[@parent],
@@ -101,7 +120,7 @@ def discover(
 
     corpus = open_corpus(name)
     if len(corpus) == 0:
-        return f"corpus {name!r} is empty; build it first: ir build {name}"
+        return _empty_corpus_msg(name)
     floor = (
         "auto"
         if min_score == "auto"
@@ -163,7 +182,7 @@ def eval(name, cases, *, mode="hybrid", k=10):
 
     corpus = open_corpus(name)
     if len(corpus) == 0:
-        return f"corpus {name!r} is empty; build it first: ir build {name}"
+        return _empty_corpus_msg(name)
     case_list = load_cases(cases)
     if not case_list:
         return f"no cases found in {cases!r}"
@@ -172,11 +191,7 @@ def eval(name, cases, *, mode="hybrid", k=10):
         corpus, case_list, mode=mode, primary_k=k, k_values=tuple(sorted({1, 5, k}))
     )
     out = str(report)
-    if drift:
-        out += (
-            f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
-            f"corpus {name!r} (stale fixture?); their misses are not real."
-        )
+    out += _drift_warning(drift, name)
     return out
 
 
@@ -233,7 +248,7 @@ def eval_select(
 
     corpus = open_corpus(name)
     if len(corpus) == 0:
-        return f"corpus {name!r} is empty; build it first: ir build {name}"
+        return _empty_corpus_msg(name)
     case_list = load_cases(cases)
     if not case_list:
         return f"no cases found in {cases!r}"
@@ -249,11 +264,7 @@ def eval_select(
         min_score=None if min_score is None else float(min_score),
     )
     out = str(report)
-    if drift:
-        out += (
-            f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
-            f"corpus {name!r} (stale fixture?); their misses are not real."
-        )
+    out += _drift_warning(drift, name)
     return out
 
 
@@ -278,7 +289,7 @@ def sweep_select(
 
     corpus = open_corpus(name)
     if len(corpus) == 0:
-        return f"corpus {name!r} is empty; build it first: ir build {name}"
+        return _empty_corpus_msg(name)
     case_list = load_cases(cases)
     if not case_list:
         return f"no cases found in {cases!r}"
@@ -287,11 +298,7 @@ def sweep_select(
         corpus, case_list, strategy=strategy, mode=mode, k=k, objective=objective
     )
     out = str(sweep)
-    if drift:
-        out += (
-            f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
-            f"corpus {name!r} (stale fixture?); their misses are not real."
-        )
+    out += _drift_warning(drift, name)
     return out
 
 
@@ -321,7 +328,7 @@ def calibrate_min_score(
 
     corpus = open_corpus(name)
     if len(corpus) == 0:
-        return f"corpus {name!r} is empty; build it first: ir build {name}"
+        return _empty_corpus_msg(name)
     case_list = load_cases(cases)
     if not case_list:
         return f"no cases found in {cases!r}"
@@ -342,11 +349,7 @@ def calibrate_min_score(
             f"\n  NOTE: no floor calibrated ({calib.reason}); a floor needs both "
             f"gold-bearing and abstention cases. Add abstention cases via ir eval-gen."
         )
-    if drift:
-        out += (
-            f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
-            f"corpus {name!r} (stale fixture?); their misses are not real."
-        )
+    out += _drift_warning(drift, name)
     return out
 
 

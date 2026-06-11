@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import os
 import re
+import warnings
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -49,6 +50,7 @@ class CorpusSource:
     metadata_of: Callable[[str, Any], Mapping[str, Any]] | None = None
 
     def items(self):
+        """Iterate ``(artifact_id, raw)`` pairs over the corpus scope."""
         return self.scope.items()
 
     # ----- smart-default constructors ------------------------------------ #
@@ -222,18 +224,26 @@ class CorpusSource:
 
 
 def _projects_root() -> Path:
-    """Locate the projects folder (``$PP``), preferring ``priv.config``."""
+    """Locate the projects folder (``$PP``), preferring ``priv.config``.
+
+    Falls back to the ``$PP`` environment variable when ``priv.config`` is not
+    installed. Only :class:`ImportError` triggers the fallback — a
+    ``priv.config`` that *is* installed but raises is allowed to propagate, so a
+    misconfigured projects folder fails loudly instead of being silently masked
+    as "priv not installed".
+    """
     try:
         from priv.config import projects_folder
-
+    except ImportError:
+        pass
+    else:
         return Path(projects_folder())
-    except Exception:
-        pp = os.environ.get("PP")
-        if pp:
-            return Path(pp).expanduser()
-        raise RuntimeError(
-            "Cannot locate the projects folder; set $PP or install priv.config."
-        )
+    pp = os.environ.get("PP")
+    if pp:
+        return Path(pp).expanduser()
+    raise RuntimeError(
+        "Cannot locate the projects folder; set $PP or install priv.config."
+    )
 
 
 def _iter_md_reports(root: Path):
@@ -286,8 +296,14 @@ def _scan_packages(manifest, *, readme_chars: int) -> dict[str, dict]:
                 proj = data.get("project", {})
                 description = proj.get("description", "") or ""
                 deps = list(proj.get("dependencies", []) or [])
-            except Exception:
-                pass
+            except (tomllib.TOMLDecodeError, OSError, ValueError) as e:
+                # Warn rather than silently thinning the index (matching the
+                # warn-on-degradation discipline used across ir).
+                warnings.warn(
+                    f"Could not parse {pyproject} for package {name!r} ({e}); "
+                    f"indexing it with an empty description and no deps.",
+                    stacklevel=2,
+                )
         readme = ""
         for cand in ("README.md", "README.rst", "README.txt"):
             rp = path / cand

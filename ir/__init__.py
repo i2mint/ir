@@ -76,12 +76,25 @@ corpora = registry.registered
 
 
 def build_corpus(name, **kwargs):
-    """Build (or update) a registered/preset corpus by name; returns a Corpus."""
+    """Build (or update) a registered/preset corpus by *name*; returns a :class:`~ir.index.Corpus`.
+
+    ``**kwargs`` are forwarded to :func:`ir.build` — notably ``store``,
+    ``embedder`` (e.g. ``"light"`` for the numpy-only hashing embedder),
+    ``full`` (prune artifacts no longer in the source), and ``batch_size``.
+    """
     return build(registry.source_for(name), **kwargs)
 
 
 def search(corpus, query, **kwargs):
-    """Search a :class:`~ir.index.Corpus`, or a corpus *name* (reopened lazily)."""
+    """Search a :class:`~ir.index.Corpus` (or a corpus *name*, reopened lazily).
+
+    Thin facade over :func:`ir.retrieve.search`; ``**kwargs`` are forwarded to
+    it — the useful ones are ``k`` (how many hits), ``mode`` (``"dense"`` /
+    ``"lexical"`` / ``"hybrid"``), ``filter`` (a ``vd`` Mongo-style metadata
+    filter), ``surfaces`` (restrict to surface kinds), and ``per_artifact``
+    (collapse to the best surface per artifact). See :func:`ir.retrieve.search`
+    for the full signature and defaults.
+    """
     if isinstance(corpus, str):
         corpus = open_corpus(corpus)
     return _search(corpus, query, **kwargs)
