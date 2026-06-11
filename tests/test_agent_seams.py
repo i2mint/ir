@@ -109,3 +109,65 @@ def test_pointer_keys_single_source_of_truth():
     # ir.select the attribute is the re-exported *function*, not the submodule.
     select_mod = importlib.import_module("ir.select")
     assert select_mod.POINTER_KEYS is base.POINTER_KEYS
+
+
+# ----- Selection.sufficient signal (#35) ----------------------------------- #
+
+
+def test_selection_sufficient_signal():
+    committed = _selection({})  # selected=[hit], abstained=False
+    abstained = Selection(selected=[], candidates=[], abstained=True, reason="abstain")
+    assert committed.sufficient is True
+    assert abstained.sufficient is False
+    assert committed.to_dict()["sufficient"] is True
+    assert abstained.to_dict()["sufficient"] is False
+
+
+# ----- registry.retrievers() view (#34) ------------------------------------ #
+
+
+def _isolate(tmp_path, monkeypatch):
+    monkeypatch.setenv("IR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("IR_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("IR_CACHE_DIR", str(tmp_path / "cache"))
+
+
+def _build_notes(tmp_path):
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "deploy.md").write_text("deploy the app to the server with systemd")
+    (docs / "baking.md").write_text("bake a cake in the oven with flour and sugar")
+    ir.register("notes", "files", root=str(docs), pattern=r".*\.md$")
+    ir.build_corpus("notes", embedder="light")
+
+
+def test_retrievers_view_projects_registry_ssot(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    from ir import registry
+
+    _build_notes(tmp_path)
+    view = registry.retrievers()
+    assert set(view.keys()) == set(registry.registered().keys())  # a view, not a copy
+    assert "notes" in view
+    retr = view["notes"]  # lazily opens the corpus, returns a Retriever
+    assert [h.artifact_id for h in retr("bake a cake")] == [
+        h.artifact_id for h in ir.search("notes", "bake a cake")
+    ]
+
+
+def test_retrievers_view_keyerror_on_unregistered(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    from ir import registry
+
+    with pytest.raises(KeyError):
+        registry.retrievers()["does_not_exist"]
+
+
+def test_retriever_for_binds_defaults(tmp_path, monkeypatch):
+    _isolate(tmp_path, monkeypatch)
+    from ir import registry
+
+    _build_notes(tmp_path)
+    retr = registry.retriever_for("notes", k=1)
+    hits = retr("bake a cake in the oven")
+    assert hits and hits[0].artifact_id == "baking.md" and len(hits) == 1

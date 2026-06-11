@@ -137,12 +137,24 @@ class Selection:
         """The committed artifact ids, best-first."""
         return [h.artifact_id for h in self.selected]
 
+    @property
+    def sufficient(self) -> bool:
+        """A model-free sufficiency *hint* for an agent's Evaluator (ir_09 §3).
+
+        ``True`` when this selection committed to at least one item (i.e. did not
+        abstain). It is a **signal, not a directive**: the re-query / ``refinement``
+        decision and the loop belong to the agent layer (the back-edge, ir_09 §4)
+        — ``ir`` derives this from its own outcome and never acts on it.
+        """
+        return not self.abstained and len(self.selected) > 0
+
     def to_dict(self) -> dict:
         """JSON-serializable form (scores cast to ``float``)."""
         return {
             "selected": [_hit_to_dict(h) for h in self.selected],
             "selected_ids": self.selected_ids,
             "abstained": self.abstained,
+            "sufficient": self.sufficient,
             "reason": self.reason,
             "signals": dict(self.signals),
             "n_candidates": len(self.candidates),
