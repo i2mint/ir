@@ -34,6 +34,14 @@ import numpy as np
 FilterFields = Mapping[str, Any]
 """Non-embedded, hard-filterable metadata for an artifact (name, owner, tags)."""
 
+#: Metadata keys checked, in order, for a disclosure *pointer* — the file/dir
+#: whose contents are an artifact's body. A :class:`SearchHit` is a
+#: *pointer + snippet* (ir_09 §5): ``text`` is the snippet, the pointer is the
+#: key a resource store dereferences to the full payload. Skills stamp
+#: ``skill_path``; packages / reports / files stamp ``path`` (see
+#: :mod:`ir.sources`). :mod:`ir.select` re-exports this for disclosure.
+POINTER_KEYS = ("skill_path", "path")
+
 
 def storage_key(*parts: str) -> str:
     """Stable, filesystem-safe id from arbitrary string parts (truncated SHA-256)."""
@@ -95,13 +103,38 @@ class Record:
 
 @dataclass(frozen=True)
 class SearchHit:
-    """A scored record returned by retrieval (higher score = closer)."""
+    """A scored record returned by retrieval (higher score = closer).
+
+    Maps onto ir_09's ``Result``: ``text`` is the snippet, ``score`` the rank
+    score, ``metadata`` the meta, and :attr:`pointer` the key into a resource
+    store (ir_09 §5). :meth:`to_dict` is the serialization-clean form for a
+    cross-process / subagent boundary (no numpy scalars leak).
+    """
 
     artifact_id: str
     surface_kind: str
     score: float
     text: str
     metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def pointer(self) -> str | None:
+        """The disclosure pointer on this hit, if any (see :data:`POINTER_KEYS`)."""
+        for key in POINTER_KEYS:
+            p = self.metadata.get(key)
+            if p:
+                return p
+        return None
+
+    def to_dict(self) -> dict:
+        """JSON-serializable form (``score`` cast to a Python ``float``)."""
+        return {
+            "artifact_id": self.artifact_id,
+            "surface_kind": self.surface_kind,
+            "score": float(self.score),
+            "text": self.text,
+            "metadata": dict(self.metadata),
+        }
 
 
 def best_per_artifact(hits: Sequence[SearchHit]) -> list[SearchHit]:

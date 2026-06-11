@@ -57,7 +57,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from .base import SearchHit
+from .base import POINTER_KEYS, SearchHit
 from .retrieve import search as _search
 
 #: A selector: ranked hits → the committed subset (a pure ranking decision).
@@ -65,6 +65,11 @@ Selector = Callable[[Sequence[SearchHit]], list[SearchHit]]
 
 #: A body loader: a hit's metadata → its disclosed payload text (or ``None``).
 BodyLoader = Callable[[Mapping[str, Any]], "str | None"]
+
+#: A resource store: ``pointer -> payload`` (ir_09 §5). Any ``Mapping`` works —
+#: a ``dol`` file/blob/URL store, an in-memory dict, etc. — so lazy disclosure
+#: (``store[pointer]``) is decoupled from local disk.
+ResourceStore = Mapping[str, Any]
 
 #: Max items the conservative selector will ever commit to. Small on purpose:
 #: ir_01 §3 ("fewer, higher-precision candidates beat more"), echoing MCP-Atlas's
@@ -97,10 +102,8 @@ DISCLOSURE_LEVELS = ("metadata", "body", "bundled")
 #: Truncate a disclosed body to this many characters (a guard, not a feature).
 DFLT_MAX_BODY_CHARS = 20000
 
-#: Metadata keys checked, in order, for a disclosure pointer (the file/dir whose
-#: contents are the artifact's body). Skills stamp ``skill_path``; packages,
-#: reports and files stamp ``path`` (see :mod:`ir.sources`).
-POINTER_KEYS = ("skill_path", "path")
+# POINTER_KEYS is imported from ir.base (the data-model SSOT) and re-exported
+# here for backward compatibility with ``ir.select.POINTER_KEYS`` callers.
 
 
 # =========================================================================== #
@@ -541,6 +544,27 @@ def _pointer_of(metadata: Mapping[str, Any]) -> str | None:
     return None
 
 
+def _store_body_loader(store: ResourceStore) -> BodyLoader:
+    """A :data:`BodyLoader` that dereferences ``store[pointer]`` (ir_09 §5).
+
+    Stale-tolerant exactly like the default disk loader: a missing pointer or a
+    missing key yields ``None`` (disclosure never raises). This is what lets lazy
+    disclosure work over any ``Mapping`` resource store — a ``dol`` file/blob/URL
+    store — not just local disk.
+    """
+
+    def load(metadata: Mapping[str, Any]) -> str | None:
+        pointer = _pointer_of(metadata)
+        if pointer is None:
+            return None
+        try:
+            return store.get(pointer)
+        except Exception:
+            return None
+
+    return load
+
+
 def _default_body_loader(
     metadata: Mapping[str, Any], *, max_chars: int = DFLT_MAX_BODY_CHARS
 ) -> str | None:
@@ -578,6 +602,7 @@ def disclose(
     *,
     level: str = "body",
     loader: BodyLoader | None = None,
+    store: ResourceStore | None = None,
 ) -> list[Disclosure]:
     """Reveal the payload of each selected hit at ``level`` — append-only, pure.
 
@@ -589,6 +614,9 @@ def disclose(
         loader: override the body resolver — ``metadata -> str | None``. The
             default reads the ``skill_path`` / ``path`` pointer from disk and
             tolerates a missing target (returns ``None``, never raises).
+        store: a :data:`ResourceStore` (``pointer -> payload`` ``Mapping``) to
+            dereference instead of disk — ir_09 §5 pointer-passing over a ``dol``
+            store / URL map / blob storage. Mutually exclusive with ``loader``.
 
     Returns:
         one :class:`Disclosure` per selected hit, best-first. This is a pure
@@ -599,7 +627,14 @@ def disclose(
         raise ValueError(
             f"unknown disclosure level {level!r}; expected one of {DISCLOSURE_LEVELS}"
         )
-    load = loader if loader is not None else _default_body_loader
+    if loader is not None and store is not None:
+        raise ValueError("pass either loader= or store=, not both")
+    if store is not None:
+        load = _store_body_loader(store)
+    elif loader is not None:
+        load = loader
+    else:
+        load = _default_body_loader
     out: list[Disclosure] = []
     for hit in selection.selected:
         meta = dict(hit.metadata)
@@ -739,6 +774,7 @@ def discover(
     gap_ratio: float = DFLT_GAP_RATIO,
     min_score: float | str | None = None,
     loader: BodyLoader | None = None,
+    store: ResourceStore | None = None,
     **search_kw: Any,
 ) -> DiscoveryResult:
     """Find and commit to the capabilities for ``query`` — the one search tool.
@@ -806,7 +842,7 @@ def discover(
         gap_ratio=gap_ratio,
         min_score=min_score,
     )
-    results = disclose(selection, level=disclose_level, loader=loader)
+    results = disclose(selection, level=disclose_level, loader=loader, store=store)
     return DiscoveryResult(
         query=query,
         mode=mode,
