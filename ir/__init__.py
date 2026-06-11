@@ -30,6 +30,7 @@ from . import embed as _embed  # noqa: F401  (sets USE_TF=0 before transformers)
 from . import registry
 from .base import Artifact, IndexPlan, Record, SearchHit, Surface
 from .index import Corpus, build, open_corpus
+from .retrieve import Retriever, as_retriever
 from .retrieve import search as _search
 from .select import (
     Disclosure,
@@ -60,6 +61,8 @@ __all__ = [
     "build",
     "open_corpus",
     "search",
+    "as_retriever",
+    "Retriever",
     "select",
     "disclose",
     "discover",

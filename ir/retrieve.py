@@ -397,3 +397,42 @@ def search(
     if per_artifact:
         hits = best_per_artifact(hits)
     return hits[:k]
+
+
+# =========================================================================== #
+# Retriever adapter — ir's leaf in a Composable Search Agent (ir_09 §3)
+# =========================================================================== #
+
+#: A retriever: ``(query, **overrides) -> list[SearchHit]`` — ir_09's Retriever
+#: leaf (one query, one corpus) as a swappable callable. :func:`as_retriever`
+#: binds one corpus to this contract so an orchestration layer (e.g. ``raglab``)
+#: can register an ir corpus as one source key without importing ir internals.
+Retriever = Callable[..., "list[SearchHit]"]
+
+
+def as_retriever(corpus_or_name, **search_defaults) -> Retriever:
+    """Bind ONE corpus to the uniform :data:`Retriever` contract.
+
+    Returns ``retrieve(query, **overrides) -> list[SearchHit]`` that calls
+    :func:`search` with ``search_defaults`` (a per-call kwarg overrides a bound
+    default). A corpus *name* is resolved once via :func:`ir.open_corpus`; pass
+    an open :class:`~ir.index.Corpus` to skip that. The returned callable carries
+    the bound corpus on ``.corpus`` for introspection.
+
+    >>> retr = as_retriever(corpus, mode="hybrid", k=20)   # doctest: +SKIP
+    >>> hits = retr("how do I deploy the app")             # doctest: +SKIP
+    >>> hits = retr("deploy", filter={"owner": "me"})      # doctest: +SKIP
+    """
+    from .index import open_corpus
+
+    corpus = (
+        open_corpus(corpus_or_name)
+        if isinstance(corpus_or_name, str)
+        else corpus_or_name
+    )
+
+    def retrieve(query: str, **overrides) -> list[SearchHit]:
+        return search(corpus, query, **{**search_defaults, **overrides})
+
+    retrieve.corpus = corpus
+    return retrieve
