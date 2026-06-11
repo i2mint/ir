@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.13 documentation</title>
+  <title>Index &mdash; ir 0.1.14 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=8d02545a"></script>
+      <script src="_static/documentation_options.js?v=468bc497"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -54,6 +54,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
@@ -394,6 +395,10 @@
 </li>
       <li><a href="module_docs/ir/base.html#ir.base.FilterFields">FilterFields (in module ir.base)</a>
 </li>
+      <li><a href="module_docs/ir/formulate.html#ir.formulate.FORMULATION_PROMPT">FORMULATION_PROMPT (in module ir.formulate)</a>
+</li>
+      <li><a href="module_docs/ir/formulate.html#ir.formulate.Formulator">Formulator (in module ir.formulate)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.from_dict">from_dict() (ir.eval.DiscoveryCase class method)</a>
 
       <ul>
@@ -486,6 +491,8 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/formulate.html#ir.formulate.identity_formulator">identity_formulator() (in module ir.formulate)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.DiscoveryResult.ids">ids (ir.DiscoveryResult property)</a>
 
       <ul>
@@ -548,8 +555,6 @@
         <li><a href="module_docs/ir/embed.html#module-ir.embed">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ir.eval
 
@@ -557,11 +562,20 @@
         <li><a href="module_docs/ir/eval.html#module-ir.eval">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ir.eval_gen
 
       <ul>
         <li><a href="module_docs/ir/eval_gen.html#module-ir.eval_gen">module</a>
+</li>
+      </ul></li>
+      <li>
+    ir.formulate
+
+      <ul>
+        <li><a href="module_docs/ir/formulate.html#module-ir.formulate">module</a>
 </li>
       </ul></li>
       <li>
@@ -667,6 +681,12 @@
         <li><a href="module_docs/ir.html#ir.Record.make_id">(ir.Record static method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir.html#ir.make_llm_formulator">make_llm_formulator() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/formulate.html#ir.formulate.make_llm_formulator">(in module ir.formulate)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir/select.html#ir.select.make_llm_selector">make_llm_selector() (in module ir.select)</a>
 </li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.make_oa_abstention_generator">make_oa_abstention_generator() (in module ir.eval_gen)</a>
@@ -699,10 +719,10 @@
       </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.min_score">min_score (ir.eval.MinScoreCalibration attribute)</a>
 </li>
-      <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration">MinScoreCalibration (class in ir.eval)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration">MinScoreCalibration (class in ir.eval)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.mode">mode (ir.eval.DiscoveryReport attribute)</a>
 </li>
       <li><a href="module_docs/ir/retrieve.html#ir.retrieve.MODES">MODES (in module ir.retrieve)</a>
@@ -726,6 +746,8 @@
         <li><a href="module_docs/ir/eval.html#module-ir.eval">ir.eval</a>
 </li>
         <li><a href="module_docs/ir/eval_gen.html#module-ir.eval_gen">ir.eval_gen</a>
+</li>
+        <li><a href="module_docs/ir/formulate.html#module-ir.formulate">ir.formulate</a>
 </li>
         <li><a href="module_docs/ir/index.html#module-ir.index">ir.index</a>
 </li>

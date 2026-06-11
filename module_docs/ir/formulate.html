@@ -1,0 +1,190 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.formulate &mdash; ir 0.1.14 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=468bc497"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ir.index" href="index.html" />
+    <link rel="prev" title="ir.eval_gen" href="eval_gen.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ir.formulate</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.formulate.FORMULATION_PROMPT"><code class="docutils literal notranslate"><span class="pre">FORMULATION_PROMPT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.formulate.Formulator"><code class="docutils literal notranslate"><span class="pre">Formulator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.formulate.identity_formulator"><code class="docutils literal notranslate"><span class="pre">identity_formulator()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.formulate.make_llm_formulator"><code class="docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ir.formulate</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/ir/formulate.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ir.formulate">
+<span id="ir-formulate"></span><h1>ir.formulate<a class="headerlink" href="#module-ir.formulate" title="Link to this heading"></a></h1>
+<p>Query formulation — the Formulator seam (ir_09 §3).</p>
+<p>Turn a user query into one or more concrete low-level queries <em>before</em> retrieval:
+rewrite, expand, paraphrase, HyDE. This is the single most-acknowledged gap in
+ir’s standalone retrieval — the raw query is otherwise embedded as-is — and a
+good formulation lifts recall on short, identifier-heavy capability text with
+<strong>no agent and no loop</strong>.</p>
+<p>The seam is <strong>opt-in and identity by default</strong>: <code class="docutils literal notranslate"><span class="pre">ir.search(corpus,</span> <span class="pre">q)</span></code> with no
+<code class="docutils literal notranslate"><span class="pre">formulate=</span></code> embeds <code class="docutils literal notranslate"><span class="pre">q</span></code> verbatim (exactly today’s behavior). A formulator
+returns a <code class="docutils literal notranslate"><span class="pre">str</span></code> (one query) or a sequence of strings (multi-query fan-out);
+when it returns several, <a class="reference internal" href="retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a> runs each and fuses the
+candidate lists (best surface per artifact across all queries).</p>
+<p>LOAD-BEARING BOUNDARY: a <a class="reference internal" href="#ir.formulate.Formulator" title="ir.formulate.Formulator"><code class="xref py py-data docutils literal notranslate"><span class="pre">Formulator</span></code></a> returns <strong>queries, never SubTasks</strong>.
+Decomposing a goal into sub-tasks + source selection is the <em>Planner’s</em> job — that
+lives in the agent layer (<code class="docutils literal notranslate"><span class="pre">raglab</span></code>), not here.</p>
+<p><a class="reference internal" href="#ir.formulate.make_llm_formulator" title="ir.formulate.make_llm_formulator"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a> mirrors <a class="reference internal" href="select.html#ir.select.make_llm_selector" title="ir.select.make_llm_selector"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.select.make_llm_selector()</span></code></a>: an
+injectable <code class="docutils literal notranslate"><span class="pre">rewriter</span></code> callable, built lazily on <code class="xref py py-mod docutils literal notranslate"><span class="pre">oa</span></code> when omitted (so
+importing ir stays offline), falling back to identity on any failure — a
+formulator must never make retrieval <em>worse</em> than the raw query.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.formulate.FORMULATION_PROMPT">
+<span class="sig-prename descclassname"><span class="pre">ir.formulate.</span></span><span class="sig-name descname"><span class="pre">FORMULATION_PROMPT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Rewrite</span> <span class="pre">the</span> <span class="pre">search</span> <span class="pre">query</span> <span class="pre">into</span> <span class="pre">{n}</span> <span class="pre">short,</span> <span class="pre">diverse</span> <span class="pre">alternative</span> <span class="pre">search</span> <span class="pre">queries</span> <span class="pre">that</span> <span class="pre">would</span> <span class="pre">retrieve</span> <span class="pre">the</span> <span class="pre">same</span> <span class="pre">target</span> <span class="pre">documents:</span> <span class="pre">fix</span> <span class="pre">typos,</span> <span class="pre">expand</span> <span class="pre">jargon,</span> <span class="pre">and</span> <span class="pre">add</span> <span class="pre">synonyms,</span> <span class="pre">but</span> <span class="pre">keep</span> <span class="pre">each</span> <span class="pre">a</span> <span class="pre">terse</span> <span class="pre">search</span> <span class="pre">phrase.</span> <span class="pre">One</span> <span class="pre">query</span> <span class="pre">per</span> <span class="pre">line,</span> <span class="pre">no</span> <span class="pre">numbering.\n\nQuery:</span> <span class="pre">{query}'</span></span><a class="headerlink" href="#ir.formulate.FORMULATION_PROMPT" title="Link to this definition"></a></dt>
+<dd><p>Default prompt for <a class="reference internal" href="#ir.formulate.make_llm_formulator" title="ir.formulate.make_llm_formulator"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a> — diverse paraphrases for recall.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.formulate.Formulator">
+<span class="sig-prename descclassname"><span class="pre">ir.formulate.</span></span><span class="sig-name descname"><span class="pre">Formulator</span></span><a class="headerlink" href="#ir.formulate.Formulator" title="Link to this definition"></a></dt>
+<dd><p>a query string -&gt; one query (<code class="docutils literal notranslate"><span class="pre">str</span></code>) or several
+(<code class="docutils literal notranslate"><span class="pre">Sequence[str]</span></code>). Identity by default; an LLM rewriter / HyDE / multi-query
+producer when injected.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A formulator</p>
+</dd>
+</dl>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span> <span class="pre">|</span> <span class="pre">Sequence[str]</span></code>]</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.formulate.identity_formulator">
+<span class="sig-prename descclassname"><span class="pre">ir.formulate.</span></span><span class="sig-name descname"><span class="pre">identity_formulator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/formulate.html#identity_formulator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.formulate.identity_formulator" title="Link to this definition"></a></dt>
+<dd><p>The default formulator: return the query unchanged (embed it verbatim).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.formulate.make_llm_formulator">
+<span class="sig-prename descclassname"><span class="pre">ir.formulate.</span></span><span class="sig-name descname"><span class="pre">make_llm_formulator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">rewriter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Rewrite</span> <span class="pre">the</span> <span class="pre">search</span> <span class="pre">query</span> <span class="pre">into</span> <span class="pre">{n}</span> <span class="pre">short,</span> <span class="pre">diverse</span> <span class="pre">alternative</span> <span class="pre">search</span> <span class="pre">queries</span> <span class="pre">that</span> <span class="pre">would</span> <span class="pre">retrieve</span> <span class="pre">the</span> <span class="pre">same</span> <span class="pre">target</span> <span class="pre">documents:</span> <span class="pre">fix</span> <span class="pre">typos,</span> <span class="pre">expand</span> <span class="pre">jargon,</span> <span class="pre">and</span> <span class="pre">add</span> <span class="pre">synonyms,</span> <span class="pre">but</span> <span class="pre">keep</span> <span class="pre">each</span> <span class="pre">a</span> <span class="pre">terse</span> <span class="pre">search</span> <span class="pre">phrase.</span> <span class="pre">One</span> <span class="pre">query</span> <span class="pre">per</span> <span class="pre">line,</span> <span class="pre">no</span> <span class="pre">numbering.\n\nQuery:</span> <span class="pre">{query}'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fallback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">prompt_function_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/formulate.html#make_llm_formulator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.formulate.make_llm_formulator" title="Link to this definition"></a></dt>
+<dd><p>An LLM-backed <a class="reference internal" href="#ir.formulate.Formulator" title="ir.formulate.Formulator"><code class="xref py py-data docutils literal notranslate"><span class="pre">Formulator</span></code></a> (rewrite / expand / multi-query).</p>
+<p><code class="docutils literal notranslate"><span class="pre">rewriter</span></code> is an injectable <code class="docutils literal notranslate"><span class="pre">query</span> <span class="pre">-&gt;</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">[str,</span> <span class="pre">...]</span></code> callable (a test
+double, or your own router); when omitted it is built lazily on <code class="xref py py-mod docutils literal notranslate"><span class="pre">oa</span></code>
+(<code class="docutils literal notranslate"><span class="pre">oa.prompt_function</span></code>), so importing this module stays offline. <code class="docutils literal notranslate"><span class="pre">n</span></code> is the
+multi-query fan-out width. Any error or empty reply falls back to <code class="docutils literal notranslate"><span class="pre">fallback</span></code>
+(default: <a class="reference internal" href="#ir.formulate.identity_formulator" title="ir.formulate.identity_formulator"><code class="xref py py-func docutils literal notranslate"><span class="pre">identity_formulator()</span></code></a>).</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="eval_gen.html" class="btn btn-neutral float-left" title="ir.eval_gen" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-right" title="ir.index" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright NO COPYRIGHT.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
