@@ -37,6 +37,7 @@ from typing import Any, Callable
 import numpy as np
 
 from .base import SearchHit, best_per_artifact
+from .formulate import Formulator
 
 #: Ranking modes accepted by :func:`search`.
 MODES = ("dense", "lexical", "hybrid")
@@ -312,6 +313,7 @@ def search(
     fetch_k: int | None = None,
     rerank: Callable | None = None,
     bm25: Mapping[str, Any] | None = None,
+    formulate: Formulator | None = None,
 ) -> list[SearchHit]:
     """Return the top-*k* :class:`~ir.base.SearchHit` for *query*.
 
@@ -340,6 +342,11 @@ def search(
         Default ``None`` keeps retrieval offline (no model download / API call).
     bm25 : optional Okapi params forwarded to ``vd.bm25_lexical_search``
         (e.g. ``{"k1": 1.5, "b": 0.75}``).
+    formulate : an optional :data:`~ir.formulate.Formulator` (``query -> str |
+        [str, ...]``) applied *before* retrieval — rewrite / expand / HyDE
+        (ir_09 §3). Identity by default (embed the query verbatim). When it
+        returns several queries, ir runs each and fuses the results (best surface
+        per artifact). See :func:`ir.make_llm_formulator`.
     """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
@@ -349,6 +356,48 @@ def search(
     # Materialize once: surfaces may be a one-shot iterable, and it is both the
     # filter input and part of the BM25 cache key.
     surfaces = tuple(surfaces) if surfaces is not None else None
+
+    # Query formulation (ir_09 §3): expand/rewrite before retrieval. A single
+    # query continues the normal path; multiple queries fan out and fuse. The
+    # sub-searches pass formulate=None (no re-formulation) and per_artifact=False
+    # so the cross-query merge collapses to the best surface per artifact once.
+    if formulate is not None:
+        produced = formulate(query)
+        queries = (
+            [produced]
+            if isinstance(produced, str)
+            else [q for q in produced if isinstance(q, str) and q.strip()]
+        )
+        if not queries:
+            queries = [query]
+        if len(queries) > 1:
+            merged: list[SearchHit] = []
+            for q in queries:
+                merged.extend(
+                    search(
+                        corpus,
+                        q,
+                        k=k,
+                        filter=filter,
+                        surfaces=surfaces,
+                        per_artifact=False,
+                        mode=mode,
+                        fusion=fusion,
+                        rrf_k=rrf_k,
+                        alpha=alpha,
+                        bm25_sat_k=bm25_sat_k,
+                        fetch_k=fetch_k,
+                        rerank=rerank,
+                        bm25=bm25,
+                    )
+                )
+            merged = (
+                best_per_artifact(merged)
+                if per_artifact
+                else sorted(merged, key=lambda h: h.score, reverse=True)
+            )
+            return merged[:k]
+        query = queries[0]
 
     ids, mat, metas = corpus.store.matrix()
     if not ids:
