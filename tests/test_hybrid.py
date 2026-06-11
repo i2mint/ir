@@ -102,3 +102,69 @@ def test_rerank_with_per_artifact_false():
         corpus, QUERY, k=5, mode="hybrid", per_artifact=False, rerank=_prefer_svc
     )
     assert hits and hits[0].artifact_id == "svc"
+
+
+# --------------------------------------------------------------------------- #
+# Magnitude-preserving "blend" fusion (ir_08) — opt-in alternative to RRF
+# --------------------------------------------------------------------------- #
+
+
+def test_blend_fuse_unit_math():
+    from ir.retrieve import _blend_fuse
+
+    dense = [("a", 0.8), ("b", 0.2)]
+    lexical = [("a", 0.0), ("b", 8.0)]  # b's bm25 saturates: 8/(8+8) = 0.5
+    out = dict(_blend_fuse(dense, lexical, alpha=0.5, bm25_sat_k=8.0, fetch=10))
+    assert out["a"] == pytest.approx(0.5 * 0.8 + 0.5 * 0.0)  # 0.40
+    assert out["b"] == pytest.approx(0.5 * 0.2 + 0.5 * 0.5)  # 0.35
+
+
+def test_blend_fuse_falls_back_to_single_side():
+    from ir.retrieve import _blend_fuse
+
+    dense = [("a", 0.9), ("b", 0.1)]
+    assert _blend_fuse(dense, [], 0.5, 8.0, 10) == dense  # no lexical -> dense
+    assert _blend_fuse([], dense, 0.5, 8.0, 10) == dense  # no dense -> lexical
+
+
+def test_blend_preserves_magnitude_vs_rrf():
+    # The core property: RRF collapses the top hit to the ~1/(k+1) rank scale,
+    # while blend keeps the dense/lexical magnitude — what abstention needs.
+    corpus = _corpus()
+    rrf_top = ir.search(corpus, QUERY, mode="hybrid", fusion="rrf")[0].score
+    blend_top = ir.search(corpus, QUERY, mode="hybrid", fusion="blend")[0].score
+    assert rrf_top < 0.1
+    assert blend_top > 0.3
+
+
+def test_blend_does_not_push_rare_identifier_below_dense():
+    # Blend is magnitude-preserving, NOT rank-boosting: unlike RRF it does not
+    # strongly lift a dense-weak / lexical-strong rare identifier (that is RRF's
+    # strength — the recall/abstention tradeoff documented in ir_08). It must at
+    # least not push it *below* its pure-dense rank.
+    corpus = _corpus()
+    blend_order = [
+        h.artifact_id
+        for h in ir.search(corpus, QUERY, k=10, mode="hybrid", fusion="blend")
+    ]
+    dense_order = _order(corpus, mode="dense")
+    assert blend_order.index("svc") <= dense_order.index("svc")
+
+
+def test_blend_falls_back_to_dense_without_vd(monkeypatch):
+    import sys
+
+    corpus = _corpus()
+    monkeypatch.setitem(sys.modules, "vd", None)
+    with pytest.warns(UserWarning):
+        blend = [
+            h.artifact_id
+            for h in ir.search(corpus, QUERY, mode="hybrid", fusion="blend")
+        ]
+    assert blend == _order(corpus, mode="dense")
+
+
+def test_unknown_fusion_raises():
+    corpus = _corpus()
+    with pytest.raises(ValueError, match="unknown fusion"):
+        ir.search(corpus, QUERY, mode="hybrid", fusion="bogus")
