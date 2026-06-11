@@ -1,0 +1,8 @@
+{"__meta__": {"corpus": "mini", "note": "frozen real-content fixture: gold ids are mini_corpus.json keys; queries share literal tokens so the light (hashing) embedder is deterministic"}}
+{"query": "a dict-like interface to stored data", "gold": ["dol"], "source_id": "dol"}
+{"query": "vector similarity search with metadata filters", "gold": ["vd"], "source_id": "vd"}
+{"query": "embed text with a model and cache the vectors", "gold": ["ef"], "source_id": "ef"}
+{"query": "inspect and manipulate Python function signatures", "gold": ["i2"], "source_id": "i2"}
+{"query": "link functions into a computational graph", "gold": ["meshed"], "source_id": "meshed"}
+{"query": "cache web content to local files", "gold": ["graze"], "source_id": "graze"}
+{"query": "knead a sourdough loaf with a bamboo scraper", "gold": []}

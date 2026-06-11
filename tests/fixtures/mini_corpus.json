@@ -1,0 +1,9 @@
+{
+  "dol": "dol gives a dict-like (MutableMapping) interface to stored data, so files, databases, and cloud blobs all read and write like a Python dictionary.",
+  "vd": "vd is a vector-database facade: vector similarity search with Mongo-style metadata filters over many swappable storage backends.",
+  "ef": "ef (Embeddings Flow) provides tools for workflows involving semantic embeddings: segment text, embed it with a model, cache the vectors, and retrieve.",
+  "i2": "i2 has tools to inspect and manipulate Python functions, their signatures, and their call behavior, so callables can be wrapped and re-dispatched.",
+  "meshed": "meshed links functions together into a callable computational graph, wiring each function's outputs into the inputs of the next.",
+  "graze": "graze caches web content to local files so repeated downloads of the same URL are served from disk instead of fetched again.",
+  "creek": "creek wraps streaming and iterable data sources with a uniform interface for reading elements one at a time."
+}

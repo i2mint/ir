@@ -868,3 +868,33 @@ def test_calibration_roundtrip_is_json_safe_with_empty_retrievals(monkeypatch):
     assert ev.MinScoreCalibration.from_dict(
         json.loads(text)
     ).min_score == pytest.approx(calib.min_score)
+
+
+# --------------------------------------------------------------------------- #
+# ef RETRIEVAL_METRICS — consume the public registry, fall back for old ef
+# --------------------------------------------------------------------------- #
+
+
+def test_evaluate_discovery_consumes_ef_public_registry():
+    # Normal path: ir reads ef.evaluation.RETRIEVAL_METRICS as the single source
+    # of truth for the metric name->function map. Skip on an installed ef that
+    # predates the public registry (e.g. CI's PyPI ef before it republishes) —
+    # the fallback path is covered by the test below.
+    import ef.evaluation as efe
+
+    if not hasattr(efe, "RETRIEVAL_METRICS"):
+        pytest.skip("installed ef predates the public RETRIEVAL_METRICS registry")
+    report = ev.evaluate_discovery(_corpus(), _gold_cases(), mode="dense", primary_k=1)
+    assert report.primary == pytest.approx(1.0)
+
+
+def test_evaluate_discovery_falls_back_without_ef_registry(monkeypatch):
+    # Simulate an ef predating the public registry: the byte-identical local
+    # fallback must yield the same result and keep the unknown-metric guard.
+    import ef.evaluation as efe
+
+    monkeypatch.delattr(efe, "RETRIEVAL_METRICS", raising=False)
+    report = ev.evaluate_discovery(_corpus(), _gold_cases(), mode="dense", primary_k=1)
+    assert report.primary == pytest.approx(1.0)
+    with pytest.raises(ValueError, match="Unknown metric"):
+        ev.evaluate_discovery(_corpus(), _gold_cases(), metrics=("bogus",))
