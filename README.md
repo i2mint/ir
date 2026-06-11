@@ -73,6 +73,13 @@ by Reciprocal Rank Fusion (the strongest default for short, identifier-heavy
 capability text). Lexical/hybrid reuse [`vd`](https://github.com/i2mint/vd);
 dense needs only numpy.
 
+Hybrid has a second fusion, `fusion="blend"` — a magnitude-preserving score
+blend instead of rank-RRF. RRF discards score magnitude, which is exactly what
+abstention calibration needs, so `blend` separates in-scope from out-of-scope
+queries far better (and even beats dense); the tradeoff is lower lexical recall
+on terse corpora, so RRF stays the default. Use `blend` when abstention matters
+— see [`ir_08`](misc/docs/ir_08%20--%20Magnitude-Preserving%20Hybrid%20Fusion%20--%20Trading%20rank-RRF%20for%20abstention%20separability.md).
+
 ### Select
 
 ```python
@@ -161,8 +168,9 @@ ir calibrate-min-score skills skills_eval.jsonl --persist  # calibrate the abste
 
 ## Design
 
-The design is grounded in a set of capability-discovery research reports under
-`misc/docs/` (`ir_01`–`ir_05`): the single-search-tool pattern, indexing &
-embedding strategy, evaluation, the `ef` + `vd` reuse analysis, and a dense-vs-
-lexical-vs-hybrid eval run. `ir` is light by default (numpy / `dol`) and reuses
-the ecosystem (`ef`, `vd`, `oa`) only where it composes cleanly.
+The design is grounded in a set of capability-discovery research reports and
+eval-run findings under `misc/docs/` (`ir_01`–`ir_08`): the single-search-tool
+pattern, indexing & embedding strategy, evaluation, the `ef` + `vd` reuse
+analysis, the dense-vs-lexical-vs-hybrid eval, selector tuning, abstention-floor
+calibration, and magnitude-preserving fusion. `ir` is light by default (numpy /
+`dol`) and reuses the ecosystem (`ef`, `vd`, `oa`) only where it composes cleanly.

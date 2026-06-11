@@ -81,16 +81,18 @@ def build(name, *, embedder=None, full=True):
     return f"built {name!r}: {len(corpus)} records (embedder {corpus.embedder_id})"
 
 
-def search(name, query, *, k=10, mode="dense"):
+def search(name, query, *, k=10, mode="dense", fusion="rrf"):
     """Search a built corpus and print the top-k hits.
 
-    mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused via RRF).
+    mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused). fusion
+    (hybrid only): rrf (rank-based, default) | blend (magnitude-preserving;
+    better abstention separability — see ir_08).
     """
     corpus = open_corpus(name)
     if len(corpus) == 0:
         return _empty_corpus_msg(name)
     lines = []
-    for h in corpus.search(query, k=k, mode=mode):
+    for h in corpus.search(query, k=k, mode=mode, fusion=fusion):
         # artifact_id is the unique label across corpora (skill name[@parent],
         # package name, or a report's relative path).
         lines.append(f"{h.score:+.3f}  {h.artifact_id}  [{h.surface_kind}]")
@@ -106,6 +108,7 @@ def discover(
     strategy="conservative",
     disclose=False,
     min_score=None,
+    fusion="rrf",
 ):
     """Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -114,7 +117,9 @@ def discover(
     selected item's body (SKILL.md / file text) via its stored pointer.
     ``--min-score auto`` turns on absolute abstention using the floor calibrated
     by ``ir calibrate-min-score`` (or pass a float). mode: dense | lexical |
-    hybrid. strategy: conservative | top_k | rel_threshold | score_gap.
+    hybrid. fusion (hybrid only): rrf (default) | blend (magnitude-preserving;
+    pair with --min-score for abstention — see ir_08). strategy: conservative |
+    top_k | rel_threshold | score_gap.
     """
     from .select import discover as _discover
 
@@ -134,6 +139,7 @@ def discover(
         strategy=strategy,
         disclose_level="body" if disclose else "metadata",
         min_score=floor,
+        fusion=fusion,
     )
     if result.abstained:
         return (
@@ -310,6 +316,7 @@ def calibrate_min_score(
     k=10,
     sensitivity_weight=DFLT_CALIB_SENSITIVITY_WEIGHT,
     persist=False,
+    fusion="rrf",
 ):
     """Calibrate the absolute abstention min_score floor for a corpus + mode.
 
@@ -319,9 +326,10 @@ def calibrate_min_score(
     abstention cases — generate them with ``ir eval-gen`` (it adds an abstention
     slice). ``--persist`` stores the floor so ``ir discover ... --min-score auto``
     will abstain by it. ``--sensitivity-weight`` (0..1, balanced default);
-    lower it to abstain more readily (precision-leaning). Calibrate on dense or
-    lexical, not hybrid (its RRF scores barely separate). mode: dense | lexical
-    | hybrid.
+    lower it to abstain more readily (precision-leaning). For hybrid, calibrate
+    with ``--fusion blend`` (rank-based RRF barely separates — see ir_08) and
+    query under the same fusion. mode: dense | lexical | hybrid. fusion (hybrid
+    only): rrf | blend.
     """
     from .eval import calibrate_min_score as _calibrate
     from .eval import load_cases, validate_cases
@@ -340,10 +348,17 @@ def calibrate_min_score(
         k=int(k),
         sensitivity_weight=float(sensitivity_weight),
         persist=bool(persist),
+        fusion=fusion,
     )
     out = str(calib)
     if persist and calib.min_score is not None:
-        out += f"\n  persisted → ir discover {name} ... --mode {mode} --min-score auto"
+        fusion_hint = (
+            f" --fusion {fusion}" if mode == "hybrid" and fusion != "rrf" else ""
+        )
+        out += (
+            f"\n  persisted → ir discover {name} ... --mode {mode}{fusion_hint} "
+            f"--min-score auto"
+        )
     if calib.min_score is None:
         out += (
             f"\n  NOTE: no floor calibrated ({calib.reason}); a floor needs both "

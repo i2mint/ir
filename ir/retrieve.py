@@ -7,9 +7,11 @@ set:
 
 - ``"dense"`` (default) — exact brute-force cosine over the embedding matrix.
 - ``"lexical"`` — Okapi BM25 over the candidates' text (``vd.bm25_lexical_search``).
-- ``"hybrid"`` — dense and lexical fused by Reciprocal Rank Fusion
-  (``vd.reciprocal_rank_fusion``), the rank-based fuse that sidesteps the
-  cosine/BM25 score-scale mismatch.
+- ``"hybrid"`` — dense and lexical fused, either by Reciprocal Rank Fusion
+  (``fusion="rrf"``, the default ``vd.reciprocal_rank_fusion`` rank-based fuse
+  that sidesteps the cosine/BM25 score-scale mismatch) or by a
+  magnitude-preserving convex blend (``fusion="blend"``) that keeps the dense
+  cosine's absolute scale for better abstention separability (see ir_08).
 
 Hybrid matters for short, identifier-heavy capability text (skill / package /
 tool names), the regime where dense-only retrieval fails silently on exact
@@ -39,8 +41,22 @@ from .base import SearchHit, best_per_artifact
 #: Ranking modes accepted by :func:`search`.
 MODES = ("dense", "lexical", "hybrid")
 
+#: Hybrid fusion methods accepted by :func:`search` (``mode="hybrid"``).
+#: ``"rrf"`` is the rank-based default; ``"blend"`` preserves score magnitude
+#: (see :func:`_blend_fuse` and ir_08) for better abstention separability.
+FUSIONS = ("rrf", "blend")
+
 #: RRF rank constant — the ``k`` of ``1 / (k + rank)`` (standard default 60).
 DFLT_RRF_K = 60
+
+#: Dense weight in the ``"blend"`` fusion convex combination (``1-alpha`` on the
+#: bounded lexical term). ``0.5`` weighs the two equally.
+DFLT_BLEND_ALPHA = 0.5
+
+#: BM25 saturation constant for ``"blend"`` fusion: ``bm25 -> bm25/(bm25+k)``, a
+#: bounded squash to ``[0, 1)`` that needs no *per-query* normalization (which
+#: would erase the absolute-magnitude signal abstention calibration depends on).
+DFLT_BM25_SAT_K = 8.0
 
 
 def _matches(metadata: Mapping[str, Any], filter: Mapping[str, Any]) -> bool:
@@ -214,6 +230,48 @@ def _rrf_fuse(
     return [(item["id"], float(item["rrf_score"])) for item in fused[:fetch]]
 
 
+def _blend_fuse(
+    dense: list[tuple[str, float]],
+    lexical: list[tuple[str, float]],
+    alpha: float,
+    bm25_sat_k: float,
+    fetch: int,
+) -> list[tuple[str, float]]:
+    """Fuse dense + lexical by a magnitude-preserving convex blend.
+
+    ``fused = alpha * cosine + (1 - alpha) * bm25 / (bm25 + bm25_sat_k)``.
+
+    Unlike :func:`_rrf_fuse` (rank-only — every query's top hit collapses to ~the
+    same fused score, which destroys the score-distribution separability that
+    abstention calibration relies on; see ir_07/ir_08), this keeps the dense
+    cosine's **absolute** magnitude. The dense term carries the in-scope /
+    out-of-scope signal (it is low across the board for an irrelevant query),
+    while the BM25 term is squashed into a bounded ``[0, 1)`` range with a *fixed*
+    constant — deliberately **not** per-query min-max normalized, which would
+    rescale every query's best hit to 1.0 and wash that signal out. Cosine is
+    already on a fixed ``[-1, 1]`` scale, so the two terms are commensurable.
+
+    Falls back to the single non-empty ranking (dense, when ``vd`` is missing) so
+    it degrades exactly like :func:`_rrf_fuse`.
+    """
+    if not lexical:
+        return dense[:fetch]
+    if not dense:
+        return lexical[:fetch]
+    dense_score = dict(dense)
+    lex_score = dict(lexical)
+    # Preserve first-seen order for deterministic tie-breaking (dense first).
+    ids = list(dict.fromkeys([rid for rid, _ in dense] + [rid for rid, _ in lexical]))
+    fused = []
+    for rid in ids:
+        d = dense_score.get(rid, 0.0)
+        b = lex_score.get(rid, 0.0)
+        b_sat = b / (b + bm25_sat_k) if b > 0 else 0.0
+        fused.append((rid, alpha * d + (1.0 - alpha) * b_sat))
+    fused.sort(key=lambda kv: -kv[1])
+    return fused[:fetch]
+
+
 def _apply_rerank(
     query: str,
     ranked: list[tuple[str, float]],
@@ -247,7 +305,10 @@ def search(
     surfaces: Iterable[str] | None = None,
     per_artifact: bool = True,
     mode: str = "dense",
+    fusion: str = "rrf",
     rrf_k: int = DFLT_RRF_K,
+    alpha: float = DFLT_BLEND_ALPHA,
+    bm25_sat_k: float = DFLT_BM25_SAT_K,
     fetch_k: int | None = None,
     rerank: Callable | None = None,
     bm25: Mapping[str, Any] | None = None,
@@ -261,10 +322,16 @@ def search(
     surfaces : restrict to these surface kinds (e.g. ``{"description"}``).
     per_artifact : collapse to the best surface per artifact (default True).
     mode : ``"dense"`` (default, cosine), ``"lexical"`` (BM25), or ``"hybrid"``
-        (dense + BM25 fused by Reciprocal Rank Fusion). Hybrid is the strongest
-        default for short, identifier-heavy text; ``"dense"`` is the historical
-        behavior and is kept as the default for backward compatibility.
-    rrf_k : the RRF rank constant for ``"hybrid"`` (standard default 60).
+        (dense + BM25 fused). Hybrid is the strongest default for short,
+        identifier-heavy text; ``"dense"`` is the historical behavior and is
+        kept as the default for backward compatibility.
+    fusion : how ``"hybrid"`` fuses dense + lexical — ``"rrf"`` (default,
+        rank-based Reciprocal Rank Fusion) or ``"blend"`` (magnitude-preserving
+        convex blend; better abstention separability — see ir_08). Ignored for
+        non-hybrid modes.
+    rrf_k : the RRF rank constant for ``fusion="rrf"`` (standard default 60).
+    alpha : dense weight for ``fusion="blend"`` (``1-alpha`` on lexical).
+    bm25_sat_k : BM25 saturation constant for ``fusion="blend"``.
     fetch_k : candidate depth before fusion / reranking / dedupe
         (default ``max(k*5, 50)`` when collapsing per artifact, else ``k``).
     rerank : an optional :class:`ef.Reranker` (``(query, segments) -> scores``)
@@ -276,6 +343,8 @@ def search(
     """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
+    if fusion not in FUSIONS:
+        raise ValueError(f"unknown fusion {fusion!r}; expected one of {FUSIONS}")
 
     # Materialize once: surfaces may be a one-shot iterable, and it is both the
     # filter input and part of the BM25 cache key.
@@ -305,7 +374,10 @@ def search(
                 corpus, ids, metas, candidates, _candidate_key(surfaces, filter)
             )
             lexical = _lexical_ranked(index, query, fetch, bm25)
-            ranked = _rrf_fuse(dense, lexical, rrf_k, fetch)
+            if fusion == "blend":
+                ranked = _blend_fuse(dense, lexical, alpha, bm25_sat_k, fetch)
+            else:
+                ranked = _rrf_fuse(dense, lexical, rrf_k, fetch)
 
     meta_by_id = {ids[j]: metas[j] for j in candidates}
 
