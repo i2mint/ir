@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.registry &mdash; ir 0.1.12 documentation</title>
+  <title>ir.registry &mdash; ir 0.1.13 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=297ad043"></script>
+      <script src="../../_static/documentation_options.js?v=8d02545a"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -62,6 +62,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.get"><code class="docutils literal notranslate"><span class="pre">get()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.registered"><code class="docutils literal notranslate"><span class="pre">registered()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.registry.retriever_for"><code class="docutils literal notranslate"><span class="pre">retriever_for()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.registry.retrievers"><code class="docutils literal notranslate"><span class="pre">retrievers()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.source_for"><code class="docutils literal notranslate"><span class="pre">source_for()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.source_from_entry"><code class="docutils literal notranslate"><span class="pre">source_from_entry()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.unregister"><code class="docutils literal notranslate"><span class="pre">unregister()</span></code></a></li>
@@ -131,6 +133,26 @@ auto-registered with defaults on first use, so <code class="docutils literal not
 <dt class="sig sig-object py" id="ir.registry.registered">
 <span class="sig-prename descclassname"><span class="pre">ir.registry.</span></span><span class="sig-name descname"><span class="pre">registered</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/registry.html#registered"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.registry.registered" title="Link to this definition"></a></dt>
 <dd><p>All registered corpus definitions, keyed by name.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.registry.retriever_for">
+<span class="sig-prename descclassname"><span class="pre">ir.registry.</span></span><span class="sig-name descname"><span class="pre">retriever_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_defaults</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/registry.html#retriever_for"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.registry.retriever_for" title="Link to this definition"></a></dt>
+<dd><p>A <a class="reference internal" href="retrieve.html#ir.retrieve.Retriever" title="ir.retrieve.Retriever"><code class="xref py py-data docutils literal notranslate"><span class="pre">Retriever</span></code></a> bound to the registered corpus <em>name</em>.</p>
+<p>Opens the corpus (it must have been built) and wraps it with
+<a class="reference internal" href="../ir.html#ir.as_retriever" title="ir.as_retriever"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.as_retriever()</span></code></a>; <code class="docutils literal notranslate"><span class="pre">search_defaults</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">mode=&quot;hybrid&quot;</span></code>) bind to
+every call.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.registry.retrievers">
+<span class="sig-prename descclassname"><span class="pre">ir.registry.</span></span><span class="sig-name descname"><span class="pre">retrievers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_defaults</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/registry.html#retrievers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.registry.retrievers" title="Link to this definition"></a></dt>
+<dd><p>A lazy <code class="docutils literal notranslate"><span class="pre">Mapping[name,</span> <span class="pre">Retriever]</span></code> view over the registry (ir_09 §8).</p>
+<p>The query-time projection of the build-recipe registry: each value is a
+ready-to-call <a class="reference internal" href="retrieve.html#ir.retrieve.Retriever" title="ir.retrieve.Retriever"><code class="xref py py-data docutils literal notranslate"><span class="pre">Retriever</span></code></a>. This is the source-registry
+facade an orchestration layer (<code class="docutils literal notranslate"><span class="pre">raglab</span></code>) consumes — it never opens a corpus
+until the key is accessed, and always reflects the current <a class="reference internal" href="#ir.registry.registered" title="ir.registry.registered"><code class="xref py py-func docutils literal notranslate"><span class="pre">registered()</span></code></a>
+set. <code class="docutils literal notranslate"><span class="pre">search_defaults</span></code> apply to every source.</p>
 </dd></dl>
 
 <dl class="py function">

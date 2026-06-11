@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.registry &mdash; ir 0.1.12 documentation</title>
+  <title>ir.registry &mdash; ir 0.1.13 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=297ad043"></script>
+      <script src="../../_static/documentation_options.js?v=8d02545a"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -111,6 +111,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">registry_path</span>
@@ -205,6 +206,66 @@
                 <span class="sa">f</span><span class="s2">&quot;`ir register`, or use a preset name: </span><span class="si">{</span><span class="n">PRESETS</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
     <span class="k">return</span> <span class="n">source_from_entry</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">entry</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Query-time projection — name -&gt; Retriever (ir_09 §8 / epic #38)</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<div class="viewcode-block" id="retriever_for">
+<a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.retriever_for">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">retriever_for</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">search_defaults</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A :data:`~ir.retrieve.Retriever` bound to the registered corpus *name*.</span>
+
+<span class="sd">    Opens the corpus (it must have been built) and wraps it with</span>
+<span class="sd">    :func:`ir.as_retriever`; ``search_defaults`` (e.g. ``mode=&quot;hybrid&quot;``) bind to</span>
+<span class="sd">    every call.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_retriever</span>
+
+    <span class="k">return</span> <span class="n">as_retriever</span><span class="p">(</span><span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="o">**</span><span class="n">search_defaults</span><span class="p">)</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_RetrieversView</span><span class="p">(</span><span class="n">Mapping</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A lazy read-projection of the registry into ``name -&gt; Retriever``.</span>
+
+<span class="sd">    A strict view over the SSOT (:func:`registered`), **not** a second registry:</span>
+<span class="sd">    keys are the registered names; ``view[name]`` lazily opens that corpus and</span>
+<span class="sd">    returns its retriever. So &quot;what can be built&quot; and &quot;what can be queried&quot; can</span>
+<span class="sd">    never drift, and a corpus is opened only when its key is accessed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">search_defaults</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_defaults</span> <span class="o">=</span> <span class="n">search_defaults</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">registered</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">retriever_for</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_defaults</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="n">registered</span><span class="p">())</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">registered</span><span class="p">())</span>
+
+
+<div class="viewcode-block" id="retrievers">
+<a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.retrievers">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">retrievers</span><span class="p">(</span><span class="o">**</span><span class="n">search_defaults</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A lazy ``Mapping[name, Retriever]`` view over the registry (ir_09 §8).</span>
+
+<span class="sd">    The query-time projection of the build-recipe registry: each value is a</span>
+<span class="sd">    ready-to-call :data:`~ir.retrieve.Retriever`. This is the source-registry</span>
+<span class="sd">    facade an orchestration layer (``raglab``) consumes — it never opens a corpus</span>
+<span class="sd">    until the key is accessed, and always reflects the current :func:`registered`</span>
+<span class="sd">    set. ``search_defaults`` apply to every source.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_RetrieversView</span><span class="p">(</span><span class="o">**</span><span class="n">search_defaults</span><span class="p">)</span></div>
 
 </pre></div>
 

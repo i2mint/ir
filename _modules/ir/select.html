@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.select &mdash; ir 0.1.12 documentation</title>
+  <title>ir.select &mdash; ir 0.1.13 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=297ad043"></script>
+      <script src="../../_static/documentation_options.js?v=8d02545a"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -230,6 +230,17 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The committed artifact ids, best-first.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">]</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sufficient</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A model-free sufficiency *hint* for an agent&#39;s Evaluator (ir_09 §3).</span>
+
+<span class="sd">        ``True`` when this selection committed to at least one item (i.e. did not</span>
+<span class="sd">        abstain). It is a **signal, not a directive**: the re-query / ``refinement``</span>
+<span class="sd">        decision and the loop belong to the agent layer (the back-edge, ir_09 §4)</span>
+<span class="sd">        — ``ir`` derives this from its own outcome and never acts on it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstained</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
 <div class="viewcode-block" id="Selection.to_dict">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Selection.to_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
@@ -238,6 +249,7 @@
             <span class="s2">&quot;selected&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">_hit_to_dict</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">],</span>
             <span class="s2">&quot;selected_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="p">,</span>
             <span class="s2">&quot;abstained&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>
+            <span class="s2">&quot;sufficient&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sufficient</span><span class="p">,</span>
             <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
             <span class="s2">&quot;signals&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">),</span>
             <span class="s2">&quot;n_candidates&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">candidates</span><span class="p">),</span>
