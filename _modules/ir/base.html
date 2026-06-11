@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.base &mdash; ir 0.1.11 documentation</title>
+  <title>ir.base &mdash; ir 0.1.12 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=1e825a29"></script>
+      <script src="../../_static/documentation_options.js?v=297ad043"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -125,6 +125,14 @@
 <span class="n">FilterFields</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 <span class="sd">&quot;&quot;&quot;Non-embedded, hard-filterable metadata for an artifact (name, owner, tags).&quot;&quot;&quot;</span>
 
+<span class="c1">#: Metadata keys checked, in order, for a disclosure *pointer* — the file/dir</span>
+<span class="c1">#: whose contents are an artifact&#39;s body. A :class:`SearchHit` is a</span>
+<span class="c1">#: *pointer + snippet* (ir_09 §5): ``text`` is the snippet, the pointer is the</span>
+<span class="c1">#: key a resource store dereferences to the full payload. Skills stamp</span>
+<span class="c1">#: ``skill_path``; packages / reports / files stamp ``path`` (see</span>
+<span class="c1">#: :mod:`ir.sources`). :mod:`ir.select` re-exports this for disclosure.</span>
+<span class="n">POINTER_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;skill_path&quot;</span><span class="p">,</span> <span class="s2">&quot;path&quot;</span><span class="p">)</span>
+
 
 <div class="viewcode-block" id="storage_key">
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.storage_key">[docs]</a>
@@ -206,13 +214,41 @@
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.SearchHit">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SearchHit</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A scored record returned by retrieval (higher score = closer).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A scored record returned by retrieval (higher score = closer).</span>
+
+<span class="sd">    Maps onto ir_09&#39;s ``Result``: ``text`` is the snippet, ``score`` the rank</span>
+<span class="sd">    score, ``metadata`` the meta, and :attr:`pointer` the key into a resource</span>
+<span class="sd">    store (ir_09 §5). :meth:`to_dict` is the serialization-clean form for a</span>
+<span class="sd">    cross-process / subagent boundary (no numpy scalars leak).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">surface_kind</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">score</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span></div>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The disclosure pointer on this hit, if any (see :data:`POINTER_KEYS`).&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">POINTER_KEYS</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">p</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">p</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="SearchHit.to_dict">
+<a class="viewcode-back" href="../../module_docs/ir/base.html#ir.SearchHit.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form (``score`` cast to a Python ``float``).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;artifact_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+            <span class="s2">&quot;surface_kind&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
+            <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+            <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
+        <span class="p">}</span></div>
+</div>
 
 
 

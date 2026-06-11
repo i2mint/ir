@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.retrieve &mdash; ir 0.1.11 documentation</title>
+  <title>ir.retrieve &mdash; ir 0.1.12 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=1e825a29"></script>
+      <script src="../../_static/documentation_options.js?v=297ad043"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -65,6 +65,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.DFLT_RRF_K"><code class="docutils literal notranslate"><span class="pre">DFLT_RRF_K</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.FUSIONS"><code class="docutils literal notranslate"><span class="pre">FUSIONS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.MODES"><code class="docutils literal notranslate"><span class="pre">MODES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.Retriever"><code class="docutils literal notranslate"><span class="pre">Retriever</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.as_retriever"><code class="docutils literal notranslate"><span class="pre">as_retriever()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
 </ul>
 </li>
@@ -162,6 +164,37 @@ would erase the absolute-magnitude signal abstention calibration depends on).</p
 <dt class="sig sig-object py" id="ir.retrieve.MODES">
 <span class="sig-prename descclassname"><span class="pre">ir.retrieve.</span></span><span class="sig-name descname"><span class="pre">MODES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('dense',</span> <span class="pre">'lexical',</span> <span class="pre">'hybrid')</span></span><a class="headerlink" href="#ir.retrieve.MODES" title="Link to this definition"></a></dt>
 <dd><p>Ranking modes accepted by <a class="reference internal" href="#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">search()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.retrieve.Retriever">
+<span class="sig-prename descclassname"><span class="pre">ir.retrieve.</span></span><span class="sig-name descname"><span class="pre">Retriever</span></span><a class="headerlink" href="#ir.retrieve.Retriever" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">(query,</span> <span class="pre">**overrides)</span> <span class="pre">-&gt;</span> <span class="pre">list[SearchHit]</span></code> — ir_09’s Retriever
+leaf (one query, one corpus) as a swappable callable. <a class="reference internal" href="#ir.retrieve.as_retriever" title="ir.retrieve.as_retriever"><code class="xref py py-func docutils literal notranslate"><span class="pre">as_retriever()</span></code></a>
+binds one corpus to this contract so an orchestration layer (e.g. <code class="docutils literal notranslate"><span class="pre">raglab</span></code>)
+can register an ir corpus as one source key without importing ir internals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A retriever</p>
+</dd>
+</dl>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>[[…], <code class="xref py py-class docutils literal notranslate"><span class="pre">list[SearchHit]</span></code>]</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.retrieve.as_retriever">
+<span class="sig-prename descclassname"><span class="pre">ir.retrieve.</span></span><span class="sig-name descname"><span class="pre">as_retriever</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus_or_name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_defaults</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/retrieve.html#as_retriever"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.retrieve.as_retriever" title="Link to this definition"></a></dt>
+<dd><p>Bind ONE corpus to the uniform <a class="reference internal" href="#ir.retrieve.Retriever" title="ir.retrieve.Retriever"><code class="xref py py-data docutils literal notranslate"><span class="pre">Retriever</span></code></a> contract.</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">retrieve(query,</span> <span class="pre">**overrides)</span> <span class="pre">-&gt;</span> <span class="pre">list[SearchHit]</span></code> that calls
+<a class="reference internal" href="#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">search()</span></code></a> with <code class="docutils literal notranslate"><span class="pre">search_defaults</span></code> (a per-call kwarg overrides a bound
+default). A corpus <em>name</em> is resolved once via <a class="reference internal" href="../ir.html#ir.open_corpus" title="ir.open_corpus"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.open_corpus()</span></code></a>; pass
+an open <a class="reference internal" href="index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a> to skip that. The returned callable carries
+the bound corpus on <code class="docutils literal notranslate"><span class="pre">.corpus</span></code> for introspection.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">retr</span> <span class="o">=</span> <span class="n">as_retriever</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">retr</span><span class="p">(</span><span class="s2">&quot;how do I deploy the app&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">retr</span><span class="p">(</span><span class="s2">&quot;deploy&quot;</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;owner&quot;</span><span class="p">:</span> <span class="s2">&quot;me&quot;</span><span class="p">})</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.base &mdash; ir 0.1.11 documentation</title>
+  <title>ir.base &mdash; ir 0.1.12 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=1e825a29"></script>
+      <script src="../../_static/documentation_options.js?v=297ad043"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -55,11 +55,16 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.base.Artifact"><code class="docutils literal notranslate"><span class="pre">Artifact</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.base.FilterFields"><code class="docutils literal notranslate"><span class="pre">FilterFields</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.base.IndexPlan"><code class="docutils literal notranslate"><span class="pre">IndexPlan</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.POINTER_KEYS"><code class="docutils literal notranslate"><span class="pre">POINTER_KEYS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.base.Record"><code class="docutils literal notranslate"><span class="pre">Record</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ir.base.Record.make_id"><code class="docutils literal notranslate"><span class="pre">Record.make_id()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#ir.base.SearchHit"><code class="docutils literal notranslate"><span class="pre">SearchHit</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.SearchHit"><code class="docutils literal notranslate"><span class="pre">SearchHit</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.base.SearchHit.pointer"><code class="docutils literal notranslate"><span class="pre">SearchHit.pointer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.base.SearchHit.to_dict"><code class="docutils literal notranslate"><span class="pre">SearchHit.to_dict()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.base.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.base.best_per_artifact"><code class="docutils literal notranslate"><span class="pre">best_per_artifact()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.base.storage_key"><code class="docutils literal notranslate"><span class="pre">storage_key()</span></code></a></li>
@@ -145,6 +150,17 @@ filtering <em>and</em> semantic ranking, not only embeddings.</p>
 <dd><p>An <a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a>’s output for one artifact.</p>
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.base.POINTER_KEYS">
+<span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">POINTER_KEYS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('skill_path',</span> <span class="pre">'path')</span></span><a class="headerlink" href="#ir.base.POINTER_KEYS" title="Link to this definition"></a></dt>
+<dd><p>Metadata keys checked, in order, for a disclosure <em>pointer</em> — the file/dir
+whose contents are an artifact’s body. A <a class="reference internal" href="#ir.base.SearchHit" title="ir.base.SearchHit"><code class="xref py py-class docutils literal notranslate"><span class="pre">SearchHit</span></code></a> is a
+<em>pointer + snippet</em> (ir_09 §5): <code class="docutils literal notranslate"><span class="pre">text</span></code> is the snippet, the pointer is the
+key a resource store dereferences to the full payload. Skills stamp
+<code class="docutils literal notranslate"><span class="pre">skill_path</span></code>; packages / reports / files stamp <code class="docutils literal notranslate"><span class="pre">path</span></code> (see
+<a class="reference internal" href="sources.html#module-ir.sources" title="ir.sources"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.sources</span></code></a>). <a class="reference internal" href="select.html#module-ir.select" title="ir.select"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.select</span></code></a> re-exports this for disclosure.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="ir.base.Record">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">Record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/base.html#Record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.Record" title="Link to this definition"></a></dt>
@@ -161,6 +177,22 @@ filtering <em>and</em> semantic ranking, not only embeddings.</p>
 <dt class="sig sig-object py" id="ir.base.SearchHit">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">SearchHit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/base.html#SearchHit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.SearchHit" title="Link to this definition"></a></dt>
 <dd><p>A scored record returned by retrieval (higher score = closer).</p>
+<p>Maps onto ir_09’s <code class="docutils literal notranslate"><span class="pre">Result</span></code>: <code class="docutils literal notranslate"><span class="pre">text</span></code> is the snippet, <code class="docutils literal notranslate"><span class="pre">score</span></code> the rank
+score, <code class="docutils literal notranslate"><span class="pre">metadata</span></code> the meta, and <a class="reference internal" href="#ir.base.SearchHit.pointer" title="ir.base.SearchHit.pointer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pointer</span></code></a> the key into a resource
+store (ir_09 §5). <a class="reference internal" href="#ir.base.SearchHit.to_dict" title="ir.base.SearchHit.to_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code></a> is the serialization-clean form for a
+cross-process / subagent boundary (no numpy scalars leak).</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="ir.base.SearchHit.pointer">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">pointer</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#ir.base.SearchHit.pointer" title="Link to this definition"></a></dt>
+<dd><p>The disclosure pointer on this hit, if any (see <a class="reference internal" href="#ir.base.POINTER_KEYS" title="ir.base.POINTER_KEYS"><code class="xref py py-data docutils literal notranslate"><span class="pre">POINTER_KEYS</span></code></a>).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.base.SearchHit.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/base.html#SearchHit.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.SearchHit.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable form (<code class="docutils literal notranslate"><span class="pre">score</span></code> cast to a Python <code class="docutils literal notranslate"><span class="pre">float</span></code>).</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">

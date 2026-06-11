@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.select &mdash; ir 0.1.11 documentation</title>
+  <title>ir.select &mdash; ir 0.1.12 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=1e825a29"></script>
+      <script src="../../_static/documentation_options.js?v=297ad043"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -148,7 +148,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchHit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">POINTER_KEYS</span><span class="p">,</span> <span class="n">SearchHit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span> <span class="k">as</span> <span class="n">_search</span>
 
 <span class="c1">#: A selector: ranked hits → the committed subset (a pure ranking decision).</span>
@@ -156,6 +156,11 @@
 
 <span class="c1">#: A body loader: a hit&#39;s metadata → its disclosed payload text (or ``None``).</span>
 <span class="n">BodyLoader</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="s2">&quot;str | None&quot;</span><span class="p">]</span>
+
+<span class="c1">#: A resource store: ``pointer -&gt; payload`` (ir_09 §5). Any ``Mapping`` works —</span>
+<span class="c1">#: a ``dol`` file/blob/URL store, an in-memory dict, etc. — so lazy disclosure</span>
+<span class="c1">#: (``store[pointer]``) is decoupled from local disk.</span>
+<span class="n">ResourceStore</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 
 <span class="c1">#: Max items the conservative selector will ever commit to. Small on purpose:</span>
 <span class="c1">#: ir_01 §3 (&quot;fewer, higher-precision candidates beat more&quot;), echoing MCP-Atlas&#39;s</span>
@@ -188,10 +193,8 @@
 <span class="c1">#: Truncate a disclosed body to this many characters (a guard, not a feature).</span>
 <span class="n">DFLT_MAX_BODY_CHARS</span> <span class="o">=</span> <span class="mi">20000</span>
 
-<span class="c1">#: Metadata keys checked, in order, for a disclosure pointer (the file/dir whose</span>
-<span class="c1">#: contents are the artifact&#39;s body). Skills stamp ``skill_path``; packages,</span>
-<span class="c1">#: reports and files stamp ``path`` (see :mod:`ir.sources`).</span>
-<span class="n">POINTER_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;skill_path&quot;</span><span class="p">,</span> <span class="s2">&quot;path&quot;</span><span class="p">)</span>
+<span class="c1"># POINTER_KEYS is imported from ir.base (the data-model SSOT) and re-exported</span>
+<span class="c1"># here for backward compatibility with ``ir.select.POINTER_KEYS`` callers.</span>
 
 
 <span class="c1"># =========================================================================== #</span>
@@ -662,6 +665,27 @@
     <span class="k">return</span> <span class="kc">None</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_store_body_loader</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">ResourceStore</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BodyLoader</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A :data:`BodyLoader` that dereferences ``store[pointer]`` (ir_09 §5).</span>
+
+<span class="sd">    Stale-tolerant exactly like the default disk loader: a missing pointer or a</span>
+<span class="sd">    missing key yields ``None`` (disclosure never raises). This is what lets lazy</span>
+<span class="sd">    disclosure work over any ``Mapping`` resource store — a ``dol`` file/blob/URL</span>
+<span class="sd">    store — not just local disk.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pointer</span> <span class="o">=</span> <span class="n">_pointer_of</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pointer</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">load</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_default_body_loader</span><span class="p">(</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_BODY_CHARS</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
@@ -701,6 +725,7 @@
     <span class="o">*</span><span class="p">,</span>
     <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;body&quot;</span><span class="p">,</span>
     <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">store</span><span class="p">:</span> <span class="n">ResourceStore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Disclosure</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Reveal the payload of each selected hit at ``level`` — append-only, pure.</span>
 
@@ -712,6 +737,9 @@
 <span class="sd">        loader: override the body resolver — ``metadata -&gt; str | None``. The</span>
 <span class="sd">            default reads the ``skill_path`` / ``path`` pointer from disk and</span>
 <span class="sd">            tolerates a missing target (returns ``None``, never raises).</span>
+<span class="sd">        store: a :data:`ResourceStore` (``pointer -&gt; payload`` ``Mapping``) to</span>
+<span class="sd">            dereference instead of disk — ir_09 §5 pointer-passing over a ``dol``</span>
+<span class="sd">            store / URL map / blob storage. Mutually exclusive with ``loader``.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        one :class:`Disclosure` per selected hit, best-first. This is a pure</span>
@@ -722,7 +750,14 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;unknown disclosure level </span><span class="si">{</span><span class="n">level</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">DISCLOSURE_LEVELS</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
-    <span class="n">load</span> <span class="o">=</span> <span class="n">loader</span> <span class="k">if</span> <span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_default_body_loader</span>
+    <span class="k">if</span> <span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;pass either loader= or store=, not both&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">load</span> <span class="o">=</span> <span class="n">_store_body_loader</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">load</span> <span class="o">=</span> <span class="n">loader</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">load</span> <span class="o">=</span> <span class="n">_default_body_loader</span>
     <span class="n">out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Disclosure</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">selection</span><span class="o">.</span><span class="n">selected</span><span class="p">:</span>
         <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
@@ -871,6 +906,7 @@
     <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">,</span>
     <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">store</span><span class="p">:</span> <span class="n">ResourceStore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscoveryResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Find and commit to the capabilities for ``query`` — the one search tool.</span>
@@ -938,7 +974,7 @@
         <span class="n">gap_ratio</span><span class="o">=</span><span class="n">gap_ratio</span><span class="p">,</span>
         <span class="n">min_score</span><span class="o">=</span><span class="n">min_score</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">disclose</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">disclose</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">DiscoveryResult</span><span class="p">(</span>
         <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
         <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>

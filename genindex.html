@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.11 documentation</title>
+  <title>Index &mdash; ir 0.1.12 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=1e825a29"></script>
+      <script src="_static/documentation_options.js?v=297ad043"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -130,10 +130,10 @@
         <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.abstention_accuracy">(ir.eval.SelectionReport attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.AbstentionGenerator">AbstentionGenerator (in module ir.eval_gen)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.Artifact">Artifact (class in ir)</a>
 
       <ul>
@@ -148,6 +148,12 @@
       </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.as_doc_retriever">as_doc_retriever() (in module ir.eval)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.as_retriever">as_retriever() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/retrieve.html#ir.retrieve.as_retriever">(in module ir.retrieve)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -790,15 +796,19 @@
       </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint.params">params (ir.eval.SelectionGridPoint property)</a>
 </li>
-      <li><a href="module_docs/ir.html#ir.Disclosure.pointer">pointer (ir.Disclosure attribute)</a>
+      <li><a href="module_docs/ir/base.html#ir.base.SearchHit.pointer">pointer (ir.base.SearchHit property)</a>
 
       <ul>
+        <li><a href="module_docs/ir.html#ir.Disclosure.pointer">(ir.Disclosure attribute)</a>
+</li>
+        <li><a href="module_docs/ir.html#ir.SearchHit.pointer">(ir.SearchHit property)</a>
+</li>
         <li><a href="module_docs/ir/select.html#ir.select.Disclosure.pointer">(ir.select.Disclosure attribute)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="module_docs/ir/select.html#ir.select.POINTER_KEYS">POINTER_KEYS (in module ir.select)</a>
+      <li><a href="module_docs/ir/base.html#ir.base.POINTER_KEYS">POINTER_KEYS (in module ir.base)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.points">points (ir.eval.SelectionSweep attribute)</a>
 </li>
@@ -868,9 +878,13 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint.report">report (ir.eval.SelectionGridPoint attribute)</a>
 </li>
+      <li><a href="module_docs/ir/select.html#ir.select.ResourceStore">ResourceStore (in module ir.select)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.retrieval">retrieval (ir.eval.DiscoveryReport attribute)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.retrieval_report">retrieval_report() (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/retrieve.html#ir.retrieve.Retriever">Retriever (in module ir.retrieve)</a>
 </li>
       <li><a href="module_docs/ir/cli.html#ir.cli.rm">rm() (in module ir.cli)</a>
 </li>
@@ -1024,9 +1038,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.table">table() (ir.eval.SelectionSweep method)</a>
 </li>
-      <li><a href="module_docs/ir.html#ir.Disclosure.to_dict">to_dict() (ir.Disclosure method)</a>
+      <li><a href="module_docs/ir/base.html#ir.base.SearchHit.to_dict">to_dict() (ir.base.SearchHit method)</a>
 
       <ul>
+        <li><a href="module_docs/ir.html#ir.Disclosure.to_dict">(ir.Disclosure method)</a>
+</li>
         <li><a href="module_docs/ir.html#ir.DiscoveryResult.to_dict">(ir.DiscoveryResult method)</a>
 </li>
         <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.to_dict">(ir.eval.DiscoveryCase method)</a>
@@ -1038,6 +1054,8 @@
         <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.to_dict">(ir.eval.SelectionReport method)</a>
 </li>
         <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.to_dict">(ir.eval.SelectionSweep method)</a>
+</li>
+        <li><a href="module_docs/ir.html#ir.SearchHit.to_dict">(ir.SearchHit method)</a>
 </li>
         <li><a href="module_docs/ir/select.html#ir.select.Disclosure.to_dict">(ir.select.Disclosure method)</a>
 </li>
