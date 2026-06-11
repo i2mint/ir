@@ -539,3 +539,332 @@ def test_cli_sweep_select(tmp_path, monkeypatch):
     # eval_select now threads max_k / rel / min_score through
     tuned = cli.eval_select("notes", str(cases), mode="dense", k=3, max_k=1, rel=0.9)
     assert "SelectionReport" in tuned
+
+
+# --------------------------------------------------------------------------- #
+# min_score calibration (absolute abstention floor)
+# --------------------------------------------------------------------------- #
+
+
+def _mixed_cases():
+    """In-scope (gold-bearing) + out-of-scope (abstention) cases for the demo.
+
+    The out-of-scope queries use vocabulary disjoint from every demo doc, so on
+    ``dense`` they score low against all of them — exactly the separation the
+    floor must find.
+    """
+    return [
+        ev.DiscoveryCase("python programming language scripting", gold=("python",)),
+        ev.DiscoveryCase("javascript browser web frontend dom", gold=("javascript",)),
+        ev.DiscoveryCase("sql relational tables rows columns", gold=("database",)),
+        ev.DiscoveryCase("docker container image orchestration", gold=("docker",)),
+        ev.DiscoveryCase("knit a wool sweater with bamboo needles", gold=()),
+        ev.DiscoveryCase("bake sourdough bread recipe oven", gold=()),
+        ev.DiscoveryCase("plan a hiking trip mountain weather forecast", gold=()),
+    ]
+
+
+def test_calibrate_separates_clean_on_dense():
+    calib = ev.calibrate_min_score(_corpus(), _mixed_cases(), mode="dense", k=4)
+    assert isinstance(calib, ev.MinScoreCalibration)
+    assert calib.reason == "calibrated"
+    assert calib.n_positive == 4 and calib.n_abstention == 3
+    assert calib.n_retrieval_miss == 0
+    # disjoint vocab → perfectly separable, perfect sensitivity & specificity
+    assert calib.separable is True
+    assert calib.sensitivity == pytest.approx(1.0)
+    assert calib.specificity == pytest.approx(1.0)
+    assert calib.youden_j == pytest.approx(1.0)
+    # the floor sits strictly between the two score clusters
+    assert (
+        calib.abstention_scores["max"] < calib.min_score < calib.positive_scores["min"]
+    )
+
+
+def test_calibrate_reuses_one_retrieval_pass(monkeypatch):
+    # The grid of candidate floors is scored against ONE retrieval pass per case,
+    # never re-retrieving per floor.
+    cases = _mixed_cases()
+    real_search = ev._search
+    calls = {"n": 0}
+
+    def counting(*a, **k):
+        calls["n"] += 1
+        return real_search(*a, **k)
+
+    monkeypatch.setattr(ev, "_search", counting)
+    ev.calibrate_min_score(_corpus(), cases, mode="dense", k=4)
+    assert calls["n"] == len(cases)
+
+
+def test_calibrate_requires_both_classes():
+    corpus = _corpus()
+    cases = _mixed_cases()
+    only_pos = [c for c in cases if not c.gold_is_none]
+    only_neg = [c for c in cases if c.gold_is_none]
+    cp = ev.calibrate_min_score(corpus, only_pos, mode="dense", k=4)
+    assert cp.min_score is None and cp.reason == "no_abstention_cases"
+    cn = ev.calibrate_min_score(corpus, only_neg, mode="dense", k=4)
+    assert cn.min_score is None and cn.reason == "no_positive_cases"
+    ce = ev.calibrate_min_score(corpus, [], mode="dense", k=4)
+    assert ce.min_score is None and ce.reason == "no_cases"
+
+
+def test_calibrate_excludes_retrieval_miss():
+    # A gold id absent from the corpus can never be retrieved, so it is a
+    # retrieval miss — excluded from the positive class, not a low-scoring "kept".
+    cases = [
+        ev.DiscoveryCase("python programming language", gold=("python",)),
+        ev.DiscoveryCase("a query whose gold is not indexed", gold=("ghost",)),
+        ev.DiscoveryCase("knit a wool sweater bamboo needles", gold=()),
+    ]
+    calib = ev.calibrate_min_score(_corpus(), cases, mode="dense", k=4)
+    assert calib.n_positive == 1
+    assert calib.n_retrieval_miss == 1
+    assert calib.n_abstention == 1
+
+
+def test_calibration_to_from_dict_roundtrip():
+    calib = ev.calibrate_min_score(_corpus(), _mixed_cases(), mode="dense", k=4)
+    d = calib.to_dict()
+    back = ev.MinScoreCalibration.from_dict(d)
+    assert back.min_score == pytest.approx(calib.min_score)
+    assert back.mode == calib.mode and back.reason == calib.reason
+    assert back.to_dict() == d
+
+
+def test_calibration_persist_and_load_in_memory():
+    corpus = _corpus()
+    ev.calibrate_min_score(corpus, _mixed_cases(), mode="dense", k=4, persist=True)
+    loaded = ev.load_calibration(corpus, "dense")
+    assert loaded is not None and loaded.min_score is not None
+    # only the calibrated mode is stored
+    assert ev.load_calibration(corpus, "lexical") is None
+    assert corpus.store.calibration_modes() == ["dense"]
+
+
+def test_discover_auto_uses_calibrated_floor():
+    from ir import discover
+
+    corpus = _corpus()
+    ev.calibrate_min_score(corpus, _mixed_cases(), mode="dense", k=4, persist=True)
+    r_in = discover(
+        corpus, "python programming language scripting", mode="dense", min_score="auto"
+    )
+    assert not r_in.abstained
+    r_out = discover(
+        corpus, "bake sourdough bread in the oven", mode="dense", min_score="auto"
+    )
+    assert r_out.abstained and r_out.reason == "abstain:below_floor"
+
+
+def test_discover_auto_warns_when_uncalibrated():
+    from ir import discover
+
+    corpus = _corpus()  # nothing persisted
+    # Use an OUT-OF-SCOPE query: with a floor it would abstain, so committing here
+    # proves the missing floor (not a high score) is what lets it through.
+    with pytest.warns(UserWarning, match="no calibration"):
+        result = discover(
+            corpus, "bake sourdough bread in the oven", mode="dense", min_score="auto"
+        )
+    assert not result.abstained  # degraded to "no absolute floor" → commits
+
+
+def test_discover_auto_ignores_stale_embedder():
+    from ir import discover
+
+    corpus = _corpus()
+    ev.calibrate_min_score(corpus, _mixed_cases(), mode="dense", k=4, persist=True)
+    rec = corpus.store.get_calibration("dense")
+    rec["embedder_id"] = "some-other-embedder"  # simulate a rebuild with a new model
+    corpus.store.set_calibration("dense", rec)
+    with pytest.warns(UserWarning, match="stale"):
+        result = discover(
+            corpus, "bake sourdough bread", mode="dense", min_score="auto"
+        )
+    assert not result.abstained  # stale floor ignored → no abstention
+
+
+def test_calibrate_persist_survives_reopen(tmp_path, monkeypatch):
+    # Disk-backed: the floor must survive open_corpus() (its reason for being
+    # persisted on the corpus rather than held in memory).
+    monkeypatch.setenv("IR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("IR_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("IR_CACHE_DIR", str(tmp_path / "cache"))
+    src = ir.CorpusSource.from_mapping(DOCS, name="demo_disk", strategy=ir.WholeText())
+    corpus = ir.build(src, embedder="light")  # local (disk) store
+    ev.calibrate_min_score(corpus, _mixed_cases(), mode="dense", k=4, persist=True)
+    reopened = ir.open_corpus("demo_disk")
+    loaded = ev.load_calibration(reopened, "dense")
+    assert loaded is not None and loaded.min_score is not None
+    assert "dense" in reopened.store.calibration_modes()
+
+
+def test_candidate_floors_are_exact_midpoints():
+    floors = ev._candidate_floors([0.1, 0.2, 0.9, 0.95])
+    assert pytest.approx(0.15) in floors  # midpoint of 0.1 / 0.2
+    assert pytest.approx(0.55) in floors  # midpoint of 0.2 / 0.9
+    assert pytest.approx(0.925) in floors  # midpoint of 0.9 / 0.95
+    assert min(floors) < 0.1 and max(floors) > 0.95  # commit-all / abstain-all
+
+
+def test_pick_floor_tiebreak_prefers_higher():
+    # equal objective → the higher (precision-leaning) floor wins
+    grid = [
+        {"min_score": 0.3, "sensitivity": 1.0, "specificity": 1.0, "youden_j": 1.0},
+        {"min_score": 0.5, "sensitivity": 1.0, "specificity": 1.0, "youden_j": 1.0},
+    ]
+    assert ev._pick_floor(grid, 0.5)["min_score"] == 0.5
+
+
+def test_cli_calibrate_min_score(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.setenv("IR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("IR_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("IR_CACHE_DIR", str(tmp_path / "cache"))
+    from ir import cli
+
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "deploy.md").write_text("deploy the app to the server with systemd units")
+    (docs / "baking.md").write_text("bake a cake in the oven with flour and sugar")
+    cli.register("notes", "files", root=str(docs), pattern=r".*\.md$")
+    cli.build("notes", embedder="light")
+
+    cases = tmp_path / "cases.jsonl"
+    cases.write_text(
+        "\n".join(
+            json.dumps(c)
+            for c in (
+                {"query": "deploy app systemd units", "gold": ["deploy.md"]},
+                {"query": "bake a cake in the oven", "gold": ["baking.md"]},
+                {"query": "best hiking trails mountain weather", "gold": []},
+                {"query": "knit a wool sweater bamboo", "gold": []},
+            )
+        )
+        + "\n"
+    )
+    out = cli.calibrate_min_score("notes", str(cases), mode="dense", k=3, persist=True)
+    assert "MinScoreCalibration" in out
+    # the floor was persisted and is reachable via discover --min-score auto
+    assert "dense" in ir.open_corpus("notes").store.calibration_modes()
+
+
+def test_calibrate_lexical_mode_scales_floor():
+    # Lexical (BM25) scores live on a wholly different scale than dense cosine,
+    # so a per-mode floor is mandatory; verify calibration tracks that scale.
+    calib = ev.calibrate_min_score(_corpus(), _mixed_cases(), mode="lexical", k=4)
+    assert calib.mode == "lexical" and calib.reason == "calibrated"
+    assert calib.min_score is not None and calib.min_score > 1.0  # BM25 ≫ cosine
+    assert calib.sensitivity == pytest.approx(1.0)
+
+
+def test_calibrate_hybrid_mode_runs_and_produces_a_floor():
+    # Hybrid runs and yields a floor; ir_07 documents that RRF's rank-based scores
+    # separate weakly, so we assert it *produced* a calibration, not a magnitude.
+    calib = ev.calibrate_min_score(_corpus(), _mixed_cases(), mode="hybrid", k=4)
+    assert calib.mode == "hybrid" and calib.reason == "calibrated"
+    assert calib.min_score is not None
+
+
+def test_calibrate_hybrid_flags_vd_degraded(monkeypatch):
+    # With vd unavailable, hybrid/lexical silently fall back to dense scoring, so
+    # the floor is on the dense scale — the record must flag that.
+    monkeypatch.setattr(ev, "_vd_available", lambda: False)
+    calib = ev.calibrate_min_score(_corpus(), _mixed_cases(), mode="hybrid", k=4)
+    assert calib.vd_degraded is True
+    assert "DEGRADED" in str(calib)
+    # dense is unaffected (it never needs vd)
+    dense = ev.calibrate_min_score(_corpus(), _mixed_cases(), mode="dense", k=4)
+    assert dense.vd_degraded is False
+
+
+def test_calibrate_custom_floor_grid_is_honored():
+    grid = [0.05, 0.25, 0.55, 0.85]
+    calib = ev.calibrate_min_score(
+        _corpus(), _mixed_cases(), mode="dense", k=4, floor_grid=grid
+    )
+    assert calib.min_score in grid
+    assert {g["min_score"] for g in calib.grid} == set(grid)
+
+
+def test_calibrate_rejects_nonfinite_or_empty_floor_grid():
+    cases = _mixed_cases()
+    with pytest.raises(ValueError, match="finite"):
+        ev.calibrate_min_score(
+            _corpus(), cases, mode="dense", floor_grid=[0.1, float("inf")]
+        )
+    with pytest.raises(ValueError, match="non-empty"):
+        ev.calibrate_min_score(_corpus(), cases, mode="dense", floor_grid=[])
+
+
+def test_pick_floor_sensitivity_weight_leans():
+    # Overlapping distributions: leaning specificity (low w) raises the floor to
+    # reject borderline negatives; leaning sensitivity (high w) lowers it.
+    grid = [
+        {"min_score": 0.25, "sensitivity": 1.0, "specificity": 0.5, "youden_j": 0.5},
+        {"min_score": 0.55, "sensitivity": 0.5, "specificity": 1.0, "youden_j": 0.5},
+    ]
+    assert ev._pick_floor(grid, 0.1)["min_score"] == 0.55  # specificity-leaning
+    assert ev._pick_floor(grid, 0.9)["min_score"] == 0.25  # sensitivity-leaning
+
+
+def test_discover_rejects_invalid_min_score_sentinel():
+    from ir import discover
+
+    with pytest.raises(ValueError, match="invalid min_score"):
+        discover(_corpus(), "python", mode="dense", min_score="aotu")
+
+
+def test_discover_auto_warns_on_missing_embedder_stamp():
+    # An unstamped (legacy / hand-edited) floor cannot be confirmed to match the
+    # live embedder scale → it is ignored with a warning, not used silently.
+    from ir import discover
+
+    corpus = _corpus()
+    ev.calibrate_min_score(corpus, _mixed_cases(), mode="dense", k=4, persist=True)
+    rec = corpus.store.get_calibration("dense")
+    rec.pop("embedder_id", None)
+    corpus.store.set_calibration("dense", rec)
+    with pytest.warns(UserWarning, match="stale"):
+        result = discover(
+            corpus, "bake sourdough bread", mode="dense", min_score="auto"
+        )
+    assert not result.abstained
+
+
+def test_set_calibration_rejects_bad_mode():
+    corpus = _corpus()
+    for bad in ("", "a/b", "..\\esc"):
+        with pytest.raises(ValueError, match="path separator|non-empty"):
+            corpus.store.set_calibration(bad, {"min_score": 0.5})
+
+
+def test_calibration_roundtrip_is_json_safe_with_empty_retrievals(monkeypatch):
+    # Abstention cases with NO retrieved candidates get top_score = -inf; the
+    # persisted record must stay JSON-clean (no inf/nan) and reload intact.
+    import json
+
+    real_search = ev._search
+
+    def maybe_empty(corpus, query, **kw):
+        if "xyzzy" in query:  # the abstention queries below
+            return []
+        return real_search(corpus, query, **kw)
+
+    monkeypatch.setattr(ev, "_search", maybe_empty)
+    cases = [
+        ev.DiscoveryCase("python programming language", gold=("python",)),
+        ev.DiscoveryCase("xyzzy alpha", gold=()),
+        ev.DiscoveryCase("xyzzy beta", gold=()),
+    ]
+    calib = ev.calibrate_min_score(_corpus(), cases, mode="dense", k=4)
+    assert calib.reason == "calibrated"
+    assert calib.abstention_scores == {}  # all -inf → empty finite summary
+    text = json.dumps(calib.to_dict())  # must not raise / emit Infinity
+    assert "Infinity" not in text and "NaN" not in text
+    assert ev.MinScoreCalibration.from_dict(
+        json.loads(text)
+    ).min_score == pytest.approx(calib.min_score)
