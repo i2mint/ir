@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ir"
-version = "0.1.15"
+version = "0.1.16"
 description = "An information-retrieval substrate for agentic systems"
 readme = "README.md"
 requires-python = ">=3.10"
