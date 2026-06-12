@@ -49,13 +49,14 @@ Notes for the default (semantic) path:
 
 ## The pipeline
 
-`ir` is a five-stage pipeline, each stage a small, swappable seam:
+`ir` is a six-stage pipeline, each stage a small, swappable seam:
 
 | Stage | Entry point | What it does |
 |-------|-------------|--------------|
 | **source** | `CorpusSource` | what is in the corpus + what counts as stale |
 | **index** | `ir.build` | decompose artifacts into embeddable *surfaces*, embed, persist (incremental, idempotent) |
 | **retrieve** | `ir.search` | hard metadata filter + `dense` / `lexical` / `hybrid` ranking |
+| **expand** | `ir.expand` | stitch a hit's stored neighborhood (sentence window / whole artifact) into the passage downstream reads — opt-in |
 | **select** | `ir.select` | commit to a distractor-robust subset, or abstain |
 | **disclose** | `ir.disclose` | load the heavy payload (SKILL.md body, package pointer, file text) for committed items — append-only |
 
@@ -94,6 +95,28 @@ abstention calibration needs, so `blend` separates in-scope from out-of-scope
 queries far better (and even beats dense); the tradeoff is lower lexical recall
 on terse corpora, so RRF stays the default. Use `blend` when abstention matters
 — see [`ir_08`](misc/docs/ir_08%20--%20Magnitude-Preserving%20Hybrid%20Fusion%20--%20Trading%20rank-RRF%20for%20abstention%20separability.md).
+
+### Expand
+
+```python
+passage = ir.expand(hit, corpus)                             # ±1 chunk window (default)
+passage = ir.expand(hit, corpus, policy=ir.parent_policy())  # the whole artifact
+```
+
+The matched chunk is rarely the unit you want to read, and the whole document
+is usually too much. `ir.expand` stitches a hit's *stored sibling segments*
+into a mid-granularity `Passage` (retrieve → expand → rerank), with chunker
+overlap deduped and the hit's identity and score untouched. Policies are
+injectable (`NeighborhoodPolicy`); `sentence_window_policy(k)` and
+`parent_policy()` ship. It also works through the disclosure seam:
+
+```python
+ir.disclose(sel, expand=ir.sentence_window_policy(2), corpus=corpus)
+ir.discover("skills", q, expand=ir.sentence_window_policy())  # passages on committed items
+```
+
+Each `Disclosure` then carries the stitched text as `.passage` (additive;
+`summary` stays the matched surface, `body` stays the pointer's payload).
 
 ### Select
 
