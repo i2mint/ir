@@ -29,6 +29,13 @@ from __future__ import annotations
 from . import embed as _embed  # noqa: F401  (sets USE_TF=0 before transformers)
 from . import registry
 from .base import Artifact, IndexPlan, Record, SearchHit, Surface, tag_source
+from .expand import (
+    NeighborhoodPolicy,
+    Passage,
+    expand,
+    parent_policy,
+    sentence_window_policy,
+)
 from .formulate import Formulator, make_llm_formulator
 from .index import Corpus, build, open_corpus
 from .registry import retriever_for, retrievers
@@ -69,6 +76,11 @@ __all__ = [
     "retriever_for",
     "fuse_hits",
     "records_for_artifact",
+    "expand",
+    "Passage",
+    "NeighborhoodPolicy",
+    "sentence_window_policy",
+    "parent_policy",
     "tag_source",
     "make_llm_formulator",
     "Formulator",

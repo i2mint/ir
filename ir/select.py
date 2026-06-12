@@ -32,6 +32,10 @@ Three composable entry points, smallest surface first:
   abstention). Pure; offline; no model.
 - :func:`disclose` — a :class:`Selection` → per-item :class:`Disclosure`
   payloads at a chosen level (``"metadata"`` / ``"body"`` / ``"bundled"``).
+  Orthogonally, ``expand=`` (a :data:`~ir.expand.NeighborhoodPolicy`, with
+  ``corpus=``) stitches each hit's stored neighborhood into
+  :attr:`Disclosure.passage` — the mid-granularity payload between the matched
+  surface and the pointer's full body (see :mod:`ir.expand`).
 - :func:`discover` — the single agent-callable tool: retrieve → select →
   (optionally) disclose, returning a JSON-serializable :class:`DiscoveryResult`.
   This is the qh-exposable surface (pass a corpus *name*; get back ``.to_dict()``).
@@ -63,6 +67,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from .base import POINTER_KEYS, SearchHit, best_per_artifact
+from .expand import NeighborhoodPolicy
 from .retrieve import search as _search
 
 #: A selector: ranked hits → the committed subset (a pure ranking decision).
@@ -520,10 +525,18 @@ class Disclosure:
         pointer: the source pointer (``skill_path`` / ``path``) — the "package
             pointer" an agent follows to act; ``None`` if the hit has none.
         metadata: the hit's filter metadata, plus a ``disclosure`` note when a
-            pointer was present but unreadable (stale/moved/deleted).
+            pointer was present but unreadable (stale/moved/deleted), and an
+            ``expansion`` note when expansion was requested but not possible
+            for this hit.
         source: the corpus/source name the selecting hit came from (``None``
             when unattributed) — the attribution a federated caller needs to
             tell two same-id artifacts from different corpora apart.
+        passage: the expanded neighborhood text (``disclose(..., expand=...)``)
+            — the mid-granularity payload between ``summary`` (the matched
+            surface) and ``body`` (the pointer's full text); ``None`` when
+            expansion was not requested or not possible. Assembled from the
+            corpus's *stored records* (see :mod:`ir.expand`), unlike ``body``,
+            which dereferences the pointer to an external resource.
     """
 
     artifact_id: str
@@ -535,6 +548,7 @@ class Disclosure:
     pointer: str | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
     source: str | None = None
+    passage: str | None = None
 
     def to_dict(self) -> dict:
         """JSON-serializable form (score cast to ``float``)."""
@@ -548,6 +562,7 @@ class Disclosure:
             "pointer": self.pointer,
             "metadata": dict(self.metadata),
             "source": self.source,
+            "passage": self.passage,
         }
 
 
@@ -613,12 +628,42 @@ def _default_body_loader(
     return None
 
 
+def _expand_passage(
+    hit: SearchHit,
+    corpus: Any,
+    policy: NeighborhoodPolicy,
+    meta: dict,
+) -> str | None:
+    """The expanded passage for *hit*, or ``None`` with an ``expansion`` note.
+
+    Per-hit tolerance mirrors the stale-pointer handling: a hit whose corpus
+    cannot be resolved (federated source not in the mapping) or whose artifact
+    has no ledger entry yields ``passage=None`` plus a ``meta["expansion"]``
+    note — disclosure never raises on per-hit data issues. Policy
+    misconfiguration (e.g. a window policy on a hit without ``surface_index``)
+    still raises: that is a programming error, not a data condition.
+    """
+    c = corpus.get(hit.source) if isinstance(corpus, Mapping) else corpus
+    if c is None:
+        meta["expansion"] = "no_corpus_for_source"
+        return None
+    from .expand import expand as _expand
+
+    try:
+        return _expand(hit, c, policy=policy).text
+    except KeyError:
+        meta["expansion"] = "no_ledger_entry"
+        return None
+
+
 def disclose(
     selection: Selection,
     *,
     level: str = "body",
     loader: BodyLoader | None = None,
     store: ResourceStore | None = None,
+    expand: NeighborhoodPolicy | None = None,
+    corpus: Any = None,
 ) -> list[Disclosure]:
     """Reveal the payload of each selected hit at ``level`` — append-only, pure.
 
@@ -633,6 +678,18 @@ def disclose(
         store: a :data:`ResourceStore` (``pointer -> payload`` ``Mapping``) to
             dereference instead of disk — ir_09 §5 pointer-passing over a ``dol``
             store / URL map / blob storage. Mutually exclusive with ``loader``.
+        expand: a :data:`~ir.expand.NeighborhoodPolicy` to also stitch each
+            hit's neighborhood from the corpus's stored records into
+            :attr:`Disclosure.passage` (see :mod:`ir.expand`). Orthogonal to
+            ``level``, which governs *pointer* payloads: e.g.
+            ``level="metadata", expand=sentence_window_policy()`` reads no
+            pointer at all but still returns mid-granularity passages.
+            Requires ``corpus=``.
+        corpus: where ``expand`` finds each hit's stored siblings — a
+            :class:`~ir.index.Corpus` / :class:`~ir.store.CorpusStore` / name,
+            or, for cross-source selections, a ``{source_name: corpus}``
+            ``Mapping`` resolved per hit via ``hit.source``. Only meaningful
+            with ``expand=``.
 
     Returns:
         one :class:`Disclosure` per selected hit, best-first. This is a pure
@@ -645,6 +702,13 @@ def disclose(
         )
     if loader is not None and store is not None:
         raise ValueError("pass either loader= or store=, not both")
+    if expand is not None and corpus is None:
+        raise ValueError(
+            "disclose(expand=...) needs corpus= (a Corpus / CorpusStore / name, "
+            "or a {source_name: corpus} mapping) to fetch each hit's siblings"
+        )
+    if corpus is not None and expand is None:
+        raise ValueError("corpus= is only meaningful together with expand=")
     if store is not None:
         load = _store_body_loader(store)
     elif loader is not None:
@@ -660,6 +724,9 @@ def disclose(
             body = load(meta)
             if body is None and pointer is not None:
                 meta["disclosure"] = "pointer_unreadable"
+        passage = None
+        if expand is not None:
+            passage = _expand_passage(hit, corpus, expand, meta)
         out.append(
             Disclosure(
                 artifact_id=hit.artifact_id,
@@ -671,6 +738,7 @@ def disclose(
                 pointer=pointer,
                 metadata=meta,
                 source=hit.source,
+                passage=passage,
             )
         )
     return out
@@ -795,6 +863,7 @@ def discover(
     merge_rrf_k: int | None = None,
     loader: BodyLoader | None = None,
     store: ResourceStore | None = None,
+    expand: NeighborhoodPolicy | None = None,
     **search_kw: Any,
 ) -> DiscoveryResult:
     """Find and commit to the capabilities for ``query`` — the one search tool.
@@ -849,6 +918,11 @@ def discover(
             (default: :data:`~ir.retrieve.DFLT_RRF_K`; distinct from the
             within-corpus hybrid ``rrf_k`` in ``search_kw``).
         loader: optional body resolver for disclosure (see :func:`disclose`).
+        expand: a :data:`~ir.expand.NeighborhoodPolicy` — also stitch each
+            committed hit's neighborhood from its corpus's stored records into
+            :attr:`Disclosure.passage` (retrieval-time context expansion, see
+            :mod:`ir.expand`). Works at any ``disclose_level``; the federated
+            form resolves each hit's corpus via its ``source``.
         **search_kw: any other :func:`ir.retrieve.search` keyword (``rrf_k``,
             ``rerank``, ``bm25``, …).
 
@@ -877,6 +951,7 @@ def discover(
             merge_rrf_k=merge_rrf_k,
             loader=loader,
             store=store,
+            expand=expand,
             **search_kw,
         )
     if merge != "rrf" or merge_weights is not None or merge_rrf_k is not None:
@@ -920,7 +995,14 @@ def discover(
         gap_ratio=gap_ratio,
         min_score=min_score,
     )
-    results = disclose(selection, level=disclose_level, loader=loader, store=store)
+    results = disclose(
+        selection,
+        level=disclose_level,
+        loader=loader,
+        store=store,
+        expand=expand,
+        corpus=corpus if expand is not None else None,
+    )
     return DiscoveryResult(
         query=query,
         mode=mode,
@@ -1052,6 +1134,7 @@ def _discover_federated(
     merge_rrf_k: int | None,
     loader: BodyLoader | None,
     store: ResourceStore | None,
+    expand: NeighborhoodPolicy | None = None,
     **search_kw: Any,
 ) -> DiscoveryResult:
     """Single-shot federated discover: fan-out → gate → fuse → select → disclose.
@@ -1159,7 +1242,16 @@ def _discover_federated(
             reason = "abstain:all_sources_below_floor"
         else:
             reason = "abstain:no_surviving_sources"
-    results = disclose(selection, level=disclose_level, loader=loader, store=store)
+    results = disclose(
+        selection,
+        level=disclose_level,
+        loader=loader,
+        store=store,
+        expand=expand,
+        # Resolve each hit's corpus by its source attribution — the fused
+        # selection mixes sources, and sibling lookups must hit the right one.
+        corpus=dict(resolved) if expand is not None else None,
+    )
     merge_name = merge if isinstance(merge, str) else "custom"
     signals: dict[str, Any] = {
         **dict(selection.signals),

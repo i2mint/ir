@@ -36,7 +36,8 @@ and its surface's plan position as :attr:`~ir.base.SearchHit.surface_index`.
 :func:`records_for_artifact` is the hit-operation beneath retrieval-time
 context expansion: given a hit's ``artifact_id``, it returns *all* of that
 artifact's stored records (its sibling surfaces), ordered — resolved through
-the ledger, never by re-deriving record ids.
+the ledger, never by re-deriving record ids. The expansion operator itself
+(:func:`ir.expand.expand` — retrieve → expand → rerank) builds on it.
 """
 
 from __future__ import annotations
