@@ -616,6 +616,17 @@ def fuse_hits(
 # =========================================================================== #
 
 
+class NoLedgerEntry(KeyError):
+    """The corpus has no ledger entry for the requested artifact.
+
+    The *benign* miss (unknown artifact, or a corpus built without ledger
+    bookkeeping) — distinct from a stale/torn ledger, which raises a plain
+    ``KeyError`` describing the corruption. A ``KeyError`` subclass so
+    existing ``except KeyError`` callers keep working; the disclosure seam
+    catches this one specifically and tolerates it per hit.
+    """
+
+
 def records_for_artifact(
     store_or_corpus, artifact_id: str, *, surface_kind: str | None = None
 ) -> list[Record]:
@@ -637,27 +648,29 @@ def records_for_artifact(
     Args:
         store_or_corpus: a :class:`~ir.store.CorpusStore`, anything carrying
             one as ``.store`` (e.g. a :class:`~ir.index.Corpus`), or a corpus
-            *name* (resolved via :func:`ir.index.open_corpus`, like the other
-            corpus-taking entry points).
+            *name* — resolved straight to its local store: sibling lookup
+            never embeds, so unlike :func:`ir.open_corpus` no embedder is
+            loaded.
         artifact_id: the artifact whose surfaces to fetch.
         surface_kind: restrict to one surface kind (e.g. ``"readme_chunk"``);
             a known artifact with no surfaces of that kind yields ``[]``.
 
     Raises:
-        KeyError: if the ledger has no entry for *artifact_id* (an unknown
+        NoLedgerEntry: the ledger has no entry for *artifact_id* (an unknown
             artifact, or a corpus built without :func:`ir.index.build`'s
-            ledger bookkeeping) — or, with a message naming the artifact, if
-            an entry lists a record missing from the store (a stale ledger:
-            interrupted build or out-of-band ``delete_record``).
+            ledger bookkeeping). A ``KeyError`` subclass.
+        KeyError: an entry exists but lists a record missing from the store
+            (a stale ledger: interrupted build or out-of-band
+            ``delete_record``) — data corruption, named in the message.
     """
     if isinstance(store_or_corpus, str):
-        from .index import open_corpus
+        from .store import CorpusStore
 
-        store_or_corpus = open_corpus(store_or_corpus)
+        store_or_corpus = CorpusStore.local(store_or_corpus)
     store = getattr(store_or_corpus, "store", store_or_corpus)
     entry = store.get_ledger_entry(ledger_key(artifact_id))
     if entry is None:
-        raise KeyError(
+        raise NoLedgerEntry(
             f"no ledger entry for artifact {artifact_id!r}: unknown artifact, "
             f"or a corpus built without ledger bookkeeping"
         )

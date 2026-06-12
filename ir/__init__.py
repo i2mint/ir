@@ -2,7 +2,7 @@
 
 One uniform "find the relevant things in this corpus" contract that scales from
 an ad-hoc search over an ephemeral list to a maintained search engine. Retrieval
-is the core; generation/selection/reranking are layered on top.
+is the core; selection/expansion/reranking/generation are layered on top.
 
 Quick start::
 

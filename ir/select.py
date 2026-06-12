@@ -67,7 +67,9 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from .base import POINTER_KEYS, SearchHit, best_per_artifact
-from .expand import NeighborhoodPolicy
+from .expand import NeighborhoodPolicy, SeedNotFound
+from .expand import expand as _expand
+from .retrieve import NoLedgerEntry
 from .retrieve import search as _search
 
 #: A selector: ranked hits → the committed subset (a pure ranking decision).
@@ -628,32 +630,66 @@ def _default_body_loader(
     return None
 
 
+def _resolve_expansion_corpus(corpus: Any) -> Any:
+    """Resolve ``disclose``'s ``corpus=`` spec once, upfront.
+
+    A corpus *name* resolves straight to its local store — deliberately not
+    via :func:`ir.open_corpus`, which would eagerly load the corpus's
+    embedder; expansion only reads stored records and never embeds. Mapping
+    values resolve the same way. Resolving once per :func:`disclose` call
+    means an N-hit disclosure never re-opens a store (or re-loads a model)
+    per hit.
+    """
+    if isinstance(corpus, str):
+        from .store import CorpusStore
+
+        return CorpusStore.local(corpus)
+    if isinstance(corpus, Mapping):
+        return {name: _resolve_expansion_corpus(c) for name, c in corpus.items()}
+    return corpus
+
+
 def _expand_passage(
     hit: SearchHit,
+    *,
     corpus: Any,
     policy: NeighborhoodPolicy,
-    meta: dict,
-) -> str | None:
-    """The expanded passage for *hit*, or ``None`` with an ``expansion`` note.
+    corpus_name: str | None,
+) -> "tuple[str | None, str | None]":
+    """``(passage, None)`` for *hit*, or ``(None, why_not)``.
 
-    Per-hit tolerance mirrors the stale-pointer handling: a hit whose corpus
-    cannot be resolved (federated source not in the mapping) or whose artifact
-    has no ledger entry yields ``passage=None`` plus a ``meta["expansion"]``
-    note — disclosure never raises on per-hit data issues. Policy
-    misconfiguration (e.g. a window policy on a hit without ``surface_index``)
-    still raises: that is a programming error, not a data condition.
+    Per-hit tolerance mirrors the stale-pointer handling — these are *data*
+    conditions, and disclosure never raises on them:
+
+    - a federated source absent from the ``corpus`` mapping, or a single
+      named corpus that is not the hit's source (expanding against the wrong
+      corpus would silently stitch a same-id stranger's text — artifact
+      identity is only unique within a source) → ``"no_corpus_for_source"``;
+    - no ledger entry for the artifact → ``"no_ledger_entry"``;
+    - the seed no longer among its siblings (stale hit) → ``"seed_not_found"``.
+
+    Everything else still raises: a torn store (a ledger entry listing
+    missing records — corruption whose error names the remedy) and policy
+    bugs are programming/integrity errors, not data conditions.
     """
-    c = corpus.get(hit.source) if isinstance(corpus, Mapping) else corpus
-    if c is None:
-        meta["expansion"] = "no_corpus_for_source"
-        return None
-    from .expand import expand as _expand
-
+    if isinstance(corpus, Mapping):
+        c = corpus.get(hit.source)
+        if c is None:
+            return None, "no_corpus_for_source"
+    else:
+        c = corpus
+        if (
+            corpus_name is not None
+            and hit.source is not None
+            and hit.source != corpus_name
+        ):
+            return None, "no_corpus_for_source"
     try:
-        return _expand(hit, c, policy=policy).text
-    except KeyError:
-        meta["expansion"] = "no_ledger_entry"
-        return None
+        return _expand(hit, c, policy=policy).text, None
+    except NoLedgerEntry:
+        return None, "no_ledger_entry"
+    except SeedNotFound:
+        return None, "seed_not_found"
 
 
 def disclose(
@@ -715,6 +751,13 @@ def disclose(
         load = loader
     else:
         load = _default_body_loader
+    corpus_name = None
+    if expand is not None:
+        if isinstance(corpus, str):
+            corpus_name = corpus
+        elif not isinstance(corpus, Mapping):
+            corpus_name = getattr(corpus, "name", None)
+        corpus = _resolve_expansion_corpus(corpus)
     out: list[Disclosure] = []
     for hit in selection.selected:
         meta = dict(hit.metadata)
@@ -726,7 +769,11 @@ def disclose(
                 meta["disclosure"] = "pointer_unreadable"
         passage = None
         if expand is not None:
-            passage = _expand_passage(hit, corpus, expand, meta)
+            passage, note = _expand_passage(
+                hit, corpus=corpus, policy=expand, corpus_name=corpus_name
+            )
+            if note is not None:
+                meta["expansion"] = note
         out.append(
             Disclosure(
                 artifact_id=hit.artifact_id,

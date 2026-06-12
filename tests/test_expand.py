@@ -90,13 +90,27 @@ def test_stitch_never_dedupes_across_kinds():
 
 
 def test_stitch_ignores_coincidental_short_match():
-    # Adjacent chunks sharing only a tiny suffix/prefix ("e ") must NOT be
+    # Adjacent chunks sharing only a tiny suffix/prefix ("me") must NOT be
     # deduped — below the minimum, a match is coincidence, and dropping it
     # would truncate real text.
     a = _rec(0, "the home")
     b = _rec(1, "me too entirely-different text")
     out = _stitch([a, b])
     assert out == "the home\n\nme too entirely-different text"
+
+
+def test_stitch_matches_prev_record_not_accumulated_text():
+    # Regression: dedupe must compare against the PREVIOUS record's own text.
+    # Matching against the accumulated string admits matches that span the
+    # synthetic "\n\n" joiner into earlier records — guaranteed coincidence
+    # that truncates genuinely repeated document text (here, the second
+    # HELLOWORLD and C's leading "A\n\n" would vanish).
+    a = _rec(0, "AAAA")
+    b = _rec(1, "HELLOWORLD")
+    c = _rec(2, "A\n\nHELLOWORLDXYZ")
+    out = _stitch([a, b, c])
+    assert out.count("HELLOWORLD") == 2
+    assert out == "AAAA\n\nHELLOWORLD\n\nA\n\nHELLOWORLDXYZ"
 
 
 # --------------------------------------------------------------------------- #
@@ -114,8 +128,9 @@ def test_expand_zero_config_window():
     corpus = _chunked_corpus()
     hit = _top_chunk_hit(corpus, "para005 server deployment")
     passage = ir.expand(hit, corpus)
-    assert hit.text in passage.text or len(passage.text) > len(hit.text)
-    assert passage.record_ids  # stitched from stored segments
+    # The default genuinely expands: a mid-document seed gains both neighbors.
+    assert len(passage.record_ids) >= 2
+    assert len(passage.text) > len(hit.text)
     # Seed identity and score pass through untouched.
     assert passage.artifact_id == hit.artifact_id
     assert passage.source == hit.source
@@ -183,6 +198,42 @@ def test_expand_unknown_artifact_raises_keyerror():
         ir.expand(ghost, corpus)
 
 
+def test_expand_window_larger_than_run_returns_whole_run():
+    corpus = _chunked_corpus()
+    hit = _top_chunk_hit(corpus, "para005 server deployment")
+    passage = ir.expand(hit, corpus, policy=ir.sentence_window_policy(100))
+    siblings = ir.records_for_artifact(corpus, hit.artifact_id)
+    assert list(passage.record_ids) == [r.id for r in siblings]
+
+
+def test_window_policy_rejects_negative_k():
+    with pytest.raises(ValueError, match=">= 0"):
+        ir.sentence_window_policy(-1)
+
+
+def test_expand_single_record_artifact_degenerates_to_itself():
+    src = ir.CorpusSource.from_mapping(
+        {"solo": {"text": "one short document"}}, name="solo", strategy=ir.WholeText()
+    )
+    corpus = ir.build(src, store=CorpusStore.memory(), embedder="light")
+    hit = ir.search(corpus, "short document", k=1)[0]
+    passage = ir.expand(hit, corpus)
+    assert passage.text == hit.text
+    assert len(passage.record_ids) == 1
+
+
+def test_expand_stale_surface_index_raises_seed_not_found():
+    from ir.expand import SeedNotFound
+
+    corpus = _chunked_corpus()
+    hit = _top_chunk_hit(corpus, "para005 server deployment")
+    stale = SearchHit(
+        hit.artifact_id, hit.surface_kind, 1.0, hit.text, {}, hit.source, 999
+    )
+    with pytest.raises(SeedNotFound):
+        ir.expand(stale, corpus)
+
+
 def test_passage_to_dict_is_json_clean():
     corpus = _chunked_corpus()
     hit = _top_chunk_hit(corpus, "para005 server deployment")
@@ -200,18 +251,23 @@ def test_passage_to_dict_is_json_clean():
 
 def test_expand_package_window_stays_within_kind():
     corpus = _package_corpus()
-    hits = ir.search(
-        corpus,
-        "para005 server deployment",
-        k=5,
-        per_artifact=False,
-        surfaces=["readme_chunk"],
+    # Seed at the FIRST readme chunk — plan position 1, directly adjacent to
+    # the description surface at plan position 0. A kind-ignoring window
+    # would swallow the description; the same-kind run must not.
+    first_chunk = ir.records_for_artifact(corpus, "dol", surface_kind="readme_chunk")[0]
+    assert first_chunk.surface_index == 1  # description occupies position 0
+    hit = SearchHit(
+        "dol",
+        "readme_chunk",
+        1.0,
+        first_chunk.text,
+        first_chunk.metadata,
+        "xp",
+        first_chunk.surface_index,
     )
-    hit = hits[0]
     passage = ir.expand(hit, corpus, policy=ir.sentence_window_policy(1))
-    # The description surface never leaks into a readme_chunk window —
-    # the window runs over the same-kind run despite the +1 plan offset.
     assert "dict-like facades" not in passage.text
+    assert len(passage.record_ids) == 2  # chunk 0 + chunk 1, nothing before
     for s in SENTINELS:
         assert passage.text.count(s) <= 1
 
@@ -301,6 +357,54 @@ def test_disclose_expand_tolerates_missing_source_corpus():
     assert d.metadata["expansion"] == "no_corpus_for_source"
 
 
+def test_disclose_expand_guards_against_wrong_single_corpus():
+    # A cross-source hit must not silently expand against a same-id stranger
+    # in a DIFFERENT single corpus (artifact identity is per-source).
+    corpus = _chunked_corpus(name="xc")
+    other = _chunked_corpus(name="other")  # also has artifact "big"
+    hit = ir.search(corpus, "para005 server deployment", k=1)[0]
+    assert hit.source == "xc"
+    selection = ir.select([hit])
+    (d,) = ir.disclose(
+        selection, level="metadata", expand=ir.sentence_window_policy(), corpus=other
+    )
+    assert d.passage is None
+    assert d.metadata["expansion"] == "no_corpus_for_source"
+
+
+def test_disclose_expand_tolerates_stale_hit():
+    corpus = _chunked_corpus()
+    hit = ir.search(corpus, "para005 server deployment", k=1)[0]
+    stale = SearchHit(
+        hit.artifact_id, hit.surface_kind, 1.0, hit.text, {}, hit.source, 999
+    )
+    selection = ir.select([stale])
+    (d,) = ir.disclose(
+        selection, level="metadata", expand=ir.sentence_window_policy(), corpus=corpus
+    )
+    assert d.passage is None
+    assert d.metadata["expansion"] == "seed_not_found"
+
+
+def test_disclose_expand_propagates_torn_store_keyerror():
+    # A ledger entry listing a record missing from the store is data
+    # corruption (rebuild the corpus) — NOT a tolerated per-hit condition.
+    from ir.base import ledger_key
+
+    corpus = _chunked_corpus()
+    hit = ir.search(corpus, "para005 server deployment", k=1)[0]
+    entry = corpus.store.get_ledger_entry(ledger_key(hit.artifact_id))
+    corpus.store.delete_record(entry["record_ids"][0])  # tear the store
+    selection = ir.select([hit])
+    with pytest.raises(KeyError, match="stale ledger"):
+        ir.disclose(
+            selection,
+            level="metadata",
+            expand=ir.parent_policy(),
+            corpus=corpus,
+        )
+
+
 def test_discover_expand_single_corpus():
     corpus = _chunked_corpus()
     result = ir.discover(
@@ -325,3 +429,6 @@ def test_discover_expand_federated_resolves_per_source():
     for d in result.results:
         assert d.source in ("fed-one", "fed-two")
         assert isinstance(d.passage, str)
+    # Both sources contribute (pins that per-source resolution actually ran
+    # against BOTH corpora, not just one).
+    assert {d.source for d in result.results} == {"fed-one", "fed-two"}

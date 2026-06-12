@@ -62,6 +62,17 @@ DFLT_MIN_STITCH_OVERLAP = 8
 NeighborhoodPolicy = Callable[[SearchHit, Sequence[Record]], Sequence[Record]]
 
 
+class SeedNotFound(ValueError):
+    """The seed hit's ``(surface_kind, surface_index)`` is not among its
+    artifact's stored records — typically a corpus re-chunked between search
+    and expansion (a stale hit), or a hit expanded against the wrong corpus.
+
+    A ``ValueError`` subclass so existing ``except ValueError`` handling keeps
+    working; the disclosure seam catches it per hit (a data condition, not a
+    programming error) and notes ``expansion="seed_not_found"``.
+    """
+
+
 @dataclass(frozen=True)
 class Passage:
     """An expanded hit: the seed's identity + the stitched neighborhood text.
@@ -119,7 +130,7 @@ def sentence_window_policy(k: int = DFLT_WINDOW) -> NeighborhoodPolicy:
             None,
         )
         if pos is None:
-            raise ValueError(
+            raise SeedNotFound(
                 f"no stored record of kind {hit.surface_kind!r} with "
                 f"surface_index {hit.surface_index} for artifact "
                 f"{hit.artifact_id!r} — is this hit from a different corpus "
@@ -174,7 +185,12 @@ def _stitch(
             cur.surface_kind == prev.surface_kind
             and cur.surface_index == prev.surface_index + 1
         ):
-            shared = _shared_overlap(text, cur.text, min_overlap=min_overlap)
+            # Match against prev's OWN text, not the accumulated string: real
+            # chunker carry-over is bounded by prev, while a longer match
+            # against the accumulation necessarily spans the synthetic "\n\n"
+            # joiner or earlier records — guaranteed coincidence that would
+            # truncate genuinely repeated document text.
+            shared = _shared_overlap(prev.text, cur.text, min_overlap=min_overlap)
             if shared:
                 text += cur.text[shared:]
                 continue
@@ -205,9 +221,15 @@ def expand(
             hit's own text (``record_ids=()``) rather than returning nothing.
 
     Raises:
-        KeyError: the corpus has no ledger entry for the hit's artifact.
+        KeyError: the corpus has no ledger entry for the hit's artifact
+            (:class:`ir.retrieve.NoLedgerEntry`), or the ledger is stale —
+            an entry listing records missing from the store.
+        SeedNotFound: the default window policy cannot find the seed among
+            its artifact's stored records (stale hit / wrong corpus).
         ValueError: the policy returned records that are not siblings of the
-            hit's artifact (operator-enforced safety).
+            hit's artifact (operator-enforced safety), or the seed hit lacks
+            ``surface_index`` (hand-built hit) under the default window
+            policy — use :func:`parent_policy`, which needs no seed position.
     """
     policy = sentence_window_policy() if policy is None else policy
     siblings = records_for_artifact(corpus, hit.artifact_id)
