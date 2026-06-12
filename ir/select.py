@@ -57,7 +57,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from .base import POINTER_KEYS, SearchHit
+from .base import POINTER_KEYS, SearchHit, best_per_artifact
 from .retrieve import search as _search
 
 #: A selector: ranked hits → the committed subset (a pure ranking decision).
@@ -163,13 +163,7 @@ class Selection:
 
 def _hit_to_dict(hit: SearchHit) -> dict:
     """A SearchHit as a plain JSON-serializable dict."""
-    return {
-        "artifact_id": hit.artifact_id,
-        "surface_kind": hit.surface_kind,
-        "score": float(hit.score),
-        "text": hit.text,
-        "metadata": dict(hit.metadata),
-    }
+    return hit.to_dict()
 
 
 # =========================================================================== #
@@ -522,6 +516,9 @@ class Disclosure:
             pointer" an agent follows to act; ``None`` if the hit has none.
         metadata: the hit's filter metadata, plus a ``disclosure`` note when a
             pointer was present but unreadable (stale/moved/deleted).
+        source: the corpus/source name the selecting hit came from (``None``
+            when unattributed) — the attribution a federated caller needs to
+            tell two same-id artifacts from different corpora apart.
     """
 
     artifact_id: str
@@ -532,6 +529,7 @@ class Disclosure:
     body: str | None = None
     pointer: str | None = None
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    source: str | None = None
 
     def to_dict(self) -> dict:
         """JSON-serializable form (score cast to ``float``)."""
@@ -544,6 +542,7 @@ class Disclosure:
             "body": self.body,
             "pointer": self.pointer,
             "metadata": dict(self.metadata),
+            "source": self.source,
         }
 
 
@@ -666,6 +665,7 @@ def disclose(
                 body=body,
                 pointer=pointer,
                 metadata=meta,
+                source=hit.source,
             )
         )
     return out
@@ -784,7 +784,10 @@ def discover(
     max_k: int = DFLT_MAX_K,
     rel: float = DFLT_REL_THRESHOLD,
     gap_ratio: float = DFLT_GAP_RATIO,
-    min_score: float | str | None = None,
+    min_score: float | str | Mapping[str, Any] | None = None,
+    merge: str | Callable = "rrf",
+    merge_weights: Mapping[str, float] | None = None,
+    merge_rrf_k: int | None = None,
     loader: BodyLoader | None = None,
     store: ResourceStore | None = None,
     **search_kw: Any,
@@ -800,9 +803,16 @@ def discover(
     Args:
         corpus: a built :class:`~ir.index.Corpus`, or a registered corpus
             **name** (resolved with :func:`ir.open_corpus`). Pass a *name* for
-            the qh / HTTP surface — it is the JSON-friendly form.
+            the qh / HTTP surface — it is the JSON-friendly form. Pass a
+            **list/tuple of names (or Corpus objects)** for single-shot
+            *federated* discovery across several corpora: each is searched,
+            per-source abstention floors gate before any merging, and the
+            survivors are rank-fused (see ``merge``). The caller names the
+            sources explicitly; ir never chooses the set (source planning is
+            the agent layer's job, ir_09 §3).
         query: the user intent.
-        k: candidate depth retrieved before selection.
+        k: candidate depth retrieved before selection (per source, when
+            federated).
         mode: ranking mode — ``"hybrid"`` (default; ``ir``'s strongest overall),
             ``"dense"``, or ``"lexical"``.
         strategy: selection strategy (see :func:`select`).
@@ -816,13 +826,63 @@ def discover(
             persisted on the corpus — the opt-in that turns on absolute
             abstention; it falls back to no floor (with a warning) when no
             calibration is stored or it is stale (a different embedder).
+            **Federated**: floors are per-(corpus, mode, embedder), so a single
+            number cannot apply across corpora — pass ``"auto"`` (each source's
+            own calibrated floor), a ``{name: floor_or_"auto"}`` mapping, or
+            ``None``; a bare float raises. Floors gate each source on its own
+            raw scores *before* fusion; the fused ranking is never floored
+            (rank-fused scores are ordinal — ir_07/ir_08).
+        merge: federated only — how the per-source rankings combine: ``"rrf"``
+            (default; rank-based, scale-free — see
+            :func:`ir.retrieve.fuse_hits`), ``"score"`` (raw-score merge,
+            valid only when all corpora share an embedder — verified, raises
+            on mismatch), or a callable ``{name: hits} -> hits``.
+        merge_weights: federated only — per-source trust weights for
+            ``merge="rrf"`` (default 1.0 each).
+        merge_rrf_k: federated only — the cross-source RRF rank constant
+            (default: :data:`~ir.retrieve.DFLT_RRF_K`; distinct from the
+            within-corpus hybrid ``rrf_k`` in ``search_kw``).
         loader: optional body resolver for disclosure (see :func:`disclose`).
         **search_kw: any other :func:`ir.retrieve.search` keyword (``rrf_k``,
             ``rerank``, ``bm25``, …).
 
     Returns:
-        a :class:`DiscoveryResult` (``.to_dict()`` for JSON / qh).
+        a :class:`DiscoveryResult` (``.to_dict()`` for JSON / qh). Federated
+        results add ``signals["per_source"]`` (per-corpus ``n_retrieved`` /
+        ``top_score`` / ``floor`` / ``abstained``) and each disclosure carries
+        its ``source``.
     """
+    if isinstance(corpus, (list, tuple)):
+        return _discover_federated(
+            list(corpus),
+            query,
+            k=k,
+            mode=mode,
+            strategy=strategy,
+            disclose_level=disclose_level,
+            filter=filter,
+            surfaces=surfaces,
+            max_k=max_k,
+            rel=rel,
+            gap_ratio=gap_ratio,
+            min_score=min_score,
+            merge=merge,
+            merge_weights=merge_weights,
+            merge_rrf_k=merge_rrf_k,
+            loader=loader,
+            store=store,
+            **search_kw,
+        )
+    if merge != "rrf" or merge_weights is not None or merge_rrf_k is not None:
+        raise ValueError(
+            "merge / merge_weights / merge_rrf_k apply to the federated form — "
+            "pass a list of corpora, e.g. discover(['skills', 'packages'], ...)."
+        )
+    if isinstance(min_score, Mapping):
+        raise ValueError(
+            "a {name: floor} min_score mapping applies to the federated form — "
+            "pass a list of corpora, or a float/'auto' for a single corpus."
+        )
     if isinstance(corpus, str):
         from .index import open_corpus
 
@@ -865,4 +925,225 @@ def discover(
         reason=selection.reason,
         n_retrieved=len(hits),
         signals=selection.signals,
+    )
+
+
+def _resolve_federated_floors(
+    resolved: "list[tuple[str, Any]]",
+    min_score: float | str | Mapping[str, Any] | None,
+    mode: str,
+) -> dict[str, float | None]:
+    """Per-source abstention floors for federated :func:`discover`.
+
+    Floors are per-(corpus, mode, embedder) — ir_07's central finding — so a
+    single number across corpora is the exact mis-scaled comparison the
+    calibration machinery exists to prevent: it is refused loudly, never
+    applied. Each accepted form resolves to ``{source_name: floor_or_None}``.
+    """
+    if min_score is None:
+        return {}
+    if isinstance(min_score, (bool, int, float)):
+        raise ValueError(
+            "a single numeric min_score cannot apply across corpora — abstention "
+            "floors are per-(corpus, mode, embedder) (ir_07). Pass 'auto' (each "
+            "source's own calibrated floor), a {name: floor_or_'auto'} mapping, "
+            "or None."
+        )
+    if isinstance(min_score, str):
+        if min_score != "auto":
+            raise ValueError(
+                f"invalid min_score {min_score!r}; expected None, 'auto', or a "
+                f"{{name: floor_or_'auto'}} mapping for federated discover."
+            )
+        return {name: _resolve_auto_min_score(c, mode) for name, c in resolved}
+    if isinstance(min_score, Mapping):
+        by_name = dict(resolved)
+        unknown = sorted(set(min_score) - set(by_name))
+        if unknown:
+            raise ValueError(
+                f"min_score names corpora not in this discover call: {unknown}; "
+                f"the call federates {sorted(by_name)}."
+            )
+        floors: dict[str, float | None] = {}
+        for name, spec in min_score.items():
+            if spec is None:
+                floors[name] = None
+            elif spec == "auto":
+                floors[name] = _resolve_auto_min_score(by_name[name], mode)
+            else:
+                floors[name] = float(spec)
+        return floors
+    raise ValueError(
+        f"invalid min_score {min_score!r}; expected None, 'auto', or a "
+        f"{{name: floor_or_'auto'}} mapping for federated discover."
+    )
+
+
+def _merge_federated(
+    surviving: "dict[str, list[SearchHit]]",
+    *,
+    merge: str | Callable,
+    merge_weights: Mapping[str, float] | None,
+    merge_rrf_k: int | None,
+    k: int,
+    corpora_by_name: "dict[str, Any]",
+) -> list[SearchHit]:
+    """Combine the per-source rankings — only ranks cross the source boundary."""
+    from .retrieve import DFLT_RRF_K, fuse_hits
+
+    if callable(merge):
+        return list(merge(surviving))
+    if merge == "rrf":
+        return fuse_hits(
+            surviving,
+            rrf_k=DFLT_RRF_K if merge_rrf_k is None else merge_rrf_k,
+            weights=merge_weights,
+            k=k,
+        )
+    if merge == "score":
+        # A raw-score merge is the caller asserting one score scale across
+        # sources; verify the assertion instead of trusting it (the same
+        # detect-and-refuse posture as the stale-calibration check).
+        emb_ids = {
+            name: getattr(corpora_by_name[name], "embedder_id", None)
+            for name in surviving
+        }
+        if len(set(emb_ids.values())) > 1:
+            raise ValueError(
+                f"merge='score' compares raw scores across corpora, which "
+                f"requires one shared embedder; got {emb_ids}. Use merge='rrf' "
+                f"(rank-based, scale-free) for heterogeneous embedders."
+            )
+        merged = best_per_artifact([h for hits in surviving.values() for h in hits])
+        return merged[:k]
+    raise ValueError(
+        f"unknown merge {merge!r}; expected 'rrf', 'score', or a callable."
+    )
+
+
+def _discover_federated(
+    corpora_list: "list[Any]",
+    query: str,
+    *,
+    k: int,
+    mode: str,
+    strategy: str | Selector,
+    disclose_level: str,
+    filter: Mapping[str, Any] | None,
+    surfaces: Iterable[str] | None,
+    max_k: int,
+    rel: float,
+    gap_ratio: float,
+    min_score: float | str | Mapping[str, Any] | None,
+    merge: str | Callable,
+    merge_weights: Mapping[str, float] | None,
+    merge_rrf_k: int | None,
+    loader: BodyLoader | None,
+    store: ResourceStore | None,
+    **search_kw: Any,
+) -> DiscoveryResult:
+    """Single-shot federated discover: fan-out → gate → fuse → select → disclose.
+
+    The federation of one corpus equals the single-corpus call (the fuse is a
+    passthrough); the caller's list order is the deterministic priority order
+    for rank ties. All names resolve to open corpora *before* any retrieval, so
+    registry drift mid-call cannot yield a partial fan-out.
+    """
+    from .index import open_corpus
+
+    if not corpora_list:
+        raise ValueError(
+            "federated discover needs at least one corpus name (ir never "
+            "chooses the source set — pass it explicitly)."
+        )
+    resolved: list[tuple[str, Any]] = []
+    for entry in corpora_list:
+        c = open_corpus(entry) if isinstance(entry, str) else entry
+        name = entry if isinstance(entry, str) else getattr(c, "name", None)
+        if not name:
+            raise ValueError(
+                f"cannot name corpus {c!r} for federation; pass registered "
+                f"names, or Corpus objects with a non-empty .name."
+            )
+        resolved.append((str(name), c))
+    names = [name for name, _ in resolved]
+    if len(set(names)) != len(names):
+        raise ValueError(f"duplicate corpus names in federated discover: {names}")
+
+    floors = _resolve_federated_floors(resolved, min_score, mode)
+
+    per_source: dict[str, dict] = {}
+    surviving: dict[str, list[SearchHit]] = {}
+    n_retrieved = 0
+    any_gated = False
+    for name, c in resolved:
+        hits = _search(
+            c,
+            query,
+            k=k,
+            mode=mode,
+            filter=filter,
+            surfaces=surfaces,
+            per_artifact=True,
+            **search_kw,
+        )
+        n_retrieved += len(hits)
+        floor = floors.get(name)
+        top = float(hits[0].score) if hits else None
+        # The gate consumes raw, per-source magnitudes — the only place an
+        # absolute floor is meaningful; the fused ranking below is ordinal.
+        gated = floor is not None and (top is None or top < floor)
+        any_gated = any_gated or gated
+        per_source[name] = {
+            "n_retrieved": len(hits),
+            "top_score": top,
+            "floor": floor,
+            "abstained": bool(gated or not hits),
+        }
+        if hits and not gated:
+            surviving[name] = hits
+
+    fused = _merge_federated(
+        surviving,
+        merge=merge,
+        merge_weights=merge_weights,
+        merge_rrf_k=merge_rrf_k,
+        k=k,
+        corpora_by_name=dict(resolved),
+    )
+    # Floors were already applied per source, on comparable scales; the fused
+    # scores are rank-derived, so an absolute floor here would be meaningless.
+    selection = select(
+        fused,
+        strategy=strategy,
+        max_k=max_k,
+        rel=rel,
+        gap_ratio=gap_ratio,
+        min_score=None,
+    )
+    reason = selection.reason
+    if not fused and any_gated:
+        reason = "abstain:all_sources_below_floor"
+    results = disclose(selection, level=disclose_level, loader=loader, store=store)
+    merge_name = merge if isinstance(merge, str) else "custom"
+    signals: dict[str, Any] = {
+        **dict(selection.signals),
+        "merge": merge_name,
+        "sources": names,
+        "per_source": per_source,
+    }
+    if merge_name == "rrf":
+        from .retrieve import DFLT_RRF_K
+
+        signals["merge_rrf_k"] = DFLT_RRF_K if merge_rrf_k is None else merge_rrf_k
+    return DiscoveryResult(
+        query=query,
+        mode=mode,
+        strategy=strategy if isinstance(strategy, str) else "custom",
+        disclose_level=disclose_level,
+        results=results,
+        abstained=selection.abstained,
+        reason=reason,
+        n_retrieved=n_retrieved,
+        signals=signals,
     )

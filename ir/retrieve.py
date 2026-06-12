@@ -30,13 +30,14 @@ from __future__ import annotations
 
 import json
 import warnings
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import replace
 from types import SimpleNamespace
 from typing import Any, Callable
 
 import numpy as np
 
-from .base import SearchHit, best_per_artifact
+from .base import SearchHit, best_per_artifact, tag_source
 from .formulate import Formulator
 
 #: Ranking modes accepted by :func:`search`.
@@ -433,6 +434,7 @@ def search(
     if rerank is not None and ranked:
         ranked = _apply_rerank(query, ranked, meta_by_id, rerank, fetch)
 
+    source = getattr(corpus, "name", None)
     hits = [
         SearchHit(
             artifact_id=meta_by_id[rid]["artifact_id"],
@@ -440,12 +442,142 @@ def search(
             score=score,
             text=meta_by_id[rid]["text"],
             metadata=meta_by_id[rid].get("metadata", {}),
+            source=source,
         )
         for rid, score in ranked
     ]
     if per_artifact:
         hits = best_per_artifact(hits)
     return hits[:k]
+
+
+# =========================================================================== #
+# Cross-source fusion — merging ranked hit lists from heterogeneous sources
+# =========================================================================== #
+
+#: How cross-source duplicates are detected in :func:`fuse_hits`: ``None``
+#: (default — hits from different sources never merge; same id, different
+#: corpus = different artifact), the string ``"pointer"`` (merge hits whose
+#: :attr:`~ir.base.SearchHit.pointer` match — opt-in, for corpora that
+#: genuinely index the same files), or any ``hit -> hashable`` callable (a
+#: falsy key falls back to per-source identity).
+Identity = Callable[[SearchHit], Any] | str | None
+
+
+def _resolve_identity(identity) -> Callable[[SearchHit], Any] | None:
+    """Resolve an :data:`Identity` spec to a key function (or ``None``)."""
+    if identity is None:
+        return None
+    if identity == "pointer":
+        return lambda h: h.pointer
+    if callable(identity):
+        return identity
+    raise ValueError(
+        f"unknown identity {identity!r}; expected None, 'pointer', or a callable"
+    )
+
+
+def fuse_hits(
+    hits_by_source: Mapping[str, Sequence[SearchHit]],
+    *,
+    rrf_k: int = DFLT_RRF_K,
+    weights: Mapping[str, float] | None = None,
+    identity: Identity = None,
+    k: int | None = None,
+) -> list[SearchHit]:
+    """Merge per-source ranked hit lists into one ranking — by rank, not score.
+
+    The cross-source counterpart of the within-corpus hybrid fusion: scores
+    from different (corpus, mode, embedder) tuples live on incommensurable
+    scales (ir_07: "a different model re-scales everything"), so **raw scores
+    never cross the source boundary** — within each source they order and
+    dedup that source's hits (one scale, sound), and across sources only ranks
+    interact, via weighted Reciprocal Rank Fusion: each hit contributes
+    ``weights[source] / (rrf_k + rank)``.
+
+    Args:
+        hits_by_source: ``{source_name: ranked hits}``. Hits without a
+            ``source`` are stamped with their mapping key (existing tags win,
+            so one corpus bound under two keys still counts as one source).
+            Within each list, duplicate artifacts collapse to their best raw
+            score before ranking (a multi-query / multi-round pool can never
+            double-count one artifact's RRF mass).
+        rrf_k: the RRF rank constant (standard default 60).
+        weights: optional per-source trust dial (default 1.0 each) — a
+            source's contribution scales linearly, no score comparability
+            needed.
+        identity: how cross-source duplicates merge — see :data:`Identity`.
+            Default ``None``: never; each ``(source, artifact_id)`` stays a
+            distinct result.
+        k: truncate the fused ranking to this many hits.
+
+    Returns:
+        the fused hits, best-first. Each carries the fused score in ``score``
+        and keeps its pre-fusion magnitude as ``metadata["source_score"]`` (+
+        ``"source_rank"``), so downstream consumers (abstention gates, LLM
+        judges) never lose the per-source signal. When an ``identity`` merge
+        combined several sources' hits, ``metadata["fused_sources"]`` lists
+        them and the representative hit is the one with the best rank.
+        **Single-source input passes through with raw scores** (RRF of one
+        list is that list's order — same convention as the hybrid fusion's
+        single-channel fallback), so the fused-score rescaling only happens
+        when there is genuinely something to fuse. The post-fusion ``score``
+        is ordinal: valid for ordering and relative cuts, meaningless against
+        absolute floors — apply calibrated ``min_score`` floors per source,
+        *before* fusing (see ir_07/ir_08 and ``ir.discover``'s federated form).
+    """
+    ident = _resolve_identity(identity)
+
+    # Per source: stamp provenance, collapse duplicates (keep-max raw score),
+    # rank best-first by raw score — the only place raw scores are compared,
+    # and only ever within one source.
+    ranked_by_source: list[tuple[str, list[SearchHit]]] = []
+    for name, hits in hits_by_source.items():
+        deduped = best_per_artifact(tag_source(hits, name))
+        if deduped:
+            ranked_by_source.append((name, deduped))
+
+    if not ranked_by_source:
+        return []
+    if len(ranked_by_source) == 1:
+        only = ranked_by_source[0][1]
+        return only[:k] if k is not None else only
+
+    w = dict(weights) if weights else {}
+    fused: dict[Any, float] = {}
+    # key -> (best_rank, source_position, representative hit)
+    rep: dict[Any, tuple[int, int, SearchHit]] = {}
+    members: dict[Any, list[str]] = {}
+    for pos, (name, ranked) in enumerate(ranked_by_source):
+        weight = float(w.get(name, 1.0))
+        for rank, h in enumerate(ranked, start=1):
+            key = ident(h) if ident is not None else None
+            if not key:
+                key = (h.source, h.artifact_id)
+            fused[key] = fused.get(key, 0.0) + weight / (rrf_k + rank)
+            members.setdefault(key, []).append(name)
+            cur = rep.get(key)
+            if cur is None or (rank, pos) < (cur[0], cur[1]):
+                rep[key] = (rank, pos, h)
+
+    scored = []
+    for key, score in fused.items():
+        rank, pos, h = rep[key]
+        meta = {
+            **dict(h.metadata),
+            "source_score": float(h.score),
+            "source_rank": int(rank),
+        }
+        sources = list(dict.fromkeys(members[key]))
+        if len(sources) > 1:
+            meta["fused_sources"] = sources
+        scored.append((float(score), rank, pos, h, meta))
+    # Deterministic order: fused score, then best pre-fusion rank, then the
+    # caller's source order (documented as the priority order for rank ties —
+    # raw scores never break cross-source ties), then artifact_id.
+    scored.sort(key=lambda t: (-t[0], t[1], t[2], t[3].artifact_id))
+    out = [replace(h, score=score, metadata=meta) for score, _, _, h, meta in scored]
+    return out[:k] if k is not None else out
 
 
 # =========================================================================== #

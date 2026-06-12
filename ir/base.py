@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 import numpy as np
@@ -109,6 +109,13 @@ class SearchHit:
     score, ``metadata`` the meta, and :attr:`pointer` the key into a resource
     store (ir_09 §5). :meth:`to_dict` is the serialization-clean form for a
     cross-process / subagent boundary (no numpy scalars leak).
+
+    ``source`` is the corpus/source name the hit came from (``None`` when
+    unattributed — e.g. an ad-hoc corpus without a name). It is a first-class
+    field, not a metadata key, because ``metadata`` is the strategy-owned
+    hard-filter namespace and provenance is structural: artifact identity is
+    only unique *within* a source, so any cross-source operation keys on
+    ``(source, artifact_id)`` (see :func:`best_per_artifact`).
     """
 
     artifact_id: str
@@ -116,6 +123,7 @@ class SearchHit:
     score: float
     text: str
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    source: str | None = None
 
     @property
     def pointer(self) -> str | None:
@@ -134,17 +142,36 @@ class SearchHit:
             "score": float(self.score),
             "text": self.text,
             "metadata": dict(self.metadata),
+            "source": self.source,
         }
 
 
 def best_per_artifact(hits: Sequence[SearchHit]) -> list[SearchHit]:
     """Collapse hits to the highest-scoring surface per artifact.
 
-    Returns the surviving hits sorted by score (descending).
+    Returns the surviving hits sorted by score (descending). Identity is
+    ``(source, artifact_id)``: the same id in two different sources names two
+    different artifacts (the skills-corpus "dol" is not the packages-corpus
+    "dol"), so cross-source input never collapses them. Single-source input
+    (all hits sharing one ``source``, or all ``None``) behaves exactly as an
+    id-keyed collapse. Note the raw-score comparison and the final sort assume
+    one score scale — sound within a source; for mixed-source hits use
+    :func:`ir.retrieve.fuse_hits`, which only compares scores within a source.
     """
-    seen: dict[str, SearchHit] = {}
+    seen: dict[tuple[str | None, str], SearchHit] = {}
     for h in hits:
-        cur = seen.get(h.artifact_id)
+        key = (h.source, h.artifact_id)
+        cur = seen.get(key)
         if cur is None or h.score > cur.score:
-            seen[h.artifact_id] = h
+            seen[key] = h
     return sorted(seen.values(), key=lambda h: h.score, reverse=True)
+
+
+def tag_source(hits: Sequence[SearchHit], source: str) -> list[SearchHit]:
+    """Stamp *source* on every hit that doesn't already carry one.
+
+    Existing tags win: a hit already attributed to a corpus keeps that
+    attribution (so re-tagging under a different registry key cannot
+    double-count one corpus as two sources).
+    """
+    return [h if h.source is not None else replace(h, source=source) for h in hits]
