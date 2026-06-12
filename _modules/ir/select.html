@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.select &mdash; ir 0.1.14 documentation</title>
+  <title>ir.select &mdash; ir 0.1.15 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=468bc497"></script>
+      <script src="../../_static/documentation_options.js?v=e2f3408e"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -127,6 +127,11 @@
 <span class="sd">- :func:`discover` — the single agent-callable tool: retrieve → select →</span>
 <span class="sd">  (optionally) disclose, returning a JSON-serializable :class:`DiscoveryResult`.</span>
 <span class="sd">  This is the qh-exposable surface (pass a corpus *name*; get back ``.to_dict()``).</span>
+<span class="sd">  Pass a **list** of names for single-shot *federated* discovery: each source is</span>
+<span class="sd">  searched and gated on its own calibrated floor (pre-fusion), then the</span>
+<span class="sd">  survivors rank-fuse via :func:`ir.fuse_hits` — raw scores never cross a</span>
+<span class="sd">  source boundary (ir_07/ir_08). The caller names the sources; ir never</span>
+<span class="sd">  chooses the set.</span>
 
 <span class="sd">Selection scores are compared **relatively** (ratios to the top score), so the</span>
 <span class="sd">same selector works across ``dense`` cosine, ``hybrid`` RRF, and ``lexical``</span>
@@ -149,7 +154,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">POINTER_KEYS</span><span class="p">,</span> <span class="n">SearchHit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">POINTER_KEYS</span><span class="p">,</span> <span class="n">SearchHit</span><span class="p">,</span> <span class="n">best_per_artifact</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span> <span class="k">as</span> <span class="n">_search</span>
 
 <span class="c1">#: A selector: ranked hits → the committed subset (a pure ranking decision).</span>
@@ -261,13 +266,7 @@
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_hit_to_dict</span><span class="p">(</span><span class="n">hit</span><span class="p">:</span> <span class="n">SearchHit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A SearchHit as a plain JSON-serializable dict.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;artifact_id&quot;</span><span class="p">:</span> <span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
-        <span class="s2">&quot;surface_kind&quot;</span><span class="p">:</span> <span class="n">hit</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
-        <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
-        <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">hit</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
-        <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
-    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">hit</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 
 
 <span class="c1"># =========================================================================== #</span>
@@ -640,6 +639,9 @@
 <span class="sd">            pointer&quot; an agent follows to act; ``None`` if the hit has none.</span>
 <span class="sd">        metadata: the hit&#39;s filter metadata, plus a ``disclosure`` note when a</span>
 <span class="sd">            pointer was present but unreadable (stale/moved/deleted).</span>
+<span class="sd">        source: the corpus/source name the selecting hit came from (``None``</span>
+<span class="sd">            when unattributed) — the attribution a federated caller needs to</span>
+<span class="sd">            tell two same-id artifacts from different corpora apart.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span>
@@ -650,6 +652,7 @@
     <span class="n">body</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">pointer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="Disclosure.to_dict">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Disclosure.to_dict">[docs]</a>
@@ -664,6 +667,7 @@
             <span class="s2">&quot;body&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">,</span>
             <span class="s2">&quot;pointer&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointer</span><span class="p">,</span>
             <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
+            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
         <span class="p">}</span></div>
 </div>
 
@@ -790,6 +794,7 @@
                 <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
                 <span class="n">pointer</span><span class="o">=</span><span class="n">pointer</span><span class="p">,</span>
                 <span class="n">metadata</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
+                <span class="n">source</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span></div>
@@ -917,7 +922,10 @@
     <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_K</span><span class="p">,</span>
     <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_REL_THRESHOLD</span><span class="p">,</span>
     <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">,</span>
-    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">merge</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">=</span> <span class="s2">&quot;rrf&quot;</span><span class="p">,</span>
+    <span class="n">merge_weights</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">merge_rrf_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">store</span><span class="p">:</span> <span class="n">ResourceStore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -933,9 +941,17 @@
 <span class="sd">    Args:</span>
 <span class="sd">        corpus: a built :class:`~ir.index.Corpus`, or a registered corpus</span>
 <span class="sd">            **name** (resolved with :func:`ir.open_corpus`). Pass a *name* for</span>
-<span class="sd">            the qh / HTTP surface — it is the JSON-friendly form.</span>
+<span class="sd">            the qh / HTTP surface — it is the JSON-friendly form. Pass a</span>
+<span class="sd">            **list/tuple of names (or Corpus objects)** for single-shot</span>
+<span class="sd">            *federated* discovery across several corpora: each is searched,</span>
+<span class="sd">            per-source abstention floors gate before any merging, and the</span>
+<span class="sd">            survivors are rank-fused (see ``merge``). The caller names the</span>
+<span class="sd">            sources explicitly; ir never chooses the set (source planning is</span>
+<span class="sd">            the agent layer&#39;s job, ir_09 §3).</span>
 <span class="sd">        query: the user intent.</span>
-<span class="sd">        k: candidate depth retrieved before selection.</span>
+<span class="sd">        k: candidate depth retrieved before selection. Federated: ``k``</span>
+<span class="sd">            candidates are retrieved *per source*, and the fused ranking is</span>
+<span class="sd">            also truncated to ``k`` before selection.</span>
 <span class="sd">        mode: ranking mode — ``&quot;hybrid&quot;`` (default; ``ir``&#39;s strongest overall),</span>
 <span class="sd">            ``&quot;dense&quot;``, or ``&quot;lexical&quot;``.</span>
 <span class="sd">        strategy: selection strategy (see :func:`select`).</span>
@@ -949,13 +965,63 @@
 <span class="sd">            persisted on the corpus — the opt-in that turns on absolute</span>
 <span class="sd">            abstention; it falls back to no floor (with a warning) when no</span>
 <span class="sd">            calibration is stored or it is stale (a different embedder).</span>
+<span class="sd">            **Federated**: floors are per-(corpus, mode, embedder), so a single</span>
+<span class="sd">            number cannot apply across corpora — pass ``&quot;auto&quot;`` (each source&#39;s</span>
+<span class="sd">            own calibrated floor), a ``{name: floor_or_&quot;auto&quot;}`` mapping, or</span>
+<span class="sd">            ``None``; a bare float raises. Floors gate each source on its own</span>
+<span class="sd">            raw scores *before* fusion; the fused ranking is never floored</span>
+<span class="sd">            (rank-fused scores are ordinal — ir_07/ir_08).</span>
+<span class="sd">        merge: federated only — how the per-source rankings combine: ``&quot;rrf&quot;``</span>
+<span class="sd">            (default; rank-based, scale-free — see</span>
+<span class="sd">            :func:`ir.retrieve.fuse_hits`), ``&quot;score&quot;`` (raw-score merge,</span>
+<span class="sd">            valid only when all corpora share an embedder — verified, raises</span>
+<span class="sd">            on mismatch), or a callable ``{name: hits} -&gt; hits``.</span>
+<span class="sd">        merge_weights: federated only — per-source trust weights for</span>
+<span class="sd">            ``merge=&quot;rrf&quot;`` (default 1.0 each).</span>
+<span class="sd">        merge_rrf_k: federated only — the cross-source RRF rank constant</span>
+<span class="sd">            (default: :data:`~ir.retrieve.DFLT_RRF_K`; distinct from the</span>
+<span class="sd">            within-corpus hybrid ``rrf_k`` in ``search_kw``).</span>
 <span class="sd">        loader: optional body resolver for disclosure (see :func:`disclose`).</span>
 <span class="sd">        **search_kw: any other :func:`ir.retrieve.search` keyword (``rrf_k``,</span>
 <span class="sd">            ``rerank``, ``bm25``, …).</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        a :class:`DiscoveryResult` (``.to_dict()`` for JSON / qh).</span>
+<span class="sd">        a :class:`DiscoveryResult` (``.to_dict()`` for JSON / qh). Federated</span>
+<span class="sd">        results add ``signals[&quot;per_source&quot;]`` (per-corpus ``n_retrieved`` /</span>
+<span class="sd">        ``top_score`` / ``floor`` / ``abstained``) and each disclosure carries</span>
+<span class="sd">        its ``source``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">_discover_federated</span><span class="p">(</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">corpus</span><span class="p">),</span>
+            <span class="n">query</span><span class="p">,</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+            <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
+            <span class="n">disclose_level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span>
+            <span class="nb">filter</span><span class="o">=</span><span class="nb">filter</span><span class="p">,</span>
+            <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span>
+            <span class="n">max_k</span><span class="o">=</span><span class="n">max_k</span><span class="p">,</span>
+            <span class="n">rel</span><span class="o">=</span><span class="n">rel</span><span class="p">,</span>
+            <span class="n">gap_ratio</span><span class="o">=</span><span class="n">gap_ratio</span><span class="p">,</span>
+            <span class="n">min_score</span><span class="o">=</span><span class="n">min_score</span><span class="p">,</span>
+            <span class="n">merge</span><span class="o">=</span><span class="n">merge</span><span class="p">,</span>
+            <span class="n">merge_weights</span><span class="o">=</span><span class="n">merge_weights</span><span class="p">,</span>
+            <span class="n">merge_rrf_k</span><span class="o">=</span><span class="n">merge_rrf_k</span><span class="p">,</span>
+            <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+            <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">merge</span> <span class="o">!=</span> <span class="s2">&quot;rrf&quot;</span> <span class="ow">or</span> <span class="n">merge_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">merge_rrf_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;merge / merge_weights / merge_rrf_k apply to the federated form — &quot;</span>
+            <span class="s2">&quot;pass a list of corpora, e.g. discover([&#39;skills&#39;, &#39;packages&#39;], ...).&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_score</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;a {name: floor} min_score mapping applies to the federated form — &quot;</span>
+            <span class="s2">&quot;pass a list of corpora, or a float/&#39;auto&#39; for a single corpus.&quot;</span>
+        <span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
 
@@ -1000,6 +1066,256 @@
         <span class="n">signals</span><span class="o">=</span><span class="n">selection</span><span class="o">.</span><span class="n">signals</span><span class="p">,</span>
     <span class="p">)</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_federated_floors</span><span class="p">(</span>
+    <span class="n">resolved</span><span class="p">:</span> <span class="s2">&quot;list[tuple[str, Any]]&quot;</span><span class="p">,</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-source abstention floors for federated :func:`discover`.</span>
+
+<span class="sd">    Floors are per-(corpus, mode, embedder) — ir_07&#39;s central finding — so a</span>
+<span class="sd">    single number across corpora is the exact mis-scaled comparison the</span>
+<span class="sd">    calibration machinery exists to prevent: it is refused loudly, never</span>
+<span class="sd">    applied. Each accepted form resolves to ``{source_name: floor_or_None}``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">min_score</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_score</span><span class="p">,</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;a single numeric min_score cannot apply across corpora — abstention &quot;</span>
+            <span class="s2">&quot;floors are per-(corpus, mode, embedder) (ir_07). Pass &#39;auto&#39; (each &quot;</span>
+            <span class="s2">&quot;source&#39;s own calibrated floor), a {name: floor_or_&#39;auto&#39;} mapping, &quot;</span>
+            <span class="s2">&quot;or None.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_score</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">min_score</span> <span class="o">!=</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;invalid min_score </span><span class="si">{</span><span class="n">min_score</span><span class="si">!r}</span><span class="s2">; expected None, &#39;auto&#39;, or a &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">name: floor_or_&#39;auto&#39;</span><span class="se">}}</span><span class="s2"> mapping for federated discover.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">_resolve_auto_min_score</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">resolved</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_score</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="n">by_name</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">resolved</span><span class="p">)</span>
+        <span class="n">unknown</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">min_score</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">by_name</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;min_score names corpora not in this discover call: </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">; &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;the call federates </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">by_name</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">floors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">min_score</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">floors</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">elif</span> <span class="n">spec</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+                <span class="n">floors</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_resolve_auto_min_score</span><span class="p">(</span><span class="n">by_name</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">mode</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;invalid min_score for source </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="n">spec</span><span class="si">!r}</span><span class="s2">; expected &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;None, &#39;auto&#39;, or a number (each source&#39;s own calibrated &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;scale).&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">floors</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">floors</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;invalid min_score </span><span class="si">{</span><span class="n">min_score</span><span class="si">!r}</span><span class="s2">; expected None, &#39;auto&#39;, or a &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">name: floor_or_&#39;auto&#39;</span><span class="se">}}</span><span class="s2"> mapping for federated discover.&quot;</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_merge_federated</span><span class="p">(</span>
+    <span class="n">surviving</span><span class="p">:</span> <span class="s2">&quot;dict[str, list[SearchHit]]&quot;</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">merge</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">merge_weights</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">merge_rrf_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">corpora_by_name</span><span class="p">:</span> <span class="s2">&quot;dict[str, Any]&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Combine the per-source rankings — only ranks cross the source boundary.&quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">DFLT_RRF_K</span><span class="p">,</span> <span class="n">fuse_hits</span>
+
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">merge</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">merge</span><span class="p">(</span><span class="n">surviving</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">merge</span> <span class="o">==</span> <span class="s2">&quot;rrf&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">fuse_hits</span><span class="p">(</span>
+            <span class="n">surviving</span><span class="p">,</span>
+            <span class="n">rrf_k</span><span class="o">=</span><span class="n">DFLT_RRF_K</span> <span class="k">if</span> <span class="n">merge_rrf_k</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">merge_rrf_k</span><span class="p">,</span>
+            <span class="n">weights</span><span class="o">=</span><span class="n">merge_weights</span><span class="p">,</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">merge</span> <span class="o">==</span> <span class="s2">&quot;score&quot;</span><span class="p">:</span>
+        <span class="c1"># A raw-score merge is the caller asserting one score scale across</span>
+        <span class="c1"># sources; verify the assertion instead of trusting it (the same</span>
+        <span class="c1"># detect-and-refuse posture as the stale-calibration check).</span>
+        <span class="n">emb_ids</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpora_by_name</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="s2">&quot;embedder_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">surviving</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">emb_ids</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;merge=&#39;score&#39; compares raw scores across corpora, which &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;requires one shared embedder; got </span><span class="si">{</span><span class="n">emb_ids</span><span class="si">}</span><span class="s2">. Use merge=&#39;rrf&#39; &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;(rank-based, scale-free) for heterogeneous embedders.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">merged</span> <span class="o">=</span> <span class="n">best_per_artifact</span><span class="p">([</span><span class="n">h</span> <span class="k">for</span> <span class="n">hits</span> <span class="ow">in</span> <span class="n">surviving</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">merged</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;unknown merge </span><span class="si">{</span><span class="n">merge</span><span class="si">!r}</span><span class="s2">; expected &#39;rrf&#39;, &#39;score&#39;, or a callable.&quot;</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_discover_federated</span><span class="p">(</span>
+    <span class="n">corpora_list</span><span class="p">:</span> <span class="s2">&quot;list[Any]&quot;</span><span class="p">,</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Selector</span><span class="p">,</span>
+    <span class="n">disclose_level</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">merge</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">merge_weights</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">merge_rrf_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">store</span><span class="p">:</span> <span class="n">ResourceStore</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscoveryResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Single-shot federated discover: fan-out → gate → fuse → select → disclose.</span>
+
+<span class="sd">    The federation of one corpus equals the single-corpus call (the fuse is a</span>
+<span class="sd">    passthrough); the caller&#39;s list order is the deterministic priority order</span>
+<span class="sd">    for rank ties. All names resolve to open corpora *before* any retrieval, so</span>
+<span class="sd">    registry drift mid-call cannot yield a partial fan-out.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">corpora_list</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;federated discover needs at least one corpus name (ir never &quot;</span>
+            <span class="s2">&quot;chooses the source set — pass it explicitly).&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;abs_threshold&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;strategy=&#39;abs_threshold&#39; does not apply to federated discover: &quot;</span>
+            <span class="s2">&quot;fused scores are rank-derived (ordinal), so an absolute floor &quot;</span>
+            <span class="s2">&quot;post-fusion is meaningless. Absolute floors are per-source and &quot;</span>
+            <span class="s2">&quot;pre-fusion — pass min_score=&#39;auto&#39; or a {name: floor} mapping, &quot;</span>
+            <span class="s2">&quot;and use a relative post-fusion strategy (&#39;conservative&#39;, &quot;</span>
+            <span class="s2">&quot;&#39;top_k&#39;, &#39;rel_threshold&#39;, &#39;score_gap&#39;).&quot;</span>
+        <span class="p">)</span>
+    <span class="n">resolved</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">corpora_list</span><span class="p">:</span>
+        <span class="c1"># Validate the name BEFORE resolving: open_corpus(&#39;&#39;) would create</span>
+        <span class="c1"># and load a shared &#39;unnamed&#39; store on the way to the error.</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">entry</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cannot name corpus </span><span class="si">{</span><span class="n">entry</span><span class="si">!r}</span><span class="s2"> for federation; pass registered &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;names, or Corpus objects with a non-empty .name.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">entry</span>
+        <span class="n">resolved</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">c</span><span class="p">))</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">resolved</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;duplicate corpus names in federated discover: </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">merge_weights</span><span class="p">:</span>
+        <span class="n">unknown</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">merge_weights</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;merge_weights names corpora not in this discover call: &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">; the call federates </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">names</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="n">floors</span> <span class="o">=</span> <span class="n">_resolve_federated_floors</span><span class="p">(</span><span class="n">resolved</span><span class="p">,</span> <span class="n">min_score</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+
+    <span class="n">per_source</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">surviving</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">n_retrieved</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">any_gated</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">resolved</span><span class="p">:</span>
+        <span class="n">hits</span> <span class="o">=</span> <span class="n">_search</span><span class="p">(</span>
+            <span class="n">c</span><span class="p">,</span>
+            <span class="n">query</span><span class="p">,</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+            <span class="nb">filter</span><span class="o">=</span><span class="nb">filter</span><span class="p">,</span>
+            <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span>
+            <span class="n">per_artifact</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">n_retrieved</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
+        <span class="n">floor</span> <span class="o">=</span> <span class="n">floors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">top</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="k">if</span> <span class="n">hits</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="c1"># The gate consumes raw, per-source magnitudes — the only place an</span>
+        <span class="c1"># absolute floor is meaningful; the fused ranking below is ordinal.</span>
+        <span class="n">gated</span> <span class="o">=</span> <span class="n">floor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">top</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">top</span> <span class="o">&lt;</span> <span class="n">floor</span><span class="p">)</span>
+        <span class="n">any_gated</span> <span class="o">=</span> <span class="n">any_gated</span> <span class="ow">or</span> <span class="n">gated</span>
+        <span class="n">per_source</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;n_retrieved&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">),</span>
+            <span class="s2">&quot;top_score&quot;</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span>
+            <span class="s2">&quot;floor&quot;</span><span class="p">:</span> <span class="n">floor</span><span class="p">,</span>
+            <span class="s2">&quot;abstained&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">gated</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">hits</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">hits</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">gated</span><span class="p">:</span>
+            <span class="n">surviving</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">hits</span>
+
+    <span class="n">fused</span> <span class="o">=</span> <span class="n">_merge_federated</span><span class="p">(</span>
+        <span class="n">surviving</span><span class="p">,</span>
+        <span class="n">merge</span><span class="o">=</span><span class="n">merge</span><span class="p">,</span>
+        <span class="n">merge_weights</span><span class="o">=</span><span class="n">merge_weights</span><span class="p">,</span>
+        <span class="n">merge_rrf_k</span><span class="o">=</span><span class="n">merge_rrf_k</span><span class="p">,</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+        <span class="n">corpora_by_name</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">resolved</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="c1"># Floors were already applied per source, on comparable scales; the fused</span>
+    <span class="c1"># scores are rank-derived, so an absolute floor here would be meaningless.</span>
+    <span class="n">selection</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span>
+        <span class="n">fused</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
+        <span class="n">max_k</span><span class="o">=</span><span class="n">max_k</span><span class="p">,</span>
+        <span class="n">rel</span><span class="o">=</span><span class="n">rel</span><span class="p">,</span>
+        <span class="n">gap_ratio</span><span class="o">=</span><span class="n">gap_ratio</span><span class="p">,</span>
+        <span class="n">min_score</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">reason</span> <span class="o">=</span> <span class="n">selection</span><span class="o">.</span><span class="n">reason</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">fused</span> <span class="ow">and</span> <span class="n">any_gated</span><span class="p">:</span>
+        <span class="c1"># Claim &quot;all below floor&quot; only when every source actually had a floor;</span>
+        <span class="c1"># a mix of floor-gated and merely-empty sources is reported honestly.</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;floor&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">per_source</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;abstain:all_sources_below_floor&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;abstain:no_surviving_sources&quot;</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">disclose</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">)</span>
+    <span class="n">merge_name</span> <span class="o">=</span> <span class="n">merge</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">merge</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span>
+    <span class="n">signals</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">selection</span><span class="o">.</span><span class="n">signals</span><span class="p">),</span>
+        <span class="s2">&quot;merge&quot;</span><span class="p">:</span> <span class="n">merge_name</span><span class="p">,</span>
+        <span class="s2">&quot;sources&quot;</span><span class="p">:</span> <span class="n">names</span><span class="p">,</span>
+        <span class="s2">&quot;per_source&quot;</span><span class="p">:</span> <span class="n">per_source</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">merge_name</span> <span class="o">==</span> <span class="s2">&quot;rrf&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">DFLT_RRF_K</span>
+
+        <span class="n">signals</span><span class="p">[</span><span class="s2">&quot;merge_rrf_k&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_RRF_K</span> <span class="k">if</span> <span class="n">merge_rrf_k</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">merge_rrf_k</span>
+    <span class="k">return</span> <span class="n">DiscoveryResult</span><span class="p">(</span>
+        <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span><span class="p">,</span>
+        <span class="n">disclose_level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span>
+        <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
+        <span class="n">abstained</span><span class="o">=</span><span class="n">selection</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>
+        <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span>
+        <span class="n">n_retrieved</span><span class="o">=</span><span class="n">n_retrieved</span><span class="p">,</span>
+        <span class="n">signals</span><span class="o">=</span><span class="n">signals</span><span class="p">,</span>
+    <span class="p">)</span>
 </pre></div>
 
            </div>

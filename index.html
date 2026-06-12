@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to ir’s documentation! &mdash; ir 0.1.14 documentation</title>
+  <title>Welcome to ir’s documentation! &mdash; ir 0.1.15 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=468bc497"></script>
+      <script src="_static/documentation_options.js?v=e2f3408e"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -118,11 +118,15 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.corpora"><code class="docutils literal notranslate"><span class="pre">corpora()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.disclose"><code class="docutils literal notranslate"><span class="pre">disclose()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.make_llm_formulator"><code class="docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.retriever_for"><code class="docutils literal notranslate"><span class="pre">retriever_for()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.retrievers"><code class="docutils literal notranslate"><span class="pre">retrievers()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.select"><code class="docutils literal notranslate"><span class="pre">select()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.tag_source"><code class="docutils literal notranslate"><span class="pre">tag_source()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/__main__.html">ir.__main__</a><ul>
@@ -139,6 +143,7 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.best_per_artifact"><code class="docutils literal notranslate"><span class="pre">best_per_artifact()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.storage_key"><code class="docutils literal notranslate"><span class="pre">storage_key()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.tag_source"><code class="docutils literal notranslate"><span class="pre">tag_source()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/cli.html">ir.cli</a><ul>
@@ -251,9 +256,11 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_BM25_SAT_K"><code class="docutils literal notranslate"><span class="pre">DFLT_BM25_SAT_K</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_RRF_K"><code class="docutils literal notranslate"><span class="pre">DFLT_RRF_K</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.FUSIONS"><code class="docutils literal notranslate"><span class="pre">FUSIONS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.Identity"><code class="docutils literal notranslate"><span class="pre">Identity</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.MODES"><code class="docutils literal notranslate"><span class="pre">MODES</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.Retriever"><code class="docutils literal notranslate"><span class="pre">Retriever</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.as_retriever"><code class="docutils literal notranslate"><span class="pre">as_retriever()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
 </ul>
 </li>
@@ -307,8 +314,8 @@
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-<p>Release: 0.1.14</p>
-<p>Last change: Jun 11, 2026</p>
+<p>Release: 0.1.15</p>
+<p>Last change: Jun 12, 2026</p>
 </section>
 
 

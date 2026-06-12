@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.base &mdash; ir 0.1.14 documentation</title>
+  <title>ir.base &mdash; ir 0.1.15 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=468bc497"></script>
+      <script src="../../_static/documentation_options.js?v=e2f3408e"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -68,6 +68,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.base.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.base.best_per_artifact"><code class="docutils literal notranslate"><span class="pre">best_per_artifact()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.base.storage_key"><code class="docutils literal notranslate"><span class="pre">storage_key()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.base.tag_source"><code class="docutils literal notranslate"><span class="pre">tag_source()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="cli.html">ir.cli</a></li>
@@ -176,12 +177,18 @@ key a resource store dereferences to the full payload. Skills stamp
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ir.base.SearchHit">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">SearchHit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/base.html#SearchHit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.SearchHit" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">SearchHit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/base.html#SearchHit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.SearchHit" title="Link to this definition"></a></dt>
 <dd><p>A scored record returned by retrieval (higher score = closer).</p>
 <p>Maps onto ir_09’s <code class="docutils literal notranslate"><span class="pre">Result</span></code>: <code class="docutils literal notranslate"><span class="pre">text</span></code> is the snippet, <code class="docutils literal notranslate"><span class="pre">score</span></code> the rank
 score, <code class="docutils literal notranslate"><span class="pre">metadata</span></code> the meta, and <a class="reference internal" href="#ir.base.SearchHit.pointer" title="ir.base.SearchHit.pointer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pointer</span></code></a> the key into a resource
 store (ir_09 §5). <a class="reference internal" href="#ir.base.SearchHit.to_dict" title="ir.base.SearchHit.to_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code></a> is the serialization-clean form for a
 cross-process / subagent boundary (no numpy scalars leak).</p>
+<p><code class="docutils literal notranslate"><span class="pre">source</span></code> is the corpus/source name the hit came from (<code class="docutils literal notranslate"><span class="pre">None</span></code> when
+unattributed — e.g. an ad-hoc corpus without a name). It is a first-class
+field, not a metadata key, because <code class="docutils literal notranslate"><span class="pre">metadata</span></code> is the strategy-owned
+hard-filter namespace and provenance is structural: artifact identity is
+only unique <em>within</em> a source, so any cross-source operation keys on
+<code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> (see <a class="reference internal" href="#ir.base.best_per_artifact" title="ir.base.best_per_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">best_per_artifact()</span></code></a>).</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="ir.base.SearchHit.pointer">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">pointer</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#ir.base.SearchHit.pointer" title="Link to this definition"></a></dt>
@@ -210,13 +217,30 @@ an artifact. <code class="docutils literal notranslate"><span class="pre">granul
 <dt class="sig sig-object py" id="ir.base.best_per_artifact">
 <span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">best_per_artifact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/base.html#best_per_artifact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.best_per_artifact" title="Link to this definition"></a></dt>
 <dd><p>Collapse hits to the highest-scoring surface per artifact.</p>
-<p>Returns the surviving hits sorted by score (descending).</p>
+<p>Returns the surviving hits sorted by score (descending). Identity is
+<code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code>: the same id in two different sources names two
+different artifacts (the skills-corpus “dol” is not the packages-corpus
+“dol”), so cross-source input never collapses them. Single-source input
+(all hits sharing one <code class="docutils literal notranslate"><span class="pre">source</span></code>, or all <code class="docutils literal notranslate"><span class="pre">None</span></code>) behaves exactly as an
+id-keyed collapse. Note the raw-score comparison and the final sort assume
+one score scale — sound within a source; for mixed-source hits use
+<a class="reference internal" href="retrieve.html#ir.retrieve.fuse_hits" title="ir.retrieve.fuse_hits"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.fuse_hits()</span></code></a>, which only compares scores within a source.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.base.storage_key">
 <span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">storage_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">parts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/base.html#storage_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.storage_key" title="Link to this definition"></a></dt>
 <dd><p>Stable, filesystem-safe id from arbitrary string parts (truncated SHA-256).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.base.tag_source">
+<span class="sig-prename descclassname"><span class="pre">ir.base.</span></span><span class="sig-name descname"><span class="pre">tag_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/base.html#tag_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.base.tag_source" title="Link to this definition"></a></dt>
+<dd><p>Stamp <em>source</em> on every hit that doesn’t already carry one.</p>
+<p>Existing tags win: a hit already attributed to a corpus keeps that
+attribution (so re-tagging under a different registry key cannot
+double-count one corpus as two sources). A <code class="docutils literal notranslate"><span class="pre">None</span></code> source is the
+untagged pseudo-source — hits pass through unattributed.</p>
 </dd></dl>
 
 </section>

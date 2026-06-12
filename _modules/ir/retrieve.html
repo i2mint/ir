@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.retrieve &mdash; ir 0.1.14 documentation</title>
+  <title>ir.retrieve &mdash; ir 0.1.15 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=468bc497"></script>
+      <script src="../../_static/documentation_options.js?v=e2f3408e"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -116,19 +116,27 @@
 <span class="sd">fusion reuse ``vd``; if ``vd`` is unavailable, hybrid degrades to dense and</span>
 <span class="sd">lexical returns no results (both with a warning), so a missing optional dep</span>
 <span class="sd">never hard-fails a search.</span>
+
+<span class="sd">Beyond the within-corpus channel fusion above, :func:`fuse_hits` merges ranked</span>
+<span class="sd">hit lists from **different sources** (corpora / embedders / modes) by weighted</span>
+<span class="sd">Reciprocal Rank Fusion — raw scores never cross a source boundary, only ranks</span>
+<span class="sd">do. It is the shared cross-source merge primitive consumed by federated</span>
+<span class="sd">:func:`ir.discover` and by an orchestration layer&#39;s fan-in reranker (ir_09 §3).</span>
+<span class="sd">Every search hit carries its corpus name as :attr:`~ir.base.SearchHit.source`.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchHit</span><span class="p">,</span> <span class="n">best_per_artifact</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchHit</span><span class="p">,</span> <span class="n">best_per_artifact</span><span class="p">,</span> <span class="n">tag_source</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.formulate</span><span class="w"> </span><span class="kn">import</span> <span class="n">Formulator</span>
 
 <span class="c1">#: Ranking modes accepted by :func:`search`.</span>
@@ -527,6 +535,7 @@
     <span class="k">if</span> <span class="n">rerank</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ranked</span><span class="p">:</span>
         <span class="n">ranked</span> <span class="o">=</span> <span class="n">_apply_rerank</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">ranked</span><span class="p">,</span> <span class="n">meta_by_id</span><span class="p">,</span> <span class="n">rerank</span><span class="p">,</span> <span class="n">fetch</span><span class="p">)</span>
 
+    <span class="n">source</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="n">hits</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">SearchHit</span><span class="p">(</span>
             <span class="n">artifact_id</span><span class="o">=</span><span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="s2">&quot;artifact_id&quot;</span><span class="p">],</span>
@@ -534,12 +543,161 @@
             <span class="n">score</span><span class="o">=</span><span class="n">score</span><span class="p">,</span>
             <span class="n">text</span><span class="o">=</span><span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
             <span class="n">metadata</span><span class="o">=</span><span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">ranked</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="n">per_artifact</span><span class="p">:</span>
         <span class="n">hits</span> <span class="o">=</span> <span class="n">best_per_artifact</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">hits</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span></div>
+
+
+
+<span class="c1"># =========================================================================== #</span>
+<span class="c1"># Cross-source fusion — merging ranked hit lists from heterogeneous sources</span>
+<span class="c1"># =========================================================================== #</span>
+
+<span class="c1">#: How cross-source duplicates are detected in :func:`fuse_hits`: ``None``</span>
+<span class="c1">#: (default — hits from different sources never merge; same id, different</span>
+<span class="c1">#: corpus = different artifact), the string ``&quot;pointer&quot;`` (merge hits whose</span>
+<span class="c1">#: :attr:`~ir.base.SearchHit.pointer` match — opt-in, for corpora that</span>
+<span class="c1">#: genuinely index the same files), or any ``hit -&gt; hashable`` callable (a</span>
+<span class="c1">#: falsy key falls back to per-source identity).</span>
+<span class="n">Identity</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">SearchHit</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_identity</span><span class="p">(</span><span class="n">identity</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">SearchHit</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve an :data:`Identity` spec to a key function (or ``None``).&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">identity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">identity</span> <span class="o">==</span> <span class="s2">&quot;pointer&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="n">h</span><span class="o">.</span><span class="n">pointer</span>
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">identity</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">identity</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;unknown identity </span><span class="si">{</span><span class="n">identity</span><span class="si">!r}</span><span class="s2">; expected None, &#39;pointer&#39;, or a callable&quot;</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="fuse_hits">
+<a class="viewcode-back" href="../../module_docs/ir/retrieve.html#ir.fuse_hits">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fuse_hits</span><span class="p">(</span>
+    <span class="n">hits_by_source</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">rrf_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_RRF_K</span><span class="p">,</span>
+    <span class="n">weights</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">identity</span><span class="p">:</span> <span class="n">Identity</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Merge per-source ranked hit lists into one ranking — by rank, not score.</span>
+
+<span class="sd">    The cross-source counterpart of the within-corpus hybrid fusion: scores</span>
+<span class="sd">    from different (corpus, mode, embedder) tuples live on incommensurable</span>
+<span class="sd">    scales (ir_07: &quot;a different model re-scales everything&quot;), so **raw scores</span>
+<span class="sd">    never cross the source boundary** — within each source they order and</span>
+<span class="sd">    dedup that source&#39;s hits (one scale, sound), and across sources only ranks</span>
+<span class="sd">    interact, via weighted Reciprocal Rank Fusion: each hit contributes</span>
+<span class="sd">    ``weights[source] / (rrf_k + rank)``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hits_by_source: ``{source_name: ranked hits}``. Hits without a</span>
+<span class="sd">            ``source`` are stamped with their mapping key (existing tags win,</span>
+<span class="sd">            so one corpus bound under two keys still counts as one source).</span>
+<span class="sd">            A ``None`` key is the *untagged pseudo-source*: its hits fuse as</span>
+<span class="sd">            one rank group and stay unattributed (``source=None``). Within</span>
+<span class="sd">            each list, duplicate artifacts — and, when ``identity`` is given,</span>
+<span class="sd">            identity-duplicates — collapse to their best raw score before</span>
+<span class="sd">            ranking, so a multi-query / multi-round pool can never</span>
+<span class="sd">            double-count one artifact&#39;s RRF mass.</span>
+<span class="sd">        rrf_k: the RRF rank constant (standard default 60).</span>
+<span class="sd">        weights: optional per-source trust dial (default 1.0 each) — a</span>
+<span class="sd">            source&#39;s contribution scales linearly, no score comparability</span>
+<span class="sd">            needed. Keys naming sources absent from ``hits_by_source`` are</span>
+<span class="sd">            ignored (a per-round pool may legitimately lack a configured</span>
+<span class="sd">            source); callers with a closed source set should validate keys</span>
+<span class="sd">            upfront, as federated :func:`ir.discover` does.</span>
+<span class="sd">        identity: how cross-source duplicates merge — see :data:`Identity`.</span>
+<span class="sd">            Default ``None``: never; each ``(source, artifact_id)`` stays a</span>
+<span class="sd">            distinct result.</span>
+<span class="sd">        k: truncate the fused ranking to this many hits.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        the fused hits, best-first. Each carries the fused score in ``score``</span>
+<span class="sd">        and keeps its pre-fusion magnitude as ``metadata[&quot;source_score&quot;]`` (+</span>
+<span class="sd">        ``&quot;source_rank&quot;``), so downstream consumers (abstention gates, LLM</span>
+<span class="sd">        judges) never lose the per-source signal. When an ``identity`` merge</span>
+<span class="sd">        combined several sources&#39; hits, ``metadata[&quot;fused_sources&quot;]`` lists</span>
+<span class="sd">        them and the representative hit is the one with the best rank.</span>
+<span class="sd">        **Single-source input passes through with raw scores** (RRF of one</span>
+<span class="sd">        list is that list&#39;s order — same convention as the hybrid fusion&#39;s</span>
+<span class="sd">        single-channel fallback), so the fused-score rescaling only happens</span>
+<span class="sd">        when there is genuinely something to fuse. The post-fusion ``score``</span>
+<span class="sd">        is ordinal: valid for ordering and relative cuts, meaningless against</span>
+<span class="sd">        absolute floors — apply calibrated ``min_score`` floors per source,</span>
+<span class="sd">        *before* fusing (see ir_07/ir_08 and ``ir.discover``&#39;s federated form).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ident</span> <span class="o">=</span> <span class="n">_resolve_identity</span><span class="p">(</span><span class="n">identity</span><span class="p">)</span>
+
+    <span class="c1"># Per source: stamp provenance, collapse duplicates (keep-max raw score),</span>
+    <span class="c1"># rank best-first by raw score — the only place raw scores are compared,</span>
+    <span class="c1"># and only ever within one source.</span>
+    <span class="n">ranked_by_source</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">hits</span> <span class="ow">in</span> <span class="n">hits_by_source</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">deduped</span> <span class="o">=</span> <span class="n">best_per_artifact</span><span class="p">(</span><span class="n">tag_source</span><span class="p">(</span><span class="n">hits</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">ident</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Identity-duplicates within ONE source must also collapse before</span>
+            <span class="c1"># ranking — otherwise two same-identity artifacts in one list both</span>
+            <span class="c1"># contribute mass to one fused key (intra-source double counting).</span>
+            <span class="c1"># ``deduped`` is best-first, so first-wins keeps the best-scored</span>
+            <span class="c1"># representative; ranks compact naturally.</span>
+            <span class="n">by_key</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">SearchHit</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">deduped</span><span class="p">:</span>
+                <span class="n">by_key</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">ident</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">),</span> <span class="n">h</span><span class="p">)</span>
+            <span class="n">deduped</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">by_key</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">deduped</span><span class="p">:</span>
+            <span class="n">ranked_by_source</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">deduped</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranked_by_source</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ranked_by_source</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">only</span> <span class="o">=</span> <span class="n">ranked_by_source</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">only</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">only</span>
+
+    <span class="n">w</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span> <span class="k">if</span> <span class="n">weights</span> <span class="k">else</span> <span class="p">{}</span>
+    <span class="n">fused</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># key -&gt; (best_rank, source_position, representative hit)</span>
+    <span class="n">rep</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">SearchHit</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">members</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ranked</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranked_by_source</span><span class="p">):</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">rank</span><span class="p">,</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranked</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">ident</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="k">if</span> <span class="n">ident</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">:</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">)</span>
+            <span class="n">fused</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">fused</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">weight</span> <span class="o">/</span> <span class="p">(</span><span class="n">rrf_k</span> <span class="o">+</span> <span class="n">rank</span><span class="p">)</span>
+            <span class="n">members</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="n">rep</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cur</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">cur</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">cur</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="n">rep</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">rank</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+
+    <span class="n">scored</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">fused</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">rank</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">rep</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
+            <span class="s2">&quot;source_score&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+            <span class="s2">&quot;source_rank&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">rank</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">sources</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">members</span><span class="p">[</span><span class="n">key</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;fused_sources&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sources</span>
+        <span class="n">scored</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">),</span> <span class="n">rank</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">meta</span><span class="p">))</span>
+    <span class="c1"># Deterministic order: fused score, then best pre-fusion rank, then the</span>
+    <span class="c1"># caller&#39;s source order (documented as the priority order for rank ties —</span>
+    <span class="c1"># raw scores never break cross-source ties), then artifact_id.</span>
+    <span class="n">scored</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">replace</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">score</span><span class="o">=</span><span class="n">score</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">meta</span><span class="p">)</span> <span class="k">for</span> <span class="n">score</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">meta</span> <span class="ow">in</span> <span class="n">scored</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">out</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">out</span></div>
 
 
 
