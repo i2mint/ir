@@ -60,7 +60,22 @@ Notes for the default (semantic) path:
 | **disclose** | `ir.disclose` | load the heavy payload (SKILL.md body, package pointer, file text) for committed items — append-only |
 
 `ir.discover` chains retrieve → select → disclose into the single agent-callable
-(and `qh`-exposable) tool.
+(and `qh`-exposable) tool. Pass a **list** of corpus names for single-shot
+*federated* discovery across several corpora:
+
+```python
+ir.discover(["skills", "packages"], "deploy the app")    # fan-out → fuse → select
+ir.discover(["skills", "packages"], q, min_score="auto") # gate each source on its own floor
+```
+
+Each source is searched and gated on its **own** calibrated abstention floor
+*before* any merging; the survivors then rank-fuse (weighted RRF via
+`ir.fuse_hits`) — raw scores never cross a source boundary, because scores from
+different corpora / embedders / modes live on incommensurable scales. Every hit
+carries its corpus name as `hit.source`, so same-id artifacts from different
+corpora stay distinct, attributable results. The caller names the sources;
+`ir` never chooses the set (source planning belongs to the agent layer —
+see [`raglab`](https://github.com/thorwhalen/raglab)).
 
 ### Retrieve
 
