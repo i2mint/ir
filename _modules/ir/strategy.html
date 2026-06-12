@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.strategy &mdash; ir 0.1.15 documentation</title>
+  <title>ir.strategy &mdash; ir 0.1.16 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e2f3408e"></script>
+      <script src="../../_static/documentation_options.js?v=d50bcae4"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -274,6 +274,18 @@
 
 <span class="sd">    Filter fields capture ownership (ours vs third-party), name, deps. AI</span>
 <span class="sd">    synopsis / problem-class surfaces are a documented extension point.</span>
+
+<span class="sd">    Surface indexing: the ``description`` surface (kept whenever *name* or</span>
+<span class="sd">    *description* is non-empty) occupies plan position 0, so ``readme_chunk``</span>
+<span class="sd">    *j* is stored with</span>
+<span class="sd">    ``Record.surface_index == j + 1`` while its surface metadata says</span>
+<span class="sd">    ``chunk_index == j`` — ``surface_index`` is plan-global, ``chunk_index``</span>
+<span class="sd">    per-kind (see :meth:`ir.base.Record.make_id`). Never derive sibling record</span>
+<span class="sd">    ids from ``chunk_index``; use the ledger</span>
+<span class="sd">    (:func:`ir.retrieve.records_for_artifact`). ``n_chunks`` is stamped on</span>
+<span class="sd">    readme chunks at decompose time, but corpora built before the stamp keep</span>
+<span class="sd">    records without it until the artifact re-indexes (content / embedder /</span>
+<span class="sd">    strategy change) — read it with ``metadata.get(&quot;n_chunks&quot;)``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1500</span><span class="p">,</span> <span class="n">overlap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span><span class="p">):</span>
@@ -301,16 +313,23 @@
                 <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">]</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
-            <span class="n">_split</span><span class="p">(</span><span class="n">readme</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">overlap</span><span class="p">)</span>
-        <span class="p">):</span>
+        <span class="c1"># Keep only non-blank chunks BEFORE stamping: _split&#39;s hard-split</span>
+        <span class="c1"># branch can slice out whitespace-only chunks (a long whitespace run</span>
+        <span class="c1"># with no blank line), which the empty-surface drop below would remove</span>
+        <span class="c1"># anyway — counting them would overstate n_chunks and gap chunk_index.</span>
+        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">c</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">_split</span><span class="p">(</span><span class="n">readme</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">overlap</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
             <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="n">Surface</span><span class="p">(</span>
                     <span class="n">artifact_id</span><span class="p">,</span>
                     <span class="s2">&quot;readme_chunk&quot;</span><span class="p">,</span>
                     <span class="n">chunk</span><span class="p">,</span>
                     <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;chunk&quot;</span><span class="p">,</span>
-                    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;chunk_index&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">},</span>
+                    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;chunk_index&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span> <span class="s2">&quot;n_chunks&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunks</span><span class="p">)},</span>
                 <span class="p">)</span>
             <span class="p">)</span>
         <span class="c1"># Drop empty surfaces (e.g. no description and no README).</span>
@@ -326,7 +345,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright NO COPYRIGHT.</p>
+    <p></p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

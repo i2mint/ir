@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.strategy &mdash; ir 0.1.15 documentation</title>
+  <title>ir.strategy &mdash; ir 0.1.16 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e2f3408e"></script>
+      <script src="../../_static/documentation_options.js?v=d50bcae4"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -137,6 +137,17 @@ custom strategies need only match the <a class="reference internal" href="#ir.st
 <dd><p>Package strategy: <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">+</span> <span class="pre">description</span></code> surface plus README chunks.</p>
 <p>Filter fields capture ownership (ours vs third-party), name, deps. AI
 synopsis / problem-class surfaces are a documented extension point.</p>
+<p>Surface indexing: the <code class="docutils literal notranslate"><span class="pre">description</span></code> surface (kept whenever <em>name</em> or
+<em>description</em> is non-empty) occupies plan position 0, so <code class="docutils literal notranslate"><span class="pre">readme_chunk</span></code>
+<em>j</em> is stored with
+<code class="docutils literal notranslate"><span class="pre">Record.surface_index</span> <span class="pre">==</span> <span class="pre">j</span> <span class="pre">+</span> <span class="pre">1</span></code> while its surface metadata says
+<code class="docutils literal notranslate"><span class="pre">chunk_index</span> <span class="pre">==</span> <span class="pre">j</span></code> — <code class="docutils literal notranslate"><span class="pre">surface_index</span></code> is plan-global, <code class="docutils literal notranslate"><span class="pre">chunk_index</span></code>
+per-kind (see <a class="reference internal" href="base.html#ir.base.Record.make_id" title="ir.base.Record.make_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ir.base.Record.make_id()</span></code></a>). Never derive sibling record
+ids from <code class="docutils literal notranslate"><span class="pre">chunk_index</span></code>; use the ledger
+(<a class="reference internal" href="retrieve.html#ir.retrieve.records_for_artifact" title="ir.retrieve.records_for_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.records_for_artifact()</span></code></a>). <code class="docutils literal notranslate"><span class="pre">n_chunks</span></code> is stamped on
+readme chunks at decompose time, but corpora built before the stamp keep
+records without it until the artifact re-indexes (content / embedder /
+strategy change) — read it with <code class="docutils literal notranslate"><span class="pre">metadata.get(&quot;n_chunks&quot;)</span></code>.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -165,7 +176,7 @@ parent are filter fields.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright NO COPYRIGHT.</p>
+    <p></p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

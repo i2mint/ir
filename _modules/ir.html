@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.15 documentation</title>
+  <title>ir &mdash; ir 0.1.16 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=e2f3408e"></script>
+      <script src="../_static/documentation_options.js?v=d50bcae4"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -123,7 +123,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.formulate</span><span class="w"> </span><span class="kn">import</span> <span class="n">Formulator</span><span class="p">,</span> <span class="n">make_llm_formulator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">Corpus</span><span class="p">,</span> <span class="n">build</span><span class="p">,</span> <span class="n">open_corpus</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">retriever_for</span><span class="p">,</span> <span class="n">retrievers</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">Retriever</span><span class="p">,</span> <span class="n">as_retriever</span><span class="p">,</span> <span class="n">fuse_hits</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">Retriever</span><span class="p">,</span> <span class="n">as_retriever</span><span class="p">,</span> <span class="n">fuse_hits</span><span class="p">,</span> <span class="n">records_for_artifact</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span> <span class="k">as</span> <span class="n">_search</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.select</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Disclosure</span><span class="p">,</span>
@@ -159,6 +159,7 @@
     <span class="s2">&quot;retrievers&quot;</span><span class="p">,</span>
     <span class="s2">&quot;retriever_for&quot;</span><span class="p">,</span>
     <span class="s2">&quot;fuse_hits&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;records_for_artifact&quot;</span><span class="p">,</span>
     <span class="s2">&quot;tag_source&quot;</span><span class="p">,</span>
     <span class="s2">&quot;make_llm_formulator&quot;</span><span class="p">,</span>
     <span class="s2">&quot;Formulator&quot;</span><span class="p">,</span>
@@ -223,7 +224,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright NO COPYRIGHT.</p>
+    <p></p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

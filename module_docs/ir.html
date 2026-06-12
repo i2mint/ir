@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.15 documentation</title>
+  <title>ir &mdash; ir 0.1.16 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=e2f3408e"></script>
+      <script src="../_static/documentation_options.js?v=d50bcae4"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -138,6 +138,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.make_llm_formulator"><code class="docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.records_for_artifact"><code class="docutils literal notranslate"><span class="pre">records_for_artifact()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retriever_for"><code class="docutils literal notranslate"><span class="pre">retriever_for()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrievers"><code class="docutils literal notranslate"><span class="pre">retrievers()</span></code></a></li>
@@ -555,6 +556,17 @@ facade can return it directly.</p>
 <dd><p>Package strategy: <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">+</span> <span class="pre">description</span></code> surface plus README chunks.</p>
 <p>Filter fields capture ownership (ours vs third-party), name, deps. AI
 synopsis / problem-class surfaces are a documented extension point.</p>
+<p>Surface indexing: the <code class="docutils literal notranslate"><span class="pre">description</span></code> surface (kept whenever <em>name</em> or
+<em>description</em> is non-empty) occupies plan position 0, so <code class="docutils literal notranslate"><span class="pre">readme_chunk</span></code>
+<em>j</em> is stored with
+<code class="docutils literal notranslate"><span class="pre">Record.surface_index</span> <span class="pre">==</span> <span class="pre">j</span> <span class="pre">+</span> <span class="pre">1</span></code> while its surface metadata says
+<code class="docutils literal notranslate"><span class="pre">chunk_index</span> <span class="pre">==</span> <span class="pre">j</span></code> — <code class="docutils literal notranslate"><span class="pre">surface_index</span></code> is plan-global, <code class="docutils literal notranslate"><span class="pre">chunk_index</span></code>
+per-kind (see <a class="reference internal" href="ir/base.html#ir.base.Record.make_id" title="ir.base.Record.make_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ir.base.Record.make_id()</span></code></a>). Never derive sibling record
+ids from <code class="docutils literal notranslate"><span class="pre">chunk_index</span></code>; use the ledger
+(<a class="reference internal" href="ir/retrieve.html#ir.retrieve.records_for_artifact" title="ir.retrieve.records_for_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.records_for_artifact()</span></code></a>). <code class="docutils literal notranslate"><span class="pre">n_chunks</span></code> is stamped on
+readme chunks at decompose time, but corpora built before the stamp keep
+records without it until the artifact re-indexes (content / embedder /
+strategy change) — read it with <code class="docutils literal notranslate"><span class="pre">metadata.get(&quot;n_chunks&quot;)</span></code>.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -565,13 +577,24 @@ synopsis / problem-class surfaces are a documented extension point.</p>
 <dt class="sig sig-object py" id="ir.Record.make_id">
 <span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">make_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/ir/base.html#Record.make_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.Record.make_id" title="Link to this definition"></a></dt>
 <dd><p>Deterministic storage id for a surface of an artifact.</p>
+<p><code class="docutils literal notranslate"><span class="pre">surface_index</span></code> is the surface’s <strong>plan-global</strong> position — its
+enumeration index across <em>all</em> surfaces of the artifact’s
+<a class="reference internal" href="#ir.IndexPlan" title="ir.IndexPlan"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexPlan</span></code></a>, regardless of kind — as assigned by
+<a class="reference internal" href="ir/index.html#ir.index.build" title="ir.index.build"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.index.build()</span></code></a>. On multi-kind strategies it therefore differs
+from per-kind counters like <code class="docutils literal notranslate"><span class="pre">metadata[&quot;chunk_index&quot;]</span></code> (e.g.
+<a class="reference internal" href="ir/strategy.html#ir.strategy.Package" title="ir.strategy.Package"><code class="xref py py-class docutils literal notranslate"><span class="pre">Package</span></code></a>: the <code class="docutils literal notranslate"><span class="pre">description</span></code> surface takes
+position 0, shifting <code class="docutils literal notranslate"><span class="pre">readme_chunk</span></code> <em>j</em> to <code class="docutils literal notranslate"><span class="pre">surface_index</span></code> <code class="docutils literal notranslate"><span class="pre">j+1</span></code>
+— and the offset is plan-dependent, since empty surfaces are dropped).</p>
+<p>Ids of already-built corpora are a stability contract: never re-derive
+a sibling’s id from a per-kind index — address siblings through the
+ledger via <a class="reference internal" href="ir/retrieve.html#ir.retrieve.records_for_artifact" title="ir.retrieve.records_for_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.records_for_artifact()</span></code></a>.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ir.SearchHit">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">SearchHit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/base.html#SearchHit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.SearchHit" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">SearchHit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/base.html#SearchHit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.SearchHit" title="Link to this definition"></a></dt>
 <dd><p>A scored record returned by retrieval (higher score = closer).</p>
 <p>Maps onto ir_09’s <code class="docutils literal notranslate"><span class="pre">Result</span></code>: <code class="docutils literal notranslate"><span class="pre">text</span></code> is the snippet, <code class="docutils literal notranslate"><span class="pre">score</span></code> the rank
 score, <code class="docutils literal notranslate"><span class="pre">metadata</span></code> the meta, and <a class="reference internal" href="#ir.SearchHit.pointer" title="ir.SearchHit.pointer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pointer</span></code></a> the key into a resource
@@ -583,6 +606,13 @@ field, not a metadata key, because <code class="docutils literal notranslate"><s
 hard-filter namespace and provenance is structural: artifact identity is
 only unique <em>within</em> a source, so any cross-source operation keys on
 <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> (see <code class="xref py py-func docutils literal notranslate"><span class="pre">best_per_artifact()</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">surface_index</span></code> is the stored <code class="xref py py-attr docutils literal notranslate"><span class="pre">Record.surface_index</span></code> of the hit’s
+surface — its plan-global position among the artifact’s surfaces — so a
+hit can name <em>which</em> surface of its artifact it is (the prerequisite for
+sibling addressing and context expansion). <code class="docutils literal notranslate"><span class="pre">None</span></code> when unknown (e.g. a
+hand-built hit). It is <strong>not</strong> the per-kind <code class="docutils literal notranslate"><span class="pre">metadata[&quot;chunk_index&quot;]</span></code>;
+see <a class="reference internal" href="#ir.Record.make_id" title="ir.Record.make_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Record.make_id()</span></code></a> for why the two differ on multi-kind
+strategies.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="ir.SearchHit.pointer">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">pointer</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#ir.SearchHit.pointer" title="Link to this definition"></a></dt>
@@ -959,6 +989,43 @@ multi-query fan-out width. Any error or empty reply falls back to <code class="d
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.records_for_artifact">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">records_for_artifact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">store_or_corpus</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/base.html#ir.base.Record" title="ir.base.Record"><span class="pre">Record</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/ir/retrieve.html#records_for_artifact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.records_for_artifact" title="Link to this definition"></a></dt>
+<dd><p>All stored records of <em>artifact_id</em>, ordered by <code class="docutils literal notranslate"><span class="pre">surface_index</span></code>.</p>
+<p>The sibling-addressing primitive beneath retrieval-time context expansion:
+a <a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><code class="xref py py-class docutils literal notranslate"><span class="pre">SearchHit</span></code></a> names its artifact (and, via
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">surface_index</span></code>, which surface of it matched);
+this returns every surface of that artifact, in plan order, so an expansion
+policy can stitch neighbors / parents around the hit.</p>
+<p>Resolution is <strong>ledger-backed only</strong>: the artifact’s ledger entry lists its
+<code class="docutils literal notranslate"><span class="pre">record_ids</span></code>. Record ids are never re-derived from a per-kind index like
+<code class="docutils literal notranslate"><span class="pre">metadata[&quot;chunk_index&quot;]</span></code> — on multi-kind strategies that index differs
+from the plan-global <code class="docutils literal notranslate"><span class="pre">surface_index</span></code> baked into the id (see
+<a class="reference internal" href="ir/base.html#ir.base.Record.make_id" title="ir.base.Record.make_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ir.base.Record.make_id()</span></code></a>), so derivation would fetch wrong or missing
+siblings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>store_or_corpus</strong> – a <a class="reference internal" href="ir/store.html#ir.store.CorpusStore" title="ir.store.CorpusStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusStore</span></code></a>, anything carrying
+one as <code class="docutils literal notranslate"><span class="pre">.store</span></code> (e.g. a <a class="reference internal" href="ir/index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a>), or a corpus
+<em>name</em> (resolved via <a class="reference internal" href="ir/index.html#ir.index.open_corpus" title="ir.index.open_corpus"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.index.open_corpus()</span></code></a>, like the other
+corpus-taking entry points).</p></li>
+<li><p><strong>artifact_id</strong> – the artifact whose surfaces to fetch.</p></li>
+<li><p><strong>surface_kind</strong> – restrict to one surface kind (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;readme_chunk&quot;</span></code>);
+a known artifact with no surfaces of that kind yields <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>KeyError</strong> – if the ledger has no entry for <em>artifact_id</em> (an unknown
+    artifact, or a corpus built without <a class="reference internal" href="ir/index.html#ir.index.build" title="ir.index.build"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.index.build()</span></code></a>’s
+    ledger bookkeeping) — or, with a message naming the artifact, if
+    an entry lists a record missing from the store (a stale ledger:
+    interrupted build or out-of-band <code class="docutils literal notranslate"><span class="pre">delete_record</span></code>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.register">
 <span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'default'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/ir/registry.html#register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.register" title="Link to this definition"></a></dt>
 <dd><p>Register (or overwrite) a named corpus definition.</p>
@@ -1049,7 +1116,7 @@ untagged pseudo-source — hits pass through unattributed.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright NO COPYRIGHT.</p>
+    <p></p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

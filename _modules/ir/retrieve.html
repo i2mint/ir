@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.retrieve &mdash; ir 0.1.15 documentation</title>
+  <title>ir.retrieve &mdash; ir 0.1.16 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=e2f3408e"></script>
+      <script src="../../_static/documentation_options.js?v=d50bcae4"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -122,7 +122,13 @@
 <span class="sd">Reciprocal Rank Fusion — raw scores never cross a source boundary, only ranks</span>
 <span class="sd">do. It is the shared cross-source merge primitive consumed by federated</span>
 <span class="sd">:func:`ir.discover` and by an orchestration layer&#39;s fan-in reranker (ir_09 §3).</span>
-<span class="sd">Every search hit carries its corpus name as :attr:`~ir.base.SearchHit.source`.</span>
+<span class="sd">Every search hit carries its corpus name as :attr:`~ir.base.SearchHit.source`</span>
+<span class="sd">and its surface&#39;s plan position as :attr:`~ir.base.SearchHit.surface_index`.</span>
+
+<span class="sd">:func:`records_for_artifact` is the hit-operation beneath retrieval-time</span>
+<span class="sd">context expansion: given a hit&#39;s ``artifact_id``, it returns *all* of that</span>
+<span class="sd">artifact&#39;s stored records (its sibling surfaces), ordered — resolved through</span>
+<span class="sd">the ledger, never by re-deriving record ids.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -136,7 +142,7 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchHit</span><span class="p">,</span> <span class="n">best_per_artifact</span><span class="p">,</span> <span class="n">tag_source</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Record</span><span class="p">,</span> <span class="n">SearchHit</span><span class="p">,</span> <span class="n">best_per_artifact</span><span class="p">,</span> <span class="n">ledger_key</span><span class="p">,</span> <span class="n">tag_source</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.formulate</span><span class="w"> </span><span class="kn">import</span> <span class="n">Formulator</span>
 
 <span class="c1">#: Ranking modes accepted by :func:`search`.</span>
@@ -544,6 +550,7 @@
             <span class="n">text</span><span class="o">=</span><span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
             <span class="n">metadata</span><span class="o">=</span><span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{}),</span>
             <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+            <span class="n">surface_index</span><span class="o">=</span><span class="n">meta_by_id</span><span class="p">[</span><span class="n">rid</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;surface_index&quot;</span><span class="p">),</span>
         <span class="p">)</span>
         <span class="k">for</span> <span class="n">rid</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">ranked</span>
     <span class="p">]</span>
@@ -702,6 +709,74 @@
 
 
 <span class="c1"># =========================================================================== #</span>
+<span class="c1"># Sibling addressing — ledger-backed artifact -&gt; ordered-records lookup</span>
+<span class="c1"># =========================================================================== #</span>
+
+
+<div class="viewcode-block" id="records_for_artifact">
+<a class="viewcode-back" href="../../module_docs/ir/retrieve.html#ir.records_for_artifact">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">records_for_artifact</span><span class="p">(</span>
+    <span class="n">store_or_corpus</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">surface_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Record</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All stored records of *artifact_id*, ordered by ``surface_index``.</span>
+
+<span class="sd">    The sibling-addressing primitive beneath retrieval-time context expansion:</span>
+<span class="sd">    a :class:`~ir.base.SearchHit` names its artifact (and, via</span>
+<span class="sd">    :attr:`~ir.base.SearchHit.surface_index`, which surface of it matched);</span>
+<span class="sd">    this returns every surface of that artifact, in plan order, so an expansion</span>
+<span class="sd">    policy can stitch neighbors / parents around the hit.</span>
+
+<span class="sd">    Resolution is **ledger-backed only**: the artifact&#39;s ledger entry lists its</span>
+<span class="sd">    ``record_ids``. Record ids are never re-derived from a per-kind index like</span>
+<span class="sd">    ``metadata[&quot;chunk_index&quot;]`` — on multi-kind strategies that index differs</span>
+<span class="sd">    from the plan-global ``surface_index`` baked into the id (see</span>
+<span class="sd">    :meth:`ir.base.Record.make_id`), so derivation would fetch wrong or missing</span>
+<span class="sd">    siblings.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        store_or_corpus: a :class:`~ir.store.CorpusStore`, anything carrying</span>
+<span class="sd">            one as ``.store`` (e.g. a :class:`~ir.index.Corpus`), or a corpus</span>
+<span class="sd">            *name* (resolved via :func:`ir.index.open_corpus`, like the other</span>
+<span class="sd">            corpus-taking entry points).</span>
+<span class="sd">        artifact_id: the artifact whose surfaces to fetch.</span>
+<span class="sd">        surface_kind: restrict to one surface kind (e.g. ``&quot;readme_chunk&quot;``);</span>
+<span class="sd">            a known artifact with no surfaces of that kind yields ``[]``.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: if the ledger has no entry for *artifact_id* (an unknown</span>
+<span class="sd">            artifact, or a corpus built without :func:`ir.index.build`&#39;s</span>
+<span class="sd">            ledger bookkeeping) — or, with a message naming the artifact, if</span>
+<span class="sd">            an entry lists a record missing from the store (a stale ledger:</span>
+<span class="sd">            interrupted build or out-of-band ``delete_record``).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
+
+        <span class="n">store_or_corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">)</span>
+    <span class="n">store</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">,</span> <span class="s2">&quot;store&quot;</span><span class="p">,</span> <span class="n">store_or_corpus</span><span class="p">)</span>
+    <span class="n">entry</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_ledger_entry</span><span class="p">(</span><span class="n">ledger_key</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;no ledger entry for artifact </span><span class="si">{</span><span class="n">artifact_id</span><span class="si">!r}</span><span class="s2">: unknown artifact, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;or a corpus built without ledger bookkeeping&quot;</span>
+        <span class="p">)</span>
+    <span class="n">records</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;record_ids&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">get_record</span><span class="p">(</span><span class="n">rid</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;ledger entry for artifact </span><span class="si">{</span><span class="n">artifact_id</span><span class="si">!r}</span><span class="s2"> lists record &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rid</span><span class="si">!r}</span><span class="s2">, which is missing from the store (stale ledger — &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;interrupted build or out-of-band delete?); rebuild the corpus&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">if</span> <span class="n">surface_kind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">records</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span> <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">surface_kind</span> <span class="o">==</span> <span class="n">surface_kind</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">surface_index</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># =========================================================================== #</span>
 <span class="c1"># Retriever adapter — ir&#39;s leaf in a Composable Search Agent (ir_09 §3)</span>
 <span class="c1"># =========================================================================== #</span>
 
@@ -750,7 +825,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright NO COPYRIGHT.</p>
+    <p></p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
