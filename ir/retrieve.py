@@ -24,6 +24,13 @@ sizes — and surface-hits collapse to the best surface per artifact. Lexical an
 fusion reuse ``vd``; if ``vd`` is unavailable, hybrid degrades to dense and
 lexical returns no results (both with a warning), so a missing optional dep
 never hard-fails a search.
+
+Beyond the within-corpus channel fusion above, :func:`fuse_hits` merges ranked
+hit lists from **different sources** (corpora / embedders / modes) by weighted
+Reciprocal Rank Fusion — raw scores never cross a source boundary, only ranks
+do. It is the shared cross-source merge primitive consumed by federated
+:func:`ir.discover` and by an orchestration layer's fan-in reranker (ir_09 §3).
+Every search hit carries its corpus name as :attr:`~ir.base.SearchHit.source`.
 """
 
 from __future__ import annotations
@@ -478,7 +485,7 @@ def _resolve_identity(identity) -> Callable[[SearchHit], Any] | None:
 
 
 def fuse_hits(
-    hits_by_source: Mapping[str, Sequence[SearchHit]],
+    hits_by_source: Mapping[str | None, Sequence[SearchHit]],
     *,
     rrf_k: int = DFLT_RRF_K,
     weights: Mapping[str, float] | None = None,
@@ -499,13 +506,19 @@ def fuse_hits(
         hits_by_source: ``{source_name: ranked hits}``. Hits without a
             ``source`` are stamped with their mapping key (existing tags win,
             so one corpus bound under two keys still counts as one source).
-            Within each list, duplicate artifacts collapse to their best raw
-            score before ranking (a multi-query / multi-round pool can never
-            double-count one artifact's RRF mass).
+            A ``None`` key is the *untagged pseudo-source*: its hits fuse as
+            one rank group and stay unattributed (``source=None``). Within
+            each list, duplicate artifacts — and, when ``identity`` is given,
+            identity-duplicates — collapse to their best raw score before
+            ranking, so a multi-query / multi-round pool can never
+            double-count one artifact's RRF mass.
         rrf_k: the RRF rank constant (standard default 60).
         weights: optional per-source trust dial (default 1.0 each) — a
             source's contribution scales linearly, no score comparability
-            needed.
+            needed. Keys naming sources absent from ``hits_by_source`` are
+            ignored (a per-round pool may legitimately lack a configured
+            source); callers with a closed source set should validate keys
+            upfront, as federated :func:`ir.discover` does.
         identity: how cross-source duplicates merge — see :data:`Identity`.
             Default ``None``: never; each ``(source, artifact_id)`` stays a
             distinct result.
@@ -531,9 +544,19 @@ def fuse_hits(
     # Per source: stamp provenance, collapse duplicates (keep-max raw score),
     # rank best-first by raw score — the only place raw scores are compared,
     # and only ever within one source.
-    ranked_by_source: list[tuple[str, list[SearchHit]]] = []
+    ranked_by_source: list[tuple[str | None, list[SearchHit]]] = []
     for name, hits in hits_by_source.items():
         deduped = best_per_artifact(tag_source(hits, name))
+        if ident is not None:
+            # Identity-duplicates within ONE source must also collapse before
+            # ranking — otherwise two same-identity artifacts in one list both
+            # contribute mass to one fused key (intra-source double counting).
+            # ``deduped`` is best-first, so first-wins keeps the best-scored
+            # representative; ranks compact naturally.
+            by_key: dict[Any, SearchHit] = {}
+            for h in deduped:
+                by_key.setdefault(ident(h) or (h.source, h.artifact_id), h)
+            deduped = list(by_key.values())
         if deduped:
             ranked_by_source.append((name, deduped))
 

@@ -189,6 +189,28 @@ def test_fuse_hits_rejects_unknown_identity():
         fuse_hits({"a": [_hit("x", 1.0)]}, identity="bogus")
 
 
+def test_fuse_hits_identity_does_not_double_count_within_one_source():
+    # Two DISTINCT artifacts in ONE source sharing a pointer must not both
+    # contribute RRF mass to the merged key (intra-source double counting).
+    a = [
+        _hit("x1", 0.9, metadata={"path": "/same"}),
+        _hit("x2", 0.8, metadata={"path": "/same"}),
+    ]
+    b = [_hit("y", 22.0)]
+    fused = fuse_hits({"a": a, "b": b}, identity="pointer")
+    merged = next(h for h in fused if h.metadata["path"] == "/same")
+    assert merged.score == pytest.approx(1 / 61)  # one rank-1 mass, not 1/61 + 1/62
+    assert "fused_sources" not in merged.metadata  # nothing cross-source merged
+
+
+def test_fuse_hits_none_key_is_the_untagged_pseudo_source():
+    fused = fuse_hits({None: [_hit("u", 0.5)], "s": [_hit("t", 9.0)]})
+    by_id = {h.artifact_id: h for h in fused}
+    assert by_id["u"].source is None  # untagged stays unattributed
+    assert by_id["t"].source == "s"
+    assert by_id["u"].to_dict()["source"] is None  # JSON null, never ""
+
+
 # ----- federated discover --------------------------------------------------- #
 
 
@@ -250,6 +272,53 @@ def test_federated_discover_floor_mapping_rejects_unknown_names(corpora):
     one, two = corpora
     with pytest.raises(ValueError, match="not in this discover call"):
         ir.discover([one, two], "alpha", min_score={"nonesuch": 0.5})
+
+
+def test_federated_floor_mapping_values_are_type_checked(corpora):
+    one, two = corpora
+    with pytest.raises(ValueError, match="invalid min_score for source"):
+        ir.discover([one, two], "alpha", min_score={"one": True})  # bool is not a floor
+    with pytest.raises(ValueError, match="invalid min_score for source"):
+        ir.discover([one, two], "alpha", min_score={"one": "bogus"})
+    with pytest.raises(ValueError, match="invalid min_score for source"):
+        ir.discover([one, two], "alpha", min_score={"one": "0.5"})  # no string coercion
+
+
+def test_federated_merge_weights_reject_unknown_names(corpora):
+    one, two = corpora
+    with pytest.raises(ValueError, match="merge_weights names corpora"):
+        ir.discover(
+            [one, two], "alpha", merge_weights={"oen": 9.0}
+        )  # typo fails loudly
+
+
+def test_federated_abs_threshold_strategy_is_refused_upfront(corpora):
+    one, two = corpora
+    with pytest.raises(ValueError, match="does not apply to federated"):
+        ir.discover([one, two], "alpha", strategy="abs_threshold", min_score="auto")
+
+
+def test_federated_mixed_gate_reason_is_honest(corpora):
+    one, two = corpora
+    # "one" is floor-gated; "two" has no floor and merely matches nothing
+    # (hard filter excludes everything) — the reason must not claim that ALL
+    # sources were below floor.
+    result = ir.discover(
+        [one, two],
+        "alpha apple",
+        min_score={"one": 1e9},
+        filter={"name": {"$in": ["alpha"]}},
+    )
+    assert result.abstained and not result.results
+    assert result.reason == "abstain:no_surviving_sources"  # honest: "two" had no floor
+    assert result.signals["per_source"]["two"]["floor"] is None
+
+
+def test_federated_rejects_unnameable_sources_before_any_resolution(corpora):
+    with pytest.raises(ValueError, match="cannot name corpus"):
+        ir.discover([""], "alpha")  # must fail BEFORE open_corpus('') side effects
+    with pytest.raises(ValueError, match="cannot name corpus"):
+        ir.discover(["   "], "alpha")
 
 
 def test_federated_discover_rejects_empty_and_duplicate_sources(corpora):

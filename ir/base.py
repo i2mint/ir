@@ -167,11 +167,12 @@ def best_per_artifact(hits: Sequence[SearchHit]) -> list[SearchHit]:
     return sorted(seen.values(), key=lambda h: h.score, reverse=True)
 
 
-def tag_source(hits: Sequence[SearchHit], source: str) -> list[SearchHit]:
+def tag_source(hits: Sequence[SearchHit], source: str | None) -> list[SearchHit]:
     """Stamp *source* on every hit that doesn't already carry one.
 
     Existing tags win: a hit already attributed to a corpus keeps that
     attribution (so re-tagging under a different registry key cannot
-    double-count one corpus as two sources).
+    double-count one corpus as two sources). A ``None`` source is the
+    untagged pseudo-source — hits pass through unattributed.
     """
     return [h if h.source is not None else replace(h, source=source) for h in hits]
