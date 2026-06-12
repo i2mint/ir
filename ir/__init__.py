@@ -32,7 +32,7 @@ from .base import Artifact, IndexPlan, Record, SearchHit, Surface, tag_source
 from .formulate import Formulator, make_llm_formulator
 from .index import Corpus, build, open_corpus
 from .registry import retriever_for, retrievers
-from .retrieve import Retriever, as_retriever, fuse_hits
+from .retrieve import Retriever, as_retriever, fuse_hits, records_for_artifact
 from .retrieve import search as _search
 from .select import (
     Disclosure,
@@ -68,6 +68,7 @@ __all__ = [
     "retrievers",
     "retriever_for",
     "fuse_hits",
+    "records_for_artifact",
     "tag_source",
     "make_llm_formulator",
     "Formulator",

@@ -30,7 +30,13 @@ hit lists from **different sources** (corpora / embedders / modes) by weighted
 Reciprocal Rank Fusion — raw scores never cross a source boundary, only ranks
 do. It is the shared cross-source merge primitive consumed by federated
 :func:`ir.discover` and by an orchestration layer's fan-in reranker (ir_09 §3).
-Every search hit carries its corpus name as :attr:`~ir.base.SearchHit.source`.
+Every search hit carries its corpus name as :attr:`~ir.base.SearchHit.source`
+and its surface's plan position as :attr:`~ir.base.SearchHit.surface_index`.
+
+:func:`records_for_artifact` is the hit-operation beneath retrieval-time
+context expansion: given a hit's ``artifact_id``, it returns *all* of that
+artifact's stored records (its sibling surfaces), ordered — resolved through
+the ledger, never by re-deriving record ids.
 """
 
 from __future__ import annotations
@@ -44,7 +50,7 @@ from typing import Any, Callable
 
 import numpy as np
 
-from .base import SearchHit, best_per_artifact, tag_source
+from .base import Record, SearchHit, best_per_artifact, storage_key, tag_source
 from .formulate import Formulator
 
 #: Ranking modes accepted by :func:`search`.
@@ -450,6 +456,7 @@ def search(
             text=meta_by_id[rid]["text"],
             metadata=meta_by_id[rid].get("metadata", {}),
             source=source,
+            surface_index=meta_by_id[rid].get("surface_index"),
         )
         for rid, score in ranked
     ]
@@ -601,6 +608,53 @@ def fuse_hits(
     scored.sort(key=lambda t: (-t[0], t[1], t[2], t[3].artifact_id))
     out = [replace(h, score=score, metadata=meta) for score, _, _, h, meta in scored]
     return out[:k] if k is not None else out
+
+
+# =========================================================================== #
+# Sibling addressing — ledger-backed artifact -> ordered-records lookup
+# =========================================================================== #
+
+
+def records_for_artifact(
+    store_or_corpus, artifact_id: str, *, surface_kind: str | None = None
+) -> list[Record]:
+    """All stored records of *artifact_id*, ordered by ``surface_index``.
+
+    The sibling-addressing primitive beneath retrieval-time context expansion:
+    a :class:`~ir.base.SearchHit` names its artifact (and, via
+    :attr:`~ir.base.SearchHit.surface_index`, which surface of it matched);
+    this returns every surface of that artifact, in plan order, so an expansion
+    policy can stitch neighbors / parents around the hit.
+
+    Resolution is **ledger-backed only**: the artifact's ledger entry lists its
+    ``record_ids``. Record ids are never re-derived from a per-kind index like
+    ``metadata["chunk_index"]`` — on multi-kind strategies that index differs
+    from the plan-global ``surface_index`` baked into the id (see
+    :meth:`ir.base.Record.make_id`), so derivation would fetch wrong or missing
+    siblings.
+
+    Args:
+        store_or_corpus: a :class:`~ir.store.CorpusStore`, or anything carrying
+            one as ``.store`` (e.g. a :class:`~ir.index.Corpus`).
+        artifact_id: the artifact whose surfaces to fetch.
+        surface_kind: restrict to one surface kind (e.g. ``"readme_chunk"``).
+
+    Raises:
+        KeyError: if the ledger has no entry for *artifact_id* — an unknown
+            artifact, or a corpus built without :func:`ir.index.build`'s
+            ledger bookkeeping.
+    """
+    store = getattr(store_or_corpus, "store", store_or_corpus)
+    entry = store.get_ledger_entry(storage_key(artifact_id))
+    if entry is None:
+        raise KeyError(
+            f"no ledger entry for artifact {artifact_id!r}: unknown artifact, "
+            f"or a corpus built without ledger bookkeeping"
+        )
+    records = [store.get_record(rid) for rid in entry.get("record_ids", [])]
+    if surface_kind is not None:
+        records = [r for r in records if r.surface_kind == surface_kind]
+    return sorted(records, key=lambda r: r.surface_index)
 
 
 # =========================================================================== #

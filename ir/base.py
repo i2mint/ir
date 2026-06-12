@@ -97,7 +97,21 @@ class Record:
 
     @staticmethod
     def make_id(artifact_id: str, surface_kind: str, surface_index: int) -> str:
-        """Deterministic storage id for a surface of an artifact."""
+        """Deterministic storage id for a surface of an artifact.
+
+        ``surface_index`` is the surface's **plan-global** position — its
+        enumeration index across *all* surfaces of the artifact's
+        :class:`IndexPlan`, regardless of kind — as assigned by
+        :func:`ir.index.build`. On multi-kind strategies it therefore differs
+        from per-kind counters like ``metadata["chunk_index"]`` (e.g.
+        :class:`~ir.strategy.Package`: the ``description`` surface takes
+        position 0, shifting ``readme_chunk`` *j* to ``surface_index`` ``j+1``
+        — and the offset is plan-dependent, since empty surfaces are dropped).
+
+        Ids of already-built corpora are a stability contract: never re-derive
+        a sibling's id from a per-kind index — address siblings through the
+        ledger via :func:`ir.retrieve.records_for_artifact`.
+        """
         return storage_key(artifact_id, surface_kind, str(surface_index))
 
 
@@ -116,6 +130,14 @@ class SearchHit:
     hard-filter namespace and provenance is structural: artifact identity is
     only unique *within* a source, so any cross-source operation keys on
     ``(source, artifact_id)`` (see :func:`best_per_artifact`).
+
+    ``surface_index`` is the stored :attr:`Record.surface_index` of the hit's
+    surface — its plan-global position among the artifact's surfaces — so a
+    hit can name *which* surface of its artifact it is (the prerequisite for
+    sibling addressing and context expansion). ``None`` when unknown (e.g. a
+    hand-built hit). It is **not** the per-kind ``metadata["chunk_index"]``;
+    see :meth:`Record.make_id` for why the two differ on multi-kind
+    strategies.
     """
 
     artifact_id: str
@@ -124,6 +146,7 @@ class SearchHit:
     text: str
     metadata: Mapping[str, Any] = field(default_factory=dict)
     source: str | None = None
+    surface_index: int | None = None
 
     @property
     def pointer(self) -> str | None:
@@ -143,6 +166,7 @@ class SearchHit:
             "text": self.text,
             "metadata": dict(self.metadata),
             "source": self.source,
+            "surface_index": self.surface_index,
         }
 
 
