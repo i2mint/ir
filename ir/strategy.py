@@ -169,8 +169,9 @@ class Package:
     Filter fields capture ownership (ours vs third-party), name, deps. AI
     synopsis / problem-class surfaces are a documented extension point.
 
-    Surface indexing: the ``description`` surface (when non-empty) occupies
-    plan position 0, so ``readme_chunk`` *j* is stored with
+    Surface indexing: the ``description`` surface (kept whenever *name* or
+    *description* is non-empty) occupies plan position 0, so ``readme_chunk``
+    *j* is stored with
     ``Record.surface_index == j + 1`` while its surface metadata says
     ``chunk_index == j`` — ``surface_index`` is plan-global, ``chunk_index``
     per-kind (see :meth:`ir.base.Record.make_id`). Never derive sibling record
@@ -206,7 +207,15 @@ class Package:
                 granularity="field",
             )
         ]
-        chunks = _split(readme, chunk_size=self.chunk_size, overlap=self.overlap)
+        # Keep only non-blank chunks BEFORE stamping: _split's hard-split
+        # branch can slice out whitespace-only chunks (a long whitespace run
+        # with no blank line), which the empty-surface drop below would remove
+        # anyway — counting them would overstate n_chunks and gap chunk_index.
+        chunks = [
+            c
+            for c in _split(readme, chunk_size=self.chunk_size, overlap=self.overlap)
+            if c.strip()
+        ]
         for i, chunk in enumerate(chunks):
             surfaces.append(
                 Surface(

@@ -23,7 +23,7 @@ from typing import Any, Callable
 
 import numpy as np
 
-from .base import Record, storage_key
+from .base import Record, ledger_key
 from .embed import make_embedder
 from .sources import CorpusSource
 from .store import CorpusStore
@@ -113,7 +113,7 @@ def build(
     for artifact_id, raw in source.items():
         seen.add(artifact_id)
         version = source.change_signal(artifact_id, raw)
-        key = storage_key(artifact_id)
+        key = ledger_key(artifact_id)
         prev = store.get_ledger_entry(key)
         if (
             prev

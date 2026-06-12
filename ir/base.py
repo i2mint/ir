@@ -49,6 +49,17 @@ def storage_key(*parts: str) -> str:
     return h[:24]
 
 
+def ledger_key(artifact_id: str) -> str:
+    """The ledger key under which an artifact's entry is filed.
+
+    The single source of truth for ledger keying — :func:`ir.index.build`
+    writes entries under this key and readers (e.g.
+    :func:`ir.retrieve.records_for_artifact`) resolve them with it, so the
+    two can never drift apart.
+    """
+    return storage_key(artifact_id)
+
+
 @dataclass
 class Artifact:
     """A logical corpus item before decomposition into surfaces."""

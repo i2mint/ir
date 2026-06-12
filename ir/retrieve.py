@@ -50,7 +50,7 @@ from typing import Any, Callable
 
 import numpy as np
 
-from .base import Record, SearchHit, best_per_artifact, storage_key, tag_source
+from .base import Record, SearchHit, best_per_artifact, ledger_key, tag_source
 from .formulate import Formulator
 
 #: Ranking modes accepted by :func:`search`.
@@ -634,24 +634,42 @@ def records_for_artifact(
     siblings.
 
     Args:
-        store_or_corpus: a :class:`~ir.store.CorpusStore`, or anything carrying
-            one as ``.store`` (e.g. a :class:`~ir.index.Corpus`).
+        store_or_corpus: a :class:`~ir.store.CorpusStore`, anything carrying
+            one as ``.store`` (e.g. a :class:`~ir.index.Corpus`), or a corpus
+            *name* (resolved via :func:`ir.index.open_corpus`, like the other
+            corpus-taking entry points).
         artifact_id: the artifact whose surfaces to fetch.
-        surface_kind: restrict to one surface kind (e.g. ``"readme_chunk"``).
+        surface_kind: restrict to one surface kind (e.g. ``"readme_chunk"``);
+            a known artifact with no surfaces of that kind yields ``[]``.
 
     Raises:
-        KeyError: if the ledger has no entry for *artifact_id* — an unknown
+        KeyError: if the ledger has no entry for *artifact_id* (an unknown
             artifact, or a corpus built without :func:`ir.index.build`'s
-            ledger bookkeeping.
+            ledger bookkeeping) — or, with a message naming the artifact, if
+            an entry lists a record missing from the store (a stale ledger:
+            interrupted build or out-of-band ``delete_record``).
     """
+    if isinstance(store_or_corpus, str):
+        from .index import open_corpus
+
+        store_or_corpus = open_corpus(store_or_corpus)
     store = getattr(store_or_corpus, "store", store_or_corpus)
-    entry = store.get_ledger_entry(storage_key(artifact_id))
+    entry = store.get_ledger_entry(ledger_key(artifact_id))
     if entry is None:
         raise KeyError(
             f"no ledger entry for artifact {artifact_id!r}: unknown artifact, "
             f"or a corpus built without ledger bookkeeping"
         )
-    records = [store.get_record(rid) for rid in entry.get("record_ids", [])]
+    records = []
+    for rid in entry.get("record_ids", []):
+        try:
+            records.append(store.get_record(rid))
+        except KeyError:
+            raise KeyError(
+                f"ledger entry for artifact {artifact_id!r} lists record "
+                f"{rid!r}, which is missing from the store (stale ledger — "
+                f"interrupted build or out-of-band delete?); rebuild the corpus"
+            ) from None
     if surface_kind is not None:
         records = [r for r in records if r.surface_kind == surface_kind]
     return sorted(records, key=lambda r: r.surface_index)

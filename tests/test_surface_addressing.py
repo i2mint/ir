@@ -150,6 +150,28 @@ def test_records_for_artifact_unknown_artifact_raises_keyerror():
         ir.records_for_artifact(corpus, "nope")
 
 
+def test_records_for_artifact_unmatched_kind_returns_empty():
+    # Contrast with the unknown-artifact path: a KNOWN artifact with no
+    # surfaces of the requested kind is a filter miss, not an error.
+    corpus = _package_corpus()
+    assert ir.records_for_artifact(corpus, "dol", surface_kind="nope") == []
+
+
+def test_records_for_artifact_accepts_corpus_name(tmp_path, monkeypatch):
+    monkeypatch.setenv("IR_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("IR_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setenv("IR_CONFIG_DIR", str(tmp_path / "config"))
+    src = ir.CorpusSource.from_mapping(
+        {"big": {"text": LONG}},
+        name="sibname",
+        strategy=ir.Chunked(chunk_size=120, overlap=20),
+    )
+    ir.build(src, embedder="light")  # default = local store
+    records = ir.records_for_artifact("sibname", "big")
+    assert len(records) > 1
+    assert [r.surface_index for r in records] == list(range(len(records)))
+
+
 def test_records_for_artifact_immune_to_plan_dependent_offset():
     # An empty name + description drops the description surface, so readme
     # chunks start at plan position 0 — the offset is plan-dependent. The
@@ -158,9 +180,14 @@ def test_records_for_artifact_immune_to_plan_dependent_offset():
         {"anon": {"name": "", "description": "", "readme": LONG}}, name="anonpkg"
     )
     records = ir.records_for_artifact(corpus, "anon")
+    assert len(records) > 1  # guard: chunking really produced siblings
     assert all(r.surface_kind == "readme_chunk" for r in records)
     for j, r in enumerate(records):
         assert r.surface_index == j == r.metadata["chunk_index"]
+    # Hits over the same corpus read the stored position too — an
+    # implementation hardcoding Package's usual +1 offset would fail here.
+    hits = ir.search(corpus, "deploy server", k=50, per_artifact=False)
+    assert hits and all(h.surface_index == h.metadata["chunk_index"] for h in hits)
 
 
 # --------------------------------------------------------------------------- #
@@ -178,6 +205,19 @@ def test_package_stamps_n_chunks_on_readme_chunks():
         assert type(s.metadata["n_chunks"]) is int  # JSON-clean, no numpy
     (desc,) = [s for s in plan.surfaces if s.kind == "description"]
     assert "n_chunks" not in desc.metadata
+
+
+def test_package_n_chunks_counts_only_kept_chunks():
+    # _split's hard-split branch can slice out whitespace-only chunks (a long
+    # whitespace run with no blank line); they are dropped, and n_chunks /
+    # chunk_index must count only the chunks that survive.
+    raw = {"name": "w", "description": "d", "readme": "start" + " " * 500 + "end"}
+    plan = ir.Package(chunk_size=120, overlap=20).decompose("w", raw)
+    chunks = [s for s in plan.surfaces if s.kind == "readme_chunk"]
+    assert len(chunks) > 1
+    assert all(s.text.strip() for s in chunks)
+    assert [s.metadata["chunk_index"] for s in chunks] == list(range(len(chunks)))
+    assert all(s.metadata["n_chunks"] == len(chunks) for s in chunks)
 
 
 def test_n_chunks_flows_to_hits():
