@@ -71,3 +71,22 @@ def test_split_hard_splits_oversized_paragraph():
     chunks = _split(text, chunk_size=200, overlap=20)
     assert len(chunks) >= 5
     assert all(len(c) <= 200 for c in chunks)
+
+
+def test_split_never_emits_blank_chunks():
+    # A >= chunk_size whitespace run with no blank line stays one "paragraph"
+    # (the regex only splits on blank lines); hard-splitting it must skip the
+    # whitespace-only slices.
+    chunks = _split("start" + " " * 500 + "end", chunk_size=120, overlap=20)
+    assert len(chunks) > 1
+    assert all(c.strip() for c in chunks)
+
+
+def test_chunked_whitespace_run_yields_no_blank_surfaces():
+    text = "start" + " " * 500 + "end"
+    plan = Chunked(chunk_size=120, overlap=20).decompose("w", text)
+    assert plan.surfaces and all(s.text.strip() for s in plan.surfaces)
+    n = len(plan.surfaces)
+    # chunk_index contiguous and n_chunks counts only real (stored) chunks.
+    assert [s.metadata["chunk_index"] for s in plan.surfaces] == list(range(n))
+    assert all(s.metadata["n_chunks"] == n for s in plan.surfaces)

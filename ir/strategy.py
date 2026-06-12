@@ -61,6 +61,12 @@ def _split(text: str, *, chunk_size: int, overlap: int) -> list[str]:
     (carrying an ``overlap`` tail between chunks). Paragraphs longer than
     ``chunk_size`` are hard-split. This packs to a target size rather than
     emitting one chunk per paragraph.
+
+    Never emits blank chunks: hard-splitting a paragraph that contains a long
+    whitespace run (no blank line, so the paragraph regex doesn't split it)
+    can slice out whitespace-only pieces — those are skipped, so every chunk
+    is embeddable and per-chunk metadata (``chunk_index`` / ``n_chunks``)
+    counts only real chunks.
     """
     text = text.strip()
     if not text:
@@ -77,7 +83,11 @@ def _split(text: str, *, chunk_size: int, overlap: int) -> list[str]:
                 chunks.append(cur)
                 cur = ""
             step = max(1, chunk_size - overlap)
-            chunks.extend(para[i : i + chunk_size] for i in range(0, len(para), step))
+            chunks.extend(
+                piece
+                for i in range(0, len(para), step)
+                if (piece := para[i : i + chunk_size]).strip()
+            )
             continue
         if cur and len(cur) + 2 + len(para) > chunk_size:
             chunks.append(cur)
@@ -207,15 +217,7 @@ class Package:
                 granularity="field",
             )
         ]
-        # Keep only non-blank chunks BEFORE stamping: _split's hard-split
-        # branch can slice out whitespace-only chunks (a long whitespace run
-        # with no blank line), which the empty-surface drop below would remove
-        # anyway — counting them would overstate n_chunks and gap chunk_index.
-        chunks = [
-            c
-            for c in _split(readme, chunk_size=self.chunk_size, overlap=self.overlap)
-            if c.strip()
-        ]
+        chunks = _split(readme, chunk_size=self.chunk_size, overlap=self.overlap)
         for i, chunk in enumerate(chunks):
             surfaces.append(
                 Surface(
