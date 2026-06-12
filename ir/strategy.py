@@ -168,6 +168,18 @@ class Package:
 
     Filter fields capture ownership (ours vs third-party), name, deps. AI
     synopsis / problem-class surfaces are a documented extension point.
+
+    Surface indexing: the ``description`` surface (kept whenever *name* or
+    *description* is non-empty) occupies plan position 0, so ``readme_chunk``
+    *j* is stored with
+    ``Record.surface_index == j + 1`` while its surface metadata says
+    ``chunk_index == j`` — ``surface_index`` is plan-global, ``chunk_index``
+    per-kind (see :meth:`ir.base.Record.make_id`). Never derive sibling record
+    ids from ``chunk_index``; use the ledger
+    (:func:`ir.retrieve.records_for_artifact`). ``n_chunks`` is stamped on
+    readme chunks at decompose time, but corpora built before the stamp keep
+    records without it until the artifact re-indexes (content / embedder /
+    strategy change) — read it with ``metadata.get("n_chunks")``.
     """
 
     def __init__(self, *, chunk_size: int = 1500, overlap: int = 200):
@@ -195,16 +207,23 @@ class Package:
                 granularity="field",
             )
         ]
-        for i, chunk in enumerate(
-            _split(readme, chunk_size=self.chunk_size, overlap=self.overlap)
-        ):
+        # Keep only non-blank chunks BEFORE stamping: _split's hard-split
+        # branch can slice out whitespace-only chunks (a long whitespace run
+        # with no blank line), which the empty-surface drop below would remove
+        # anyway — counting them would overstate n_chunks and gap chunk_index.
+        chunks = [
+            c
+            for c in _split(readme, chunk_size=self.chunk_size, overlap=self.overlap)
+            if c.strip()
+        ]
+        for i, chunk in enumerate(chunks):
             surfaces.append(
                 Surface(
                     artifact_id,
                     "readme_chunk",
                     chunk,
                     granularity="chunk",
-                    metadata={"chunk_index": i},
+                    metadata={"chunk_index": i, "n_chunks": len(chunks)},
                 )
             )
         # Drop empty surfaces (e.g. no description and no README).
