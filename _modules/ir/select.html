@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.select &mdash; ir 0.1.17 documentation</title>
+  <title>ir.select &mdash; ir 0.1.18 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=71734efd"></script>
+      <script src="../../_static/documentation_options.js?v=9969ed3f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -54,6 +54,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/expand.html">ir.expand</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
@@ -124,6 +125,10 @@
 <span class="sd">  abstention). Pure; offline; no model.</span>
 <span class="sd">- :func:`disclose` — a :class:`Selection` → per-item :class:`Disclosure`</span>
 <span class="sd">  payloads at a chosen level (``&quot;metadata&quot;`` / ``&quot;body&quot;`` / ``&quot;bundled&quot;``).</span>
+<span class="sd">  Orthogonally, ``expand=`` (a :data:`~ir.expand.NeighborhoodPolicy`, with</span>
+<span class="sd">  ``corpus=``) stitches each hit&#39;s stored neighborhood into</span>
+<span class="sd">  :attr:`Disclosure.passage` — the mid-granularity payload between the matched</span>
+<span class="sd">  surface and the pointer&#39;s full body (see :mod:`ir.expand`).</span>
 <span class="sd">- :func:`discover` — the single agent-callable tool: retrieve → select →</span>
 <span class="sd">  (optionally) disclose, returning a JSON-serializable :class:`DiscoveryResult`.</span>
 <span class="sd">  This is the qh-exposable surface (pass a corpus *name*; get back ``.to_dict()``).</span>
@@ -155,6 +160,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">POINTER_KEYS</span><span class="p">,</span> <span class="n">SearchHit</span><span class="p">,</span> <span class="n">best_per_artifact</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.expand</span><span class="w"> </span><span class="kn">import</span> <span class="n">NeighborhoodPolicy</span><span class="p">,</span> <span class="n">SeedNotFound</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.expand</span><span class="w"> </span><span class="kn">import</span> <span class="n">expand</span> <span class="k">as</span> <span class="n">_expand</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">NoLedgerEntry</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span> <span class="k">as</span> <span class="n">_search</span>
 
 <span class="c1">#: A selector: ranked hits → the committed subset (a pure ranking decision).</span>
@@ -638,10 +646,18 @@
 <span class="sd">        pointer: the source pointer (``skill_path`` / ``path``) — the &quot;package</span>
 <span class="sd">            pointer&quot; an agent follows to act; ``None`` if the hit has none.</span>
 <span class="sd">        metadata: the hit&#39;s filter metadata, plus a ``disclosure`` note when a</span>
-<span class="sd">            pointer was present but unreadable (stale/moved/deleted).</span>
+<span class="sd">            pointer was present but unreadable (stale/moved/deleted), and an</span>
+<span class="sd">            ``expansion`` note when expansion was requested but not possible</span>
+<span class="sd">            for this hit.</span>
 <span class="sd">        source: the corpus/source name the selecting hit came from (``None``</span>
 <span class="sd">            when unattributed) — the attribution a federated caller needs to</span>
 <span class="sd">            tell two same-id artifacts from different corpora apart.</span>
+<span class="sd">        passage: the expanded neighborhood text (``disclose(..., expand=...)``)</span>
+<span class="sd">            — the mid-granularity payload between ``summary`` (the matched</span>
+<span class="sd">            surface) and ``body`` (the pointer&#39;s full text); ``None`` when</span>
+<span class="sd">            expansion was not requested or not possible. Assembled from the</span>
+<span class="sd">            corpus&#39;s *stored records* (see :mod:`ir.expand`), unlike ``body``,</span>
+<span class="sd">            which dereferences the pointer to an external resource.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span>
@@ -653,6 +669,7 @@
     <span class="n">pointer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">passage</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="Disclosure.to_dict">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Disclosure.to_dict">[docs]</a>
@@ -668,6 +685,7 @@
             <span class="s2">&quot;pointer&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointer</span><span class="p">,</span>
             <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
             <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="s2">&quot;passage&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">passage</span><span class="p">,</span>
         <span class="p">}</span></div>
 </div>
 
@@ -735,6 +753,68 @@
     <span class="k">return</span> <span class="kc">None</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_expansion_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve ``disclose``&#39;s ``corpus=`` spec once, upfront.</span>
+
+<span class="sd">    A corpus *name* resolves straight to its local store — deliberately not</span>
+<span class="sd">    via :func:`ir.open_corpus`, which would eagerly load the corpus&#39;s</span>
+<span class="sd">    embedder; expansion only reads stored records and never embeds. Mapping</span>
+<span class="sd">    values resolve the same way. Resolving once per :func:`disclose` call</span>
+<span class="sd">    means an N-hit disclosure never re-opens a store (or re-loads a model)</span>
+<span class="sd">    per hit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusStore</span>
+
+        <span class="k">return</span> <span class="n">CorpusStore</span><span class="o">.</span><span class="n">local</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">_resolve_expansion_corpus</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">corpus</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">return</span> <span class="n">corpus</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_expand_passage</span><span class="p">(</span>
+    <span class="n">hit</span><span class="p">:</span> <span class="n">SearchHit</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">policy</span><span class="p">:</span> <span class="n">NeighborhoodPolicy</span><span class="p">,</span>
+    <span class="n">corpus_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;tuple[str | None, str | None]&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;``(passage, None)`` for *hit*, or ``(None, why_not)``.</span>
+
+<span class="sd">    Per-hit tolerance mirrors the stale-pointer handling — these are *data*</span>
+<span class="sd">    conditions, and disclosure never raises on them:</span>
+
+<span class="sd">    - a federated source absent from the ``corpus`` mapping, or a single</span>
+<span class="sd">      named corpus that is not the hit&#39;s source (expanding against the wrong</span>
+<span class="sd">      corpus would silently stitch a same-id stranger&#39;s text — artifact</span>
+<span class="sd">      identity is only unique within a source) → ``&quot;no_corpus_for_source&quot;``;</span>
+<span class="sd">    - no ledger entry for the artifact → ``&quot;no_ledger_entry&quot;``;</span>
+<span class="sd">    - the seed no longer among its siblings (stale hit) → ``&quot;seed_not_found&quot;``.</span>
+
+<span class="sd">    Everything else still raises: a torn store (a ledger entry listing</span>
+<span class="sd">    missing records — corruption whose error names the remedy) and policy</span>
+<span class="sd">    bugs are programming/integrity errors, not data conditions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;no_corpus_for_source&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">corpus</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">corpus_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">hit</span><span class="o">.</span><span class="n">source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">hit</span><span class="o">.</span><span class="n">source</span> <span class="o">!=</span> <span class="n">corpus_name</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;no_corpus_for_source&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_expand</span><span class="p">(</span><span class="n">hit</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="n">NoLedgerEntry</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;no_ledger_entry&quot;</span>
+    <span class="k">except</span> <span class="n">SeedNotFound</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;seed_not_found&quot;</span>
+
+
 <div class="viewcode-block" id="disclose">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.disclose">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">disclose</span><span class="p">(</span>
@@ -743,6 +823,8 @@
     <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;body&quot;</span><span class="p">,</span>
     <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">store</span><span class="p">:</span> <span class="n">ResourceStore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">expand</span><span class="p">:</span> <span class="n">NeighborhoodPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Disclosure</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Reveal the payload of each selected hit at ``level`` — append-only, pure.</span>
 
@@ -757,6 +839,18 @@
 <span class="sd">        store: a :data:`ResourceStore` (``pointer -&gt; payload`` ``Mapping``) to</span>
 <span class="sd">            dereference instead of disk — ir_09 §5 pointer-passing over a ``dol``</span>
 <span class="sd">            store / URL map / blob storage. Mutually exclusive with ``loader``.</span>
+<span class="sd">        expand: a :data:`~ir.expand.NeighborhoodPolicy` to also stitch each</span>
+<span class="sd">            hit&#39;s neighborhood from the corpus&#39;s stored records into</span>
+<span class="sd">            :attr:`Disclosure.passage` (see :mod:`ir.expand`). Orthogonal to</span>
+<span class="sd">            ``level``, which governs *pointer* payloads: e.g.</span>
+<span class="sd">            ``level=&quot;metadata&quot;, expand=sentence_window_policy()`` reads no</span>
+<span class="sd">            pointer at all but still returns mid-granularity passages.</span>
+<span class="sd">            Requires ``corpus=``.</span>
+<span class="sd">        corpus: where ``expand`` finds each hit&#39;s stored siblings — a</span>
+<span class="sd">            :class:`~ir.index.Corpus` / :class:`~ir.store.CorpusStore` / name,</span>
+<span class="sd">            or, for cross-source selections, a ``{source_name: corpus}``</span>
+<span class="sd">            ``Mapping`` resolved per hit via ``hit.source``. Only meaningful</span>
+<span class="sd">            with ``expand=``.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        one :class:`Disclosure` per selected hit, best-first. This is a pure</span>
@@ -769,12 +863,26 @@
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;pass either loader= or store=, not both&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">expand</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">corpus</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;disclose(expand=...) needs corpus= (a Corpus / CorpusStore / name, &quot;</span>
+            <span class="s2">&quot;or a {source_name: corpus} mapping) to fetch each hit&#39;s siblings&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">corpus</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;corpus= is only meaningful together with expand=&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">load</span> <span class="o">=</span> <span class="n">_store_body_loader</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">load</span> <span class="o">=</span> <span class="n">loader</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">load</span> <span class="o">=</span> <span class="n">_default_body_loader</span>
+    <span class="n">corpus_name</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">expand</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">corpus_name</span> <span class="o">=</span> <span class="n">corpus</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            <span class="n">corpus_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">corpus</span> <span class="o">=</span> <span class="n">_resolve_expansion_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
     <span class="n">out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Disclosure</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">selection</span><span class="o">.</span><span class="n">selected</span><span class="p">:</span>
         <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
@@ -784,6 +892,13 @@
             <span class="n">body</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">body</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;disclosure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;pointer_unreadable&quot;</span>
+        <span class="n">passage</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">expand</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">passage</span><span class="p">,</span> <span class="n">note</span> <span class="o">=</span> <span class="n">_expand_passage</span><span class="p">(</span>
+                <span class="n">hit</span><span class="p">,</span> <span class="n">corpus</span><span class="o">=</span><span class="n">corpus</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">expand</span><span class="p">,</span> <span class="n">corpus_name</span><span class="o">=</span><span class="n">corpus_name</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">note</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;expansion&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">note</span>
         <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="n">Disclosure</span><span class="p">(</span>
                 <span class="n">artifact_id</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
@@ -795,6 +910,7 @@
                 <span class="n">pointer</span><span class="o">=</span><span class="n">pointer</span><span class="p">,</span>
                 <span class="n">metadata</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
                 <span class="n">source</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+                <span class="n">passage</span><span class="o">=</span><span class="n">passage</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span></div>
@@ -928,6 +1044,7 @@
     <span class="n">merge_rrf_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">store</span><span class="p">:</span> <span class="n">ResourceStore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">expand</span><span class="p">:</span> <span class="n">NeighborhoodPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscoveryResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Find and commit to the capabilities for ``query`` — the one search tool.</span>
@@ -982,6 +1099,11 @@
 <span class="sd">            (default: :data:`~ir.retrieve.DFLT_RRF_K`; distinct from the</span>
 <span class="sd">            within-corpus hybrid ``rrf_k`` in ``search_kw``).</span>
 <span class="sd">        loader: optional body resolver for disclosure (see :func:`disclose`).</span>
+<span class="sd">        expand: a :data:`~ir.expand.NeighborhoodPolicy` — also stitch each</span>
+<span class="sd">            committed hit&#39;s neighborhood from its corpus&#39;s stored records into</span>
+<span class="sd">            :attr:`Disclosure.passage` (retrieval-time context expansion, see</span>
+<span class="sd">            :mod:`ir.expand`). Works at any ``disclose_level``; the federated</span>
+<span class="sd">            form resolves each hit&#39;s corpus via its ``source``.</span>
 <span class="sd">        **search_kw: any other :func:`ir.retrieve.search` keyword (``rrf_k``,</span>
 <span class="sd">            ``rerank``, ``bm25``, …).</span>
 
@@ -1010,6 +1132,7 @@
             <span class="n">merge_rrf_k</span><span class="o">=</span><span class="n">merge_rrf_k</span><span class="p">,</span>
             <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
             <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span>
+            <span class="n">expand</span><span class="o">=</span><span class="n">expand</span><span class="p">,</span>
             <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">merge</span> <span class="o">!=</span> <span class="s2">&quot;rrf&quot;</span> <span class="ow">or</span> <span class="n">merge_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">merge_rrf_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1053,7 +1176,14 @@
         <span class="n">gap_ratio</span><span class="o">=</span><span class="n">gap_ratio</span><span class="p">,</span>
         <span class="n">min_score</span><span class="o">=</span><span class="n">min_score</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">disclose</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">disclose</span><span class="p">(</span>
+        <span class="n">selection</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span>
+        <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+        <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span>
+        <span class="n">expand</span><span class="o">=</span><span class="n">expand</span><span class="p">,</span>
+        <span class="n">corpus</span><span class="o">=</span><span class="n">corpus</span> <span class="k">if</span> <span class="n">expand</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">DiscoveryResult</span><span class="p">(</span>
         <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
         <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
@@ -1186,6 +1316,7 @@
     <span class="n">merge_rrf_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">store</span><span class="p">:</span> <span class="n">ResourceStore</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">expand</span><span class="p">:</span> <span class="n">NeighborhoodPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscoveryResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Single-shot federated discover: fan-out → gate → fuse → select → disclose.</span>
@@ -1293,7 +1424,16 @@
             <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;abstain:all_sources_below_floor&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;abstain:no_surviving_sources&quot;</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">disclose</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">disclose</span><span class="p">(</span>
+        <span class="n">selection</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span>
+        <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+        <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span>
+        <span class="n">expand</span><span class="o">=</span><span class="n">expand</span><span class="p">,</span>
+        <span class="c1"># Resolve each hit&#39;s corpus by its source attribution — the fused</span>
+        <span class="c1"># selection mixes sources, and sibling lookups must hit the right one.</span>
+        <span class="n">corpus</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">resolved</span><span class="p">)</span> <span class="k">if</span> <span class="n">expand</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">merge_name</span> <span class="o">=</span> <span class="n">merge</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">merge</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span>
     <span class="n">signals</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">selection</span><span class="o">.</span><span class="n">signals</span><span class="p">),</span>

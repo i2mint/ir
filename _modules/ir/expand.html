@@ -1,0 +1,410 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.expand &mdash; ir 0.1.18 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=9969ed3f"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/expand.html">ir.expand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../ir.html">ir</a></li>
+      <li class="breadcrumb-item active">ir.expand</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ir.expand</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Retrieval-time context expansion — the ``expand(hit)`` operator (report 13).</span>
+
+<span class="sd">A retriever returns the matched chunk in isolation; the unit downstream wants</span>
+<span class="sd">is usually neither the bare chunk nor the whole document. Sentence-window,</span>
+<span class="sd">parent-document, auto-merging, and topic-bounded expansion are **the same</span>
+<span class="sd">operator with different neighborhood policies** over NEXT/PREV/PARENT segment</span>
+<span class="sd">relationships, so ir ships ONE operator parameterized by an injectable</span>
+<span class="sd">:data:`NeighborhoodPolicy` — the same callable-seam style as ``Selector`` and</span>
+<span class="sd">``Formulator``.</span>
+
+<span class="sd">Pipeline position: **retrieve → expand → rerank** — expansion composes after</span>
+<span class="sd">retrieval (and selection) and before reranking/generation, enriching what the</span>
+<span class="sd">reader sees without touching hit identity ``(source, artifact_id)`` or scores.</span>
+<span class="sd">The disclosure seam exposes it as ``disclose(..., expand=policy, corpus=...)``</span>
+<span class="sd">(the :class:`~ir.select.Disclosure` gains a ``passage``), and</span>
+<span class="sd">``discover(..., expand=...)`` opts in end-to-end.</span>
+
+<span class="sd">Sibling segments are resolved through the ledger only</span>
+<span class="sd">(:func:`ir.retrieve.records_for_artifact` — never by re-deriving record ids;</span>
+<span class="sd">see :meth:`ir.base.Record.make_id`), which is what makes multi-kind strategies</span>
+<span class="sd">(:class:`~ir.strategy.Package`) expand correctly.</span>
+
+<span class="sd">Stitching is **overlap-aware and conservative**: chunkers carry an overlap tail</span>
+<span class="sd">between consecutive chunks, so naive concatenation duplicates text. Adjacent</span>
+<span class="sd">same-kind segments are deduped by their longest suffix→prefix match; anything</span>
+<span class="sd">non-adjacent or cross-kind joins with a blank line and is never deduped, so an</span>
+<span class="sd">accidental match can never *truncate* text — when in doubt, the stitcher</span>
+<span class="sd">prefers a little duplication over any loss.</span>
+
+<span class="sd">Shipped policies: :func:`sentence_window_policy` (±k same-kind neighbors — the</span>
+<span class="sd">zero-config default) and :func:`parent_policy` (the whole artifact,</span>
+<span class="sd">small-to-big). Auto-merging and topic-bounded policies are deliberately not</span>
+<span class="sd">shipped until evaluation shows queries spanning sibling leaves (report 13&#39;s</span>
+<span class="sd">stage-3 gate); both fit the same :data:`NeighborhoodPolicy` seam.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Record</span><span class="p">,</span> <span class="n">SearchHit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">records_for_artifact</span>
+
+<span class="c1">#: Default sentence-window half-width (±chunks around the seed). Segments are</span>
+<span class="c1">#: ~chunk_size paragraph-packed chunks (not sentences), so ±1 already roughly</span>
+<span class="c1">#: triples the seed snippet; raise ``k`` for sentence-granularity corpora.</span>
+<span class="n">DFLT_WINDOW</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="c1">#: Minimum suffix→prefix match length treated as real chunker overlap when</span>
+<span class="c1">#: stitching. Below this, a match is more likely coincidence than carry-over;</span>
+<span class="c1">#: the stitcher then joins with a blank line instead (duplication over</span>
+<span class="c1">#: truncation — see module docstring).</span>
+<span class="n">DFLT_MIN_STITCH_OVERLAP</span> <span class="o">=</span> <span class="mi">8</span>
+
+<span class="c1">#: A neighborhood policy: ``(seed_hit, ordered_siblings) -&gt; the records to</span>
+<span class="c1">#: stitch``. Pure membership selection over the artifact&#39;s ledger-ordered</span>
+<span class="c1">#: sibling records — the operator owns fetching, ordering, and stitching, so a</span>
+<span class="c1">#: policy cannot corrupt assembly (non-sibling records are rejected, output is</span>
+<span class="c1">#: re-ordered to plan order, an empty selection degrades to the seed&#39;s text).</span>
+<span class="n">NeighborhoodPolicy</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">SearchHit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Record</span><span class="p">]],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Record</span><span class="p">]]</span>
+
+
+<div class="viewcode-block" id="SeedNotFound">
+<a class="viewcode-back" href="../../module_docs/ir/expand.html#ir.SeedNotFound">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SeedNotFound</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The seed hit&#39;s ``(surface_kind, surface_index)`` is not among its</span>
+<span class="sd">    artifact&#39;s stored records — typically a corpus re-chunked between search</span>
+<span class="sd">    and expansion (a stale hit), or a hit expanded against the wrong corpus.</span>
+
+<span class="sd">    A ``ValueError`` subclass so existing ``except ValueError`` handling keeps</span>
+<span class="sd">    working; the disclosure seam catches it per hit (a data condition, not a</span>
+<span class="sd">    programming error) and notes ``expansion=&quot;seed_not_found&quot;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Passage">
+<a class="viewcode-back" href="../../module_docs/ir/expand.html#ir.Passage">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Passage</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An expanded hit: the seed&#39;s identity + the stitched neighborhood text.</span>
+
+<span class="sd">    ``artifact_id`` / ``surface_kind`` / ``score`` / ``source`` /</span>
+<span class="sd">    ``surface_index`` are the **seed hit&#39;s** — expansion never disturbs hit</span>
+<span class="sd">    identity ``(source, artifact_id)`` or scores. ``text`` is the assembled</span>
+<span class="sd">    neighborhood (overlap-deduped, plan order) and ``record_ids`` the ordered</span>
+<span class="sd">    stored segments it was stitched from (empty when expansion degraded to the</span>
+<span class="sd">    seed&#39;s own text).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">surface_kind</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">score</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">record_ids</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">surface_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Passage.to_dict">
+<a class="viewcode-back" href="../../module_docs/ir/expand.html#ir.Passage.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form (``score`` cast to ``float``, ids as a list).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;artifact_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+            <span class="s2">&quot;surface_kind&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
+            <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+            <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="s2">&quot;record_ids&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">record_ids</span><span class="p">),</span>
+            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="s2">&quot;surface_index&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_index</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="sentence_window_policy">
+<a class="viewcode-back" href="../../module_docs/ir/expand.html#ir.sentence_window_policy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sentence_window_policy</span><span class="p">(</span><span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_WINDOW</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NeighborhoodPolicy</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;±*k* same-kind neighbors around the seed (NEXT/PREV expansion).</span>
+
+<span class="sd">    The window runs over the artifact&#39;s surfaces of the **seed&#39;s kind only**,</span>
+<span class="sd">    in plan order — a ``readme_chunk`` window never swallows the</span>
+<span class="sd">    ``description`` surface. ``k=0`` selects just the seed&#39;s own record.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;window half-width k must be &gt;= 0; got </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">policy</span><span class="p">(</span><span class="n">hit</span><span class="p">:</span> <span class="n">SearchHit</span><span class="p">,</span> <span class="n">siblings</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Record</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Record</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">hit</span><span class="o">.</span><span class="n">surface_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;sentence_window_policy needs hit.surface_index to locate the &quot;</span>
+                <span class="s2">&quot;seed among its siblings, but this hit has none (a hand-built &quot;</span>
+                <span class="s2">&quot;hit?). Hits from ir.search carry it; otherwise use &quot;</span>
+                <span class="s2">&quot;parent_policy(), which needs no seed position.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">siblings</span> <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">surface_kind</span> <span class="o">==</span> <span class="n">hit</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">]</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">surface_index</span> <span class="o">==</span> <span class="n">hit</span><span class="o">.</span><span class="n">surface_index</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">SeedNotFound</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;no stored record of kind </span><span class="si">{</span><span class="n">hit</span><span class="o">.</span><span class="n">surface_kind</span><span class="si">!r}</span><span class="s2"> with &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;surface_index </span><span class="si">{</span><span class="n">hit</span><span class="o">.</span><span class="n">surface_index</span><span class="si">}</span><span class="s2"> for artifact &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="si">!r}</span><span class="s2"> — is this hit from a different corpus &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;(or a stale build)?&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">run</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">pos</span> <span class="o">-</span> <span class="n">k</span><span class="p">)</span> <span class="p">:</span> <span class="n">pos</span> <span class="o">+</span> <span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">policy</span></div>
+
+
+
+<div class="viewcode-block" id="parent_policy">
+<a class="viewcode-back" href="../../module_docs/ir/expand.html#ir.parent_policy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parent_policy</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">NeighborhoodPolicy</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The whole artifact (small-to-big): every stored surface, plan order.</span>
+
+<span class="sd">    The mid-granularity analogue of ``disclose(level=&quot;body&quot;)`` — but assembled</span>
+<span class="sd">    from the *indexed* segments rather than dereferencing the pointer, so it</span>
+<span class="sd">    works for corpora whose artifacts have no on-disk body.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">policy</span><span class="p">(</span><span class="n">hit</span><span class="p">:</span> <span class="n">SearchHit</span><span class="p">,</span> <span class="n">siblings</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Record</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Record</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">siblings</span>
+
+    <span class="k">return</span> <span class="n">policy</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_shared_overlap</span><span class="p">(</span><span class="n">prev</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">nxt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">min_overlap</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Length of the longest suffix of *prev* that prefixes *nxt*.</span>
+
+<span class="sd">    Returns 0 when the longest match is shorter than *min_overlap* (treated as</span>
+<span class="sd">    coincidence, not chunker carry-over).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">length</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prev</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">nxt</span><span class="p">)),</span> <span class="n">min_overlap</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">prev</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">nxt</span><span class="p">[:</span><span class="n">length</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="n">length</span>
+    <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_stitch</span><span class="p">(</span>
+    <span class="n">records</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Record</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">min_overlap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MIN_STITCH_OVERLAP</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assemble plan-ordered records into one text, deduping chunker overlap.</span>
+
+<span class="sd">    Only **sequence-adjacent, same-kind** pairs (consecutive</span>
+<span class="sd">    ``surface_index``) are candidates for overlap dedupe — those are the pairs</span>
+<span class="sd">    a chunker actually carried an overlap tail between. Everything else joins</span>
+<span class="sd">    with a blank line, untouched.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">records</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+    <span class="c1"># strict=False: pairwise iteration over (r[i], r[i+1]) is intentionally</span>
+    <span class="c1"># one shorter than records.</span>
+    <span class="k">for</span> <span class="n">prev</span><span class="p">,</span> <span class="n">cur</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">records</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">cur</span><span class="o">.</span><span class="n">surface_kind</span> <span class="o">==</span> <span class="n">prev</span><span class="o">.</span><span class="n">surface_kind</span>
+            <span class="ow">and</span> <span class="n">cur</span><span class="o">.</span><span class="n">surface_index</span> <span class="o">==</span> <span class="n">prev</span><span class="o">.</span><span class="n">surface_index</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="p">):</span>
+            <span class="c1"># Match against prev&#39;s OWN text, not the accumulated string: real</span>
+            <span class="c1"># chunker carry-over is bounded by prev, while a longer match</span>
+            <span class="c1"># against the accumulation necessarily spans the synthetic &quot;\n\n&quot;</span>
+            <span class="c1"># joiner or earlier records — guaranteed coincidence that would</span>
+            <span class="c1"># truncate genuinely repeated document text.</span>
+            <span class="n">shared</span> <span class="o">=</span> <span class="n">_shared_overlap</span><span class="p">(</span><span class="n">prev</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">cur</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">min_overlap</span><span class="o">=</span><span class="n">min_overlap</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">shared</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">+=</span> <span class="n">cur</span><span class="o">.</span><span class="n">text</span><span class="p">[</span><span class="n">shared</span><span class="p">:]</span>
+                <span class="k">continue</span>
+        <span class="n">text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">cur</span><span class="o">.</span><span class="n">text</span>
+    <span class="k">return</span> <span class="n">text</span>
+
+
+<div class="viewcode-block" id="expand">
+<a class="viewcode-back" href="../../module_docs/ir/expand.html#ir.expand">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">expand</span><span class="p">(</span>
+    <span class="n">hit</span><span class="p">:</span> <span class="n">SearchHit</span><span class="p">,</span> <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">NeighborhoodPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Passage</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Expand *hit* into a :class:`Passage` of its neighborhood in *corpus*.</span>
+
+<span class="sd">    Fetches the hit&#39;s sibling records through the ledger</span>
+<span class="sd">    (:func:`ir.retrieve.records_for_artifact`), asks *policy* which to keep,</span>
+<span class="sd">    and stitches them in plan order with overlap-aware dedupe. The default</span>
+<span class="sd">    policy is a ±:data:`DFLT_WINDOW` sentence window; pass</span>
+<span class="sd">    :func:`parent_policy` for the whole artifact, or any</span>
+<span class="sd">    :data:`NeighborhoodPolicy`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hit: the seed :class:`~ir.base.SearchHit` (its identity and score pass</span>
+<span class="sd">            through to the :class:`Passage` untouched).</span>
+<span class="sd">        corpus: a :class:`~ir.index.Corpus`, :class:`~ir.store.CorpusStore`,</span>
+<span class="sd">            or corpus name — whatever :func:`~ir.retrieve.records_for_artifact`</span>
+<span class="sd">            accepts. Must be the corpus the hit came from.</span>
+<span class="sd">        policy: which siblings make up the neighborhood (default: sentence</span>
+<span class="sd">            window). A policy that selects nothing degrades the passage to the</span>
+<span class="sd">            hit&#39;s own text (``record_ids=()``) rather than returning nothing.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: the corpus has no ledger entry for the hit&#39;s artifact</span>
+<span class="sd">            (:class:`ir.retrieve.NoLedgerEntry`), or the ledger is stale —</span>
+<span class="sd">            an entry listing records missing from the store.</span>
+<span class="sd">        SeedNotFound: the default window policy cannot find the seed among</span>
+<span class="sd">            its artifact&#39;s stored records (stale hit / wrong corpus).</span>
+<span class="sd">        ValueError: the policy returned records that are not siblings of the</span>
+<span class="sd">            hit&#39;s artifact (operator-enforced safety), or the seed hit lacks</span>
+<span class="sd">            ``surface_index`` (hand-built hit) under the default window</span>
+<span class="sd">            policy — use :func:`parent_policy`, which needs no seed position.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">policy</span> <span class="o">=</span> <span class="n">sentence_window_policy</span><span class="p">()</span> <span class="k">if</span> <span class="n">policy</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">policy</span>
+    <span class="n">siblings</span> <span class="o">=</span> <span class="n">records_for_artifact</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">)</span>
+    <span class="n">chosen</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">policy</span><span class="p">(</span><span class="n">hit</span><span class="p">,</span> <span class="n">siblings</span><span class="p">))</span>
+    <span class="n">sibling_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">r</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">siblings</span><span class="p">}</span>
+    <span class="n">foreign</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">chosen</span> <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sibling_ids</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">foreign</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;neighborhood policy selected records that are not siblings of &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;artifact </span><span class="si">{</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="si">!r}</span><span class="s2"> (e.g. </span><span class="si">{</span><span class="n">foreign</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">); a policy may &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;only choose from the records it was given&quot;</span>
+        <span class="p">)</span>
+    <span class="n">seen</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">ordered</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Record</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">chosen</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">surface_index</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+            <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">ordered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ordered</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Passage</span><span class="p">(</span>
+            <span class="n">artifact_id</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+            <span class="n">surface_kind</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
+            <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">record_ids</span><span class="o">=</span><span class="p">(),</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="n">surface_index</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">surface_index</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">Passage</span><span class="p">(</span>
+        <span class="n">artifact_id</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+        <span class="n">surface_kind</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
+        <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+        <span class="n">text</span><span class="o">=</span><span class="n">_stitch</span><span class="p">(</span><span class="n">ordered</span><span class="p">),</span>
+        <span class="n">record_ids</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">ordered</span><span class="p">),</span>
+        <span class="n">source</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+        <span class="n">surface_index</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">surface_index</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

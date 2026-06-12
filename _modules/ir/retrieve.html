@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.retrieve &mdash; ir 0.1.17 documentation</title>
+  <title>ir.retrieve &mdash; ir 0.1.18 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=71734efd"></script>
+      <script src="../../_static/documentation_options.js?v=9969ed3f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -54,6 +54,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/expand.html">ir.expand</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
@@ -128,7 +129,8 @@
 <span class="sd">:func:`records_for_artifact` is the hit-operation beneath retrieval-time</span>
 <span class="sd">context expansion: given a hit&#39;s ``artifact_id``, it returns *all* of that</span>
 <span class="sd">artifact&#39;s stored records (its sibling surfaces), ordered — resolved through</span>
-<span class="sd">the ledger, never by re-deriving record ids.</span>
+<span class="sd">the ledger, never by re-deriving record ids. The expansion operator itself</span>
+<span class="sd">(:func:`ir.expand.expand` — retrieve → expand → rerank) builds on it.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -713,6 +715,20 @@
 <span class="c1"># =========================================================================== #</span>
 
 
+<div class="viewcode-block" id="NoLedgerEntry">
+<a class="viewcode-back" href="../../module_docs/ir/retrieve.html#ir.NoLedgerEntry">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NoLedgerEntry</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The corpus has no ledger entry for the requested artifact.</span>
+
+<span class="sd">    The *benign* miss (unknown artifact, or a corpus built without ledger</span>
+<span class="sd">    bookkeeping) — distinct from a stale/torn ledger, which raises a plain</span>
+<span class="sd">    ``KeyError`` describing the corruption. A ``KeyError`` subclass so</span>
+<span class="sd">    existing ``except KeyError`` callers keep working; the disclosure seam</span>
+<span class="sd">    catches this one specifically and tolerates it per hit.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
 <div class="viewcode-block" id="records_for_artifact">
 <a class="viewcode-back" href="../../module_docs/ir/retrieve.html#ir.records_for_artifact">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">records_for_artifact</span><span class="p">(</span>
@@ -736,27 +752,29 @@
 <span class="sd">    Args:</span>
 <span class="sd">        store_or_corpus: a :class:`~ir.store.CorpusStore`, anything carrying</span>
 <span class="sd">            one as ``.store`` (e.g. a :class:`~ir.index.Corpus`), or a corpus</span>
-<span class="sd">            *name* (resolved via :func:`ir.index.open_corpus`, like the other</span>
-<span class="sd">            corpus-taking entry points).</span>
+<span class="sd">            *name* — resolved straight to its local store: sibling lookup</span>
+<span class="sd">            never embeds, so unlike :func:`ir.open_corpus` no embedder is</span>
+<span class="sd">            loaded.</span>
 <span class="sd">        artifact_id: the artifact whose surfaces to fetch.</span>
 <span class="sd">        surface_kind: restrict to one surface kind (e.g. ``&quot;readme_chunk&quot;``);</span>
 <span class="sd">            a known artifact with no surfaces of that kind yields ``[]``.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        KeyError: if the ledger has no entry for *artifact_id* (an unknown</span>
+<span class="sd">        NoLedgerEntry: the ledger has no entry for *artifact_id* (an unknown</span>
 <span class="sd">            artifact, or a corpus built without :func:`ir.index.build`&#39;s</span>
-<span class="sd">            ledger bookkeeping) — or, with a message naming the artifact, if</span>
-<span class="sd">            an entry lists a record missing from the store (a stale ledger:</span>
-<span class="sd">            interrupted build or out-of-band ``delete_record``).</span>
+<span class="sd">            ledger bookkeeping). A ``KeyError`` subclass.</span>
+<span class="sd">        KeyError: an entry exists but lists a record missing from the store</span>
+<span class="sd">            (a stale ledger: interrupted build or out-of-band</span>
+<span class="sd">            ``delete_record``) — data corruption, named in the message.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusStore</span>
 
-        <span class="n">store_or_corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">)</span>
+        <span class="n">store_or_corpus</span> <span class="o">=</span> <span class="n">CorpusStore</span><span class="o">.</span><span class="n">local</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">)</span>
     <span class="n">store</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">,</span> <span class="s2">&quot;store&quot;</span><span class="p">,</span> <span class="n">store_or_corpus</span><span class="p">)</span>
     <span class="n">entry</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_ledger_entry</span><span class="p">(</span><span class="n">ledger_key</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+        <span class="k">raise</span> <span class="n">NoLedgerEntry</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;no ledger entry for artifact </span><span class="si">{</span><span class="n">artifact_id</span><span class="si">!r}</span><span class="s2">: unknown artifact, &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;or a corpus built without ledger bookkeeping&quot;</span>
         <span class="p">)</span>

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.retrieve &mdash; ir 0.1.17 documentation</title>
+  <title>ir.retrieve &mdash; ir 0.1.18 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=71734efd"></script>
+      <script src="../../_static/documentation_options.js?v=9969ed3f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -57,6 +57,7 @@
 <li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="expand.html">ir.expand</a></li>
 <li class="toctree-l1"><a class="reference internal" href="formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
@@ -67,6 +68,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.FUSIONS"><code class="docutils literal notranslate"><span class="pre">FUSIONS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.Identity"><code class="docutils literal notranslate"><span class="pre">Identity</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.MODES"><code class="docutils literal notranslate"><span class="pre">MODES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.NoLedgerEntry"><code class="docutils literal notranslate"><span class="pre">NoLedgerEntry</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.Retriever"><code class="docutils literal notranslate"><span class="pre">Retriever</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.as_retriever"><code class="docutils literal notranslate"><span class="pre">as_retriever()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>
@@ -140,7 +142,8 @@ and its surface’s plan position as <code class="xref py py-attr docutils liter
 <p><a class="reference internal" href="#ir.retrieve.records_for_artifact" title="ir.retrieve.records_for_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">records_for_artifact()</span></code></a> is the hit-operation beneath retrieval-time
 context expansion: given a hit’s <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code>, it returns <em>all</em> of that
 artifact’s stored records (its sibling surfaces), ordered — resolved through
-the ledger, never by re-deriving record ids.</p>
+the ledger, never by re-deriving record ids. The expansion operator itself
+(<a class="reference internal" href="expand.html#ir.expand.expand" title="ir.expand.expand"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.expand.expand()</span></code></a> — retrieve → expand → rerank) builds on it.</p>
 <dl class="py data">
 <dt class="sig sig-object py" id="ir.retrieve.DFLT_BLEND_ALPHA">
 <span class="sig-prename descclassname"><span class="pre">ir.retrieve.</span></span><span class="sig-name descname"><span class="pre">DFLT_BLEND_ALPHA</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.5</span></span><a class="headerlink" href="#ir.retrieve.DFLT_BLEND_ALPHA" title="Link to this definition"></a></dt>
@@ -196,6 +199,17 @@ falsy key falls back to per-source identity).</p>
 <dt class="sig sig-object py" id="ir.retrieve.MODES">
 <span class="sig-prename descclassname"><span class="pre">ir.retrieve.</span></span><span class="sig-name descname"><span class="pre">MODES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('dense',</span> <span class="pre">'lexical',</span> <span class="pre">'hybrid')</span></span><a class="headerlink" href="#ir.retrieve.MODES" title="Link to this definition"></a></dt>
 <dd><p>Ranking modes accepted by <a class="reference internal" href="#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">search()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ir.retrieve.NoLedgerEntry">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.retrieve.</span></span><span class="sig-name descname"><span class="pre">NoLedgerEntry</span></span><a class="reference internal" href="../../_modules/ir/retrieve.html#NoLedgerEntry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.retrieve.NoLedgerEntry" title="Link to this definition"></a></dt>
+<dd><p>The corpus has no ledger entry for the requested artifact.</p>
+<p>The <em>benign</em> miss (unknown artifact, or a corpus built without ledger
+bookkeeping) — distinct from a stale/torn ledger, which raises a plain
+<code class="docutils literal notranslate"><span class="pre">KeyError</span></code> describing the corruption. A <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> subclass so
+existing <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">KeyError</span></code> callers keep working; the disclosure seam
+catches this one specifically and tolerates it per hit.</p>
 </dd></dl>
 
 <dl class="py data">
@@ -303,19 +317,23 @@ siblings.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>store_or_corpus</strong> – a <a class="reference internal" href="store.html#ir.store.CorpusStore" title="ir.store.CorpusStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusStore</span></code></a>, anything carrying
 one as <code class="docutils literal notranslate"><span class="pre">.store</span></code> (e.g. a <a class="reference internal" href="index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a>), or a corpus
-<em>name</em> (resolved via <a class="reference internal" href="index.html#ir.index.open_corpus" title="ir.index.open_corpus"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.index.open_corpus()</span></code></a>, like the other
-corpus-taking entry points).</p></li>
+<em>name</em> — resolved straight to its local store: sibling lookup
+never embeds, so unlike <a class="reference internal" href="../ir.html#ir.open_corpus" title="ir.open_corpus"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.open_corpus()</span></code></a> no embedder is
+loaded.</p></li>
 <li><p><strong>artifact_id</strong> – the artifact whose surfaces to fetch.</p></li>
 <li><p><strong>surface_kind</strong> – restrict to one surface kind (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;readme_chunk&quot;</span></code>);
 a known artifact with no surfaces of that kind yields <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>KeyError</strong> – if the ledger has no entry for <em>artifact_id</em> (an unknown
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#ir.retrieve.NoLedgerEntry" title="ir.retrieve.NoLedgerEntry"><strong>NoLedgerEntry</strong></a> – the ledger has no entry for <em>artifact_id</em> (an unknown
     artifact, or a corpus built without <a class="reference internal" href="index.html#ir.index.build" title="ir.index.build"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.index.build()</span></code></a>’s
-    ledger bookkeeping) — or, with a message naming the artifact, if
-    an entry lists a record missing from the store (a stale ledger:
-    interrupted build or out-of-band <code class="docutils literal notranslate"><span class="pre">delete_record</span></code>).</p>
+    ledger bookkeeping). A <code class="docutils literal notranslate"><span class="pre">KeyError</span></code> subclass.</p></li>
+<li><p><strong>KeyError</strong> – an entry exists but lists a record missing from the store
+    (a stale ledger: interrupted build or out-of-band
+    <code class="docutils literal notranslate"><span class="pre">delete_record</span></code>) — data corruption, named in the message.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>

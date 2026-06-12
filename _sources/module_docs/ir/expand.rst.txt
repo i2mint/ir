@@ -1,0 +1,4 @@
+ir.expand
+=========
+.. automodule:: ir.expand
+   :members:

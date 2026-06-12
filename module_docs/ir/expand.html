@@ -1,0 +1,291 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.expand &mdash; ir 0.1.18 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=9969ed3f"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ir.formulate" href="formulate.html" />
+    <link rel="prev" title="ir.eval_gen" href="eval_gen.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ir.expand</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.expand.DFLT_MIN_STITCH_OVERLAP"><code class="docutils literal notranslate"><span class="pre">DFLT_MIN_STITCH_OVERLAP</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.expand.DFLT_WINDOW"><code class="docutils literal notranslate"><span class="pre">DFLT_WINDOW</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.expand.NeighborhoodPolicy"><code class="docutils literal notranslate"><span class="pre">NeighborhoodPolicy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.expand.Passage"><code class="docutils literal notranslate"><span class="pre">Passage</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.expand.Passage.to_dict"><code class="docutils literal notranslate"><span class="pre">Passage.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.expand.SeedNotFound"><code class="docutils literal notranslate"><span class="pre">SeedNotFound</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.expand.expand"><code class="docutils literal notranslate"><span class="pre">expand()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.expand.parent_policy"><code class="docutils literal notranslate"><span class="pre">parent_policy()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.expand.sentence_window_policy"><code class="docutils literal notranslate"><span class="pre">sentence_window_policy()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="formulate.html">ir.formulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ir.expand</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/ir/expand.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ir.expand">
+<span id="ir-expand"></span><h1>ir.expand<a class="headerlink" href="#module-ir.expand" title="Link to this heading"></a></h1>
+<p>Retrieval-time context expansion — the <code class="docutils literal notranslate"><span class="pre">expand(hit)</span></code> operator (report 13).</p>
+<p>A retriever returns the matched chunk in isolation; the unit downstream wants
+is usually neither the bare chunk nor the whole document. Sentence-window,
+parent-document, auto-merging, and topic-bounded expansion are <strong>the same
+operator with different neighborhood policies</strong> over NEXT/PREV/PARENT segment
+relationships, so ir ships ONE operator parameterized by an injectable
+<a class="reference internal" href="#ir.expand.NeighborhoodPolicy" title="ir.expand.NeighborhoodPolicy"><code class="xref py py-data docutils literal notranslate"><span class="pre">NeighborhoodPolicy</span></code></a> — the same callable-seam style as <code class="docutils literal notranslate"><span class="pre">Selector</span></code> and
+<code class="docutils literal notranslate"><span class="pre">Formulator</span></code>.</p>
+<p>Pipeline position: <strong>retrieve → expand → rerank</strong> — expansion composes after
+retrieval (and selection) and before reranking/generation, enriching what the
+reader sees without touching hit identity <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> or scores.
+The disclosure seam exposes it as <code class="docutils literal notranslate"><span class="pre">disclose(...,</span> <span class="pre">expand=policy,</span> <span class="pre">corpus=...)</span></code>
+(the <a class="reference internal" href="select.html#ir.select.Disclosure" title="ir.select.Disclosure"><code class="xref py py-class docutils literal notranslate"><span class="pre">Disclosure</span></code></a> gains a <code class="docutils literal notranslate"><span class="pre">passage</span></code>), and
+<code class="docutils literal notranslate"><span class="pre">discover(...,</span> <span class="pre">expand=...)</span></code> opts in end-to-end.</p>
+<p>Sibling segments are resolved through the ledger only
+(<a class="reference internal" href="retrieve.html#ir.retrieve.records_for_artifact" title="ir.retrieve.records_for_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.records_for_artifact()</span></code></a> — never by re-deriving record ids;
+see <a class="reference internal" href="base.html#ir.base.Record.make_id" title="ir.base.Record.make_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ir.base.Record.make_id()</span></code></a>), which is what makes multi-kind strategies
+(<a class="reference internal" href="strategy.html#ir.strategy.Package" title="ir.strategy.Package"><code class="xref py py-class docutils literal notranslate"><span class="pre">Package</span></code></a>) expand correctly.</p>
+<p>Stitching is <strong>overlap-aware and conservative</strong>: chunkers carry an overlap tail
+between consecutive chunks, so naive concatenation duplicates text. Adjacent
+same-kind segments are deduped by their longest suffix→prefix match; anything
+non-adjacent or cross-kind joins with a blank line and is never deduped, so an
+accidental match can never <em>truncate</em> text — when in doubt, the stitcher
+prefers a little duplication over any loss.</p>
+<p>Shipped policies: <a class="reference internal" href="#ir.expand.sentence_window_policy" title="ir.expand.sentence_window_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">sentence_window_policy()</span></code></a> (±k same-kind neighbors — the
+zero-config default) and <a class="reference internal" href="#ir.expand.parent_policy" title="ir.expand.parent_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">parent_policy()</span></code></a> (the whole artifact,
+small-to-big). Auto-merging and topic-bounded policies are deliberately not
+shipped until evaluation shows queries spanning sibling leaves (report 13’s
+stage-3 gate); both fit the same <a class="reference internal" href="#ir.expand.NeighborhoodPolicy" title="ir.expand.NeighborhoodPolicy"><code class="xref py py-data docutils literal notranslate"><span class="pre">NeighborhoodPolicy</span></code></a> seam.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.expand.DFLT_MIN_STITCH_OVERLAP">
+<span class="sig-prename descclassname"><span class="pre">ir.expand.</span></span><span class="sig-name descname"><span class="pre">DFLT_MIN_STITCH_OVERLAP</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></span><a class="headerlink" href="#ir.expand.DFLT_MIN_STITCH_OVERLAP" title="Link to this definition"></a></dt>
+<dd><p>Minimum suffix→prefix match length treated as real chunker overlap when
+stitching. Below this, a match is more likely coincidence than carry-over;
+the stitcher then joins with a blank line instead (duplication over
+truncation — see module docstring).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.expand.DFLT_WINDOW">
+<span class="sig-prename descclassname"><span class="pre">ir.expand.</span></span><span class="sig-name descname"><span class="pre">DFLT_WINDOW</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></span><a class="headerlink" href="#ir.expand.DFLT_WINDOW" title="Link to this definition"></a></dt>
+<dd><p>Default sentence-window half-width (±chunks around the seed). Segments are
+~chunk_size paragraph-packed chunks (not sentences), so ±1 already roughly
+triples the seed snippet; raise <code class="docutils literal notranslate"><span class="pre">k</span></code> for sentence-granularity corpora.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.expand.NeighborhoodPolicy">
+<span class="sig-prename descclassname"><span class="pre">ir.expand.</span></span><span class="sig-name descname"><span class="pre">NeighborhoodPolicy</span></span><a class="headerlink" href="#ir.expand.NeighborhoodPolicy" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">(seed_hit,</span> <span class="pre">ordered_siblings)</span> <span class="pre">-&gt;</span> <span class="pre">the</span> <span class="pre">records</span> <span class="pre">to</span>
+<span class="pre">stitch</span></code>. Pure membership selection over the artifact’s ledger-ordered
+sibling records — the operator owns fetching, ordering, and stitching, so a
+policy cannot corrupt assembly (non-sibling records are rejected, output is
+re-ordered to plan order, an empty selection degrades to the seed’s text).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A neighborhood policy</p>
+</dd>
+</dl>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="base.html#ir.base.SearchHit" title="ir.base.SearchHit"><code class="xref py py-class docutils literal notranslate"><span class="pre">SearchHit</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="base.html#ir.base.Record" title="ir.base.Record"><code class="xref py py-class docutils literal notranslate"><span class="pre">Record</span></code></a>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="base.html#ir.base.Record" title="ir.base.Record"><code class="xref py py-class docutils literal notranslate"><span class="pre">Record</span></code></a>]]</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.expand.Passage">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.expand.</span></span><span class="sig-name descname"><span class="pre">Passage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/expand.html#Passage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.expand.Passage" title="Link to this definition"></a></dt>
+<dd><p>An expanded hit: the seed’s identity + the stitched neighborhood text.</p>
+<p><code class="docutils literal notranslate"><span class="pre">artifact_id</span></code> / <code class="docutils literal notranslate"><span class="pre">surface_kind</span></code> / <code class="docutils literal notranslate"><span class="pre">score</span></code> / <code class="docutils literal notranslate"><span class="pre">source</span></code> /
+<code class="docutils literal notranslate"><span class="pre">surface_index</span></code> are the <strong>seed hit’s</strong> — expansion never disturbs hit
+identity <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> or scores. <code class="docutils literal notranslate"><span class="pre">text</span></code> is the assembled
+neighborhood (overlap-deduped, plan order) and <code class="docutils literal notranslate"><span class="pre">record_ids</span></code> the ordered
+stored segments it was stitched from (empty when expansion degraded to the
+seed’s own text).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.expand.Passage.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/expand.html#Passage.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.expand.Passage.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable form (<code class="docutils literal notranslate"><span class="pre">score</span></code> cast to <code class="docutils literal notranslate"><span class="pre">float</span></code>, ids as a list).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ir.expand.SeedNotFound">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.expand.</span></span><span class="sig-name descname"><span class="pre">SeedNotFound</span></span><a class="reference internal" href="../../_modules/ir/expand.html#SeedNotFound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.expand.SeedNotFound" title="Link to this definition"></a></dt>
+<dd><p>The seed hit’s <code class="docutils literal notranslate"><span class="pre">(surface_kind,</span> <span class="pre">surface_index)</span></code> is not among its
+artifact’s stored records — typically a corpus re-chunked between search
+and expansion (a stale hit), or a hit expanded against the wrong corpus.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> subclass so existing <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">ValueError</span></code> handling keeps
+working; the disclosure seam catches it per hit (a data condition, not a
+programming error) and notes <code class="docutils literal notranslate"><span class="pre">expansion=&quot;seed_not_found&quot;</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.expand.expand">
+<span class="sig-prename descclassname"><span class="pre">ir.expand.</span></span><span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">policy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.Record" title="ir.base.Record"><span class="pre">Record</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.Record" title="ir.base.Record"><span class="pre">Record</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.expand.Passage" title="ir.expand.Passage"><span class="pre">Passage</span></a></span></span><a class="reference internal" href="../../_modules/ir/expand.html#expand"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.expand.expand" title="Link to this definition"></a></dt>
+<dd><p>Expand <em>hit</em> into a <a class="reference internal" href="#ir.expand.Passage" title="ir.expand.Passage"><code class="xref py py-class docutils literal notranslate"><span class="pre">Passage</span></code></a> of its neighborhood in <em>corpus</em>.</p>
+<p>Fetches the hit’s sibling records through the ledger
+(<a class="reference internal" href="retrieve.html#ir.retrieve.records_for_artifact" title="ir.retrieve.records_for_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.records_for_artifact()</span></code></a>), asks <em>policy</em> which to keep,
+and stitches them in plan order with overlap-aware dedupe. The default
+policy is a ±:data:<cite>DFLT_WINDOW</cite> sentence window; pass
+<a class="reference internal" href="#ir.expand.parent_policy" title="ir.expand.parent_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">parent_policy()</span></code></a> for the whole artifact, or any
+<a class="reference internal" href="#ir.expand.NeighborhoodPolicy" title="ir.expand.NeighborhoodPolicy"><code class="xref py py-data docutils literal notranslate"><span class="pre">NeighborhoodPolicy</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hit</strong> – the seed <a class="reference internal" href="base.html#ir.base.SearchHit" title="ir.base.SearchHit"><code class="xref py py-class docutils literal notranslate"><span class="pre">SearchHit</span></code></a> (its identity and score pass
+through to the <a class="reference internal" href="#ir.expand.Passage" title="ir.expand.Passage"><code class="xref py py-class docutils literal notranslate"><span class="pre">Passage</span></code></a> untouched).</p></li>
+<li><p><strong>corpus</strong> – a <a class="reference internal" href="index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a>, <a class="reference internal" href="store.html#ir.store.CorpusStore" title="ir.store.CorpusStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusStore</span></code></a>,
+or corpus name — whatever <a class="reference internal" href="retrieve.html#ir.retrieve.records_for_artifact" title="ir.retrieve.records_for_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">records_for_artifact()</span></code></a>
+accepts. Must be the corpus the hit came from.</p></li>
+<li><p><strong>policy</strong> – which siblings make up the neighborhood (default: sentence
+window). A policy that selects nothing degrades the passage to the
+hit’s own text (<code class="docutils literal notranslate"><span class="pre">record_ids=()</span></code>) rather than returning nothing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>KeyError</strong> – the corpus has no ledger entry for the hit’s artifact
+    (<a class="reference internal" href="retrieve.html#ir.retrieve.NoLedgerEntry" title="ir.retrieve.NoLedgerEntry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ir.retrieve.NoLedgerEntry</span></code></a>), or the ledger is stale —
+    an entry listing records missing from the store.</p></li>
+<li><p><a class="reference internal" href="#ir.expand.SeedNotFound" title="ir.expand.SeedNotFound"><strong>SeedNotFound</strong></a> – the default window policy cannot find the seed among
+    its artifact’s stored records (stale hit / wrong corpus).</p></li>
+<li><p><strong>ValueError</strong> – the policy returned records that are not siblings of the
+    hit’s artifact (operator-enforced safety), or the seed hit lacks
+    <code class="docutils literal notranslate"><span class="pre">surface_index</span></code> (hand-built hit) under the default window
+    policy — use <a class="reference internal" href="#ir.expand.parent_policy" title="ir.expand.parent_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">parent_policy()</span></code></a>, which needs no seed position.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.expand.parent_policy">
+<span class="sig-prename descclassname"><span class="pre">ir.expand.</span></span><span class="sig-name descname"><span class="pre">parent_policy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.Record" title="ir.base.Record"><span class="pre">Record</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.Record" title="ir.base.Record"><span class="pre">Record</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/expand.html#parent_policy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.expand.parent_policy" title="Link to this definition"></a></dt>
+<dd><p>The whole artifact (small-to-big): every stored surface, plan order.</p>
+<p>The mid-granularity analogue of <code class="docutils literal notranslate"><span class="pre">disclose(level=&quot;body&quot;)</span></code> — but assembled
+from the <em>indexed</em> segments rather than dereferencing the pointer, so it
+works for corpora whose artifacts have no on-disk body.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.expand.sentence_window_policy">
+<span class="sig-prename descclassname"><span class="pre">ir.expand.</span></span><span class="sig-name descname"><span class="pre">sentence_window_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.Record" title="ir.base.Record"><span class="pre">Record</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="base.html#ir.base.Record" title="ir.base.Record"><span class="pre">Record</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/expand.html#sentence_window_policy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.expand.sentence_window_policy" title="Link to this definition"></a></dt>
+<dd><p>±*k* same-kind neighbors around the seed (NEXT/PREV expansion).</p>
+<p>The window runs over the artifact’s surfaces of the <strong>seed’s kind only</strong>,
+in plan order — a <code class="docutils literal notranslate"><span class="pre">readme_chunk</span></code> window never swallows the
+<code class="docutils literal notranslate"><span class="pre">description</span></code> surface. <code class="docutils literal notranslate"><span class="pre">k=0</span></code> selects just the seed’s own record.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="eval_gen.html" class="btn btn-neutral float-left" title="ir.eval_gen" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="formulate.html" class="btn btn-neutral float-right" title="ir.formulate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

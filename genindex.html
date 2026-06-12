@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.17 documentation</title>
+  <title>Index &mdash; ir 0.1.18 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=71734efd"></script>
+      <script src="_static/documentation_options.js?v=9969ed3f"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -54,6 +54,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/expand.html">ir.expand</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
@@ -311,6 +312,8 @@
 </li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_MIN_DESCRIPTION_CHARS">DFLT_MIN_DESCRIPTION_CHARS (in module ir.eval_gen)</a>
 </li>
+      <li><a href="module_docs/ir/expand.html#ir.expand.DFLT_MIN_STITCH_OVERLAP">DFLT_MIN_STITCH_OVERLAP (in module ir.expand)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_MODE">DFLT_MODE (in module ir.eval)</a>
 </li>
   </ul></td>
@@ -328,6 +331,8 @@
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_OBJECTIVE">DFLT_SWEEP_OBJECTIVE (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_REL">DFLT_SWEEP_REL (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/expand.html#ir.expand.DFLT_WINDOW">DFLT_WINDOW (in module ir.expand)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.disclose">disclose() (in module ir)</a>
 
@@ -377,14 +382,20 @@
 </li>
       <li><a href="module_docs/ir/cli.html#ir.cli.eval_gen">eval_gen() (in module ir.cli)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/cli.html#ir.cli.eval_select">eval_select() (in module ir.cli)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.evaluate_discovery">evaluate_discovery() (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.evaluate_selection">evaluate_selection() (in module ir.eval)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.expand">expand() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/expand.html#ir.expand.expand">(in module ir.expand)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -563,8 +574,6 @@
         <li><a href="module_docs/ir/embed.html#module-ir.embed">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ir.eval
 
@@ -572,11 +581,20 @@
         <li><a href="module_docs/ir/eval.html#module-ir.eval">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ir.eval_gen
 
       <ul>
         <li><a href="module_docs/ir/eval_gen.html#module-ir.eval_gen">module</a>
+</li>
+      </ul></li>
+      <li>
+    ir.expand
+
+      <ul>
+        <li><a href="module_docs/ir/expand.html#module-ir.expand">module</a>
 </li>
       </ul></li>
       <li>
@@ -729,10 +747,10 @@
       </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.min_score">min_score (ir.eval.MinScoreCalibration attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration">MinScoreCalibration (class in ir.eval)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.mode">mode (ir.eval.DiscoveryReport attribute)</a>
 </li>
       <li><a href="module_docs/ir/retrieve.html#ir.retrieve.MODES">MODES (in module ir.retrieve)</a>
@@ -756,6 +774,8 @@
         <li><a href="module_docs/ir/eval.html#module-ir.eval">ir.eval</a>
 </li>
         <li><a href="module_docs/ir/eval_gen.html#module-ir.eval_gen">ir.eval_gen</a>
+</li>
+        <li><a href="module_docs/ir/expand.html#module-ir.expand">ir.expand</a>
 </li>
         <li><a href="module_docs/ir/formulate.html#module-ir.formulate">ir.formulate</a>
 </li>
@@ -786,10 +806,10 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.n_positive">n_positive (ir.eval.MinScoreCalibration attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.n_retrieval_miss">n_retrieval_miss (ir.eval.MinScoreCalibration attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.Disclosure.name">name (ir.Disclosure attribute)</a>
 
       <ul>
@@ -797,6 +817,10 @@
 </li>
       </ul></li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.NAME_PLACEHOLDER">NAME_PLACEHOLDER (in module ir.eval_gen)</a>
+</li>
+      <li><a href="module_docs/ir/expand.html#ir.expand.NeighborhoodPolicy">NeighborhoodPolicy (in module ir.expand)</a>
+</li>
+      <li><a href="module_docs/ir/retrieve.html#ir.retrieve.NoLedgerEntry">NoLedgerEntry</a>
 </li>
   </ul></td>
 </tr></table>
@@ -828,6 +852,26 @@
       </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint.params">params (ir.eval.SelectionGridPoint property)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.parent_policy">parent_policy() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/expand.html#ir.expand.parent_policy">(in module ir.expand)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir.html#ir.Passage">Passage (class in ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/expand.html#ir.expand.Passage">(class in ir.expand)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir.html#ir.Disclosure.passage">passage (ir.Disclosure attribute)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/select.html#ir.select.Disclosure.passage">(ir.select.Disclosure attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/base.html#ir.base.SearchHit.pointer">pointer (ir.base.SearchHit property)</a>
 
       <ul>
@@ -838,8 +882,6 @@
         <li><a href="module_docs/ir/select.html#ir.select.Disclosure.pointer">(ir.select.Disclosure attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/base.html#ir.base.POINTER_KEYS">POINTER_KEYS (in module ir.base)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.points">points (ir.eval.SelectionSweep attribute)</a>
@@ -976,6 +1018,8 @@
         <li><a href="module_docs/ir/base.html#ir.base.SearchHit">(class in ir.base)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/expand.html#ir.expand.SeedNotFound">SeedNotFound</a>
+</li>
       <li><a href="module_docs/ir.html#ir.select">select() (in module ir)</a>
 
       <ul>
@@ -1014,12 +1058,18 @@
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.Selector">Selector (in module ir.select)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.sensitivity">sensitivity (ir.eval.MinScoreCalibration attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.sensitivity_weight">sensitivity_weight (ir.eval.MinScoreCalibration attribute)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.sentence_window_policy">sentence_window_policy() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/expand.html#ir.expand.sentence_window_policy">(in module ir.expand)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.separable">separable (ir.eval.MinScoreCalibration attribute)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.CorpusStore.set_calibration">set_calibration() (ir.CorpusStore method)</a>
@@ -1122,6 +1172,10 @@
         <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.to_dict">(ir.eval.SelectionReport method)</a>
 </li>
         <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.to_dict">(ir.eval.SelectionSweep method)</a>
+</li>
+        <li><a href="module_docs/ir/expand.html#ir.expand.Passage.to_dict">(ir.expand.Passage method)</a>
+</li>
+        <li><a href="module_docs/ir.html#ir.Passage.to_dict">(ir.Passage method)</a>
 </li>
         <li><a href="module_docs/ir.html#ir.SearchHit.to_dict">(ir.SearchHit method)</a>
 </li>
