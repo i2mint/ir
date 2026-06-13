@@ -172,10 +172,19 @@ def traverse(
 
 @dataclass(frozen=True)
 class _WalkNode:
-    """A traversal node: one surface record + the artifact that routed to it."""
+    """A traversal node: one surface record + the artifact that routed to it.
+
+    ``is_router`` is structural, not kind-based: a summary surface is a router
+    (suppressed from results, expands to its leaves) **only when its artifact
+    actually has leaf surfaces**. A summary surface whose artifact has no leaves
+    — a WholeText ``document``, a Skill ``capability`` — is *not* a router: it
+    is emitted directly, so a single-surface corpus degrades to flat-over-
+    summaries instead of silently returning nothing.
+    """
 
     record: Record
     seed: str | None = None
+    is_router: bool = False
 
 
 def _cosine(query_vec: np.ndarray, vec: np.ndarray) -> float:
@@ -193,6 +202,14 @@ class _CollapsedTreePolicy:
     surfaces that artifact's best leaf chunk (the *result*). Node id is the
     record id, so within-artifact descent (summary and chunks share an
     ``artifact_id``) is not blocked by the visited-set.
+
+    Routing is **structural**: a seeded summary is a router only if its artifact
+    has leaf surfaces to descend to. On a corpus whose artifacts are a *single*
+    surface (WholeText ``document``, Skill ``capability``), there is no tree to
+    collapse — every seeded summary is leaf-less, so it is emitted directly and
+    the walk degrades to flat-over-summaries rather than silently returning
+    nothing. (A pure-chunk corpus, with no summary surface to seed from at all,
+    is the wrong corpus for this policy — use :func:`ir.search`.)
     """
 
     def __init__(self, *, summary_kinds, leaf_kinds, seed_k):
@@ -224,10 +241,15 @@ class _CollapsedTreePolicy:
         )
         nodes: list[_WalkNode] = []
         for h in hits:
-            for r in records_for_artifact(store, h.artifact_id):
-                if r.surface_kind in self.summary_kinds:
-                    nodes.append(_WalkNode(record=r, seed=None))
-                    break  # one router surface per artifact
+            records = records_for_artifact(store, h.artifact_id)
+            summary = next(
+                (r for r in records if r.surface_kind in self.summary_kinds), None
+            )
+            if summary is None:
+                continue
+            # A router only if there is a leaf to route to; otherwise emit it.
+            has_leaves = any(r.surface_kind in self.leaf_kinds for r in records)
+            nodes.append(_WalkNode(record=summary, seed=None, is_router=has_leaves))
         return nodes
 
     def score(self, state: WalkState, node: _WalkNode, store: Any) -> float:
@@ -237,9 +259,10 @@ class _CollapsedTreePolicy:
         return sorted(scored, key=lambda t: t[2], reverse=True)
 
     def expand(self, state: WalkState, node: _WalkNode, store: Any) -> list[_WalkNode]:
-        # Only summary routers expand (to their artifact's leaves); a leaf is
-        # terminal, so a query that matches a leaf directly doesn't fan out.
-        if node.record.surface_kind not in self.summary_kinds:
+        # Only routers expand (to their artifact's leaves); a leaf — and a
+        # leaf-less summary, emitted directly — is terminal, so a query that
+        # matches a leaf directly doesn't fan out.
+        if not node.is_router:
             return []
         aid = node.record.artifact_id
         return [
@@ -257,8 +280,9 @@ class _CollapsedTreePolicy:
     def to_hit(
         self, state: WalkState, node: _WalkNode, score: float, depth: int
     ) -> "SearchHit | None":
-        # Router (summary) nodes route but are not results.
-        if node.record.surface_kind in self.summary_kinds:
+        # Routers route but are not results; a leaf-less summary is not a
+        # router (no leaves to route to), so it is emitted.
+        if node.is_router:
             return None
         meta = dict(node.record.metadata)
         meta["walk_depth"] = depth
@@ -283,9 +307,18 @@ def collapsed_tree_policy(
 ) -> WalkPolicy:
     """The pure-vector summary-routing / collapsed-tree :class:`WalkPolicy`.
 
-    Seeds on the top *seed_k* matches among ``summary_kinds`` surfaces (routers,
-    not emitted) and descends to each routed artifact's ``leaf_kinds`` surfaces
-    (the emitted results), scored by cosine to the query. No LLM in the loop.
+    Seeds on the top *seed_k* matches among ``summary_kinds`` surfaces and
+    descends to each routed artifact's ``leaf_kinds`` surfaces (the emitted
+    results), scored by cosine to the query. No LLM in the loop. A summary
+    surface is a *router* (suppressed from results) only when its artifact has
+    leaf surfaces; on a single-surface corpus (WholeText ``document``, Skill
+    ``capability``) the summaries are leaf-less and emitted directly, so the
+    walk degrades to flat-over-summaries instead of returning nothing.
+
+    The defaults keep ``document`` / ``capability`` in ``summary_kinds`` *on
+    purpose* — that is what lets a WholeText / Skill corpus seed at all; the
+    structural router check (above) is what keeps those seeds from being
+    silently swallowed.
 
     >>> hits = traverse(q, corpus, policy=collapsed_tree_policy())   # doctest: +SKIP
     """

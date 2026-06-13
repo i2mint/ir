@@ -126,6 +126,71 @@ def test_collapsed_tree_policy_is_a_walkpolicy():
 
 
 # --------------------------------------------------------------------------- #
+# Single-surface corpora (WholeText / Skill): every surface is a summary kind,
+# none is a leaf kind. The footgun would route everything and emit nothing;
+# the structural router check must instead emit the leaf-less summaries.
+# --------------------------------------------------------------------------- #
+
+
+def test_wholetext_corpus_does_not_silently_return_empty():
+    # WholeText emits one "document" surface per artifact and no chunks. With
+    # "document" in DFLT_SUMMARY_KINDS, the naive policy would mark every
+    # surface a router (-> to_hit None) and find no leaves to descend to,
+    # returning []. The leaf-less-emit fix must surface the documents instead.
+    docs = {
+        "d1": "rtok1 rtok2 rtok3 rtok4 alpha ANSTOK answer payload here filler",
+        "d2": "unrelated beta gamma delta neutral content mu nu xi omicron",
+        "d3": "rtok1 omega sigma tau upsilon generic content here",
+    }
+    src = ir.CorpusSource.from_mapping(docs, name="wt", strategy=ir.WholeText())
+    corpus = ir.build(src, store=CorpusStore.memory(), embedder="light")
+    trav = ir.traverse(
+        "rtok1 rtok2 rtok3 rtok4 ANSTOK", corpus, policy=ir.collapsed_tree_policy(), k=5
+    )
+    assert trav, "WholeText corpus must not silently return zero results"
+    assert all(h.surface_kind == "document" for h in trav)
+    assert trav[0].artifact_id == "d1"
+    # A leaf-less summary is emitted at its seed position (depth 0), with no
+    # routing parent — it IS the seed, not a descent target.
+    assert trav[0].metadata["walk_depth"] == 0
+    assert "seed" not in trav[0].metadata
+
+
+def test_skill_corpus_does_not_silently_return_empty():
+    # Skill emits one "capability" surface per artifact and no chunks — same
+    # all-summary-kinds shape as WholeText, via a different summary kind.
+    skills = {
+        "s1": {"name": "deploy-app", "description": "rtok1 rtok2 rtok3 ANSTOK ship it"},
+        "s2": {
+            "name": "other-thing",
+            "description": "unrelated beta gamma delta epsilon",
+        },
+    }
+    src = ir.CorpusSource.from_mapping(skills, name="sk", strategy=ir.Skill())
+    corpus = ir.build(src, store=CorpusStore.memory(), embedder="light")
+    trav = ir.traverse(
+        "rtok1 rtok2 rtok3 ANSTOK deploy-app",
+        corpus,
+        policy=ir.collapsed_tree_policy(),
+        k=5,
+    )
+    assert trav, "Skill corpus must not silently return zero results"
+    assert all(h.surface_kind == "capability" for h in trav)
+    assert trav[0].artifact_id == "s1"
+    assert trav[0].metadata["walk_depth"] == 0
+
+
+def test_package_corpus_still_routes_summaries_not_leaf_less_emit():
+    # The fix must NOT regress the genuine-tree case: a Package artifact HAS
+    # leaf surfaces, so its "description" summary stays a router (suppressed),
+    # and only readme_chunk leaves are emitted.
+    corpus = _routing_corpus()
+    trav = ir.traverse(ROUTING_QUERY, corpus, policy=ir.collapsed_tree_policy(), k=10)
+    assert trav
+    assert all(h.surface_kind == "readme_chunk" for h in trav)  # no "description"
+
+
+# --------------------------------------------------------------------------- #
 # Operator-enforced safety — termination regardless of policy behavior
 # --------------------------------------------------------------------------- #
 
