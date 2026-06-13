@@ -35,12 +35,23 @@ def _strategy_id(strategy) -> str:
     Changing the strategy (or its parameters) changes this id, so an unchanged
     corpus rebuilt under a different strategy is correctly re-decomposed rather
     than skipped.
+
+    Scalar parameters are taken verbatim; a parameter that is *itself* a
+    strategy (an attribute with a ``decompose`` method — e.g. the inner
+    strategy a :func:`ir.with_synopsis` wrapper holds) folds in its own
+    ``_strategy_id`` recursively. So a wrapper's identity tracks both the inner
+    strategy's parameters and the wrapper's own scalar stamps (e.g. a
+    synthesizer id), and a change to either re-decomposes through the normal
+    incremental path. Non-scalar, non-strategy attributes (callables,
+    embedders) are deliberately excluded — identity for those rides on an
+    explicit scalar stamp the wrapper exposes, not on a volatile ``repr``.
     """
-    params = {
-        k: v
-        for k, v in vars(strategy).items()
-        if isinstance(v, (str, int, float, bool, type(None)))
-    }
+    params: dict[str, Any] = {}
+    for k, v in vars(strategy).items():
+        if isinstance(v, (str, int, float, bool, type(None))):
+            params[k] = v
+        elif hasattr(v, "decompose"):  # a nested strategy (wrapper)
+            params[k] = _strategy_id(v)
     return f"{type(strategy).__name__}:{json.dumps(params, sort_keys=True)}"
 
 

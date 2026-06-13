@@ -59,6 +59,7 @@ from .select import (
 from .sources import CorpusSource
 from .store import CorpusStore
 from .strategy import Chunked, IndexingStrategy, Package, Skill, WholeText
+from .synopsis import Synthesizer, make_llm_synthesizer, with_synopsis
 from .traverse import WalkPolicy, WalkState, collapsed_tree_policy, traverse
 
 __all__ = [
@@ -72,6 +73,9 @@ __all__ = [
     "Chunked",
     "Skill",
     "Package",
+    "with_synopsis",
+    "make_llm_synthesizer",
+    "Synthesizer",
     "CorpusSource",
     "CorpusStore",
     "Corpus",

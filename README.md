@@ -186,6 +186,24 @@ artifact's *summary* down to that artifact's best *chunk*:
 hits = ir.traverse(query, corpus, policy=ir.collapsed_tree_policy())
 ```
 
+The *summary* a query routes on can be an artifact's own short field — or an
+**LLM-authored synopsis**. `ir.with_synopsis` wraps any indexing strategy to add
+one `synopsis` surface per artifact at build time (the document-summary-index
+pattern: build-time cost, ≈free at query time), and that synopsis becomes the
+collapsed-tree router:
+
+```python
+strat  = ir.with_synopsis(ir.Chunked(), synthesize=my_summarizer)  # or default (lazy oa)
+corpus = ir.build(ir.CorpusSource.from_mapping(docs, name="d", strategy=strat))
+hits   = ir.traverse(q, corpus, policy=ir.collapsed_tree_policy())  # routes via the synopsis
+```
+
+`synthesize` is injectable (a test double or your own summarizer); omitted, it is
+built lazily on [`oa`](https://github.com/thorwhalen/oa) so `import ir` stays
+offline. Synopses are derived state with a stamped synthesizer identity, so a
+prompt/model change re-synthesizes only the affected artifacts on the next
+incremental `build` — no silent staleness.
+
 **Flat top-k stays the default** — `traverse` is opt-in, and a policy earns its
 keep only by beating flat+rerank on your eval set (a strong flat retriever wins
 simple lookup; graph methods cost far more). Results are ordinary `SearchHit`s
