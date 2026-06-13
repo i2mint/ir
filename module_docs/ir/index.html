@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.index &mdash; ir 0.1.18 documentation</title>
+  <title>ir.index &mdash; ir 0.1.19 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=9969ed3f"></script>
+      <script src="../../_static/documentation_options.js?v=3d116926"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -25,7 +25,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="ir.registry" href="registry.html" />
-    <link rel="prev" title="ir.formulate" href="formulate.html" /> 
+    <link rel="prev" title="ir.graph" href="graph.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -59,6 +59,7 @@
 <li class="toctree-l1"><a class="reference internal" href="eval_gen.html">ir.eval_gen</a></li>
 <li class="toctree-l1"><a class="reference internal" href="expand.html">ir.expand</a></li>
 <li class="toctree-l1"><a class="reference internal" href="formulate.html">ir.formulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="graph.html">ir.graph</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.index</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ir.index.Corpus"><code class="docutils literal notranslate"><span class="pre">Corpus</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ir.index.Corpus.search"><code class="docutils literal notranslate"><span class="pre">Corpus.search()</span></code></a></li>
@@ -130,7 +131,7 @@ upgrade for corpora large enough that recomputing surfaces is the bottleneck.</p
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.index.build">
-<span class="sig-prename descclassname"><span class="pre">ir.index.</span></span><span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="sources.html#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><span class="pre">CorpusSource</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">store</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="store.html#ir.store.CorpusStore" title="ir.store.CorpusStore"><span class="pre">CorpusStore</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">256</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.index.Corpus" title="ir.index.Corpus"><span class="pre">Corpus</span></a></span></span><a class="reference internal" href="../../_modules/ir/index.html#build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.index.build" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ir.index.</span></span><span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="sources.html#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><span class="pre">CorpusSource</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">store</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="store.html#ir.store.CorpusStore" title="ir.store.CorpusStore"><span class="pre">CorpusStore</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_extractor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.index.Corpus" title="ir.index.Corpus"><span class="pre">Corpus</span></a></span></span><a class="reference internal" href="../../_modules/ir/index.html#build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.index.build" title="Link to this definition"></a></dt>
 <dd><p>Build or incrementally update <em>source</em> into a <a class="reference internal" href="#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -139,6 +140,17 @@ upgrade for corpora large enough that recomputing surfaces is the bottleneck.</p
 <li><p><strong>embedder</strong> (<em>override the source's embedder spec.</em>)</p></li>
 <li><p><strong>full</strong> (<em>when True</em><em> (</em><em>default</em><em>)</em><em>, </em><em>prune artifacts no longer in the source.</em>)</p></li>
 <li><p><strong>batch_size</strong> (<em>embedding batch size.</em>)</p></li>
+<li><p><strong>edge_extractor</strong> (an optional <a class="reference internal" href="graph.html#ir.graph.EdgeExtractor" title="ir.graph.EdgeExtractor"><code class="xref py py-data docutils literal notranslate"><span class="pre">EdgeExtractor</span></code></a>) – (<code class="docutils literal notranslate"><span class="pre">(artifact_id,</span> <span class="pre">filter_fields)</span> <span class="pre">-&gt;</span> <span class="pre">{edge_type:</span> <span class="pre">[target]}</span></code>) that
+populates the corpus’s semantic <code class="docutils literal notranslate"><span class="pre">links</span></code> graph (see <a class="reference internal" href="graph.html#module-ir.graph" title="ir.graph"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.graph</span></code></a>;
+pass <a class="reference internal" href="../ir.html#ir.default_edge_extractor" title="ir.default_edge_extractor"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.default_edge_extractor()</span></code></a> for the latent deps/parent
+edges). Ingest is <strong>eager</strong> — edges are (re)written for <em>every</em>
+in-scope artifact, a decompose-only pass with no embedding, so the
+graph never goes partially stale — while embedding stays fully
+incremental. Edges are derived state, <strong>not</strong> part of build identity.
+A rebuild <em>without</em> an extractor leaves existing edges untouched
+(they are only refreshed by re-running with one, and only cleared per
+artifact by the <code class="docutils literal notranslate"><span class="pre">full</span></code> prune below) — so dropping <code class="docutils literal notranslate"><span class="pre">edge_extractor</span></code>
+does not wipe a graph.</p></li>
 </ul>
 </dd>
 </dl>
@@ -156,7 +168,7 @@ upgrade for corpora large enough that recomputing surfaces is the bottleneck.</p
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="formulate.html" class="btn btn-neutral float-left" title="ir.formulate" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="graph.html" class="btn btn-neutral float-left" title="ir.graph" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="registry.html" class="btn btn-neutral float-right" title="ir.registry" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

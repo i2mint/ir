@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.18 documentation</title>
+  <title>ir &mdash; ir 0.1.19 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=9969ed3f"></script>
+      <script src="../_static/documentation_options.js?v=3d116926"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -56,6 +56,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/expand.html">ir.expand</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/formulate.html">ir.formulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/retrieve.html">ir.retrieve</a></li>
@@ -129,6 +130,13 @@
     <span class="n">sentence_window_policy</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.formulate</span><span class="w"> </span><span class="kn">import</span> <span class="n">Formulator</span><span class="p">,</span> <span class="n">make_llm_formulator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.graph</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CorpusGraph</span><span class="p">,</span>
+    <span class="n">EdgeExtractor</span><span class="p">,</span>
+    <span class="n">GraphStore</span><span class="p">,</span>
+    <span class="n">canonical_node_id</span><span class="p">,</span>
+    <span class="n">default_edge_extractor</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">Corpus</span><span class="p">,</span> <span class="n">build</span><span class="p">,</span> <span class="n">open_corpus</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">retriever_for</span><span class="p">,</span> <span class="n">retrievers</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">Retriever</span><span class="p">,</span> <span class="n">as_retriever</span><span class="p">,</span> <span class="n">fuse_hits</span><span class="p">,</span> <span class="n">records_for_artifact</span>
@@ -168,6 +176,11 @@
     <span class="s2">&quot;retriever_for&quot;</span><span class="p">,</span>
     <span class="s2">&quot;fuse_hits&quot;</span><span class="p">,</span>
     <span class="s2">&quot;records_for_artifact&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GraphStore&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CorpusGraph&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;EdgeExtractor&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;default_edge_extractor&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;canonical_node_id&quot;</span><span class="p">,</span>
     <span class="s2">&quot;expand&quot;</span><span class="p">,</span>
     <span class="s2">&quot;Passage&quot;</span><span class="p">,</span>
     <span class="s2">&quot;NeighborhoodPolicy&quot;</span><span class="p">,</span>

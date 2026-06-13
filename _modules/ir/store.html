@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.store &mdash; ir 0.1.18 documentation</title>
+  <title>ir.store &mdash; ir 0.1.19 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=9969ed3f"></script>
+      <script src="../../_static/documentation_options.js?v=3d116926"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -56,6 +56,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/expand.html">ir.expand</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
@@ -106,8 +107,13 @@
 <span class="sd">  Kept apart from ``config`` on purpose — a calibration is regenerable, derived</span>
 <span class="sd">  from an eval run, and not part of the corpus&#39;s build identity, so it must never</span>
 <span class="sd">  clobber (or be clobbered by) the build settings.</span>
+<span class="sd">- ``links`` : ``artifact_id -&gt; {edge_type: [target, ...]}`` (the semantic link</span>
+<span class="sd">  graph — typed directed edges between artifacts; see :mod:`ir.graph`). Like</span>
+<span class="sd">  ``calibration`` it is regenerable derived state, kept out of build identity; a</span>
+<span class="sd">  target is a bare ``artifact_id`` (intra-corpus) or a ``[source, artifact_id]``</span>
+<span class="sd">  pair (cross-corpus). Optional — an absent view is simply &quot;no edges&quot;.</span>
 
-<span class="sd">The default factory :meth:`CorpusStore.local` roots all five under</span>
+<span class="sd">The default factory :meth:`CorpusStore.local` roots all six under</span>
 <span class="sd">``~/.local/share/ir/corpora/&lt;name&gt;`` via ``dol`` file stores;</span>
 <span class="sd">:meth:`CorpusStore.memory` gives a dependency-free in-memory store for tests.</span>
 <span class="sd">Brute-force search reads vectors into a single normalized matrix</span>
@@ -167,14 +173,17 @@
         <span class="n">ledger</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="n">calibration</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">links</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vectors</span> <span class="o">=</span> <span class="n">vectors</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ledger</span> <span class="o">=</span> <span class="n">ledger</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
-        <span class="c1"># Optional 5th view (defaults to an in-memory dict so older call sites and</span>
-        <span class="c1"># tests that construct a store with four views keep working unchanged).</span>
+        <span class="c1"># Optional 5th/6th views (default to in-memory dicts so older call sites</span>
+        <span class="c1"># and tests that construct a store with fewer views keep working — and an</span>
+        <span class="c1"># absent links view simply means &quot;no edges&quot;).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">calibration</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">calibration</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">calibration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">links</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">links</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="c1"># ----- factories ------------------------------------------------------ #</span>
@@ -193,6 +202,7 @@
             <span class="n">ledger</span><span class="o">=</span><span class="n">_json_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;ledger&quot;</span><span class="p">),</span>
             <span class="n">config</span><span class="o">=</span><span class="n">_json_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;config&quot;</span><span class="p">),</span>
             <span class="n">calibration</span><span class="o">=</span><span class="n">_json_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;calibration&quot;</span><span class="p">),</span>
+            <span class="n">links</span><span class="o">=</span><span class="n">_json_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;links&quot;</span><span class="p">),</span>
         <span class="p">)</span></div>
 
 
@@ -343,6 +353,49 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">calibration_modes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The ranking modes that currently have a stored calibration.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calibration</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ----- links (semantic edge graph) ------------------------------------ #</span>
+
+<div class="viewcode-block" id="CorpusStore.get_links">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.get_links">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_links</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The outgoing edges of *artifact_id* — ``{edge_type: [target, ...]}``.</span>
+
+<span class="sd">        Empty dict when the artifact has no stored edges (or no links view).</span>
+<span class="sd">        A copy, so a caller cannot mutate the persisted adjacency in place.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="p">{}))</span></div>
+
+
+<div class="viewcode-block" id="CorpusStore.set_links">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.set_links">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_links</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">edges</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Persist *artifact_id*&#39;s outgoing *edges* (``{edge_type: [target]}``).</span>
+
+<span class="sd">        Empty edge-type lists are dropped; an empty result deletes the entry</span>
+<span class="sd">        (no empty adjacency rows linger). Targets are stored verbatim — a bare</span>
+<span class="sd">        ``artifact_id`` or a ``[source, artifact_id]`` pair.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cleaned</span> <span class="o">=</span> <span class="p">{</span><span class="n">et</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="k">for</span> <span class="n">et</span><span class="p">,</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">edges</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">ts</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">cleaned</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">links</span><span class="p">[</span><span class="n">artifact_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">cleaned</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CorpusStore.delete_links">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.delete_links">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_links</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove an artifact&#39;s edges; a missing entry is tolerated.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CorpusStore.link_items">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.link_items">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">link_items</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate ``(artifact_id, {edge_type: [target]})`` adjacency pairs.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span></div>
 
 
     <span class="c1"># ----- search matrix -------------------------------------------------- #</span>

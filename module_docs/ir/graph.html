@@ -1,0 +1,337 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.graph &mdash; ir 0.1.19 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=3d116926"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ir.index" href="index.html" />
+    <link rel="prev" title="ir.formulate" href="formulate.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="expand.html">ir.expand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formulate.html">ir.formulate</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ir.graph</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.CHILD"><code class="docutils literal notranslate"><span class="pre">CHILD</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.CorpusGraph"><code class="docutils literal notranslate"><span class="pre">CorpusGraph</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.graph.CorpusGraph.edge_types"><code class="docutils literal notranslate"><span class="pre">CorpusGraph.edge_types()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.graph.CorpusGraph.neighbors"><code class="docutils literal notranslate"><span class="pre">CorpusGraph.neighbors()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.graph.CorpusGraph.source"><code class="docutils literal notranslate"><span class="pre">CorpusGraph.source</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.EdgeExtractor"><code class="docutils literal notranslate"><span class="pre">EdgeExtractor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.GraphStore"><code class="docutils literal notranslate"><span class="pre">GraphStore</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.NEXT"><code class="docutils literal notranslate"><span class="pre">NEXT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.NodeId"><code class="docutils literal notranslate"><span class="pre">NodeId</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.PARENT"><code class="docutils literal notranslate"><span class="pre">PARENT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.PREV"><code class="docutils literal notranslate"><span class="pre">PREV</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.REF"><code class="docutils literal notranslate"><span class="pre">REF</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.canonical_node_id"><code class="docutils literal notranslate"><span class="pre">canonical_node_id()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.graph.default_edge_extractor"><code class="docutils literal notranslate"><span class="pre">default_edge_extractor()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="strategy.html">ir.strategy</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ir.graph</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/ir/graph.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ir.graph">
+<span id="ir-graph"></span><h1>ir.graph<a class="headerlink" href="#module-ir.graph" title="Link to this heading"></a></h1>
+<p>The semantic link graph — typed edges between artifacts (report 12).</p>
+<p>ir indexes artifacts that <em>refer to each other</em>: a package depends on other
+packages, a skill belongs to a parent, a chunk follows the previous one, a
+report cites another. This module models those references as <strong>typed, directed
+edges</strong> between nodes identified by <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> (ir’s canonical
+node identity since 0.1.16), queryable at retrieval time — the substrate the
+traversal operator (<code class="docutils literal notranslate"><span class="pre">traverse</span></code>, follow-up) walks.</p>
+<p>Two pieces:</p>
+<ul class="simple">
+<li><p>the <a class="reference internal" href="#ir.graph.GraphStore" title="ir.graph.GraphStore"><code class="xref py py-data docutils literal notranslate"><span class="pre">GraphStore</span></code></a> <strong>protocol</strong> — a minimal <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> +
+<code class="docutils literal notranslate"><span class="pre">neighbors</span></code> structural contract, so a traversal operator binds to <em>any</em>
+conforming store, not only ir’s;</p></li>
+<li><p><a class="reference internal" href="#ir.graph.CorpusGraph" title="ir.graph.CorpusGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusGraph</span></code></a> — the corpus-backed implementation. Node payloads are
+the artifact’s stored records (via <a class="reference internal" href="retrieve.html#ir.retrieve.records_for_artifact" title="ir.retrieve.records_for_artifact"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.records_for_artifact()</span></code></a>);
+neighbors come from the <code class="docutils literal notranslate"><span class="pre">links</span></code> view on <a class="reference internal" href="store.html#ir.store.CorpusStore" title="ir.store.CorpusStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusStore</span></code></a>.</p></li>
+</ul>
+<p>Edges are <strong>regenerable derived state</strong> (persisted in the <code class="docutils literal notranslate"><span class="pre">links</span></code> view, like
+<code class="docutils literal notranslate"><span class="pre">calibration</span></code>) — never part of build identity. They are ingested at build
+time by an injectable <a class="reference internal" href="#ir.graph.EdgeExtractor" title="ir.graph.EdgeExtractor"><code class="xref py py-data docutils literal notranslate"><span class="pre">EdgeExtractor</span></code></a>; the shipped
+<a class="reference internal" href="#ir.graph.default_edge_extractor" title="ir.graph.default_edge_extractor"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_edge_extractor()</span></code></a> turns the edge data already latent in the index
+(<code class="docutils literal notranslate"><span class="pre">Package</span></code> <code class="docutils literal notranslate"><span class="pre">deps</span></code> → <code class="docutils literal notranslate"><span class="pre">REF</span></code>, <code class="docutils literal notranslate"><span class="pre">Skill</span></code> <code class="docutils literal notranslate"><span class="pre">parent</span></code> → <code class="docutils literal notranslate"><span class="pre">PARENT</span></code>) into edges.</p>
+<p>Vocabulary (documented, <strong>not</strong> enforced): <a class="reference internal" href="#ir.graph.NEXT" title="ir.graph.NEXT"><code class="xref py py-data docutils literal notranslate"><span class="pre">NEXT</span></code></a> / <a class="reference internal" href="#ir.graph.PREV" title="ir.graph.PREV"><code class="xref py py-data docutils literal notranslate"><span class="pre">PREV</span></code></a> /
+<a class="reference internal" href="#ir.graph.PARENT" title="ir.graph.PARENT"><code class="xref py py-data docutils literal notranslate"><span class="pre">PARENT</span></code></a> / <a class="reference internal" href="#ir.graph.CHILD" title="ir.graph.CHILD"><code class="xref py py-data docutils literal notranslate"><span class="pre">CHILD</span></code></a> / <a class="reference internal" href="#ir.graph.REF" title="ir.graph.REF"><code class="xref py py-data docutils literal notranslate"><span class="pre">REF</span></code></a>. <code class="docutils literal notranslate"><span class="pre">NEXT</span></code> / <code class="docutils literal notranslate"><span class="pre">PREV</span></code> are <em>not</em>
+materialized — they are derivable from the ledger’s surface order (#44); the
+view stores only what isn’t derivable.</p>
+<p><strong>Naming guard</strong> (ADR #43): this is the <strong>semantic link graph</strong> — directed,
+<strong>possibly cyclic</strong> (citations, cross-references), traversed at query time. It
+is <em>not</em> <code class="docutils literal notranslate"><span class="pre">ef.artifact_graph</span></code>, which is an acyclic build-time
+derivation/lineage DAG. The id conventions are kept compatible so a later
+unification stays open, but the two are distinct substrates.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.graph.CHILD">
+<span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">CHILD</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CHILD'</span></span><a class="headerlink" href="#ir.graph.CHILD" title="Link to this definition"></a></dt>
+<dd><p>a parent points at a child.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Containment down</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.graph.CorpusGraph">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">CorpusGraph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">store_or_corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/graph.html#CorpusGraph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.graph.CorpusGraph" title="Link to this definition"></a></dt>
+<dd><p>A <a class="reference internal" href="#ir.graph.GraphStore" title="ir.graph.GraphStore"><code class="xref py py-data docutils literal notranslate"><span class="pre">GraphStore</span></code></a> over one corpus — artifact nodes, <code class="docutils literal notranslate"><span class="pre">links</span></code> edges.</p>
+<p><code class="docutils literal notranslate"><span class="pre">node_id</span></code> is an <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code>. <code class="docutils literal notranslate"><span class="pre">graph[aid]</span></code> is the artifact’s stored
+records (its scorable surfaces, in plan order); <code class="docutils literal notranslate"><span class="pre">graph.neighbors(aid,</span>
+<span class="pre">edge_type=...)</span></code> reads the corpus store’s <code class="docutils literal notranslate"><span class="pre">links</span></code> view. Single-corpus, so
+it resolves <strong>intra-corpus</strong> targets; cross-corpus <code class="docutils literal notranslate"><span class="pre">[source,</span> <span class="pre">artifact_id]</span></code>
+targets are returned by <a class="reference internal" href="#ir.graph.CorpusGraph.neighbors" title="ir.graph.CorpusGraph.neighbors"><code class="xref py py-meth docutils literal notranslate"><span class="pre">neighbors()</span></code></a> verbatim but <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> only
+dereferences ids in <em>this</em> corpus (federated traversal is a follow-up).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.graph.CorpusGraph.edge_types">
+<span class="sig-name descname"><span class="pre">edge_types</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/graph.html#CorpusGraph.edge_types"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.graph.CorpusGraph.edge_types" title="Link to this definition"></a></dt>
+<dd><p>The edge types present on <em>node_id</em> (<code class="docutils literal notranslate"><span class="pre">[]</span></code> if none).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.graph.CorpusGraph.neighbors">
+<span class="sig-name descname"><span class="pre">neighbors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="../../_modules/ir/graph.html#CorpusGraph.neighbors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.graph.CorpusGraph.neighbors" title="Link to this definition"></a></dt>
+<dd><p>Outgoing neighbor ids of <em>node_id</em>, optionally of one <em>edge_type</em>.</p>
+<p>Returns target ids in stored form (a bare <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code>, whose source
+is <em>this</em> graph’s <a class="reference internal" href="#ir.graph.CorpusGraph.source" title="ir.graph.CorpusGraph.source"><code class="xref py py-attr docutils literal notranslate"><span class="pre">source</span></code></a>; or a <code class="docutils literal notranslate"><span class="pre">[source,</span> <span class="pre">artifact_id]</span></code> list
+for a cross-corpus edge), de-duplicated with first-seen order
+preserved. An artifact with no edges — or a store without a links view —
+yields <code class="docutils literal notranslate"><span class="pre">[]</span></code>. Pass a canonical <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> to
+<a class="reference internal" href="#ir.graph.canonical_node_id" title="ir.graph.canonical_node_id"><code class="xref py py-func docutils literal notranslate"><span class="pre">canonical_node_id()</span></code></a> for a traversal’s visited-set.</p>
+<p><em>node_id</em> is an intra-corpus <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code> (a <code class="docutils literal notranslate"><span class="pre">str</span></code>); a cross-corpus
+target fetched from another graph is out of contract here (it has no
+edges <em>in this corpus</em>).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.graph.CorpusGraph.source">
+<span class="sig-name descname"><span class="pre">source</span></span><a class="headerlink" href="#ir.graph.CorpusGraph.source" title="Link to this definition"></a></dt>
+<dd><p>The corpus name, when known — the <code class="docutils literal notranslate"><span class="pre">source</span></code> half of this graph’s
+node identities (<code class="docutils literal notranslate"><span class="pre">None</span></code> for a bare store).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.graph.EdgeExtractor">
+<span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">EdgeExtractor</span></span><a class="headerlink" href="#ir.graph.EdgeExtractor" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">(artifact_id,</span> <span class="pre">filter_fields)</span> <span class="pre">-&gt;</span> <span class="pre">{edge_type:</span> <span class="pre">[target]}</span></code>.
+An injectable build-time seam (like <a class="reference internal" href="formulate.html#ir.formulate.Formulator" title="ir.formulate.Formulator"><code class="xref py py-data docutils literal notranslate"><span class="pre">Formulator</span></code></a>) that
+turns an artifact’s filter fields into outgoing edges. <code class="docutils literal notranslate"><span class="pre">build(...,</span>
+<span class="pre">edge_extractor=...)</span></code> runs it; <a class="reference internal" href="#ir.graph.default_edge_extractor" title="ir.graph.default_edge_extractor"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_edge_extractor()</span></code></a> is shipped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>An edge extractor</p>
+</dd>
+</dl>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping[str,</span> <span class="pre">list]</span></code>]</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.graph.GraphStore">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">GraphStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/graph.html#GraphStore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.graph.GraphStore" title="Link to this definition"></a></dt>
+<dd><p>Structural contract a traversal operator binds to — node + neighbors.</p>
+<p>Deliberately minimal (two methods) so it is satisfied by ir’s
+<a class="reference internal" href="#ir.graph.CorpusGraph" title="ir.graph.CorpusGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusGraph</span></code></a> <em>and</em> by any external graph: <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> resolves
+a node id to its scorable payload, <code class="docutils literal notranslate"><span class="pre">neighbors</span></code> lists adjacent node ids
+(optionally of one edge type). Granularity-agnostic on purpose — an
+artifact graph and a surface-level tree are both <a href="#id1"><span class="problematic" id="id2">``</span></a>GraphStore``s.</p>
+<p><code class="docutils literal notranslate"><span class="pre">runtime_checkable</span></code> makes <code class="docutils literal notranslate"><span class="pre">isinstance(x,</span> <span class="pre">GraphStore)</span></code> a <em>structural</em>
+check on attribute <strong>names</strong> only (not signatures) — enough to tell a
+conforming adapter from an arbitrary object, but it cannot validate that
+<code class="docutils literal notranslate"><span class="pre">neighbors</span></code> takes the right arguments; treat it as a smoke check.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.graph.NEXT">
+<span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">NEXT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'NEXT'</span></span><a class="headerlink" href="#ir.graph.NEXT" title="Link to this definition"></a></dt>
+<dd><p>Next sibling surface in sequence (derivable from the ledger — not stored).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.graph.NodeId">
+<span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">NodeId</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'str</span> <span class="pre">|</span> <span class="pre">tuple[str,</span> <span class="pre">str]'</span></span><a class="headerlink" href="#ir.graph.NodeId" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">artifact_id</span></code> within one corpus, or <code class="docutils literal notranslate"><span class="pre">(source,</span>
+<span class="pre">artifact_id)</span></code> across corpora. The visited-set of a traversal keys on this.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A node’s identity</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.graph.PARENT">
+<span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">PARENT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'PARENT'</span></span><a class="headerlink" href="#ir.graph.PARENT" title="Link to this definition"></a></dt>
+<dd><p>a child points at its parent (e.g. a skill → its package).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Containment up</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.graph.PREV">
+<span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">PREV</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'PREV'</span></span><a class="headerlink" href="#ir.graph.PREV" title="Link to this definition"></a></dt>
+<dd><p>Previous sibling surface in sequence (derivable from the ledger — not stored).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.graph.REF">
+<span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">REF</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'REF'</span></span><a class="headerlink" href="#ir.graph.REF" title="Link to this definition"></a></dt>
+<dd><p>A generic reference / dependency / citation (e.g. a package → its deps).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.graph.canonical_node_id">
+<span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">canonical_node_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/graph.html#canonical_node_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.graph.canonical_node_id" title="Link to this definition"></a></dt>
+<dd><p>Canonicalize a neighbor <em>target</em> to a <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> node id.</p>
+<p>The repo’s node identity is <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> — the key a traversal
+visited-set must use so the same id in two corpora stays two nodes.
+<a class="reference internal" href="#ir.graph.CorpusGraph.neighbors" title="ir.graph.CorpusGraph.neighbors"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusGraph.neighbors()</span></code></a> returns targets in stored form: a bare
+<code class="docutils literal notranslate"><span class="pre">artifact_id</span></code> (implicitly in <em>source</em>, the graph it came from) or a
+<code class="docutils literal notranslate"><span class="pre">[source,</span> <span class="pre">artifact_id]</span></code> cross-corpus pair. This resolves either to the
+canonical tuple.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">(</span><span class="s2">&quot;dol&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;packages&quot;</span><span class="p">)</span>
+<span class="go">(&#39;packages&#39;, &#39;dol&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">([</span><span class="s2">&quot;skills&quot;</span><span class="p">,</span> <span class="s2">&quot;deploy&quot;</span><span class="p">],</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;packages&quot;</span><span class="p">)</span>
+<span class="go">(&#39;skills&#39;, &#39;deploy&#39;)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.graph.default_edge_extractor">
+<span class="sig-prename descclassname"><span class="pre">ir.graph.</span></span><span class="sig-name descname"><span class="pre">default_edge_extractor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/graph.html#default_edge_extractor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.graph.default_edge_extractor" title="Link to this definition"></a></dt>
+<dd><p>Edges latent in the standard filter fields: <code class="docutils literal notranslate"><span class="pre">deps</span></code> → REF, <code class="docutils literal notranslate"><span class="pre">parent</span></code> → PARENT.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">deps</span></code> (Package) → <a class="reference internal" href="#ir.graph.REF" title="ir.graph.REF"><code class="xref py py-data docutils literal notranslate"><span class="pre">REF</span></code></a> edges to each dependency’s bare name
+(version specifiers / extras / markers stripped). Self-edges and blanks
+are dropped.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">parent</span></code> (Skill) → a single <a class="reference internal" href="#ir.graph.PARENT" title="ir.graph.PARENT"><code class="xref py py-data docutils literal notranslate"><span class="pre">PARENT</span></code></a> edge.</p></li>
+</ul>
+<p>A package whose <code class="docutils literal notranslate"><span class="pre">deps</span></code> name other packages in the same corpus gets
+intra-corpus REF edges; third-party deps become REF edges to ids not in the
+corpus (harmless — <a class="reference internal" href="#ir.graph.CorpusGraph.neighbors" title="ir.graph.CorpusGraph.neighbors"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusGraph.neighbors()</span></code></a> lists them, and a
+traversal simply finds no node to expand).</p>
+<p>Self-edges are dropped case-insensitively (<code class="docutils literal notranslate"><span class="pre">_dep_name</span></code> lower-cases, so a
+package <code class="docutils literal notranslate"><span class="pre">&quot;AA&quot;</span></code> depending on <code class="docutils literal notranslate"><span class="pre">&quot;aa&quot;</span></code> is recognized as a self-reference).</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="formulate.html" class="btn btn-neutral float-left" title="ir.formulate" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-right" title="ir.index" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

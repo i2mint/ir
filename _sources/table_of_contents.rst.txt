@@ -12,6 +12,7 @@
    module_docs/ir/eval_gen
    module_docs/ir/expand
    module_docs/ir/formulate
+   module_docs/ir/graph
    module_docs/ir/index
    module_docs/ir/registry
    module_docs/ir/retrieve

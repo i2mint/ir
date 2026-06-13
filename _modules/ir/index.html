@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.index &mdash; ir 0.1.18 documentation</title>
+  <title>ir.index &mdash; ir 0.1.19 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=9969ed3f"></script>
+      <script src="../../_static/documentation_options.js?v=3d116926"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -56,6 +56,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/expand.html">ir.expand</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
@@ -193,6 +194,7 @@
     <span class="n">embedder</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">full</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
+    <span class="n">edge_extractor</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Corpus</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Build or incrementally update *source* into a :class:`Corpus`.</span>
 
@@ -202,6 +204,18 @@
 <span class="sd">    embedder : override the source&#39;s embedder spec.</span>
 <span class="sd">    full : when True (default), prune artifacts no longer in the source.</span>
 <span class="sd">    batch_size : embedding batch size.</span>
+<span class="sd">    edge_extractor : an optional :data:`~ir.graph.EdgeExtractor`</span>
+<span class="sd">        (``(artifact_id, filter_fields) -&gt; {edge_type: [target]}``) that</span>
+<span class="sd">        populates the corpus&#39;s semantic ``links`` graph (see :mod:`ir.graph`;</span>
+<span class="sd">        pass :func:`ir.default_edge_extractor` for the latent deps/parent</span>
+<span class="sd">        edges). Ingest is **eager** — edges are (re)written for *every*</span>
+<span class="sd">        in-scope artifact, a decompose-only pass with no embedding, so the</span>
+<span class="sd">        graph never goes partially stale — while embedding stays fully</span>
+<span class="sd">        incremental. Edges are derived state, **not** part of build identity.</span>
+<span class="sd">        A rebuild *without* an extractor leaves existing edges untouched</span>
+<span class="sd">        (they are only refreshed by re-running with one, and only cleared per</span>
+<span class="sd">        artifact by the ``full`` prune below) — so dropping ``edge_extractor``</span>
+<span class="sd">        does not wipe a graph.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">store</span> <span class="o">=</span> <span class="n">CorpusStore</span><span class="o">.</span><span class="n">local</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">store</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">store</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="n">embedder</span> <span class="k">if</span> <span class="n">embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">source</span><span class="o">.</span><span class="n">embedder</span>
@@ -216,16 +230,23 @@
         <span class="n">version</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">change_signal</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span>
         <span class="n">key</span> <span class="o">=</span> <span class="n">ledger_key</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">)</span>
         <span class="n">prev</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_ledger_entry</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="k">if</span> <span class="p">(</span>
+        <span class="n">unchanged</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">prev</span>
             <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;version&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">version</span>
             <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_id&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">emb_id</span>
             <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;strategy_id&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">strat_id</span>
-        <span class="p">):</span>
-            <span class="k">continue</span>  <span class="c1"># unchanged content + same model + same strategy</span>
+        <span class="p">)</span>
+        <span class="c1"># Unchanged + no edges to refresh → nothing to do for this artifact.</span>
+        <span class="k">if</span> <span class="n">unchanged</span> <span class="ow">and</span> <span class="n">edge_extractor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
         <span class="n">meta_extra</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">metadata_of</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span> <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">metadata_of</span> <span class="k">else</span> <span class="p">{}</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">indexing_strategy</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">meta_extra</span><span class="p">)</span>
-        <span class="n">changed</span><span class="p">[</span><span class="n">artifact_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">prev</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">unchanged</span><span class="p">:</span>
+            <span class="n">changed</span><span class="p">[</span><span class="n">artifact_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">prev</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">edge_extractor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">store</span><span class="o">.</span><span class="n">set_links</span><span class="p">(</span>
+                <span class="n">artifact_id</span><span class="p">,</span> <span class="n">edge_extractor</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">plan</span><span class="o">.</span><span class="n">filter_fields</span><span class="p">)</span>
+            <span class="p">)</span>
 
     <span class="c1"># Embed all surfaces of changed artifacts together (cache makes this cheap).</span>
     <span class="n">flat</span> <span class="o">=</span> <span class="p">[</span>
@@ -279,6 +300,7 @@
                 <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;record_ids&quot;</span><span class="p">,</span> <span class="p">[]):</span>
                     <span class="n">store</span><span class="o">.</span><span class="n">delete_record</span><span class="p">(</span><span class="n">rid</span><span class="p">)</span>
                 <span class="n">store</span><span class="o">.</span><span class="n">delete_ledger_entry</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">delete_links</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;artifact_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
 
     <span class="n">store</span><span class="o">.</span><span class="n">set_config</span><span class="p">(</span>
         <span class="p">{</span>

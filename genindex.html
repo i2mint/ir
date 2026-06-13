@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.18 documentation</title>
+  <title>Index &mdash; ir 0.1.19 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=9969ed3f"></script>
+      <script src="_static/documentation_options.js?v=3d116926"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -56,6 +56,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/expand.html">ir.expand</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/formulate.html">ir.formulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
@@ -216,12 +217,20 @@
         <li><a href="module_docs/ir.html#ir.Selection.candidates">(ir.Selection attribute)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir.html#ir.canonical_node_id">canonical_node_id() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/graph.html#ir.graph.canonical_node_id">(in module ir.graph)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir.html#ir.CorpusSource.change_signal">change_signal() (ir.CorpusSource method)</a>
 
       <ul>
         <li><a href="module_docs/ir/sources.html#ir.sources.CorpusSource.change_signal">(ir.sources.CorpusSource method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/graph.html#ir.graph.CHILD">CHILD (in module ir.graph)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.Chunked">Chunked (class in ir)</a>
 
       <ul>
@@ -252,6 +261,12 @@
 </li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.corpus_signature">corpus_signature() (in module ir.eval_gen)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.CorpusGraph">CorpusGraph (class in ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/graph.html#ir.graph.CorpusGraph">(class in ir.graph)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir.html#ir.CorpusSource">CorpusSource (class in ir)</a>
 
       <ul>
@@ -272,10 +287,22 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/config.html#ir.config.data_dir">data_dir() (in module ir.config)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.default_edge_extractor">default_edge_extractor() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/graph.html#ir.graph.default_edge_extractor">(in module ir.graph)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir.html#ir.CorpusStore.delete_ledger_entry">delete_ledger_entry() (ir.CorpusStore method)</a>
 
       <ul>
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.delete_ledger_entry">(ir.store.CorpusStore method)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir.html#ir.CorpusStore.delete_links">delete_links() (ir.CorpusStore method)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.delete_links">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
       <li><a href="module_docs/ir.html#ir.CorpusStore.delete_record">delete_record() (ir.CorpusStore method)</a>
@@ -312,12 +339,12 @@
 </li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_MIN_DESCRIPTION_CHARS">DFLT_MIN_DESCRIPTION_CHARS (in module ir.eval_gen)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/expand.html#ir.expand.DFLT_MIN_STITCH_OVERLAP">DFLT_MIN_STITCH_OVERLAP (in module ir.expand)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_MODE">DFLT_MODE (in module ir.eval)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_QUERIES_PER_ARTIFACT">DFLT_QUERIES_PER_ARTIFACT (in module ir.eval_gen)</a>
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.DFLT_REL_THRESHOLD">DFLT_REL_THRESHOLD (in module ir.select)</a>
@@ -376,16 +403,24 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir.html#ir.CorpusGraph.edge_types">edge_types() (ir.CorpusGraph method)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/graph.html#ir.graph.CorpusGraph.edge_types">(ir.graph.CorpusGraph method)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir/graph.html#ir.graph.EdgeExtractor">EdgeExtractor (in module ir.graph)</a>
+</li>
       <li><a href="module_docs/ir/config.html#ir.config.embeddings_cache_dir">embeddings_cache_dir() (in module ir.config)</a>
 </li>
       <li><a href="module_docs/ir/cli.html#ir.cli.eval">eval() (in module ir.cli)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/cli.html#ir.cli.eval_gen">eval_gen() (in module ir.cli)</a>
 </li>
       <li><a href="module_docs/ir/cli.html#ir.cli.eval_select">eval_select() (in module ir.cli)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.evaluate_discovery">evaluate_discovery() (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.evaluate_selection">evaluate_selection() (in module ir.eval)</a>
@@ -482,12 +517,18 @@
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.get_config">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.CorpusStore.get_ledger_entry">get_ledger_entry() (ir.CorpusStore method)</a>
 
       <ul>
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.get_ledger_entry">(ir.store.CorpusStore method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir.html#ir.CorpusStore.get_links">get_links() (ir.CorpusStore method)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.get_links">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
       <li><a href="module_docs/ir.html#ir.CorpusStore.get_record">get_record() (ir.CorpusStore method)</a>
@@ -500,6 +541,12 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.gold_is_none">gold_is_none (ir.eval.DiscoveryCase property)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.GraphStore">GraphStore (class in ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/graph.html#ir.graph.GraphStore">(class in ir.graph)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.grid">grid (ir.eval.MinScoreCalibration attribute)</a>
 </li>
   </ul></td>
@@ -605,6 +652,13 @@
 </li>
       </ul></li>
       <li>
+    ir.graph
+
+      <ul>
+        <li><a href="module_docs/ir/graph.html#module-ir.graph">module</a>
+</li>
+      </ul></li>
+      <li>
     ir.index
 
       <ul>
@@ -677,6 +731,12 @@
 
       <ul>
         <li><a href="module_docs/ir/select.html#ir.select.Disclosure.level">(ir.select.Disclosure attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir.html#ir.CorpusStore.link_items">link_items() (ir.CorpusStore method)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.link_items">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -779,6 +839,8 @@
 </li>
         <li><a href="module_docs/ir/formulate.html#module-ir.formulate">ir.formulate</a>
 </li>
+        <li><a href="module_docs/ir/graph.html#module-ir.graph">ir.graph</a>
+</li>
         <li><a href="module_docs/ir/index.html#module-ir.index">ir.index</a>
 </li>
         <li><a href="module_docs/ir/registry.html#module-ir.registry">ir.registry</a>
@@ -808,17 +870,27 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.n_retrieval_miss">n_retrieval_miss (ir.eval.MinScoreCalibration attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.Disclosure.name">name (ir.Disclosure attribute)</a>
 
       <ul>
         <li><a href="module_docs/ir/select.html#ir.select.Disclosure.name">(ir.select.Disclosure attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.NAME_PLACEHOLDER">NAME_PLACEHOLDER (in module ir.eval_gen)</a>
 </li>
       <li><a href="module_docs/ir/expand.html#ir.expand.NeighborhoodPolicy">NeighborhoodPolicy (in module ir.expand)</a>
+</li>
+      <li><a href="module_docs/ir.html#ir.CorpusGraph.neighbors">neighbors() (ir.CorpusGraph method)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/graph.html#ir.graph.CorpusGraph.neighbors">(ir.graph.CorpusGraph method)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir/graph.html#ir.graph.NEXT">NEXT (in module ir.graph)</a>
+</li>
+      <li><a href="module_docs/ir/graph.html#ir.graph.NodeId">NodeId (in module ir.graph)</a>
 </li>
       <li><a href="module_docs/ir/retrieve.html#ir.retrieve.NoLedgerEntry">NoLedgerEntry</a>
 </li>
@@ -851,6 +923,8 @@
 </li>
       </ul></li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint.params">params (ir.eval.SelectionGridPoint property)</a>
+</li>
+      <li><a href="module_docs/ir/graph.html#ir.graph.PARENT">PARENT (in module ir.graph)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.parent_policy">parent_policy() (in module ir)</a>
 
@@ -885,6 +959,8 @@
       <li><a href="module_docs/ir/base.html#ir.base.POINTER_KEYS">POINTER_KEYS (in module ir.base)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.points">points (ir.eval.SelectionSweep attribute)</a>
+</li>
+      <li><a href="module_docs/ir/graph.html#ir.graph.PREV">PREV (in module ir.graph)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.primary">primary (ir.eval.DiscoveryReport property)</a>
 </li>
@@ -940,6 +1016,8 @@
         <li><a href="module_docs/ir/retrieve.html#ir.retrieve.records_for_artifact">(in module ir.retrieve)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/graph.html#ir.graph.REF">REF (in module ir.graph)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.register">register() (in module ir)</a>
 
       <ul>
@@ -1060,8 +1138,6 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.sensitivity">sensitivity (ir.eval.MinScoreCalibration attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.sensitivity_weight">sensitivity_weight (ir.eval.MinScoreCalibration attribute)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.sentence_window_policy">sentence_window_policy() (in module ir)</a>
@@ -1070,6 +1146,8 @@
         <li><a href="module_docs/ir/expand.html#ir.expand.sentence_window_policy">(in module ir.expand)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.separable">separable (ir.eval.MinScoreCalibration attribute)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.CorpusStore.set_calibration">set_calibration() (ir.CorpusStore method)</a>
@@ -1090,6 +1168,12 @@
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.set_ledger_entry">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir.html#ir.CorpusStore.set_links">set_links() (ir.CorpusStore method)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.set_links">(ir.store.CorpusStore method)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir/select.html#ir.select.Selection.signals">signals (ir.select.Selection attribute)</a>
 
       <ul>
@@ -1102,9 +1186,13 @@
         <li><a href="module_docs/ir/strategy.html#ir.strategy.Skill">(class in ir.strategy)</a>
 </li>
       </ul></li>
-      <li><a href="module_docs/ir.html#ir.Disclosure.source">source (ir.Disclosure attribute)</a>
+      <li><a href="module_docs/ir.html#ir.CorpusGraph.source">source (ir.CorpusGraph attribute)</a>
 
       <ul>
+        <li><a href="module_docs/ir.html#ir.Disclosure.source">(ir.Disclosure attribute)</a>
+</li>
+        <li><a href="module_docs/ir/graph.html#ir.graph.CorpusGraph.source">(ir.graph.CorpusGraph attribute)</a>
+</li>
         <li><a href="module_docs/ir/select.html#ir.select.Disclosure.source">(ir.select.Disclosure attribute)</a>
 </li>
       </ul></li>
