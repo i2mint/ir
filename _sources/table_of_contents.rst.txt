@@ -20,3 +20,4 @@
    module_docs/ir/sources
    module_docs/ir/store
    module_docs/ir/strategy
+   module_docs/ir/traverse

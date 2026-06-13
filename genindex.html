@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.19 documentation</title>
+  <title>Index &mdash; ir 0.1.20 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=3d116926"></script>
+      <script src="_static/documentation_options.js?v=17aaaefc"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -64,6 +64,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/store.html">ir.store</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/strategy.html">ir.strategy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/traverse.html">ir.traverse</a></li>
 </ul>
 
         </div>
@@ -237,10 +238,16 @@
         <li><a href="module_docs/ir/strategy.html#ir.strategy.Chunked">(class in ir.strategy)</a>
 </li>
       </ul></li>
-      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.conditional_commit_rate">conditional_commit_rate (ir.eval.SelectionReport attribute)</a>
+      <li><a href="module_docs/ir.html#ir.collapsed_tree_policy">collapsed_tree_policy() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/traverse.html#ir.traverse.collapsed_tree_policy">(in module ir.traverse)</a>
 </li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.conditional_commit_rate">conditional_commit_rate (ir.eval.SelectionReport attribute)</a>
+</li>
       <li><a href="module_docs/ir/config.html#ir.config.config_dir">config_dir() (in module ir.config)</a>
 </li>
       <li><a href="module_docs/ir/sources.html#ir.sources.content_hash_signal">content_hash_signal() (in module ir.sources)</a>
@@ -331,7 +338,11 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_K_VALUES">DFLT_K_VALUES (in module ir.eval)</a>
 </li>
+      <li><a href="module_docs/ir/traverse.html#ir.traverse.DFLT_LEAF_KINDS">DFLT_LEAF_KINDS (in module ir.traverse)</a>
+</li>
       <li><a href="module_docs/ir/select.html#ir.select.DFLT_MAX_BODY_CHARS">DFLT_MAX_BODY_CHARS (in module ir.select)</a>
+</li>
+      <li><a href="module_docs/ir/traverse.html#ir.traverse.DFLT_MAX_DEPTH">DFLT_MAX_DEPTH (in module ir.traverse)</a>
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.DFLT_MAX_K">DFLT_MAX_K (in module ir.select)</a>
 </li>
@@ -350,6 +361,10 @@
       <li><a href="module_docs/ir/select.html#ir.select.DFLT_REL_THRESHOLD">DFLT_REL_THRESHOLD (in module ir.select)</a>
 </li>
       <li><a href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_RRF_K">DFLT_RRF_K (in module ir.retrieve)</a>
+</li>
+      <li><a href="module_docs/ir/traverse.html#ir.traverse.DFLT_SEED_K">DFLT_SEED_K (in module ir.traverse)</a>
+</li>
+      <li><a href="module_docs/ir/traverse.html#ir.traverse.DFLT_SUMMARY_KINDS">DFLT_SUMMARY_KINDS (in module ir.traverse)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_MAX_K">DFLT_SWEEP_MAX_K (in module ir.eval)</a>
 </li>
@@ -628,8 +643,6 @@
         <li><a href="module_docs/ir/eval.html#module-ir.eval">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ir.eval_gen
 
@@ -637,6 +650,8 @@
         <li><a href="module_docs/ir/eval_gen.html#module-ir.eval_gen">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     ir.expand
 
@@ -705,6 +720,13 @@
 
       <ul>
         <li><a href="module_docs/ir/strategy.html#module-ir.strategy">module</a>
+</li>
+      </ul></li>
+      <li>
+    ir.traverse
+
+      <ul>
+        <li><a href="module_docs/ir/traverse.html#module-ir.traverse">module</a>
 </li>
       </ul></li>
       <li><a href="module_docs/ir.html#ir.CorpusSource.items">items() (ir.CorpusSource method)</a>
@@ -809,10 +831,10 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration">MinScoreCalibration (class in ir.eval)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.mode">mode (ir.eval.DiscoveryReport attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/retrieve.html#ir.retrieve.MODES">MODES (in module ir.retrieve)</a>
 </li>
       <li>
@@ -854,6 +876,8 @@
         <li><a href="module_docs/ir/store.html#module-ir.store">ir.store</a>
 </li>
         <li><a href="module_docs/ir/strategy.html#module-ir.strategy">ir.strategy</a>
+</li>
+        <li><a href="module_docs/ir/traverse.html#module-ir.traverse">ir.traverse</a>
 </li>
       </ul></li>
   </ul></td>
@@ -1282,6 +1306,12 @@
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.top_k">top_k() (in module ir.select)</a>
 </li>
+      <li><a href="module_docs/ir.html#ir.traverse">traverse() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/traverse.html#ir.traverse.traverse">(in module ir.traverse)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -1311,6 +1341,20 @@
 
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir.html#ir.WalkPolicy">WalkPolicy (class in ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/traverse.html#ir.traverse.WalkPolicy">(class in ir.traverse)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir.html#ir.WalkState">WalkState (class in ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/traverse.html#ir.traverse.WalkState">(class in ir.traverse)</a>
+</li>
+      </ul></li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.WholeText">WholeText (class in ir)</a>
 

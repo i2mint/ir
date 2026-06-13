@@ -1,0 +1,4 @@
+ir.traverse
+===========
+.. automodule:: ir.traverse
+   :members:

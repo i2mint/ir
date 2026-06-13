@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.19 documentation</title>
+  <title>ir &mdash; ir 0.1.20 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=3d116926"></script>
+      <script src="../_static/documentation_options.js?v=17aaaefc"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -144,11 +144,14 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.WalkPolicy"><code class="docutils literal notranslate"><span class="pre">WalkPolicy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.WalkState"><code class="docutils literal notranslate"><span class="pre">WalkState</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.as_retriever"><code class="docutils literal notranslate"><span class="pre">as_retriever()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.build_corpus"><code class="docutils literal notranslate"><span class="pre">build_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.canonical_node_id"><code class="docutils literal notranslate"><span class="pre">canonical_node_id()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.collapsed_tree_policy"><code class="docutils literal notranslate"><span class="pre">collapsed_tree_policy()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.corpora"><code class="docutils literal notranslate"><span class="pre">corpora()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.default_edge_extractor"><code class="docutils literal notranslate"><span class="pre">default_edge_extractor()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.disclose"><code class="docutils literal notranslate"><span class="pre">disclose()</span></code></a></li>
@@ -166,6 +169,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.select"><code class="docutils literal notranslate"><span class="pre">select()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.sentence_window_policy"><code class="docutils literal notranslate"><span class="pre">sentence_window_policy()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.tag_source"><code class="docutils literal notranslate"><span class="pre">tag_source()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.traverse"><code class="docutils literal notranslate"><span class="pre">traverse()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ir/__main__.html">ir.__main__</a></li>
@@ -185,6 +189,7 @@
 <li class="toctree-l1"><a class="reference internal" href="ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/store.html">ir.store</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/strategy.html">ir.strategy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ir/traverse.html">ir.traverse</a></li>
 </ul>
 
         </div>
@@ -875,6 +880,30 @@ an artifact. <code class="docutils literal notranslate"><span class="pre">granul
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="ir.WalkPolicy">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">WalkPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/traverse.html#WalkPolicy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.WalkPolicy" title="Link to this definition"></a></dt>
+<dd><p>The pluggable strategy of a walk — graph semantics, not safety.</p>
+<p><code class="docutils literal notranslate"><span class="pre">seed</span></code> produces the initial frontier; <code class="docutils literal notranslate"><span class="pre">score</span></code> ranks a node against the
+query; <code class="docutils literal notranslate"><span class="pre">select</span></code> chooses which scored frontier nodes to commit/expand this
+step (beam/greedy — default: all, best-first); <code class="docutils literal notranslate"><span class="pre">expand</span></code> yields a node’s
+neighbors; <code class="docutils literal notranslate"><span class="pre">node_id</span></code> is the hashable visited-set key; <code class="docutils literal notranslate"><span class="pre">stop</span></code> is the
+injected sufficiency check; <code class="docutils literal notranslate"><span class="pre">to_hit</span></code> materializes a committed node as a
+<a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><code class="xref py py-class docutils literal notranslate"><span class="pre">SearchHit</span></code></a> — or <code class="docutils literal notranslate"><span class="pre">None</span></code> for a <em>router-only</em> node (a
+summary that routes but is not itself a result).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.WalkState">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">WalkState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_depth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">budget</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visited</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/traverse.html#WalkState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.WalkState" title="Link to this definition"></a></dt>
+<dd><p>The operator-owned state of one <a class="reference internal" href="ir/traverse.html#module-ir.traverse" title="ir.traverse"><code class="xref py py-func docutils literal notranslate"><span class="pre">traverse()</span></code></a> call — the safety home.</p>
+<p><code class="docutils literal notranslate"><span class="pre">visited</span></code> (node ids already committed), <code class="docutils literal notranslate"><span class="pre">budget</span></code>, and <code class="docutils literal notranslate"><span class="pre">max_depth</span></code> are
+the structural safety primitives the operator enforces; <code class="docutils literal notranslate"><span class="pre">results</span></code> are the
+emitted hits; <code class="docutils literal notranslate"><span class="pre">cache</span></code> is scratch space a policy may use (e.g. to embed the
+query once). A policy reads this but the <em>operator</em> enforces the bounds —
+a policy cannot opt out of termination.</p>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="ir.WholeText">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">WholeText</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'document'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/strategy.html#WholeText"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.WholeText" title="Link to this definition"></a></dt>
 <dd><p>One surface = the entire text. Sensible default for a naive corpus.</p>
@@ -946,6 +975,26 @@ canonical tuple.</p>
 <span class="go">(&#39;packages&#39;, &#39;dol&#39;)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">([</span><span class="s2">&quot;skills&quot;</span><span class="p">,</span> <span class="s2">&quot;deploy&quot;</span><span class="p">],</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;packages&quot;</span><span class="p">)</span>
 <span class="go">(&#39;skills&#39;, &#39;deploy&#39;)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.collapsed_tree_policy">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">collapsed_tree_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">summary_kinds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">('description',</span> <span class="pre">'synopsis',</span> <span class="pre">'capability',</span> <span class="pre">'document')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">leaf_kinds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">('chunk',</span> <span class="pre">'readme_chunk')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed_k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="ir/traverse.html#ir.traverse.WalkPolicy" title="ir.traverse.WalkPolicy"><span class="pre">WalkPolicy</span></a></span></span><a class="reference internal" href="../_modules/ir/traverse.html#collapsed_tree_policy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.collapsed_tree_policy" title="Link to this definition"></a></dt>
+<dd><p>The pure-vector summary-routing / collapsed-tree <a class="reference internal" href="#ir.WalkPolicy" title="ir.WalkPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">WalkPolicy</span></code></a>.</p>
+<p>Seeds on the top <em>seed_k</em> matches among <code class="docutils literal notranslate"><span class="pre">summary_kinds</span></code> surfaces and
+descends to each routed artifact’s <code class="docutils literal notranslate"><span class="pre">leaf_kinds</span></code> surfaces (the emitted
+results), scored by cosine to the query. No LLM in the loop. A summary
+surface is a <em>router</em> (suppressed from results) only when its artifact has
+leaf surfaces; on a single-surface corpus (WholeText <code class="docutils literal notranslate"><span class="pre">document</span></code>, Skill
+<code class="docutils literal notranslate"><span class="pre">capability</span></code>) the summaries are leaf-less and emitted directly, so the
+walk degrades to flat-over-summaries instead of returning nothing.</p>
+<p>The defaults keep <code class="docutils literal notranslate"><span class="pre">document</span></code> / <code class="docutils literal notranslate"><span class="pre">capability</span></code> in <code class="docutils literal notranslate"><span class="pre">summary_kinds</span></code> <em>on
+purpose</em> — that is what lets a WholeText / Skill corpus seed at all; the
+structural router check (above) is what keeps those seeds from being
+silently swallowed.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">traverse</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">corpus</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">collapsed_tree_policy</span><span class="p">())</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -1369,6 +1418,36 @@ in plan order — a <code class="docutils literal notranslate"><span class="pre"
 attribution (so re-tagging under a different registry key cannot
 double-count one corpus as two sources). A <code class="docutils literal notranslate"><span class="pre">None</span></code> source is the
 untagged pseudo-source — hits pass through unattributed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.traverse">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">traverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">policy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ir/traverse.html#ir.traverse.WalkPolicy" title="ir.traverse.WalkPolicy"><span class="pre">WalkPolicy</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_depth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_budget</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><span class="pre">SearchHit</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/ir/traverse.html#traverse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.traverse" title="Link to this definition"></a></dt>
+<dd><p>Walk <em>store</em> from <em>query</em> under <em>policy</em>, returning the top-<em>k</em> hits.</p>
+<p>The loop — <em>score the frontier → select → commit → expand</em> — is the
+operator’s; the <strong>safety primitives are non-negotiable and enforced here</strong>:
+a node id is committed at most once (the visited-set), expansion stops at
+<code class="docutils literal notranslate"><span class="pre">max_depth</span></code>, and no more than <code class="docutils literal notranslate"><span class="pre">node_budget</span></code> nodes are ever committed.
+A policy whose <code class="docutils literal notranslate"><span class="pre">expand</span></code> cycles forever and whose <code class="docutils literal notranslate"><span class="pre">stop</span></code> never fires
+still terminates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> – the user intent.</p></li>
+<li><p><strong>store</strong> – passed to <em>policy</em> verbatim — a <a class="reference internal" href="ir/index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a> for
+<a class="reference internal" href="#ir.collapsed_tree_policy" title="ir.collapsed_tree_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">collapsed_tree_policy()</span></code></a>, a <a class="reference internal" href="ir/graph.html#ir.graph.CorpusGraph" title="ir.graph.CorpusGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusGraph</span></code></a> for
+an artifact-link policy. The operator never inspects it.</p></li>
+<li><p><strong>policy</strong> – the <a class="reference internal" href="#ir.WalkPolicy" title="ir.WalkPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">WalkPolicy</span></code></a> (e.g. <a class="reference internal" href="#ir.collapsed_tree_policy" title="ir.collapsed_tree_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">collapsed_tree_policy()</span></code></a>).</p></li>
+<li><p><strong>max_depth</strong> – maximum expansion depth from a seed (safety).</p></li>
+<li><p><strong>node_budget</strong> – maximum nodes committed (safety).</p></li>
+<li><p><strong>k</strong> – number of hits to return.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the committed hits, best-first, top-<em>k</em> — each a
+<a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><code class="xref py py-class docutils literal notranslate"><span class="pre">SearchHit</span></code></a> with <code class="docutils literal notranslate"><span class="pre">metadata[&quot;walk_depth&quot;]</span></code> / <code class="docutils literal notranslate"><span class="pre">[&quot;seed&quot;]</span></code>.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
