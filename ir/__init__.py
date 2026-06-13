@@ -37,6 +37,12 @@ from .expand import (
     sentence_window_policy,
 )
 from .formulate import Formulator, make_llm_formulator
+from .graph import (
+    CorpusGraph,
+    EdgeExtractor,
+    GraphStore,
+    default_edge_extractor,
+)
 from .index import Corpus, build, open_corpus
 from .registry import retriever_for, retrievers
 from .retrieve import Retriever, as_retriever, fuse_hits, records_for_artifact
@@ -76,6 +82,10 @@ __all__ = [
     "retriever_for",
     "fuse_hits",
     "records_for_artifact",
+    "GraphStore",
+    "CorpusGraph",
+    "EdgeExtractor",
+    "default_edge_extractor",
     "expand",
     "Passage",
     "NeighborhoodPolicy",

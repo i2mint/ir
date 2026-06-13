@@ -92,6 +92,7 @@ def build(
     embedder: Any = None,
     full: bool = True,
     batch_size: int = 256,
+    edge_extractor: Callable | None = None,
 ) -> Corpus:
     """Build or incrementally update *source* into a :class:`Corpus`.
 
@@ -101,6 +102,14 @@ def build(
     embedder : override the source's embedder spec.
     full : when True (default), prune artifacts no longer in the source.
     batch_size : embedding batch size.
+    edge_extractor : an optional :data:`~ir.graph.EdgeExtractor`
+        (``(artifact_id, filter_fields) -> {edge_type: [target]}``) that
+        populates the corpus's semantic ``links`` graph (see :mod:`ir.graph`;
+        pass :func:`ir.default_edge_extractor` for the latent deps/parent
+        edges). Ingest is **eager** — edges are (re)written for *every*
+        in-scope artifact, a decompose-only pass with no embedding, so the
+        graph never goes partially stale — while embedding stays fully
+        incremental. Edges are derived state, **not** part of build identity.
     """
     store = CorpusStore.local(source.name) if store is None else store
     spec = embedder if embedder is not None else source.embedder
@@ -115,16 +124,23 @@ def build(
         version = source.change_signal(artifact_id, raw)
         key = ledger_key(artifact_id)
         prev = store.get_ledger_entry(key)
-        if (
+        unchanged = (
             prev
             and prev.get("version") == version
             and prev.get("embedder_id") == emb_id
             and prev.get("strategy_id") == strat_id
-        ):
-            continue  # unchanged content + same model + same strategy
+        )
+        # Unchanged + no edges to refresh → nothing to do for this artifact.
+        if unchanged and edge_extractor is None:
+            continue
         meta_extra = source.metadata_of(artifact_id, raw) if source.metadata_of else {}
         plan = source.indexing_strategy.decompose(artifact_id, raw, meta_extra)
-        changed[artifact_id] = (key, version, prev, plan)
+        if not unchanged:
+            changed[artifact_id] = (key, version, prev, plan)
+        if edge_extractor is not None:
+            store.set_links(
+                artifact_id, edge_extractor(artifact_id, plan.filter_fields)
+            )
 
     # Embed all surfaces of changed artifacts together (cache makes this cheap).
     flat = [
@@ -178,6 +194,7 @@ def build(
                 for rid in entry.get("record_ids", []):
                     store.delete_record(rid)
                 store.delete_ledger_entry(key)
+                store.delete_links(entry.get("artifact_id", ""))
 
     store.set_config(
         {

@@ -13,8 +13,13 @@ A :class:`CorpusStore` bundles three ``MutableMapping`` views, so *where* and
   Kept apart from ``config`` on purpose — a calibration is regenerable, derived
   from an eval run, and not part of the corpus's build identity, so it must never
   clobber (or be clobbered by) the build settings.
+- ``links`` : ``artifact_id -> {edge_type: [target, ...]}`` (the semantic link
+  graph — typed directed edges between artifacts; see :mod:`ir.graph`). Like
+  ``calibration`` it is regenerable derived state, kept out of build identity; a
+  target is a bare ``artifact_id`` (intra-corpus) or a ``[source, artifact_id]``
+  pair (cross-corpus). Optional — an absent view is simply "no edges".
 
-The default factory :meth:`CorpusStore.local` roots all five under
+The default factory :meth:`CorpusStore.local` roots all six under
 ``~/.local/share/ir/corpora/<name>`` via ``dol`` file stores;
 :meth:`CorpusStore.memory` gives a dependency-free in-memory store for tests.
 Brute-force search reads vectors into a single normalized matrix
@@ -72,14 +77,17 @@ class CorpusStore:
         ledger: MutableMapping[str, Any],
         config: MutableMapping[str, Any],
         calibration: MutableMapping[str, Any] | None = None,
+        links: MutableMapping[str, Any] | None = None,
     ):
         self.meta = meta
         self.vectors = vectors
         self.ledger = ledger
         self.config = config
-        # Optional 5th view (defaults to an in-memory dict so older call sites and
-        # tests that construct a store with four views keep working unchanged).
+        # Optional 5th/6th views (default to in-memory dicts so older call sites
+        # and tests that construct a store with fewer views keep working — and an
+        # absent links view simply means "no edges").
         self.calibration = {} if calibration is None else calibration
+        self.links = {} if links is None else links
         self._matrix_cache: tuple | None = None
 
     # ----- factories ------------------------------------------------------ #
@@ -96,6 +104,7 @@ class CorpusStore:
             ledger=_json_store(root / "ledger"),
             config=_json_store(root / "config"),
             calibration=_json_store(root / "calibration"),
+            links=_json_store(root / "links"),
         )
 
     @classmethod
@@ -204,6 +213,37 @@ class CorpusStore:
     def calibration_modes(self) -> list[str]:
         """The ranking modes that currently have a stored calibration."""
         return list(self.calibration)
+
+    # ----- links (semantic edge graph) ------------------------------------ #
+
+    def get_links(self, artifact_id: str) -> dict:
+        """The outgoing edges of *artifact_id* — ``{edge_type: [target, ...]}``.
+
+        Empty dict when the artifact has no stored edges (or no links view).
+        A copy, so a caller cannot mutate the persisted adjacency in place.
+        """
+        return copy.deepcopy(self.links.get(artifact_id, {}))
+
+    def set_links(self, artifact_id: str, edges: Mapping[str, Any]) -> None:
+        """Persist *artifact_id*'s outgoing *edges* (``{edge_type: [target]}``).
+
+        Empty edge-type lists are dropped; an empty result deletes the entry
+        (no empty adjacency rows linger). Targets are stored verbatim — a bare
+        ``artifact_id`` or a ``[source, artifact_id]`` pair.
+        """
+        cleaned = {et: list(ts) for et, ts in edges.items() if ts}
+        if cleaned:
+            self.links[artifact_id] = cleaned
+        else:
+            self.links.pop(artifact_id, None)
+
+    def delete_links(self, artifact_id: str) -> None:
+        """Remove an artifact's edges; a missing entry is tolerated."""
+        self.links.pop(artifact_id, None)
+
+    def link_items(self) -> Iterator[tuple[str, dict]]:
+        """Iterate ``(artifact_id, {edge_type: [target]})`` adjacency pairs."""
+        return iter(list(self.links.items()))
 
     # ----- search matrix -------------------------------------------------- #
 
