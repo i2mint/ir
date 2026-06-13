@@ -150,6 +150,9 @@ def test_wholetext_corpus_does_not_silently_return_empty():
     assert trav, "WholeText corpus must not silently return zero results"
     assert all(h.surface_kind == "document" for h in trav)
     assert trav[0].artifact_id == "d1"
+    # "flat-over-summaries" means *all* leaf-less seeds emit, not just the best:
+    # a top-1 regression (select[:1] / early stop) must not pass this.
+    assert {h.artifact_id for h in trav} == {"d1", "d2", "d3"}
     # A leaf-less summary is emitted at its seed position (depth 0), with no
     # routing parent — it IS the seed, not a descent target.
     assert trav[0].metadata["walk_depth"] == 0
@@ -177,6 +180,7 @@ def test_skill_corpus_does_not_silently_return_empty():
     assert trav, "Skill corpus must not silently return zero results"
     assert all(h.surface_kind == "capability" for h in trav)
     assert trav[0].artifact_id == "s1"
+    assert {h.artifact_id for h in trav} == {"s1", "s2"}  # all leaf-less seeds emit
     assert trav[0].metadata["walk_depth"] == 0
 
 
@@ -188,6 +192,58 @@ def test_package_corpus_still_routes_summaries_not_leaf_less_emit():
     trav = ir.traverse(ROUTING_QUERY, corpus, policy=ir.collapsed_tree_policy(), k=10)
     assert trav
     assert all(h.surface_kind == "readme_chunk" for h in trav)  # no "description"
+
+
+def test_mixed_corpus_routes_leaf_having_emits_leaf_less():
+    # The decision must be PER-ARTIFACT, not corpus-global: one artifact has a
+    # readme (leaf-having -> routes, summary suppressed) and one has readme=""
+    # (leaf-less -> summary emitted directly). One traverse exercises BOTH
+    # has_leaves branches — a corpus-global flag would wrongly suppress no_leaf.
+    pkg = {
+        "has_leaf": {
+            "name": "has_leaf",
+            "description": "rtok1 rtok2 rtok3 rtok4 alpha",
+            "readme": "ANSTOK answer payload here filler one two three.",
+        },
+        "no_leaf": {
+            "name": "no_leaf",
+            "description": "rtok1 rtok2 rtok3 rtok4 beta",
+            "readme": "",
+        },
+    }
+    src = ir.CorpusSource.from_mapping(
+        pkg, name="mix", strategy=ir.Package(chunk_size=120, overlap=10)
+    )
+    corpus = ir.build(src, store=CorpusStore.memory(), embedder="light")
+    trav = ir.traverse(
+        "rtok1 rtok2 rtok3 rtok4 ANSTOK",
+        corpus,
+        policy=ir.collapsed_tree_policy(),
+        k=10,
+    )
+    by_aid = {h.artifact_id: h for h in trav}
+    # leaf-less artifact: emitted directly as its summary, at the seed position
+    assert by_aid["no_leaf"].surface_kind == "description"
+    assert by_aid["no_leaf"].metadata["walk_depth"] == 0
+    assert "seed" not in by_aid["no_leaf"].metadata
+    # leaf-having artifact: summary suppressed (router), leaf emitted under it
+    assert by_aid["has_leaf"].surface_kind == "readme_chunk"
+    assert by_aid["has_leaf"].metadata["walk_depth"] == 1
+    assert by_aid["has_leaf"].metadata["seed"] == "has_leaf"
+
+
+def test_chunked_only_corpus_is_out_of_scope_documented_boundary():
+    # Boundary characterization (not a footgun the fix addresses): a Chunked
+    # corpus has only "chunk" surfaces — a leaf kind, never a summary kind — so
+    # collapsed_tree has nothing to seed from and returns []. The policy
+    # docstring directs such corpora to ir.search; this pins that contract so an
+    # accidental seeding change is caught.
+    docs = {f"c{i}": f"rtok1 rtok2 chunk body {i} ANSTOK tail" for i in range(3)}
+    src = ir.CorpusSource.from_mapping(docs, name="ch", strategy=ir.Chunked())
+    corpus = ir.build(src, store=CorpusStore.memory(), embedder="light")
+    assert ir.traverse("rtok1 ANSTOK", corpus, policy=ir.collapsed_tree_policy()) == []
+    # ...and flat search is the right tool here — it does find them.
+    assert ir.search(corpus, "rtok1 ANSTOK", k=5)
 
 
 # --------------------------------------------------------------------------- #
