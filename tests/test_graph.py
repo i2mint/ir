@@ -22,6 +22,7 @@ from ir.graph import (
     CorpusGraph,
     GraphStore,
     _dep_name,
+    canonical_node_id,
     default_edge_extractor,
 )
 from ir.retrieve import NoLedgerEntry
@@ -127,10 +128,40 @@ def test_absent_links_view_degrades_to_no_edges():
         ("numpy[fast]>=1.2", "numpy"),
         ("Requests >= 2 ; python_version>='3.9'", "requests"),
         ("pkg (>=1.0)", "pkg"),
+        ("dol@git+https://github.com/i2mint/dol.git", "dol"),  # PEP 508 URL dep
+        ("dol @ git+https://github.com/i2mint/dol.git@main", "dol"),  # spaced
     ],
 )
 def test_dep_name_strips_specifiers(spec, expected):
     assert _dep_name(spec) == expected
+
+
+def test_default_extractor_self_edge_drop_is_case_insensitive():
+    # _dep_name lower-cases, so an "AA" package depending on "aa" (or "AA")
+    # is recognized as a self-reference and dropped.
+    assert default_edge_extractor("AA", {"deps": ["AA", "dol"]}) == {"REF": ["dol"]}
+
+
+def test_default_extractor_dedups_duplicate_deps():
+    edges = default_edge_extractor("x", {"deps": ["dol", "dol>=1.0", "i2"]})
+    assert edges == {"REF": ["dol", "i2"]}
+
+
+def test_default_extractor_handles_url_dep():
+    edges = default_edge_extractor("x", {"deps": ["dol@git+https://h/i2mint/dol"]})
+    assert edges == {"REF": ["dol"]}
+
+
+@pytest.mark.parametrize(
+    "target,source,expected",
+    [
+        ("dol", "packages", ("packages", "dol")),
+        (["skills", "deploy"], "packages", ("skills", "deploy")),
+        ("x", None, (None, "x")),
+    ],
+)
+def test_canonical_node_id(target, source, expected):
+    assert canonical_node_id(target, source=source) == expected
 
 
 def test_default_extractor_deps_to_ref_and_parent():
@@ -169,6 +200,45 @@ def test_neighbors_preserves_cross_corpus_pair_targets():
     s = CorpusStore.memory()
     s.set_links("deploy", {"PARENT": [["packages", "tw"]]})
     assert CorpusGraph(s).neighbors("deploy", edge_type=PARENT) == [["packages", "tw"]]
+
+
+def test_neighbors_dedups_cross_corpus_pairs_unfiltered():
+    s = CorpusStore.memory()
+    s.set_links("a", {"REF": [["c", "x"], "y"], "PARENT": [["c", "x"]]})
+    # The [c, x] pair appears under two edge types — deduped once (lists are
+    # unhashable, so dedup keys on the tuple form).
+    assert CorpusGraph(s).neighbors("a") == [["c", "x"], "y"]
+
+
+def test_neighbors_round_trips_through_a_reopened_file_store(tmp_path, monkeypatch):
+    monkeypatch.setenv("IR_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("IR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("IR_CACHE_DIR", str(tmp_path / "cache"))
+    src = ir.CorpusSource.from_mapping(PKG, name="fpkgs", strategy=ir.Package())
+    ir.build(src, embedder="light", edge_extractor=default_edge_extractor)
+    reopened = ir.open_corpus("fpkgs")
+    assert CorpusGraph(reopened).neighbors("aa", edge_type=REF) == ["dol", "numpy"]
+
+
+def test_skill_collision_ids_keep_correct_parent_edges():
+    # Same-named skills from different parents get collision-safe ids
+    # ("name@parent"); the PARENT edge must still point at each one's parent,
+    # and the id ("deploy@ops") must not be mistaken for a self-edge.
+    skills = {
+        "deploy": {"name": "deploy", "description": "d", "parent": "tw"},
+        "deploy@ops": {"name": "deploy", "description": "d2", "parent": "ops"},
+    }
+    src = ir.CorpusSource.from_mapping(skills, name="skc", strategy=ir.Skill())
+    g = CorpusGraph(
+        ir.build(
+            src,
+            store=CorpusStore.memory(),
+            embedder="light",
+            edge_extractor=default_edge_extractor,
+        )
+    )
+    assert g.neighbors("deploy", edge_type=PARENT) == ["tw"]
+    assert g.neighbors("deploy@ops", edge_type=PARENT) == ["ops"]
 
 
 def test_skill_parent_becomes_parent_edge():

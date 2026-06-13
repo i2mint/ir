@@ -41,6 +41,7 @@ from .graph import (
     CorpusGraph,
     EdgeExtractor,
     GraphStore,
+    canonical_node_id,
     default_edge_extractor,
 )
 from .index import Corpus, build, open_corpus
@@ -86,6 +87,7 @@ __all__ = [
     "CorpusGraph",
     "EdgeExtractor",
     "default_edge_extractor",
+    "canonical_node_id",
     "expand",
     "Passage",
     "NeighborhoodPolicy",

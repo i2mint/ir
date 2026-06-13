@@ -70,6 +70,11 @@ class GraphStore(Protocol):
     a node id to its scorable payload, ``neighbors`` lists adjacent node ids
     (optionally of one edge type). Granularity-agnostic on purpose — an
     artifact graph and a surface-level tree are both ``GraphStore``s.
+
+    ``runtime_checkable`` makes ``isinstance(x, GraphStore)`` a *structural*
+    check on attribute **names** only (not signatures) — enough to tell a
+    conforming adapter from an arbitrary object, but it cannot validate that
+    ``neighbors`` takes the right arguments; treat it as a smoke check.
     """
 
     def __getitem__(self, node_id: Any) -> Any: ...
@@ -101,10 +106,16 @@ class CorpusGraph:
     def neighbors(self, node_id: str, *, edge_type: str | None = None) -> list:
         """Outgoing neighbor ids of *node_id*, optionally of one *edge_type*.
 
-        Returns target ids in stored form (a bare ``artifact_id``, or a
-        ``[source, artifact_id]`` list for a cross-corpus edge), de-duplicated
-        with first-seen order preserved. An artifact with no edges (or a store
-        without a links view) yields ``[]`` — never raises.
+        Returns target ids in stored form (a bare ``artifact_id``, whose source
+        is *this* graph's :attr:`source`; or a ``[source, artifact_id]`` list
+        for a cross-corpus edge), de-duplicated with first-seen order
+        preserved. An artifact with no edges — or a store without a links view —
+        yields ``[]``. Pass a canonical ``(source, artifact_id)`` to
+        :func:`canonical_node_id` for a traversal's visited-set.
+
+        *node_id* is an intra-corpus ``artifact_id`` (a ``str``); a cross-corpus
+        target fetched from another graph is out of contract here (it has no
+        edges *in this corpus*).
         """
         edges = self.store.get_links(node_id)
         if edge_type is not None:
@@ -125,6 +136,26 @@ class CorpusGraph:
         return list(self.store.get_links(node_id))
 
 
+def canonical_node_id(target: Any, *, source: str | None) -> tuple[str | None, str]:
+    """Canonicalize a neighbor *target* to a ``(source, artifact_id)`` node id.
+
+    The repo's node identity is ``(source, artifact_id)`` — the key a traversal
+    visited-set must use so the same id in two corpora stays two nodes.
+    :meth:`CorpusGraph.neighbors` returns targets in stored form: a bare
+    ``artifact_id`` (implicitly in *source*, the graph it came from) or a
+    ``[source, artifact_id]`` cross-corpus pair. This resolves either to the
+    canonical tuple.
+
+    >>> canonical_node_id("dol", source="packages")
+    ('packages', 'dol')
+    >>> canonical_node_id(["skills", "deploy"], source="packages")
+    ('skills', 'deploy')
+    """
+    if isinstance(target, (list, tuple)) and len(target) == 2:
+        return (target[0], target[1])
+    return (source, target)
+
+
 # ---- edge ingest ---------------------------------------------------------- #
 
 #: An edge extractor: ``(artifact_id, filter_fields) -> {edge_type: [target]}``.
@@ -133,10 +164,11 @@ class CorpusGraph:
 #: edge_extractor=...)`` runs it; :func:`default_edge_extractor` is shipped.
 EdgeExtractor = Callable[[str, Mapping[str, Any]], "Mapping[str, list]"]
 
-#: Split a PEP 508 dependency spec at the first version/extra/marker delimiter,
-#: leaving the bare distribution name (``"numpy[fast]>=1.2; python>='3.9'"`` →
-#: ``"numpy"``).
-_DEP_DELIM = re.compile(r"[<>=!~;\[\s(]")
+#: Split a PEP 508 dependency spec at the first version/extra/marker/url
+#: delimiter, leaving the bare distribution name (``"numpy[fast]>=1.2;
+#: python>='3.9'"`` → ``"numpy"``; the direct-reference ``"dol@git+https://…"``
+#: → ``"dol"``). ``@`` is included so PEP 508 URL deps yield the bare name.
+_DEP_DELIM = re.compile(r"[<>=!~;@\[\s(]")
 
 
 def _dep_name(dep: str) -> str:
@@ -158,18 +190,22 @@ def default_edge_extractor(
     intra-corpus REF edges; third-party deps become REF edges to ids not in the
     corpus (harmless — :meth:`CorpusGraph.neighbors` lists them, and a
     traversal simply finds no node to expand).
+
+    Self-edges are dropped case-insensitively (``_dep_name`` lower-cases, so a
+    package ``"AA"`` depending on ``"aa"`` is recognized as a self-reference).
     """
     edges: dict[str, list] = {}
+    self_id = artifact_id.lower()
     deps = filter_fields.get("deps")
     if isinstance(deps, (list, tuple)):
         refs = []
         for dep in deps:
             name = _dep_name(str(dep))
-            if name and name != artifact_id:
+            if name and name != self_id:
                 refs.append(name)
         if refs:
             edges[REF] = list(dict.fromkeys(refs))  # de-dup, keep order
     parent = filter_fields.get("parent")
-    if isinstance(parent, str) and parent and parent != artifact_id:
+    if isinstance(parent, str) and parent and parent.lower() != self_id:
         edges[PARENT] = [parent]
     return edges

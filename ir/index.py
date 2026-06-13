@@ -110,6 +110,10 @@ def build(
         in-scope artifact, a decompose-only pass with no embedding, so the
         graph never goes partially stale — while embedding stays fully
         incremental. Edges are derived state, **not** part of build identity.
+        A rebuild *without* an extractor leaves existing edges untouched
+        (they are only refreshed by re-running with one, and only cleared per
+        artifact by the ``full`` prune below) — so dropping ``edge_extractor``
+        does not wipe a graph.
     """
     store = CorpusStore.local(source.name) if store is None else store
     spec = embedder if embedder is not None else source.embedder
