@@ -59,6 +59,7 @@ from .select import (
 from .sources import CorpusSource
 from .store import CorpusStore
 from .strategy import Chunked, IndexingStrategy, Package, Skill, WholeText
+from .traverse import WalkPolicy, WalkState, collapsed_tree_policy, traverse
 
 __all__ = [
     "Artifact",
@@ -88,6 +89,10 @@ __all__ = [
     "EdgeExtractor",
     "default_edge_extractor",
     "canonical_node_id",
+    "traverse",
+    "WalkPolicy",
+    "WalkState",
+    "collapsed_tree_policy",
     "expand",
     "Passage",
     "NeighborhoodPolicy",

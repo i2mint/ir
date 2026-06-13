@@ -163,6 +163,37 @@ Disclosure is a *pure* read that follows the pointer already stored on each hit
 pointer. Keeping the agent's context append-only (to protect the prompt cache)
 is then the caller's discipline — `ir` hands back additive payloads.
 
+### Graph & traverse (opt-in)
+
+Artifacts refer to each other — a package depends on packages, a skill has a
+parent. `ir` models those as a **semantic link graph**: a typed-edge `links`
+view on the store, populated at build time by an `EdgeExtractor`.
+
+```python
+corpus = ir.build(source, edge_extractor=ir.default_edge_extractor)  # deps→REF, parent→PARENT
+graph  = ir.CorpusGraph(corpus)
+graph.neighbors("contaix", edge_type="REF")     # the package's dependencies
+```
+
+`ir.traverse` walks that structure at query time under a pluggable `WalkPolicy`
+(*score frontier → select → expand → stop*). **Safety is the operator's**: a
+visited-set, depth cap, and node budget live in `traverse` itself, so even a
+cyclic graph and a never-stopping policy terminate. The shipped
+`collapsed_tree_policy` is pure-vector — it routes a query that matches an
+artifact's *summary* down to that artifact's best *chunk*:
+
+```python
+hits = ir.traverse(query, corpus, policy=ir.collapsed_tree_policy())
+```
+
+**Flat top-k stays the default** — `traverse` is opt-in, and a policy earns its
+keep only by beating flat+rerank on your eval set (a strong flat retriever wins
+simple lookup; graph methods cost far more). Results are ordinary `SearchHit`s
+with additive `metadata["walk_depth"]` / `["seed"]` provenance, so `select` /
+`disclose` compose unchanged. This is the **semantic link graph** (cyclic,
+query-time) — distinct from `ef.artifact_graph` (the acyclic build-time
+derivation DAG).
+
 ## Evaluation
 
 `ir.eval` scores discovery quality offline (reusing
