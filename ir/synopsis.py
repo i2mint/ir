@@ -29,7 +29,9 @@ offline, ``oa`` is imported only on the first synthesis).
 the inner strategy's parameters *and* the synthesizer identity into the corpus's
 ``strategy_id``. A prompt / model change — or an inner-strategy change — therefore
 re-synthesizes exactly the affected artifacts, the same way an ``embedder_id``
-change does; no silent staleness.
+change does; no silent staleness. (An injected *unnamed* synthesizer — a lambda
+or a local closure — has no stable identity to fold in, so ``with_synopsis``
+**warns** and disables its staleness tracking unless you pass ``synthesizer_id=``.)
 
 **Routing needs no edges.** collapsed-tree descends synopsis→chunks *within* an
 artifact via :func:`ir.retrieve.records_for_artifact` (shared ``artifact_id``), so
@@ -47,6 +49,7 @@ re-runs synthesis on every rebuild. The common path — synopsis routing with no
 from __future__ import annotations
 
 import hashlib
+import warnings
 from typing import Any, Callable
 
 from .base import Artifact, IndexPlan, Surface
@@ -96,6 +99,7 @@ def make_llm_synthesizer(
     prompt: str = SYNOPSIS_PROMPT,
     model: str | None = None,
     synthesizer_id: str | None = None,
+    text_key: str | None = None,
     **prompt_function_kwargs: Any,
 ) -> Synthesizer:
     """An LLM-backed :data:`Synthesizer` (:class:`~ir.base.Artifact` → synopsis).
@@ -104,7 +108,9 @@ def make_llm_synthesizer(
     your own summarizer); when omitted it is built lazily on :mod:`oa`
     (``oa.prompt_function``) on the **first** synthesis and reused — so importing
     this module, and even constructing the synthesizer, stays offline. The
-    artifact's text is extracted with :func:`ir.strategy.text_of`; an empty text,
+    artifact's text is extracted with :func:`ir.strategy.text_of` using
+    ``text_key`` — which :func:`with_synopsis` threads from the inner strategy, so
+    the synopsis summarizes the *same* field the strategy indexes. An empty text,
     or any synthesis error, yields ``""`` (the surface is then skipped, never a
     fabricated summary).
 
@@ -124,7 +130,7 @@ def make_llm_synthesizer(
         return cache["fn"]
 
     def synthesize(artifact: Artifact) -> str:
-        text = text_of(artifact.raw).strip()
+        text = text_of(artifact.raw, text_key).strip()
         if not text:
             return ""
         try:
@@ -157,18 +163,41 @@ class _SynopsisStrategy:
         synopsis_kind: str = SYNOPSIS_KIND,
     ):
         self.strategy = strategy
+        # The default synthesizer summarizes the same field the inner strategy
+        # indexes (thread its text_key, if any), so synopsis routing matches.
         self.synthesize: Synthesizer = (
-            synthesize if synthesize is not None else make_llm_synthesizer()
+            synthesize
+            if synthesize is not None
+            else make_llm_synthesizer(text_key=getattr(strategy, "text_key", None))
         )
-        # Identity for staleness: an explicit id wins; else a stamp the
-        # synthesizer carries; else its qualname (stable for a named double).
-        self.synthesizer_id = (
-            synthesizer_id
-            or getattr(self.synthesize, "synthesizer_id", None)
-            or getattr(self.synthesize, "__qualname__", None)
-            or "custom"
-        )
+        self.synthesizer_id = self._resolve_synthesizer_id(synthesizer_id)
         self.synopsis_kind = synopsis_kind
+
+    def _resolve_synthesizer_id(self, explicit: str | None) -> str:
+        """Identity for staleness: explicit id, else a stamp, else a stable name.
+
+        An explicit ``synthesizer_id`` wins; else a ``synthesizer_id`` the
+        synthesizer carries (e.g. :func:`make_llm_synthesizer`'s). Failing both,
+        a *named* callable's ``__qualname__`` is a stable identity — but an
+        unnamed lambda (``"<lambda>"``) or a local closure (``"<locals>"``) is
+        **not**: distinct such callables share one qualname, so swapping them
+        would silently *not* re-synthesize. In that case we warn and fall back to
+        a sentinel, surfacing the lost guarantee at construction time.
+        """
+        stamped = explicit or getattr(self.synthesize, "synthesizer_id", None)
+        if stamped:
+            return stamped
+        qualname = getattr(self.synthesize, "__qualname__", "") or ""
+        if qualname and "<lambda>" not in qualname and "<locals>" not in qualname:
+            return qualname
+        warnings.warn(
+            "with_synopsis: could not derive a stable identity for the injected "
+            "synthesizer (an unnamed lambda or a local closure), so synopsis "
+            "staleness tracking is disabled — pass synthesizer_id=... so that "
+            "swapping the synthesizer re-synthesizes the corpus on the next build.",
+            stacklevel=3,
+        )
+        return "custom"
 
     def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
         plan = self.strategy.decompose(artifact_id, raw, metadata)

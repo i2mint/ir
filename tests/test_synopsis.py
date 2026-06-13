@@ -15,6 +15,8 @@ Pins the #48 acceptance:
 Hermetic: light embedder + memory store + injected synthesizers.
 """
 
+import pytest
+
 import ir
 from ir.base import Artifact
 from ir.index import _strategy_id
@@ -216,3 +218,177 @@ def test_default_synthesizer_constructs_offline_and_stamps_identity():
     a = make_llm_synthesizer()
     b = make_llm_synthesizer(prompt="a very different prompt {text}")
     assert a.synthesizer_id.startswith("oa:") and a.synthesizer_id != b.synthesizer_id
+
+
+# --------------------------------------------------------------------------- #
+# Review-driven hardening (#48 adversarial review)
+# --------------------------------------------------------------------------- #
+
+
+def test_default_synthesizer_threads_inner_strategy_text_key(monkeypatch):
+    # The default synthesizer must summarize the SAME field the inner strategy
+    # indexes: with_synopsis(Chunked(text_key="body")) summarizes "body", not a
+    # competing "text" field. Capture the summarized text via a patched default.
+    seen = []
+    import ir.synopsis as _syn
+
+    monkeypatch.setattr(
+        _syn,
+        "_default_llm_summarizer",
+        lambda prompt, model, **kw: (lambda t: (seen.append(t) or "S")),
+    )
+    strat = with_synopsis(ir.Chunked(text_key="body"))  # default synth, no id arg
+    docs = {"a": {"body": "REAL body content here", "text": "WRONG text field"}}
+    ir.build(
+        ir.CorpusSource.from_mapping(docs, name="tk", strategy=strat),
+        store=CorpusStore.memory(),
+        embedder="light",
+    )
+    assert seen == ["REAL body content here"]
+
+
+def test_unnamed_synthesizer_warns_and_disables_staleness_tracking():
+    # A lambda / local closure has no stable identity -> swapping it would be
+    # silently stale; with_synopsis warns and uses a sentinel id instead.
+    with pytest.warns(UserWarning, match="stable identity"):
+        s = with_synopsis(ir.Chunked(), synthesize=lambda a: "x")
+    assert s.synthesizer_id == "custom"
+    # a named top-level function has a stable qualname -> tracks, no warning.
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        s2 = with_synopsis(ir.Chunked(), synthesize=_synopsis_from_field)
+    assert s2.synthesizer_id == "_synopsis_from_field"
+
+
+def test_with_synopsis_package_prepends_synopsis_before_description_and_routes():
+    # On Package (which already has a "description" summary surface), the synopsis
+    # is prepended ahead of it -> the synopsis is the router. An artifact whose
+    # synopsis matches (description does not) routes to its readme chunk.
+    docs = {
+        "A": {
+            "name": "alpha",
+            "description": "terse unrelated blurb",
+            "readme": "ANSTOK the answer lives in the body here. filler one two.",
+            "synopsis": "rtok1 rtok2 rtok3 rtok4 routing match",
+        },
+        "B": {
+            "name": "beta",
+            "description": "gamma delta",
+            "readme": "neutral bbbb body.",
+            "synopsis": "omega phi unrelated",
+        },
+        "C": {
+            "name": "c",
+            "description": "x",
+            "readme": "neutral cccc body.",
+            "synopsis": "eta theta iota",
+        },
+    }
+    strat = with_synopsis(
+        ir.Package(chunk_size=80, overlap=10),
+        synthesize=_synopsis_from_field,
+        synthesizer_id="v1",
+    )
+    corpus = ir.build(
+        ir.CorpusSource.from_mapping(docs, name="pkg", strategy=strat),
+        store=CorpusStore.memory(),
+        embedder="light",
+    )
+    kinds = [r.surface_kind for r in records_for_artifact(corpus, "A")]
+    assert kinds[0] == "synopsis"  # prepended ahead of...
+    assert "description" in kinds  # ...the Package description surface
+    assert "readme_chunk" in kinds
+    # routes via A's matching synopsis to A's answer chunk (description doesn't match)
+    trav = ir.traverse(
+        "rtok1 rtok2 rtok3 rtok4 ANSTOK",
+        corpus,
+        policy=ir.collapsed_tree_policy(seed_k=1),
+        k=5,
+    )
+    assert trav and trav[0].artifact_id == "A"
+    assert trav[0].surface_kind == "readme_chunk"
+    assert "ANSTOK" in trav[0].text
+
+
+def test_default_synthesizer_construction_is_lazy_and_offline(monkeypatch):
+    # Mutation-resistant offline guarantee: poison oa so any use raises, then
+    # confirm constructing the default synthesizer (and the wrapper) and the
+    # injected path never reach it. An eager-import regression would fail here.
+    import sys
+    import types
+
+    poison = types.ModuleType("oa")
+
+    def _boom(*a, **k):
+        raise AssertionError("oa.prompt_function reached on an offline path")
+
+    poison.prompt_function = _boom
+    monkeypatch.setitem(sys.modules, "oa", poison)
+
+    synth = make_llm_synthesizer()  # lazy: builds nothing yet
+    strat = with_synopsis(ir.Chunked())  # default synth: still no oa
+    assert synth(Artifact("x", "")) == ""  # empty text short-circuits the oa path
+    assert strat.synthesize(Artifact("y", "")) == ""
+    # an injected summarizer is wholly oa-free even on non-empty text
+    assert make_llm_synthesizer(summarize=lambda t: "S")(Artifact("z", "body")) == "S"
+
+
+def test_default_synthesizer_id_is_content_stable():
+    # The default id is content-derived (prompt/model), so two constructions with
+    # the same prompt agree — staleness keys on content, not object identity.
+    a = make_llm_synthesizer()
+    b = make_llm_synthesizer()
+    assert a.synthesizer_id == b.synthesizer_id
+    c = make_llm_synthesizer(prompt="a different prompt {text}")
+    assert c.synthesizer_id != a.synthesizer_id
+
+
+def test_non_str_synthesize_yields_no_synopsis_surface():
+    # The decompose-level guard (independent of make_llm_synthesizer): a synth
+    # returning a non-str adds no synopsis surface, never crashes the build.
+    strat = with_synopsis(
+        ir.Chunked(), synthesize=lambda a: 123, synthesizer_id="nonstr"
+    )
+    corpus = ir.build(
+        ir.CorpusSource.from_mapping(
+            {"a": {"text": "body alpha"}}, name="ns", strategy=strat
+        ),
+        store=CorpusStore.memory(),
+        embedder="light",
+    )
+    recs = records_for_artifact(corpus, "a")
+    assert all(r.surface_kind != "synopsis" for r in recs)
+    assert any(r.surface_kind == "chunk" for r in recs)
+
+
+def test_file_backed_incremental_round_trip(tmp_path, monkeypatch):
+    # Staleness through a real file store + reopen: the recursive strategy_id
+    # (nested inner id + synthesizer id) survives JSON round-trip in the ledger.
+    monkeypatch.setenv("IR_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("IR_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("IR_CACHE_DIR", str(tmp_path / "cache"))
+    calls = []
+
+    def synth(artifact):
+        calls.append(artifact.id)
+        return f"synopsis of {artifact.id}"
+
+    docs = {"A": {"text": "a body"}, "B": {"text": "b body"}}
+
+    def source(sid):
+        strat = with_synopsis(ir.Chunked(), synthesize=synth, synthesizer_id=sid)
+        return ir.CorpusSource.from_mapping(docs, name="syn_fb", strategy=strat)
+
+    ir.build(source("v1"), store=CorpusStore.local("syn_fb"), embedder="light")
+    assert sorted(calls) == ["A", "B"]
+    # the synopsis surface persisted to disk and reopens
+    recs = records_for_artifact(CorpusStore.local("syn_fb"), "A")
+    assert any(r.surface_kind == "synopsis" for r in recs)
+    calls.clear()
+
+    ir.build(source("v1"), store=CorpusStore.local("syn_fb"), embedder="light")
+    assert calls == []  # unchanged rebuild through a fresh handle -> no synthesis
+    ir.build(source("v2"), store=CorpusStore.local("syn_fb"), embedder="light")
+    assert sorted(calls) == ["A", "B"]  # synthesizer identity changed -> all
