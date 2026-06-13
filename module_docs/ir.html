@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.20 documentation</title>
+  <title>ir &mdash; ir 0.1.21 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=17aaaefc"></script>
+      <script src="../_static/documentation_options.js?v=b3d22ae5"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -159,6 +159,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.expand"><code class="docutils literal notranslate"><span class="pre">expand()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.make_llm_formulator"><code class="docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.make_llm_synthesizer"><code class="docutils literal notranslate"><span class="pre">make_llm_synthesizer()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.parent_policy"><code class="docutils literal notranslate"><span class="pre">parent_policy()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.records_for_artifact"><code class="docutils literal notranslate"><span class="pre">records_for_artifact()</span></code></a></li>
@@ -170,6 +171,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.sentence_window_policy"><code class="docutils literal notranslate"><span class="pre">sentence_window_policy()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.tag_source"><code class="docutils literal notranslate"><span class="pre">tag_source()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.traverse"><code class="docutils literal notranslate"><span class="pre">traverse()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.with_synopsis"><code class="docutils literal notranslate"><span class="pre">with_synopsis()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ir/__main__.html">ir.__main__</a></li>
@@ -189,6 +191,7 @@
 <li class="toctree-l1"><a class="reference internal" href="ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/store.html">ir.store</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/strategy.html">ir.strategy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ir/synopsis.html">ir.synopsis</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/traverse.html">ir.traverse</a></li>
 </ul>
 
@@ -1278,6 +1281,24 @@ multi-query fan-out width. Any error or empty reply falls back to <code class="d
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.make_llm_synthesizer">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">make_llm_synthesizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">summarize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Write</span> <span class="pre">a</span> <span class="pre">concise</span> <span class="pre">synopsis</span> <span class="pre">(2-4</span> <span class="pre">sentences)</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">document</span> <span class="pre">below:</span> <span class="pre">what</span> <span class="pre">it</span> <span class="pre">is</span> <span class="pre">about</span> <span class="pre">and</span> <span class="pre">what</span> <span class="pre">questions</span> <span class="pre">it</span> <span class="pre">answers,</span> <span class="pre">so</span> <span class="pre">that</span> <span class="pre">a</span> <span class="pre">search</span> <span class="pre">over</span> <span class="pre">synopses</span> <span class="pre">can</span> <span class="pre">route</span> <span class="pre">to</span> <span class="pre">it.</span> <span class="pre">Output</span> <span class="pre">only</span> <span class="pre">the</span> <span class="pre">synopsis,</span> <span class="pre">no</span> <span class="pre">preamble.\n\nDocument:\n{text}'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">synthesizer_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">prompt_function_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/base.html#ir.base.Artifact" title="ir.base.Artifact"><span class="pre">Artifact</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/ir/synopsis.html#make_llm_synthesizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.make_llm_synthesizer" title="Link to this definition"></a></dt>
+<dd><p>An LLM-backed <code class="xref py py-data docutils literal notranslate"><span class="pre">Synthesizer</span></code> (<a class="reference internal" href="ir/base.html#ir.base.Artifact" title="ir.base.Artifact"><code class="xref py py-class docutils literal notranslate"><span class="pre">Artifact</span></code></a> → synopsis).</p>
+<p><code class="docutils literal notranslate"><span class="pre">summarize</span></code> is an injectable <code class="docutils literal notranslate"><span class="pre">text</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code> callable (a test double, or
+your own summarizer); when omitted it is built lazily on <code class="xref py py-mod docutils literal notranslate"><span class="pre">oa</span></code>
+(<code class="docutils literal notranslate"><span class="pre">oa.prompt_function</span></code>) on the <strong>first</strong> synthesis and reused — so importing
+this module, and even constructing the synthesizer, stays offline. The
+artifact’s text is extracted with <a class="reference internal" href="ir/strategy.html#ir.strategy.text_of" title="ir.strategy.text_of"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.strategy.text_of()</span></code></a> using
+<code class="docutils literal notranslate"><span class="pre">text_key</span></code> — which <a class="reference internal" href="#ir.with_synopsis" title="ir.with_synopsis"><code class="xref py py-func docutils literal notranslate"><span class="pre">with_synopsis()</span></code></a> threads from the inner strategy, so
+the synopsis summarizes the <em>same</em> field the strategy indexes. An empty text,
+or any synthesis error, yields <code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> (the surface is then skipped, never a
+fabricated summary).</p>
+<p>The returned callable carries a <code class="docutils literal notranslate"><span class="pre">synthesizer_id</span></code> attribute (default
+<code class="docutils literal notranslate"><span class="pre">&quot;oa:{model}:{sha(prompt)[:12]}&quot;</span></code>) that <a class="reference internal" href="#ir.with_synopsis" title="ir.with_synopsis"><code class="xref py py-func docutils literal notranslate"><span class="pre">with_synopsis()</span></code></a> reads into the
+corpus’s <code class="docutils literal notranslate"><span class="pre">strategy_id</span></code> for staleness — a prompt or model change re-synthesizes.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.open_corpus">
 <span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">open_corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="ir/index.html#ir.index.Corpus" title="ir.index.Corpus"><span class="pre">Corpus</span></a></span></span><a class="reference internal" href="../_modules/ir/index.html#open_corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.open_corpus" title="Link to this definition"></a></dt>
 <dd><p>Reopen a previously built corpus by name (resolves its embedder).</p>
@@ -1448,6 +1469,33 @@ an artifact-link policy. The operator never inspects it.</p></li>
 <a class="reference internal" href="ir/base.html#ir.base.SearchHit" title="ir.base.SearchHit"><code class="xref py py-class docutils literal notranslate"><span class="pre">SearchHit</span></code></a> with <code class="docutils literal notranslate"><span class="pre">metadata[&quot;walk_depth&quot;]</span></code> / <code class="docutils literal notranslate"><span class="pre">[&quot;seed&quot;]</span></code>.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.with_synopsis">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">with_synopsis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="ir/strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><span class="pre">IndexingStrategy</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">synthesize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="ir/base.html#ir.base.Artifact" title="ir.base.Artifact"><span class="pre">Artifact</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">synthesizer_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">synopsis_kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'synopsis'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="ir/strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><span class="pre">IndexingStrategy</span></a></span></span><a class="reference internal" href="../_modules/ir/synopsis.html#with_synopsis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.with_synopsis" title="Link to this definition"></a></dt>
+<dd><p>Wrap <em>strategy</em> to add one LLM-derived <code class="docutils literal notranslate"><span class="pre">synopsis</span></code> surface per artifact.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>strategy</strong> – the inner <a class="reference internal" href="ir/strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a> (<code class="docutils literal notranslate"><span class="pre">Chunked</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Package</span></code>, …). Its surfaces are kept; the synopsis is prepended.</p></li>
+<li><p><strong>synthesize</strong> – an injectable <code class="docutils literal notranslate"><span class="pre">Artifact</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code> (test double / custom
+summarizer). Omitted → <a class="reference internal" href="#ir.make_llm_synthesizer" title="ir.make_llm_synthesizer"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_llm_synthesizer()</span></code></a> (lazy <code class="docutils literal notranslate"><span class="pre">oa</span></code>).</p></li>
+<li><p><strong>synthesizer_id</strong> – explicit identity stamp for staleness (recommended when
+injecting an unnamed callable / lambda). Omitted → the synthesizer’s
+own <code class="docutils literal notranslate"><span class="pre">synthesizer_id</span></code> / <code class="docutils literal notranslate"><span class="pre">__qualname__</span></code>.</p></li>
+<li><p><strong>synopsis_kind</strong> – the surface kind (default <code class="docutils literal notranslate"><span class="pre">&quot;synopsis&quot;</span></code>, a summary kind).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>an <a class="reference internal" href="ir/strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a> usable anywhere a strategy is —
+<code class="docutils literal notranslate"><span class="pre">ir.CorpusSource.from_mapping(docs,</span> <span class="pre">name=...,</span> <span class="pre">strategy=with_synopsis(...))</span></code>.</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">strat</span> <span class="o">=</span> <span class="n">with_synopsis</span><span class="p">(</span><span class="n">Chunked</span><span class="p">(),</span> <span class="n">synthesize</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="s2">&quot;a summary&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </section>

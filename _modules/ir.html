@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.20 documentation</title>
+  <title>ir &mdash; ir 0.1.21 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=17aaaefc"></script>
+      <script src="../_static/documentation_options.js?v=b3d22ae5"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -64,6 +64,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/store.html">ir.store</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/strategy.html">ir.strategy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/synopsis.html">ir.synopsis</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/traverse.html">ir.traverse</a></li>
 </ul>
 
@@ -153,6 +154,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusSource</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusStore</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Chunked</span><span class="p">,</span> <span class="n">IndexingStrategy</span><span class="p">,</span> <span class="n">Package</span><span class="p">,</span> <span class="n">Skill</span><span class="p">,</span> <span class="n">WholeText</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.synopsis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Synthesizer</span><span class="p">,</span> <span class="n">make_llm_synthesizer</span><span class="p">,</span> <span class="n">with_synopsis</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.traverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">WalkPolicy</span><span class="p">,</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">collapsed_tree_policy</span><span class="p">,</span> <span class="n">traverse</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
@@ -166,6 +168,9 @@
     <span class="s2">&quot;Chunked&quot;</span><span class="p">,</span>
     <span class="s2">&quot;Skill&quot;</span><span class="p">,</span>
     <span class="s2">&quot;Package&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;with_synopsis&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;make_llm_synthesizer&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Synthesizer&quot;</span><span class="p">,</span>
     <span class="s2">&quot;CorpusSource&quot;</span><span class="p">,</span>
     <span class="s2">&quot;CorpusStore&quot;</span><span class="p">,</span>
     <span class="s2">&quot;Corpus&quot;</span><span class="p">,</span>

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>&lt;no title&gt; &mdash; ir 0.1.20 documentation</title>
+  <title>&lt;no title&gt; &mdash; ir 0.1.21 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=17aaaefc"></script>
+      <script src="_static/documentation_options.js?v=b3d22ae5"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -65,6 +65,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/store.html">ir.store</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/strategy.html">ir.strategy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/synopsis.html">ir.synopsis</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/traverse.html">ir.traverse</a></li>
 </ul>
 
@@ -129,6 +130,7 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.expand"><code class="docutils literal notranslate"><span class="pre">expand()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.make_llm_formulator"><code class="docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.make_llm_synthesizer"><code class="docutils literal notranslate"><span class="pre">make_llm_synthesizer()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.parent_policy"><code class="docutils literal notranslate"><span class="pre">parent_policy()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.records_for_artifact"><code class="docutils literal notranslate"><span class="pre">records_for_artifact()</span></code></a></li>
@@ -140,6 +142,7 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.sentence_window_policy"><code class="docutils literal notranslate"><span class="pre">sentence_window_policy()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.tag_source"><code class="docutils literal notranslate"><span class="pre">tag_source()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.traverse"><code class="docutils literal notranslate"><span class="pre">traverse()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.with_synopsis"><code class="docutils literal notranslate"><span class="pre">with_synopsis()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/__main__.html">ir.__main__</a><ul>
@@ -343,6 +346,15 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.Package"><code class="docutils literal notranslate"><span class="pre">Package</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.text_of"><code class="docutils literal notranslate"><span class="pre">text_of()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/synopsis.html">ir.synopsis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/synopsis.html#ir.synopsis.SYNOPSIS_KIND"><code class="docutils literal notranslate"><span class="pre">SYNOPSIS_KIND</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/synopsis.html#ir.synopsis.SYNOPSIS_PROMPT"><code class="docutils literal notranslate"><span class="pre">SYNOPSIS_PROMPT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/synopsis.html#ir.synopsis.Synthesizer"><code class="docutils literal notranslate"><span class="pre">Synthesizer</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/synopsis.html#ir.synopsis.make_llm_synthesizer"><code class="docutils literal notranslate"><span class="pre">make_llm_synthesizer()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/synopsis.html#ir.synopsis.with_synopsis"><code class="docutils literal notranslate"><span class="pre">with_synopsis()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/traverse.html">ir.traverse</a><ul>
