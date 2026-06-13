@@ -40,8 +40,14 @@ class IndexingStrategy(Protocol):
     ) -> IndexPlan: ...
 
 
-def _text_of(raw: Any, text_key: str | None = None) -> str:
-    """Best-effort text extraction from a raw artifact payload."""
+def text_of(raw: Any, text_key: str | None = None) -> str:
+    """Best-effort text extraction from a raw artifact payload.
+
+    The SSOT for turning an opaque ``raw`` (a ``str``, a ``Mapping`` with a
+    ``text`` field or a ``text_key``, or anything else) into embeddable text —
+    reused by the shipped strategies *and* by :func:`ir.synopsis.make_llm_synthesizer`
+    so an injected-free synopsis summarizes the same text a strategy would index.
+    """
     if isinstance(raw, str):
         return raw
     if isinstance(raw, Mapping):
@@ -52,6 +58,11 @@ def _text_of(raw: Any, text_key: str | None = None) -> str:
         # join string-valued fields as a fallback
         return "\n".join(str(v) for v in raw.values() if isinstance(v, str))
     return str(raw)
+
+
+#: Backward-compatible private alias (the helper was module-private before it
+#: became a cross-module SSOT). Internal call sites may use either name.
+_text_of = text_of
 
 
 def _split(text: str, *, chunk_size: int, overlap: int) -> list[str]:
