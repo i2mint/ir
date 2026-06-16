@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.select &mdash; ir 0.1.21 documentation</title>
+  <title>ir.select &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -58,6 +58,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
@@ -563,7 +565,7 @@
 <span class="sd">    The model reads the candidates&#39; descriptions and commits to a subset.</span>
 <span class="sd">    ``chooser`` is an injectable ``(query, candidates) -&gt; [id, …]`` callable</span>
 <span class="sd">    (a test double, or your own router); when omitted it is built lazily on</span>
-<span class="sd">    :mod:`oa` (``oa.prompt_function``), so importing this module stays offline.</span>
+<span class="sd">    :mod:`aix` (``aix.prompt_func``), so importing this module stays offline.</span>
 
 <span class="sd">    Robustness: any error or empty/garbled reply falls back to ``fallback``</span>
 <span class="sd">    (default: the ``&quot;conservative&quot;`` heuristic), because LLM selection is known</span>
@@ -610,13 +612,13 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_default_llm_chooser</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the default LLM chooser on :mod:`oa` (lazy import).&quot;&quot;&quot;</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">oa</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the default LLM chooser on :mod:`aix` (lazy import).&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">aix</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_parse_ids</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot; -</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
 
-    <span class="n">fn</span> <span class="o">=</span> <span class="n">oa</span><span class="o">.</span><span class="n">prompt_function</span><span class="p">(</span>
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">aix</span><span class="o">.</span><span class="n">prompt_func</span><span class="p">(</span>
         <span class="n">prompt</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="n">_parse_ids</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;select_capabilities&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
     <span class="p">)</span>
 

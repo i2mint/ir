@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.select &mdash; ir 0.1.21 documentation</title>
+  <title>ir.select &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -61,6 +61,8 @@
 <li class="toctree-l1"><a class="reference internal" href="formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.select</a><ul>
@@ -698,7 +700,7 @@ its <code class="docutils literal notranslate"><span class="pre">source</span></
 <p>The model reads the candidates’ descriptions and commits to a subset.
 <code class="docutils literal notranslate"><span class="pre">chooser</span></code> is an injectable <code class="docutils literal notranslate"><span class="pre">(query,</span> <span class="pre">candidates)</span> <span class="pre">-&gt;</span> <span class="pre">[id,</span> <span class="pre">…]</span></code> callable
 (a test double, or your own router); when omitted it is built lazily on
-<code class="xref py py-mod docutils literal notranslate"><span class="pre">oa</span></code> (<code class="docutils literal notranslate"><span class="pre">oa.prompt_function</span></code>), so importing this module stays offline.</p>
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">aix</span></code> (<code class="docutils literal notranslate"><span class="pre">aix.prompt_func</span></code>), so importing this module stays offline.</p>
 <p>Robustness: any error or empty/garbled reply falls back to <code class="docutils literal notranslate"><span class="pre">fallback</span></code>
 (default: the <code class="docutils literal notranslate"><span class="pre">&quot;conservative&quot;</span></code> heuristic), because LLM selection is known
 to be swayed by description phrasing (ir_01 §3) — it must never be the only

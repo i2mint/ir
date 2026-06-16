@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.retrieve &mdash; ir 0.1.21 documentation</title>
+  <title>ir.retrieve &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -58,6 +58,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
@@ -512,7 +514,13 @@
             <span class="k">return</span> <span class="n">merged</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span>
         <span class="n">query</span> <span class="o">=</span> <span class="n">queries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="n">ids</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">metas</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">matrix</span><span class="p">()</span>
+    <span class="c1"># Lexical ranking scores on text alone, so it must not pay the embedding</span>
+    <span class="c1"># matrix&#39;s I/O; dense/hybrid need the matrix. (Both reuse the same cache.)</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;lexical&quot;</span><span class="p">:</span>
+        <span class="n">ids</span><span class="p">,</span> <span class="n">metas</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">metas</span><span class="p">()</span>
+        <span class="n">mat</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ids</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">metas</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">matrix</span><span class="p">()</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ids</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
 

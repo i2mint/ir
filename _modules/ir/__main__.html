@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.__main__ &mdash; ir 0.1.21 documentation</title>
+  <title>ir.__main__ &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -58,6 +58,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
@@ -108,7 +110,28 @@
     <span class="kn">import</span><span class="w"> </span><span class="nn">argh</span>
 
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argh</span><span class="o">.</span><span class="n">ArghParser</span><span class="p">()</span>
-    <span class="n">argh</span><span class="o">.</span><span class="n">add_commands</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">COMMANDS</span><span class="p">)</span>
+    <span class="c1"># argh &gt;= 0.30 requires an explicit name-mapping policy as soon as a command</span>
+    <span class="c1"># has an *optional positional* (e.g. ``maintain(name=None, ...)``).</span>
+    <span class="c1"># ``BY_NAME_IF_KWONLY`` keeps positional params positional and maps</span>
+    <span class="c1"># keyword-only params to options — exactly ir&#39;s existing command convention,</span>
+    <span class="c1"># so it changes nothing for the other commands. Fall back gracefully on</span>
+    <span class="c1"># older argh that lacks the policy.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">policy</span> <span class="o">=</span> <span class="n">argh</span><span class="o">.</span><span class="n">NameMappingPolicy</span><span class="o">.</span><span class="n">BY_NAME_IF_KWONLY</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">argh.assembling</span><span class="w"> </span><span class="kn">import</span> <span class="n">NameMappingPolicy</span>
+
+            <span class="n">policy</span> <span class="o">=</span> <span class="n">NameMappingPolicy</span><span class="o">.</span><span class="n">BY_NAME_IF_KWONLY</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="n">policy</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">policy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">argh</span><span class="o">.</span><span class="n">add_commands</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">COMMANDS</span><span class="p">,</span> <span class="n">name_mapping_policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">argh</span><span class="o">.</span><span class="n">add_commands</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">COMMANDS</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>  <span class="c1"># very old argh without the kwarg</span>
+        <span class="n">argh</span><span class="o">.</span><span class="n">add_commands</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">COMMANDS</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">dispatch</span><span class="p">()</span></div>
 
 

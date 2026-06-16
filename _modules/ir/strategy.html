@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.strategy &mdash; ir 0.1.21 documentation</title>
+  <title>ir.strategy &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -58,6 +58,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
@@ -295,6 +297,59 @@
 
 
 
+<span class="c1">#: Shipped strategies addressable by name, for persisting an</span>
+<span class="c1">#: :class:`IndexingStrategy` in a registry entry and reconstructing it (#58).</span>
+<span class="c1">#: New shipped strategies register here so a corpus can name its segmentation.</span>
+<span class="n">STRATEGY_REGISTRY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;WholeText&quot;</span><span class="p">:</span> <span class="n">WholeText</span><span class="p">,</span>
+    <span class="s2">&quot;Chunked&quot;</span><span class="p">:</span> <span class="n">Chunked</span><span class="p">,</span>
+    <span class="s2">&quot;Skill&quot;</span><span class="p">:</span> <span class="n">Skill</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="strategy_to_spec">
+<a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.strategy_to_spec">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">strategy_to_spec</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A ``{&quot;name&quot;, &quot;params&quot;}`` spec for a shipped, scalar-param strategy.</span>
+
+<span class="sd">    Captures only scalar constructor parameters (the same identity surface</span>
+<span class="sd">    :func:`ir.index._strategy_id` stamps), so it round-trips the shipped</span>
+<span class="sd">    strategies. A custom strategy, or one wrapping another (e.g. the</span>
+<span class="sd">    :func:`ir.with_synopsis` wrapper), is **not** captured here — those are set</span>
+<span class="sd">    programmatically at build time / by the maintenance layer, not persisted as a</span>
+<span class="sd">    segmentation spec.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">params</span><span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="strategy_from_spec">
+<a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.strategy_from_spec">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">strategy_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;IndexingStrategy | None&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct a shipped strategy from a ``{&quot;name&quot;, &quot;params&quot;}`` spec.</span>
+
+<span class="sd">    ``None`` (no persisted strategy) returns ``None`` so the caller falls back to</span>
+<span class="sd">    the source preset&#39;s default strategy — the back-compatible behavior for v1</span>
+<span class="sd">    registry entries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">spec</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+    <span class="bp">cls</span> <span class="o">=</span> <span class="n">STRATEGY_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;unknown strategy </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">; known: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">STRATEGY_REGISTRY</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;params&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}))</span></div>
+
+
+
 <div class="viewcode-block" id="Package">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.Package">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Package</span><span class="p">:</span>
@@ -356,6 +411,80 @@
         <span class="n">surfaces</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">surfaces</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
         <span class="k">return</span> <span class="n">IndexPlan</span><span class="p">(</span><span class="n">filter_fields</span><span class="o">=</span><span class="n">filter_fields</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">)</span></div>
 
+
+
+<div class="viewcode-block" id="ClaudeTurn">
+<a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.ClaudeTurn">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ClaudeTurn</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Index a Claude Code session turn-pair: user prompt + assistant summary.</span>
+
+<span class="sd">    Two surfaces by default — ``user_prompt`` (what the human asked) and</span>
+<span class="sd">    ``assistant_summary`` (the assistant&#39;s *final* end-of-turn text, the</span>
+<span class="sd">    highest-signal &quot;here&#39;s what I did&quot;; the deliberation before it is mostly</span>
+<span class="sd">    noise) — so a query can target either side via ``surfaces={&quot;user_prompt&quot;}`` /</span>
+<span class="sd">    ``{&quot;assistant_summary&quot;}``. With ``include_full=True`` a third</span>
+<span class="sd">    ``assistant_full`` surface (all the turn&#39;s assistant natural-language text)</span>
+<span class="sd">    trades noise for recall — off by default. Session / project / time / model /</span>
+<span class="sd">    tool-use become hard-filter fields.</span>
+
+<span class="sd">    The raw artifact is a turn-pair record (see</span>
+<span class="sd">    :func:`priv.claude_transcripts.turn_pair_records`): a mapping with</span>
+<span class="sd">    ``user_prompt`` / ``assistant_summary`` / ``assistant_full`` plus metadata.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">include_full</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_full</span> <span class="o">=</span> <span class="n">include_full</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexPlan</span><span class="p">:</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_prompt&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;assistant_summary&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">full</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;assistant_full&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_title&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">filter_fields</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_id&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;project&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;cwd&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cwd&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;git_branch&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;git_branch&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;has_tool_use&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;has_tool_use&quot;</span><span class="p">)),</span>
+            <span class="s2">&quot;session_title&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_title&quot;</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">meta</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">surfaces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># A dedicated per-session title record indexes just the title (a cheap,</span>
+        <span class="c1"># searchable &quot;what was this session about&quot; surface).</span>
+        <span class="k">if</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;record_type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;session_title&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
+                <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;session_title&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">IndexPlan</span><span class="p">(</span><span class="n">filter_fields</span><span class="o">=</span><span class="n">filter_fields</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">user</span><span class="p">:</span>
+            <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;user_prompt&quot;</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">summary</span><span class="p">:</span>
+            <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Surface</span><span class="p">(</span>
+                    <span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;assistant_summary&quot;</span><span class="p">,</span> <span class="n">summary</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_full</span> <span class="ow">and</span> <span class="n">full</span> <span class="ow">and</span> <span class="n">full</span> <span class="o">!=</span> <span class="n">summary</span><span class="p">:</span>
+            <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Surface</span><span class="p">(</span>
+                    <span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;assistant_full&quot;</span><span class="p">,</span> <span class="n">full</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;document&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">IndexPlan</span><span class="p">(</span><span class="n">filter_fields</span><span class="o">=</span><span class="n">filter_fields</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># Register the strategies defined after STRATEGY_REGISTRY&#39;s literal above.</span>
+<span class="n">STRATEGY_REGISTRY</span><span class="p">[</span><span class="s2">&quot;Package&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Package</span>
+<span class="n">STRATEGY_REGISTRY</span><span class="p">[</span><span class="s2">&quot;ClaudeTurn&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ClaudeTurn</span>
 </pre></div>
 
            </div>

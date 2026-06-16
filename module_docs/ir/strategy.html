@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.strategy &mdash; ir 0.1.21 documentation</title>
+  <title>ir.strategy &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -61,6 +61,8 @@
 <li class="toctree-l1"><a class="reference internal" href="formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
@@ -68,10 +70,14 @@
 <li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.strategy</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ir.strategy.Chunked"><code class="docutils literal notranslate"><span class="pre">Chunked</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.strategy.ClaudeTurn"><code class="docutils literal notranslate"><span class="pre">ClaudeTurn</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.strategy.IndexingStrategy"><code class="docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.strategy.Package"><code class="docutils literal notranslate"><span class="pre">Package</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.strategy.STRATEGY_REGISTRY"><code class="docutils literal notranslate"><span class="pre">STRATEGY_REGISTRY</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.strategy.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.strategy.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.strategy.strategy_from_spec"><code class="docutils literal notranslate"><span class="pre">strategy_from_spec()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.strategy.strategy_to_spec"><code class="docutils literal notranslate"><span class="pre">strategy_to_spec()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.strategy.text_of"><code class="docutils literal notranslate"><span class="pre">text_of()</span></code></a></li>
 </ul>
 </li>
@@ -132,6 +138,23 @@ custom strategies need only match the <a class="reference internal" href="#ir.st
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="ir.strategy.ClaudeTurn">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.strategy.</span></span><span class="sig-name descname"><span class="pre">ClaudeTurn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_full</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/strategy.html#ClaudeTurn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.strategy.ClaudeTurn" title="Link to this definition"></a></dt>
+<dd><p>Index a Claude Code session turn-pair: user prompt + assistant summary.</p>
+<p>Two surfaces by default — <code class="docutils literal notranslate"><span class="pre">user_prompt</span></code> (what the human asked) and
+<code class="docutils literal notranslate"><span class="pre">assistant_summary</span></code> (the assistant’s <em>final</em> end-of-turn text, the
+highest-signal “here’s what I did”; the deliberation before it is mostly
+noise) — so a query can target either side via <code class="docutils literal notranslate"><span class="pre">surfaces={&quot;user_prompt&quot;}</span></code> /
+<code class="docutils literal notranslate"><span class="pre">{&quot;assistant_summary&quot;}</span></code>. With <code class="docutils literal notranslate"><span class="pre">include_full=True</span></code> a third
+<code class="docutils literal notranslate"><span class="pre">assistant_full</span></code> surface (all the turn’s assistant natural-language text)
+trades noise for recall — off by default. Session / project / time / model /
+tool-use become hard-filter fields.</p>
+<p>The raw artifact is a turn-pair record (see
+<code class="xref py py-func docutils literal notranslate"><span class="pre">priv.claude_transcripts.turn_pair_records()</span></code>): a mapping with
+<code class="docutils literal notranslate"><span class="pre">user_prompt</span></code> / <code class="docutils literal notranslate"><span class="pre">assistant_summary</span></code> / <code class="docutils literal notranslate"><span class="pre">assistant_full</span></code> plus metadata.</p>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="ir.strategy.IndexingStrategy">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.strategy.</span></span><span class="sig-name descname"><span class="pre">IndexingStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/strategy.html#IndexingStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.strategy.IndexingStrategy" title="Link to this definition"></a></dt>
 <dd><p>Decompose one artifact into filter fields + embeddable surfaces.</p>
@@ -156,6 +179,14 @@ records without it until the artifact re-indexes (content / embedder /
 strategy change) — read it with <code class="docutils literal notranslate"><span class="pre">metadata.get(&quot;n_chunks&quot;)</span></code>.</p>
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.strategy.STRATEGY_REGISTRY">
+<span class="sig-prename descclassname"><span class="pre">ir.strategy.</span></span><span class="sig-name descname"><span class="pre">STRATEGY_REGISTRY</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">type</span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'Chunked':</span> <span class="pre">&lt;class</span> <span class="pre">'ir.strategy.Chunked'&gt;,</span> <span class="pre">'ClaudeTurn':</span> <span class="pre">&lt;class</span> <span class="pre">'ir.strategy.ClaudeTurn'&gt;,</span> <span class="pre">'Package':</span> <span class="pre">&lt;class</span> <span class="pre">'ir.strategy.Package'&gt;,</span> <span class="pre">'Skill':</span> <span class="pre">&lt;class</span> <span class="pre">'ir.strategy.Skill'&gt;,</span> <span class="pre">'WholeText':</span> <span class="pre">&lt;class</span> <span class="pre">'ir.strategy.WholeText'&gt;}</span></span><a class="headerlink" href="#ir.strategy.STRATEGY_REGISTRY" title="Link to this definition"></a></dt>
+<dd><p>Shipped strategies addressable by name, for persisting an
+<a class="reference internal" href="#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a> in a registry entry and reconstructing it (#58).
+New shipped strategies register here so a corpus can name its segmentation.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="ir.strategy.Skill">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.strategy.</span></span><span class="sig-name descname"><span class="pre">Skill</span></span><a class="reference internal" href="../../_modules/ir/strategy.html#Skill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.strategy.Skill" title="Link to this definition"></a></dt>
@@ -168,6 +199,27 @@ parent are filter fields.</p>
 <dt class="sig sig-object py" id="ir.strategy.WholeText">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.strategy.</span></span><span class="sig-name descname"><span class="pre">WholeText</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'document'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/strategy.html#WholeText"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.strategy.WholeText" title="Link to this definition"></a></dt>
 <dd><p>One surface = the entire text. Sensible default for a naive corpus.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.strategy.strategy_from_spec">
+<span class="sig-prename descclassname"><span class="pre">ir.strategy.</span></span><span class="sig-name descname"><span class="pre">strategy_from_spec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><span class="pre">IndexingStrategy</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/ir/strategy.html#strategy_from_spec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.strategy.strategy_from_spec" title="Link to this definition"></a></dt>
+<dd><p>Reconstruct a shipped strategy from a <code class="docutils literal notranslate"><span class="pre">{&quot;name&quot;,</span> <span class="pre">&quot;params&quot;}</span></code> spec.</p>
+<p><code class="docutils literal notranslate"><span class="pre">None</span></code> (no persisted strategy) returns <code class="docutils literal notranslate"><span class="pre">None</span></code> so the caller falls back to
+the source preset’s default strategy — the back-compatible behavior for v1
+registry entries.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.strategy.strategy_to_spec">
+<span class="sig-prename descclassname"><span class="pre">ir.strategy.</span></span><span class="sig-name descname"><span class="pre">strategy_to_spec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/strategy.html#strategy_to_spec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.strategy.strategy_to_spec" title="Link to this definition"></a></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">{&quot;name&quot;,</span> <span class="pre">&quot;params&quot;}</span></code> spec for a shipped, scalar-param strategy.</p>
+<p>Captures only scalar constructor parameters (the same identity surface
+<code class="xref py py-func docutils literal notranslate"><span class="pre">ir.index._strategy_id()</span></code> stamps), so it round-trips the shipped
+strategies. A custom strategy, or one wrapping another (e.g. the
+<a class="reference internal" href="../ir.html#ir.with_synopsis" title="ir.with_synopsis"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.with_synopsis()</span></code></a> wrapper), is <strong>not</strong> captured here — those are set
+programmatically at build time / by the maintenance layer, not persisted as a
+segmentation spec.</p>
 </dd></dl>
 
 <dl class="py function">

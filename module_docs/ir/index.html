@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.index &mdash; ir 0.1.21 documentation</title>
+  <title>ir.index &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -24,7 +24,7 @@
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="ir.registry" href="registry.html" />
+    <link rel="next" title="ir.maintenance" href="maintenance.html" />
     <link rel="prev" title="ir.graph" href="graph.html" /> 
 </head>
 
@@ -69,6 +69,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.index.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
@@ -161,7 +163,12 @@ does not wipe a graph.</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.index.open_corpus">
 <span class="sig-prename descclassname"><span class="pre">ir.index.</span></span><span class="sig-name descname"><span class="pre">open_corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.index.Corpus" title="ir.index.Corpus"><span class="pre">Corpus</span></a></span></span><a class="reference internal" href="../../_modules/ir/index.html#open_corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.index.open_corpus" title="Link to this definition"></a></dt>
-<dd><p>Reopen a previously built corpus by name (resolves its embedder).</p>
+<dd><p>Reopen a previously built corpus by name.</p>
+<p>The embedding model is <strong>lazily</strong> resolved (see <code class="xref py py-class docutils literal notranslate"><span class="pre">_LazyEmbedder</span></code>): the
+returned corpus knows its <code class="docutils literal notranslate"><span class="pre">embedder_id</span></code> from stored config immediately, but
+only loads the model when a dense/hybrid query actually embeds. So <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">ls</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">info</span></code>, and lexical-only search open a corpus without the model-load
+cost. Pass <code class="docutils literal notranslate"><span class="pre">embedder=</span></code> to override the stored spec.</p>
 </dd></dl>
 
 </section>
@@ -171,7 +178,7 @@ does not wipe a graph.</p></li>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="graph.html" class="btn btn-neutral float-left" title="ir.graph" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="registry.html" class="btn btn-neutral float-right" title="ir.registry" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="maintenance.html" class="btn btn-neutral float-right" title="ir.maintenance" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

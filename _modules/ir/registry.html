@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.registry &mdash; ir 0.1.21 documentation</title>
+  <title>ir.registry &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -58,6 +58,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
@@ -106,10 +108,11 @@
 <span class="sd">- ``skills``   → :meth:`CorpusSource.from_skills`</span>
 <span class="sd">- ``packages`` → :meth:`CorpusSource.from_packages`</span>
 <span class="sd">- ``reports``  → :meth:`CorpusSource.from_md_reports`</span>
+<span class="sd">- ``sessions`` → :meth:`CorpusSource.from_claude_sessions`</span>
 <span class="sd">- ``files``    → :meth:`CorpusSource.from_files` (needs ``root``; optional</span>
 <span class="sd">  ``pattern``)</span>
 
-<span class="sd">Unregistered preset names (``skills``/``packages``/``reports``) are</span>
+<span class="sd">Unregistered preset names (``skills``/``packages``/``reports``/``sessions``) are</span>
 <span class="sd">auto-registered with defaults on first use, so ``ir build skills`` just works.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -122,7 +125,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">registry_path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusSource</span>
 
-<span class="n">PRESETS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;skills&quot;</span><span class="p">,</span> <span class="s2">&quot;packages&quot;</span><span class="p">,</span> <span class="s2">&quot;reports&quot;</span><span class="p">)</span>
+<span class="n">PRESETS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;skills&quot;</span><span class="p">,</span> <span class="s2">&quot;packages&quot;</span><span class="p">,</span> <span class="s2">&quot;reports&quot;</span><span class="p">,</span> <span class="s2">&quot;sessions&quot;</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_load</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
@@ -138,14 +141,58 @@
 
 <div class="viewcode-block" id="register">
 <a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.register">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">embedder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register (or overwrite) a named corpus definition.&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">embedder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">maintenance</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">storage</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">params</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register (or overwrite) a named corpus definition.</span>
+
+<span class="sd">    Beyond the v1 ``kind`` / ``embedder`` / ``params``, an entry may now carry</span>
+<span class="sd">    (all optional, with smart per-kind defaults applied at resolution time — see</span>
+<span class="sd">    :mod:`ir.policy`):</span>
+
+<span class="sd">    - ``strategy`` — an :class:`~ir.strategy.IndexingStrategy` (or a</span>
+<span class="sd">      ``{&quot;name&quot;, &quot;params&quot;}`` spec) persisted so the corpus&#39;s *segmentation* is</span>
+<span class="sd">      stable across rebuilds. ``None`` keeps the preset&#39;s default strategy.</span>
+<span class="sd">    - ``maintenance`` — the background-work policy dict (``reindex`` / ``synopsis``;</span>
+<span class="sd">      validated here, see :class:`ir.policy.MaintenancePolicy`).</span>
+<span class="sd">    - ``storage`` — the persistence backend (default ``{&quot;backend&quot;: &quot;local&quot;}``).</span>
+
+<span class="sd">    Entries written by older ``ir`` (none of these keys) keep working unchanged.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PRESETS</span> <span class="ow">and</span> <span class="n">kind</span> <span class="o">!=</span> <span class="s2">&quot;files&quot;</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Unknown corpus kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">; use one of </span><span class="si">{</span><span class="n">PRESETS</span><span class="si">}</span><span class="s2"> or &#39;files&#39;.&quot;</span>
         <span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">MaintenancePolicy</span><span class="p">,</span> <span class="n">resolve_storage</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">IndexingStrategy</span><span class="p">,</span> <span class="n">strategy_to_spec</span>
+
+    <span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;kind&quot;</span><span class="p">:</span> <span class="n">kind</span><span class="p">,</span> <span class="s2">&quot;embedder&quot;</span><span class="p">:</span> <span class="n">embedder</span><span class="p">,</span> <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">params</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;strategy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="n">IndexingStrategy</span><span class="p">):</span>
+            <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;strategy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">strategy_to_spec</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;strategy must be an IndexingStrategy or a spec dict, got &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+    <span class="k">if</span> <span class="n">maintenance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Validate (raises on a bad trigger) and store the normalized form.</span>
+        <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;maintenance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MaintenancePolicy</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">maintenance</span><span class="p">))</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">storage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">resolve_storage</span><span class="p">({</span><span class="s2">&quot;storage&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">storage</span><span class="p">)})</span>  <span class="c1"># validate backend</span>
+        <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;storage&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">storage</span><span class="p">)</span>
+
     <span class="n">entries</span> <span class="o">=</span> <span class="n">_load</span><span class="p">()</span>
-    <span class="n">entries</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;kind&quot;</span><span class="p">:</span> <span class="n">kind</span><span class="p">,</span> <span class="s2">&quot;embedder&quot;</span><span class="p">:</span> <span class="n">embedder</span><span class="p">,</span> <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">params</span><span class="p">}</span>
+    <span class="n">entries</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span>
     <span class="n">_save</span><span class="p">(</span><span class="n">entries</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">entries</span><span class="p">[</span><span class="n">name</span><span class="p">]</span></div>
 
@@ -180,20 +227,54 @@
 <div class="viewcode-block" id="source_from_entry">
 <a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.source_from_entry">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">source_from_entry</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CorpusSource</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct a :class:`CorpusSource` from a registry entry.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct a :class:`CorpusSource` from a registry entry.</span>
+
+<span class="sd">    A persisted ``strategy`` spec (registry v2) is reconstructed and passed to</span>
+<span class="sd">    the preset constructor, so a corpus&#39;s segmentation survives across rebuilds.</span>
+<span class="sd">    A v1 entry (no ``strategy``) passes ``strategy=None`` and keeps the preset&#39;s</span>
+<span class="sd">    default — unchanged behavior.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">strategy_from_spec</span>
+
     <span class="n">kind</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;kind&quot;</span><span class="p">]</span>
     <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;params&quot;</span><span class="p">,</span> <span class="p">{}))</span>
     <span class="n">embedder</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span>
+    <span class="n">strategy</span> <span class="o">=</span> <span class="n">strategy_from_spec</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;skills&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_skills</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_skills</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;packages&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_packages</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_packages</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span>
+        <span class="p">)</span>
     <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;reports&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_md_reports</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_md_reports</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;sessions&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_claude_sessions</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span>
+        <span class="p">)</span>
     <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;files&quot;</span><span class="p">:</span>
         <span class="n">root</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;root&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_files</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_files</span><span class="p">(</span>
+            <span class="n">root</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span>
+        <span class="p">)</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown corpus kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="policy_for">
+<a class="viewcode-back" href="../../module_docs/ir/registry.html#ir.policy_for">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">policy_for</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The effective :class:`ir.policy.MaintenancePolicy` for corpus *name*.</span>
+
+<span class="sd">    Resolves the registered entry&#39;s ``maintenance`` over its kind&#39;s smart default</span>
+<span class="sd">    over the global default (see :func:`ir.policy.resolve_policy`). An unregistered</span>
+<span class="sd">    name resolves to the global default policy.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_policy</span>
+
+    <span class="k">return</span> <span class="n">resolve_policy</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">))</span></div>
 
 
 

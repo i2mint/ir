@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.store &mdash; ir 0.1.21 documentation</title>
+  <title>ir.store &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -58,6 +58,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
@@ -126,13 +128,19 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Record</span>
+
+<span class="c1">#: Bump when the on-disk packed-matrix layout changes so a stale cache from an</span>
+<span class="c1">#: older ``ir`` is treated as invalid (rebuilt) rather than mis-read.</span>
+<span class="n">_PACKED_FORMAT</span> <span class="o">=</span> <span class="mi">1</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_ndarray_store</span><span class="p">(</span><span class="n">rootdir</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
@@ -176,6 +184,8 @@
         <span class="n">config</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="n">calibration</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">links</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">packed_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vectors</span> <span class="o">=</span> <span class="n">vectors</span>
@@ -187,6 +197,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">calibration</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">calibration</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">calibration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">links</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">links</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">links</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Optional on-disk packed-matrix cache (a single normalized matrix + its</span>
+        <span class="c1"># ids/metas as three files), so reopening a corpus skips the per-record</span>
+        <span class="c1"># vector-file storm. ``None`` (e.g. for the in-memory store) keeps the</span>
+        <span class="c1"># matrix purely in-process, preserving the original behavior. The cache</span>
+        <span class="c1"># is a *write-invalidated read cache*: any record write clears it.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packed_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">packed_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">packed_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_packed_stale</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="c1"># ----- factories ------------------------------------------------------ #</span>
 
@@ -205,6 +222,7 @@
             <span class="n">config</span><span class="o">=</span><span class="n">_json_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;config&quot;</span><span class="p">),</span>
             <span class="n">calibration</span><span class="o">=</span><span class="n">_json_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;calibration&quot;</span><span class="p">),</span>
             <span class="n">links</span><span class="o">=</span><span class="n">_json_store</span><span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;links&quot;</span><span class="p">),</span>
+            <span class="n">packed_dir</span><span class="o">=</span><span class="n">root</span> <span class="o">/</span> <span class="s2">&quot;matrix&quot;</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -230,7 +248,7 @@
             <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
         <span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">[</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">vector</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="kc">None</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_invalidate_matrix</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="CorpusStore.delete_record">
@@ -242,7 +260,7 @@
             <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">[</span><span class="n">record_id</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="k">pass</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="kc">None</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_invalidate_matrix</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="CorpusStore.record_ids">
@@ -317,6 +335,25 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">set_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Persist the corpus build *settings* (name / embedder spec + id).&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CorpusStore.get_maintenance_state">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.get_maintenance_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_maintenance_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Background-work bookkeeping (e.g. ``last_maintained``); ``{}`` if unset.</span>
+
+<span class="sd">        Kept under a separate ``config``-view key from the build settings: it is</span>
+<span class="sd">        regenerable scheduler state (when ``ir maintain`` last ran), not part of</span>
+<span class="sd">        the corpus&#39;s build identity, so it must never clobber it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;maintenance&quot;</span><span class="p">,</span> <span class="p">{}))</span></div>
+
+
+<div class="viewcode-block" id="CorpusStore.set_maintenance_state">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.set_maintenance_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_maintenance_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Persist the maintenance bookkeeping for this corpus.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;maintenance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">state</span><span class="p">)</span></div>
 
 
     <span class="c1"># ----- calibration (per-mode) ----------------------------------------- #</span>
@@ -408,23 +445,151 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``(record_ids, normalized_matrix, metas)`` for brute force.</span>
 
 <span class="sd">        Rows are L2-normalized so cosine similarity is a dot product. Empty</span>
-<span class="sd">        corpora return a ``(0, 0)`` matrix. Cached until the next write.</span>
+<span class="sd">        corpora return a ``(0, 0)`` matrix.</span>
+
+<span class="sd">        Caching is two-tier: an in-process cache (invalidated on the next write)</span>
+<span class="sd">        backed, for file-rooted stores, by an on-disk **packed** cache — one</span>
+<span class="sd">        normalized-matrix ``.npy`` plus its ids/metas, written once and reloaded</span>
+<span class="sd">        with a single memory-mapped read. The packed cache turns a cold reopen</span>
+<span class="sd">        from a per-record vector-file storm (thousands of tiny reads) into three</span>
+<span class="sd">        file reads; it is cleared by any record write, so it never goes stale.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span>
+        <span class="n">packed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_packed</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">packed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="n">packed</span>
+            <span class="k">return</span> <span class="n">packed</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_packed</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="CorpusStore.metas">
+<a class="viewcode-back" href="../../module_docs/ir/store.html#ir.CorpusStore.metas">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metas</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``(record_ids, metas)`` **without** loading any vectors.</span>
+
+<span class="sd">        The vector-free counterpart of :meth:`matrix`, for ranking modes that</span>
+<span class="sd">        score on text alone (``mode=&quot;lexical&quot;``): they need candidate metadata</span>
+<span class="sd">        (text + filter fields) but never the embedding matrix, so they must not</span>
+<span class="sd">        pay its I/O. Reuses the in-process or packed cache when present; else</span>
+<span class="sd">        reads only the ``meta`` view (not ``vectors``).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ids</span><span class="p">,</span> <span class="n">_mat</span><span class="p">,</span> <span class="n">metas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span>
+            <span class="k">return</span> <span class="n">ids</span><span class="p">,</span> <span class="n">metas</span>
+        <span class="n">packed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_packed</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">packed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="n">packed</span>
+            <span class="k">return</span> <span class="n">packed</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">packed</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
+        <span class="n">metas</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="n">rid</span><span class="p">]</span> <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ids</span><span class="p">,</span> <span class="n">metas</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build ``(ids, normalized_matrix, metas)`` from the per-record stores.</span>
+
+<span class="sd">        One pass over the ids reads each record&#39;s meta and vector together</span>
+<span class="sd">        (the previous implementation iterated the meta view three times).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ids</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="p">([],</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="p">[])</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span>
-        <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">[</span><span class="n">rid</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">]</span>
+            <span class="k">return</span> <span class="p">([],</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="p">[])</span>
+        <span class="n">metas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">:</span>
+            <span class="n">metas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="n">rid</span><span class="p">])</span>
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vectors</span><span class="p">[</span><span class="n">rid</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
         <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
         <span class="n">norms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">mat</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">norms</span><span class="p">[</span><span class="n">norms</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
         <span class="n">mat</span> <span class="o">=</span> <span class="n">mat</span> <span class="o">/</span> <span class="n">norms</span>
-        <span class="n">metas</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="n">rid</span><span class="p">]</span> <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">metas</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span></div>
-</div>
+        <span class="k">return</span> <span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">metas</span><span class="p">)</span>
+
+    <span class="c1"># ----- packed-matrix disk cache --------------------------------------- #</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_invalidate_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Drop the in-process matrix and clear the on-disk packed cache once.</span>
+
+<span class="sd">        Called on every record write. The on-disk clear happens at most once per</span>
+<span class="sd">        rebuild (guarded by ``_packed_stale``) so a bulk build&#39;s thousands of</span>
+<span class="sd">        ``put_record`` calls don&#39;t each touch the filesystem.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_matrix_cache</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_stale</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_clear_packed</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_packed_stale</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_packed_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_dir</span>
+        <span class="c1"># ``sig`` is written last and removed first, so a half-written or</span>
+        <span class="c1"># half-cleared cache (no/sig-less dir) always reads as invalid.</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;sig&quot;</span><span class="p">:</span> <span class="n">d</span> <span class="o">/</span> <span class="s2">&quot;sig.json&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;matrix&quot;</span><span class="p">:</span> <span class="n">d</span> <span class="o">/</span> <span class="s2">&quot;matrix.npy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ids&quot;</span><span class="p">:</span> <span class="n">d</span> <span class="o">/</span> <span class="s2">&quot;ids.json&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;metas&quot;</span><span class="p">:</span> <span class="n">d</span> <span class="o">/</span> <span class="s2">&quot;metas.json&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clear_packed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_paths</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;sig&quot;</span><span class="p">,</span> <span class="s2">&quot;matrix&quot;</span><span class="p">,</span> <span class="s2">&quot;ids&quot;</span><span class="p">,</span> <span class="s2">&quot;metas&quot;</span><span class="p">):</span>  <span class="c1"># sig first</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">paths</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_packed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load ``(ids, mmap_matrix, metas)`` from the packed cache, or ``None``.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_paths</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;sig&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">sig</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="s2">&quot;sig&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">sig</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;format&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">_PACKED_FORMAT</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="s2">&quot;matrix&quot;</span><span class="p">],</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+            <span class="n">ids</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="s2">&quot;ids&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+            <span class="n">metas</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="s2">&quot;metas&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span> <span class="o">!=</span> <span class="n">mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">metas</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">metas</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_packed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Persist a freshly built matrix to the packed cache (best-effort).</span>
+
+<span class="sd">        Skips empty corpora. Writes ``sig.json`` last so a crash mid-write</span>
+<span class="sd">        leaves the cache marked invalid (no sig) rather than torn.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">ids</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">metas</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ids</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_packed_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_packed_paths</span><span class="p">()</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="s2">&quot;matrix&quot;</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+            <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;ids&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">ids</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;metas&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">metas</span><span class="p">),</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            <span class="n">paths</span><span class="p">[</span><span class="s2">&quot;sig&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="n">_PACKED_FORMAT</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)}),</span>
+                <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_packed_stale</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="c1"># A read cache that can&#39;t be written is non-fatal: fall back to the</span>
+            <span class="c1"># in-process cache (already set by the caller) for this process.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_clear_packed</span><span class="p">()</span></div>
 
 </pre></div>
 

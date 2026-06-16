@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.synopsis &mdash; ir 0.1.21 documentation</title>
+  <title>ir.synopsis &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -58,6 +58,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
@@ -115,9 +117,10 @@
 <span class="sd">a synth that returns ``&quot;&quot;`` simply leaves the artifact with its other surfaces.</span>
 
 <span class="sd">``synthesize: Callable[[Artifact], str]`` is **injectable** (a test double, or</span>
-<span class="sd">your own summarizer); omitted, it is built lazily on :mod:`oa` via</span>
-<span class="sd">:func:`make_llm_synthesizer` (the ``make_llm_*`` idiom — ``import ir`` stays</span>
-<span class="sd">offline, ``oa`` is imported only on the first synthesis).</span>
+<span class="sd">your own summarizer); omitted, it is built lazily on :mod:`aix` (the</span>
+<span class="sd">multi-provider LLM facade) via :func:`make_llm_synthesizer` (the ``make_llm_*``</span>
+<span class="sd">idiom — ``import ir`` stays offline, ``aix`` is imported only on the first</span>
+<span class="sd">synthesis).</span>
 
 <span class="sd">**Staleness.** The wrapper exposes its identity as scalar attributes</span>
 <span class="sd">(``synthesizer_id``, ``synopsis_kind``) and holds the inner strategy, so</span>
@@ -175,13 +178,13 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">_default_llm_summarizer</span><span class="p">(</span>
     <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the default text→synopsis summarizer on :mod:`oa` (lazy import).&quot;&quot;&quot;</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">oa</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the default text→synopsis summarizer on :mod:`aix` (lazy import).&quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">aix</span>
 
     <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">prompt_function_kwargs</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-    <span class="n">fn</span> <span class="o">=</span> <span class="n">oa</span><span class="o">.</span><span class="n">prompt_function</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;synthesize_synopsis&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">aix</span><span class="o">.</span><span class="n">prompt_func</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;synthesize_synopsis&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">summarize</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
@@ -203,8 +206,8 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An LLM-backed :data:`Synthesizer` (:class:`~ir.base.Artifact` → synopsis).</span>
 
 <span class="sd">    ``summarize`` is an injectable ``text -&gt; str`` callable (a test double, or</span>
-<span class="sd">    your own summarizer); when omitted it is built lazily on :mod:`oa`</span>
-<span class="sd">    (``oa.prompt_function``) on the **first** synthesis and reused — so importing</span>
+<span class="sd">    your own summarizer); when omitted it is built lazily on :mod:`aix`</span>
+<span class="sd">    (``aix.prompt_func``) on the **first** synthesis and reused — so importing</span>
 <span class="sd">    this module, and even constructing the synthesizer, stays offline. The</span>
 <span class="sd">    artifact&#39;s text is extracted with :func:`ir.strategy.text_of` using</span>
 <span class="sd">    ``text_key`` — which :func:`with_synopsis` threads from the inner strategy, so</span>
@@ -213,7 +216,7 @@
 <span class="sd">    fabricated summary).</span>
 
 <span class="sd">    The returned callable carries a ``synthesizer_id`` attribute (default</span>
-<span class="sd">    ``&quot;oa:{model}:{sha(prompt)[:12]}&quot;``) that :func:`with_synopsis` reads into the</span>
+<span class="sd">    ``&quot;aix:{model}:{sha(prompt)[:12]}&quot;``) that :func:`with_synopsis` reads into the</span>
 <span class="sd">    corpus&#39;s ``strategy_id`` for staleness — a prompt or model change re-synthesizes.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -238,7 +241,7 @@
         <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
 
     <span class="n">synthesize</span><span class="o">.</span><span class="n">synthesizer_id</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">synthesizer_id</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;oa:</span><span class="si">{</span><span class="n">model</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;default&#39;</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">_prompt_hash</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">synthesizer_id</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;aix:</span><span class="si">{</span><span class="n">model</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;default&#39;</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">_prompt_hash</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">synthesize</span></div>
 
@@ -330,7 +333,7 @@
 <span class="sd">        strategy: the inner :class:`~ir.strategy.IndexingStrategy` (``Chunked``,</span>
 <span class="sd">            ``Package``, ...). Its surfaces are kept; the synopsis is prepended.</span>
 <span class="sd">        synthesize: an injectable ``Artifact -&gt; str`` (test double / custom</span>
-<span class="sd">            summarizer). Omitted → :func:`make_llm_synthesizer` (lazy ``oa``).</span>
+<span class="sd">            summarizer). Omitted → :func:`make_llm_synthesizer` (lazy ``aix``).</span>
 <span class="sd">        synthesizer_id: explicit identity stamp for staleness (recommended when</span>
 <span class="sd">            injecting an unnamed callable / lambda). Omitted → the synthesizer&#39;s</span>
 <span class="sd">            own ``synthesizer_id`` / ``__qualname__``.</span>

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.registry &mdash; ir 0.1.21 documentation</title>
+  <title>ir.registry &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -25,7 +25,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="ir.retrieve" href="retrieve.html" />
-    <link rel="prev" title="ir.index" href="index.html" /> 
+    <link rel="prev" title="ir.policy" href="policy.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -61,8 +61,11 @@
 <li class="toctree-l1"><a class="reference internal" href="formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.registry</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.get"><code class="docutils literal notranslate"><span class="pre">get()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.registry.policy_for"><code class="docutils literal notranslate"><span class="pre">policy_for()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.registered"><code class="docutils literal notranslate"><span class="pre">registered()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.retriever_for"><code class="docutils literal notranslate"><span class="pre">retriever_for()</span></code></a></li>
@@ -117,10 +120,11 @@ under the config dir (<code class="docutils literal notranslate"><span class="pr
 <li><p><code class="docutils literal notranslate"><span class="pre">skills</span></code>   → <code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusSource.from_skills()</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">packages</span></code> → <code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusSource.from_packages()</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">reports</span></code>  → <code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusSource.from_md_reports()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sessions</span></code> → <code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusSource.from_claude_sessions()</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">files</span></code>    → <code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusSource.from_files()</span></code> (needs <code class="docutils literal notranslate"><span class="pre">root</span></code>; optional
 <code class="docutils literal notranslate"><span class="pre">pattern</span></code>)</p></li>
 </ul>
-<p>Unregistered preset names (<code class="docutils literal notranslate"><span class="pre">skills</span></code>/<code class="docutils literal notranslate"><span class="pre">packages</span></code>/<code class="docutils literal notranslate"><span class="pre">reports</span></code>) are
+<p>Unregistered preset names (<code class="docutils literal notranslate"><span class="pre">skills</span></code>/<code class="docutils literal notranslate"><span class="pre">packages</span></code>/<code class="docutils literal notranslate"><span class="pre">reports</span></code>/<code class="docutils literal notranslate"><span class="pre">sessions</span></code>) are
 auto-registered with defaults on first use, so <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">build</span> <span class="pre">skills</span></code> just works.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.registry.get">
@@ -129,9 +133,30 @@ auto-registered with defaults on first use, so <code class="docutils literal not
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.registry.policy_for">
+<span class="sig-prename descclassname"><span class="pre">ir.registry.</span></span><span class="sig-name descname"><span class="pre">policy_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/registry.html#policy_for"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.registry.policy_for" title="Link to this definition"></a></dt>
+<dd><p>The effective <a class="reference internal" href="policy.html#ir.policy.MaintenancePolicy" title="ir.policy.MaintenancePolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ir.policy.MaintenancePolicy</span></code></a> for corpus <em>name</em>.</p>
+<p>Resolves the registered entry’s <code class="docutils literal notranslate"><span class="pre">maintenance</span></code> over its kind’s smart default
+over the global default (see <a class="reference internal" href="policy.html#ir.policy.resolve_policy" title="ir.policy.resolve_policy"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.policy.resolve_policy()</span></code></a>). An unregistered
+name resolves to the global default policy.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.registry.register">
-<span class="sig-prename descclassname"><span class="pre">ir.registry.</span></span><span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'default'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/registry.html#register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.registry.register" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ir.registry.</span></span><span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'default'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maintenance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">storage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/registry.html#register"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.registry.register" title="Link to this definition"></a></dt>
 <dd><p>Register (or overwrite) a named corpus definition.</p>
+<p>Beyond the v1 <code class="docutils literal notranslate"><span class="pre">kind</span></code> / <code class="docutils literal notranslate"><span class="pre">embedder</span></code> / <code class="docutils literal notranslate"><span class="pre">params</span></code>, an entry may now carry
+(all optional, with smart per-kind defaults applied at resolution time — see
+<a class="reference internal" href="policy.html#module-ir.policy" title="ir.policy"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.policy</span></code></a>):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">strategy</span></code> — an <a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a> (or a
+<code class="docutils literal notranslate"><span class="pre">{&quot;name&quot;,</span> <span class="pre">&quot;params&quot;}</span></code> spec) persisted so the corpus’s <em>segmentation</em> is
+stable across rebuilds. <code class="docutils literal notranslate"><span class="pre">None</span></code> keeps the preset’s default strategy.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maintenance</span></code> — the background-work policy dict (<code class="docutils literal notranslate"><span class="pre">reindex</span></code> / <code class="docutils literal notranslate"><span class="pre">synopsis</span></code>;
+validated here, see <a class="reference internal" href="policy.html#ir.policy.MaintenancePolicy" title="ir.policy.MaintenancePolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ir.policy.MaintenancePolicy</span></code></a>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">storage</span></code> — the persistence backend (default <code class="docutils literal notranslate"><span class="pre">{&quot;backend&quot;:</span> <span class="pre">&quot;local&quot;}</span></code>).</p></li>
+</ul>
+<p>Entries written by older <code class="docutils literal notranslate"><span class="pre">ir</span></code> (none of these keys) keep working unchanged.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -170,6 +195,10 @@ set. <code class="docutils literal notranslate"><span class="pre">search_default
 <dt class="sig sig-object py" id="ir.registry.source_from_entry">
 <span class="sig-prename descclassname"><span class="pre">ir.registry.</span></span><span class="sig-name descname"><span class="pre">source_from_entry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="sources.html#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><span class="pre">CorpusSource</span></a></span></span><a class="reference internal" href="../../_modules/ir/registry.html#source_from_entry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.registry.source_from_entry" title="Link to this definition"></a></dt>
 <dd><p>Reconstruct a <code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusSource</span></code> from a registry entry.</p>
+<p>A persisted <code class="docutils literal notranslate"><span class="pre">strategy</span></code> spec (registry v2) is reconstructed and passed to
+the preset constructor, so a corpus’s segmentation survives across rebuilds.
+A v1 entry (no <code class="docutils literal notranslate"><span class="pre">strategy</span></code>) passes <code class="docutils literal notranslate"><span class="pre">strategy=None</span></code> and keeps the preset’s
+default — unchanged behavior.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -184,7 +213,7 @@ set. <code class="docutils literal notranslate"><span class="pre">search_default
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="ir.index" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="policy.html" class="btn btn-neutral float-left" title="ir.policy" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="retrieve.html" class="btn btn-neutral float-right" title="ir.retrieve" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

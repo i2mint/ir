@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to ir’s documentation! &mdash; ir 0.1.21 documentation</title>
+  <title>Welcome to ir’s documentation! &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="_static/documentation_options.js?v=842aa08f"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -60,6 +60,8 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/select.html">ir.select</a></li>
@@ -102,6 +104,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir.html">ir</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Artifact"><code class="docutils literal notranslate"><span class="pre">Artifact</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Chunked"><code class="docutils literal notranslate"><span class="pre">Chunked</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.ClaudeTurn"><code class="docutils literal notranslate"><span class="pre">ClaudeTurn</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Corpus"><code class="docutils literal notranslate"><span class="pre">Corpus</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.CorpusGraph"><code class="docutils literal notranslate"><span class="pre">CorpusGraph</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.CorpusSource"><code class="docutils literal notranslate"><span class="pre">CorpusSource</span></code></a></li>
@@ -111,13 +114,17 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.GraphStore"><code class="docutils literal notranslate"><span class="pre">GraphStore</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.IndexPlan"><code class="docutils literal notranslate"><span class="pre">IndexPlan</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.IndexingStrategy"><code class="docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.MaintenancePolicy"><code class="docutils literal notranslate"><span class="pre">MaintenancePolicy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.MaintenanceResult"><code class="docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Package"><code class="docutils literal notranslate"><span class="pre">Package</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Passage"><code class="docutils literal notranslate"><span class="pre">Passage</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Record"><code class="docutils literal notranslate"><span class="pre">Record</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.ReindexPolicy"><code class="docutils literal notranslate"><span class="pre">ReindexPolicy</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.SearchHit"><code class="docutils literal notranslate"><span class="pre">SearchHit</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Selection"><code class="docutils literal notranslate"><span class="pre">Selection</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.SynopsisPolicy"><code class="docutils literal notranslate"><span class="pre">SynopsisPolicy</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.WalkPolicy"><code class="docutils literal notranslate"><span class="pre">WalkPolicy</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.WalkState"><code class="docutils literal notranslate"><span class="pre">WalkState</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
@@ -128,16 +135,21 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.collapsed_tree_policy"><code class="docutils literal notranslate"><span class="pre">collapsed_tree_policy()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.corpora"><code class="docutils literal notranslate"><span class="pre">corpora()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.default_edge_extractor"><code class="docutils literal notranslate"><span class="pre">default_edge_extractor()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.default_policy_for_kind"><code class="docutils literal notranslate"><span class="pre">default_policy_for_kind()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.disclose"><code class="docutils literal notranslate"><span class="pre">disclose()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.expand"><code class="docutils literal notranslate"><span class="pre">expand()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.maintain_corpus"><code class="docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.make_llm_formulator"><code class="docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.make_llm_synthesizer"><code class="docutils literal notranslate"><span class="pre">make_llm_synthesizer()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.parent_policy"><code class="docutils literal notranslate"><span class="pre">parent_policy()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.policy_for"><code class="docutils literal notranslate"><span class="pre">policy_for()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.records_for_artifact"><code class="docutils literal notranslate"><span class="pre">records_for_artifact()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.resolve_policy"><code class="docutils literal notranslate"><span class="pre">resolve_policy()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.retriever_for"><code class="docutils literal notranslate"><span class="pre">retriever_for()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.retrievers"><code class="docutils literal notranslate"><span class="pre">retrievers()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
@@ -175,6 +187,7 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.eval_select"><code class="docutils literal notranslate"><span class="pre">eval_select()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.info"><code class="docutils literal notranslate"><span class="pre">info()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.ls"><code class="docutils literal notranslate"><span class="pre">ls()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.rm"><code class="docutils literal notranslate"><span class="pre">rm()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
@@ -242,8 +255,8 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.corpus_signature"><code class="docutils literal notranslate"><span class="pre">corpus_signature()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.generate_abstention_cases"><code class="docutils literal notranslate"><span class="pre">generate_abstention_cases()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.generate_cases"><code class="docutils literal notranslate"><span class="pre">generate_cases()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.make_oa_abstention_generator"><code class="docutils literal notranslate"><span class="pre">make_oa_abstention_generator()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.make_oa_query_generator"><code class="docutils literal notranslate"><span class="pre">make_oa_query_generator()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.make_default_abstention_generator"><code class="docutils literal notranslate"><span class="pre">make_default_abstention_generator()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.make_default_query_generator"><code class="docutils literal notranslate"><span class="pre">make_default_query_generator()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.mask_name"><code class="docutils literal notranslate"><span class="pre">mask_name()</span></code></a></li>
 </ul>
 </li>
@@ -285,8 +298,30 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/index.html#ir.index.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/maintenance.html">ir.maintenance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.MaintenanceResult"><code class="docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.maintain_corpus"><code class="docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/policy.html">ir.policy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.DEFAULTS_BY_KIND"><code class="docutils literal notranslate"><span class="pre">DEFAULTS_BY_KIND</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.GLOBAL_DEFAULT"><code class="docutils literal notranslate"><span class="pre">GLOBAL_DEFAULT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.MaintenancePolicy"><code class="docutils literal notranslate"><span class="pre">MaintenancePolicy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.REINDEX_TRIGGERS"><code class="docutils literal notranslate"><span class="pre">REINDEX_TRIGGERS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.ReindexPolicy"><code class="docutils literal notranslate"><span class="pre">ReindexPolicy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.STORAGE_BACKENDS"><code class="docutils literal notranslate"><span class="pre">STORAGE_BACKENDS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.SynopsisPolicy"><code class="docutils literal notranslate"><span class="pre">SynopsisPolicy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.default_policy_for_kind"><code class="docutils literal notranslate"><span class="pre">default_policy_for_kind()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.in_downtime"><code class="docutils literal notranslate"><span class="pre">in_downtime()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.is_reindex_due"><code class="docutils literal notranslate"><span class="pre">is_reindex_due()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.resolve_policy"><code class="docutils literal notranslate"><span class="pre">resolve_policy()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.resolve_storage"><code class="docutils literal notranslate"><span class="pre">resolve_storage()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.get"><code class="docutils literal notranslate"><span class="pre">get()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.policy_for"><code class="docutils literal notranslate"><span class="pre">policy_for()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.registered"><code class="docutils literal notranslate"><span class="pre">registered()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.retriever_for"><code class="docutils literal notranslate"><span class="pre">retriever_for()</span></code></a></li>
@@ -336,6 +371,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.CorpusSource"><code class="docutils literal notranslate"><span class="pre">CorpusSource</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.DFLT_SESSIONS_SINCE_DAYS"><code class="docutils literal notranslate"><span class="pre">DFLT_SESSIONS_SINCE_DAYS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.content_hash_signal"><code class="docutils literal notranslate"><span class="pre">content_hash_signal()</span></code></a></li>
 </ul>
 </li>
@@ -345,10 +381,14 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/strategy.html">ir.strategy</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.Chunked"><code class="docutils literal notranslate"><span class="pre">Chunked</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.ClaudeTurn"><code class="docutils literal notranslate"><span class="pre">ClaudeTurn</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.IndexingStrategy"><code class="docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.Package"><code class="docutils literal notranslate"><span class="pre">Package</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.STRATEGY_REGISTRY"><code class="docutils literal notranslate"><span class="pre">STRATEGY_REGISTRY</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.strategy_from_spec"><code class="docutils literal notranslate"><span class="pre">strategy_from_spec()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.strategy_to_spec"><code class="docutils literal notranslate"><span class="pre">strategy_to_spec()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.text_of"><code class="docutils literal notranslate"><span class="pre">text_of()</span></code></a></li>
 </ul>
 </li>
@@ -381,8 +421,8 @@
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-<p>Release: 0.1.21</p>
-<p>Last change: Jun 13, 2026</p>
+<p>Release: 0.1.22</p>
+<p>Last change: Jun 16, 2026</p>
 </section>
 
 

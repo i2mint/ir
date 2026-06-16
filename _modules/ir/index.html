@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.index &mdash; ir 0.1.21 documentation</title>
+  <title>ir.index &mdash; ir 0.1.22 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=b3d22ae5"></script>
+      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -58,6 +58,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
@@ -167,6 +169,37 @@
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">texts</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
         <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_embed</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">texts</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">],</span> <span class="n">input_type</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="k">if</span> <span class="n">out</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_LazyEmbedder</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An embedder callable that resolves its model on first *call*, not first use.</span>
+
+<span class="sd">    :func:`open_corpus` binds this as a :class:`Corpus`&#39;s ``embedder`` so the</span>
+<span class="sd">    (heavy, ~seconds) embedding-model load is paid only when a query is actually</span>
+<span class="sd">    embedded — ``ls`` / ``info`` and lexical-only search, which never embed,</span>
+<span class="sd">    never trigger it. The corpus&#39;s ``embedder_id`` is read from stored config, so</span>
+<span class="sd">    it is known without resolving the model. Transparent: it forwards ``__call__``</span>
+<span class="sd">    (including ``input_type=``) to the resolved embedder, so every existing call</span>
+<span class="sd">    site (``_embed`` and its ``TypeError`` fallback) works unchanged.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spec</span> <span class="o">=</span> <span class="n">spec</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resolved</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_resolved</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_id</span> <span class="o">=</span> <span class="n">make_embedder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spec</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">texts</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve</span><span class="p">()(</span><span class="n">texts</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">embedder_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resolve</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_id</span> <span class="ow">or</span> <span class="s2">&quot;custom&quot;</span>
 
 
 <div class="viewcode-block" id="Corpus">
@@ -329,12 +362,19 @@
 <div class="viewcode-block" id="open_corpus">
 <a class="viewcode-back" href="../../module_docs/ir/index.html#ir.open_corpus">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">embedder</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Corpus</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reopen a previously built corpus by name (resolves its embedder).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reopen a previously built corpus by name.</span>
+
+<span class="sd">    The embedding model is **lazily** resolved (see :class:`_LazyEmbedder`): the</span>
+<span class="sd">    returned corpus knows its ``embedder_id`` from stored config immediately, but</span>
+<span class="sd">    only loads the model when a dense/hybrid query actually embeds. So ``ir ls``,</span>
+<span class="sd">    ``ir info``, and lexical-only search open a corpus without the model-load</span>
+<span class="sd">    cost. Pass ``embedder=`` to override the stored spec.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">store</span> <span class="o">=</span> <span class="n">CorpusStore</span><span class="o">.</span><span class="n">local</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">cfg</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="n">embedder</span> <span class="k">if</span> <span class="n">embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_spec&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span>
-    <span class="n">emb</span><span class="p">,</span> <span class="n">emb_id</span> <span class="o">=</span> <span class="n">make_embedder</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">Corpus</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">store</span><span class="p">,</span> <span class="n">emb</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_id&quot;</span><span class="p">,</span> <span class="n">emb_id</span><span class="p">))</span></div>
+    <span class="n">emb_id</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_id&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Corpus</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">store</span><span class="p">,</span> <span class="n">_LazyEmbedder</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span> <span class="n">emb_id</span><span class="p">)</span></div>
 
 </pre></div>
 
