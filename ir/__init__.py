@@ -45,7 +45,15 @@ from .graph import (
     default_edge_extractor,
 )
 from .index import Corpus, build, open_corpus
-from .registry import retriever_for, retrievers
+from .maintenance import MaintenanceResult, maintain, maintain_corpus
+from .policy import (
+    MaintenancePolicy,
+    ReindexPolicy,
+    SynopsisPolicy,
+    default_policy_for_kind,
+    resolve_policy,
+)
+from .registry import policy_for, retriever_for, retrievers
 from .retrieve import Retriever, as_retriever, fuse_hits, records_for_artifact
 from .retrieve import search as _search
 from .select import (
@@ -58,7 +66,14 @@ from .select import (
 )
 from .sources import CorpusSource
 from .store import CorpusStore
-from .strategy import Chunked, IndexingStrategy, Package, Skill, WholeText
+from .strategy import (
+    Chunked,
+    ClaudeTurn,
+    IndexingStrategy,
+    Package,
+    Skill,
+    WholeText,
+)
 from .synopsis import Synthesizer, make_llm_synthesizer, with_synopsis
 from .traverse import WalkPolicy, WalkState, collapsed_tree_policy, traverse
 
@@ -73,6 +88,7 @@ __all__ = [
     "Chunked",
     "Skill",
     "Package",
+    "ClaudeTurn",
     "with_synopsis",
     "make_llm_synthesizer",
     "Synthesizer",
@@ -114,6 +130,15 @@ __all__ = [
     "register",
     "corpora",
     "build_corpus",
+    "maintain",
+    "maintain_corpus",
+    "MaintenanceResult",
+    "MaintenancePolicy",
+    "ReindexPolicy",
+    "SynopsisPolicy",
+    "resolve_policy",
+    "default_policy_for_kind",
+    "policy_for",
 ]
 
 register = registry.register
@@ -148,6 +173,6 @@ def search(corpus, query, **kwargs):
 # The evaluation harness is reachable as ``ir.eval`` (its ``ef`` imports are
 # lazy, so this does not weigh down ``import ir``). Kept out of ``__all__`` so a
 # star-import does not shadow the ``eval`` builtin. ``ir.eval_gen`` is the
-# build-time case generator (its ``oa`` import is lazy too).
+# build-time case generator (its ``aix`` import is lazy too).
 from . import eval  # noqa: E402,F401  (submodule attribute: ir.eval)
 from . import eval_gen  # noqa: E402,F401  (submodule attribute: ir.eval_gen)

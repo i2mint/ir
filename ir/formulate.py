@@ -17,7 +17,7 @@ Decomposing a goal into sub-tasks + source selection is the *Planner's* job — 
 lives in the agent layer (``raglab``), not here.
 
 :func:`make_llm_formulator` mirrors :func:`ir.select.make_llm_selector`: an
-injectable ``rewriter`` callable, built lazily on :mod:`oa` when omitted (so
+injectable ``rewriter`` callable, built lazily on :mod:`aix` when omitted (so
 importing ir stays offline), falling back to identity on any failure — a
 formulator must never make retrieval *worse* than the raw query.
 """
@@ -47,13 +47,13 @@ def identity_formulator(query: str) -> str:
 
 
 def _default_llm_rewriter(prompt: str, n: int, **prompt_function_kwargs: Any):
-    """Build the default LLM rewriter on :mod:`oa` (lazy import)."""
-    import oa
+    """Build the default LLM rewriter on :mod:`aix` (lazy import)."""
+    import aix
 
     def _parse_lines(text: str) -> list[str]:
         return [line.strip(" -\t") for line in str(text).splitlines() if line.strip()]
 
-    fn = oa.prompt_function(
+    fn = aix.prompt_func(
         prompt, egress=_parse_lines, name="formulate_queries", **prompt_function_kwargs
     )
 
@@ -74,8 +74,8 @@ def make_llm_formulator(
     """An LLM-backed :data:`Formulator` (rewrite / expand / multi-query).
 
     ``rewriter`` is an injectable ``query -> str | [str, ...]`` callable (a test
-    double, or your own router); when omitted it is built lazily on :mod:`oa`
-    (``oa.prompt_function``), so importing this module stays offline. ``n`` is the
+    double, or your own router); when omitted it is built lazily on :mod:`aix`
+    (``aix.prompt_func``), so importing this module stays offline. ``n`` is the
     multi-query fan-out width. Any error or empty reply falls back to ``fallback``
     (default: :func:`identity_formulator`).
     """

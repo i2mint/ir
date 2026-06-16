@@ -414,7 +414,13 @@ def search(
             return merged[:k]
         query = queries[0]
 
-    ids, mat, metas = corpus.store.matrix()
+    # Lexical ranking scores on text alone, so it must not pay the embedding
+    # matrix's I/O; dense/hybrid need the matrix. (Both reuse the same cache.)
+    if mode == "lexical":
+        ids, metas = corpus.store.metas()
+        mat = None
+    else:
+        ids, mat, metas = corpus.store.matrix()
     if not ids:
         return []
 

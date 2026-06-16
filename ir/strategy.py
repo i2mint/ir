@@ -184,6 +184,53 @@ class Skill:
         return IndexPlan(filter_fields=filter_fields, surfaces=surfaces)
 
 
+#: Shipped strategies addressable by name, for persisting an
+#: :class:`IndexingStrategy` in a registry entry and reconstructing it (#58).
+#: New shipped strategies register here so a corpus can name its segmentation.
+STRATEGY_REGISTRY: dict[str, type] = {
+    "WholeText": WholeText,
+    "Chunked": Chunked,
+    "Skill": Skill,
+}
+
+
+def strategy_to_spec(strategy: Any) -> dict:
+    """A ``{"name", "params"}`` spec for a shipped, scalar-param strategy.
+
+    Captures only scalar constructor parameters (the same identity surface
+    :func:`ir.index._strategy_id` stamps), so it round-trips the shipped
+    strategies. A custom strategy, or one wrapping another (e.g. the
+    :func:`ir.with_synopsis` wrapper), is **not** captured here — those are set
+    programmatically at build time / by the maintenance layer, not persisted as a
+    segmentation spec.
+    """
+    name = type(strategy).__name__
+    params = {
+        k: v
+        for k, v in vars(strategy).items()
+        if isinstance(v, (str, int, float, bool, type(None)))
+    }
+    return {"name": name, "params": params}
+
+
+def strategy_from_spec(spec: Mapping[str, Any] | None) -> "IndexingStrategy | None":
+    """Reconstruct a shipped strategy from a ``{"name", "params"}`` spec.
+
+    ``None`` (no persisted strategy) returns ``None`` so the caller falls back to
+    the source preset's default strategy — the back-compatible behavior for v1
+    registry entries.
+    """
+    if not spec:
+        return None
+    name = spec.get("name")
+    cls = STRATEGY_REGISTRY.get(name)
+    if cls is None:
+        raise ValueError(
+            f"unknown strategy {name!r}; known: {sorted(STRATEGY_REGISTRY)}"
+        )
+    return cls(**dict(spec.get("params") or {}))
+
+
 class Package:
     """Package strategy: ``name + description`` surface plus README chunks.
 
@@ -242,3 +289,74 @@ class Package:
         # Drop empty surfaces (e.g. no description and no README).
         surfaces = [s for s in surfaces if s.text.strip()]
         return IndexPlan(filter_fields=filter_fields, surfaces=surfaces)
+
+
+class ClaudeTurn:
+    """Index a Claude Code session turn-pair: user prompt + assistant summary.
+
+    Two surfaces by default — ``user_prompt`` (what the human asked) and
+    ``assistant_summary`` (the assistant's *final* end-of-turn text, the
+    highest-signal "here's what I did"; the deliberation before it is mostly
+    noise) — so a query can target either side via ``surfaces={"user_prompt"}`` /
+    ``{"assistant_summary"}``. With ``include_full=True`` a third
+    ``assistant_full`` surface (all the turn's assistant natural-language text)
+    trades noise for recall — off by default. Session / project / time / model /
+    tool-use become hard-filter fields.
+
+    The raw artifact is a turn-pair record (see
+    :func:`priv.claude_transcripts.turn_pair_records`): a mapping with
+    ``user_prompt`` / ``assistant_summary`` / ``assistant_full`` plus metadata.
+    """
+
+    def __init__(self, *, include_full: bool = False):
+        self.include_full = include_full
+
+    def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
+        meta = dict(metadata or {})
+        raw = raw if isinstance(raw, Mapping) else {}
+        user = str(raw.get("user_prompt", "") or "").strip()
+        summary = str(raw.get("assistant_summary", "") or "").strip()
+        full = str(raw.get("assistant_full", "") or "").strip()
+        title = str(raw.get("session_title", "") or "").strip()
+        filter_fields = {
+            "session_id": raw.get("session_id"),
+            "project": raw.get("project"),
+            "cwd": raw.get("cwd"),
+            "git_branch": raw.get("git_branch"),
+            "timestamp": raw.get("timestamp"),
+            "model": raw.get("model"),
+            "has_tool_use": bool(raw.get("has_tool_use")),
+            "session_title": raw.get("session_title"),
+            **meta,
+        }
+        surfaces = []
+        # A dedicated per-session title record indexes just the title (a cheap,
+        # searchable "what was this session about" surface).
+        if raw.get("record_type") == "session_title":
+            if title:
+                surfaces.append(
+                    Surface(artifact_id, "session_title", title, granularity="field")
+                )
+            return IndexPlan(filter_fields=filter_fields, surfaces=surfaces)
+        if user:
+            surfaces.append(
+                Surface(artifact_id, "user_prompt", user, granularity="field")
+            )
+        if summary:
+            surfaces.append(
+                Surface(
+                    artifact_id, "assistant_summary", summary, granularity="field"
+                )
+            )
+        if self.include_full and full and full != summary:
+            surfaces.append(
+                Surface(
+                    artifact_id, "assistant_full", full, granularity="document"
+                )
+            )
+        return IndexPlan(filter_fields=filter_fields, surfaces=surfaces)
+
+
+# Register the strategies defined after STRATEGY_REGISTRY's literal above.
+STRATEGY_REGISTRY["Package"] = Package
+STRATEGY_REGISTRY["ClaudeTurn"] = ClaudeTurn

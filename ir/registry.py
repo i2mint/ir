@@ -10,10 +10,11 @@ Presets map to :class:`~ir.sources.CorpusSource` constructors:
 - ``skills``   → :meth:`CorpusSource.from_skills`
 - ``packages`` → :meth:`CorpusSource.from_packages`
 - ``reports``  → :meth:`CorpusSource.from_md_reports`
+- ``sessions`` → :meth:`CorpusSource.from_claude_sessions`
 - ``files``    → :meth:`CorpusSource.from_files` (needs ``root``; optional
   ``pattern``)
 
-Unregistered preset names (``skills``/``packages``/``reports``) are
+Unregistered preset names (``skills``/``packages``/``reports``/``sessions``) are
 auto-registered with defaults on first use, so ``ir build skills`` just works.
 """
 
@@ -26,7 +27,7 @@ from typing import Any
 from .config import registry_path
 from .sources import CorpusSource
 
-PRESETS = ("skills", "packages", "reports")
+PRESETS = ("skills", "packages", "reports", "sessions")
 
 
 def _load() -> dict[str, Any]:
@@ -40,14 +41,58 @@ def _save(entries: dict[str, Any]) -> None:
     registry_path().write_text(json.dumps(entries, indent=2), encoding="utf-8")
 
 
-def register(name: str, kind: str, *, embedder: str = "default", **params) -> dict:
-    """Register (or overwrite) a named corpus definition."""
+def register(
+    name: str,
+    kind: str,
+    *,
+    embedder: str = "default",
+    strategy: Any = None,
+    maintenance: Mapping[str, Any] | None = None,
+    storage: Mapping[str, Any] | None = None,
+    **params,
+) -> dict:
+    """Register (or overwrite) a named corpus definition.
+
+    Beyond the v1 ``kind`` / ``embedder`` / ``params``, an entry may now carry
+    (all optional, with smart per-kind defaults applied at resolution time — see
+    :mod:`ir.policy`):
+
+    - ``strategy`` — an :class:`~ir.strategy.IndexingStrategy` (or a
+      ``{"name", "params"}`` spec) persisted so the corpus's *segmentation* is
+      stable across rebuilds. ``None`` keeps the preset's default strategy.
+    - ``maintenance`` — the background-work policy dict (``reindex`` / ``synopsis``;
+      validated here, see :class:`ir.policy.MaintenancePolicy`).
+    - ``storage`` — the persistence backend (default ``{"backend": "local"}``).
+
+    Entries written by older ``ir`` (none of these keys) keep working unchanged.
+    """
     if kind not in PRESETS and kind != "files":
         raise ValueError(
             f"Unknown corpus kind {kind!r}; use one of {PRESETS} or 'files'."
         )
+    from .policy import MaintenancePolicy, resolve_storage
+    from .strategy import IndexingStrategy, strategy_to_spec
+
+    entry: dict[str, Any] = {"kind": kind, "embedder": embedder, "params": params}
+    if strategy is not None:
+        if isinstance(strategy, Mapping):
+            entry["strategy"] = dict(strategy)
+        elif isinstance(strategy, IndexingStrategy):
+            entry["strategy"] = strategy_to_spec(strategy)
+        else:
+            raise TypeError(
+                f"strategy must be an IndexingStrategy or a spec dict, got "
+                f"{type(strategy).__name__}"
+            )
+    if maintenance is not None:
+        # Validate (raises on a bad trigger) and store the normalized form.
+        entry["maintenance"] = MaintenancePolicy.from_dict(dict(maintenance)).to_dict()
+    if storage is not None:
+        resolve_storage({"storage": dict(storage)})  # validate backend
+        entry["storage"] = dict(storage)
+
     entries = _load()
-    entries[name] = {"kind": kind, "embedder": embedder, "params": params}
+    entries[name] = entry
     _save(entries)
     return entries[name]
 
@@ -70,20 +115,51 @@ def unregister(name: str) -> None:
 
 
 def source_from_entry(name: str, entry: dict) -> CorpusSource:
-    """Reconstruct a :class:`CorpusSource` from a registry entry."""
+    """Reconstruct a :class:`CorpusSource` from a registry entry.
+
+    A persisted ``strategy`` spec (registry v2) is reconstructed and passed to
+    the preset constructor, so a corpus's segmentation survives across rebuilds.
+    A v1 entry (no ``strategy``) passes ``strategy=None`` and keeps the preset's
+    default — unchanged behavior.
+    """
+    from .strategy import strategy_from_spec
+
     kind = entry["kind"]
     params = dict(entry.get("params", {}))
     embedder = entry.get("embedder", "default")
+    strategy = strategy_from_spec(entry.get("strategy"))
     if kind == "skills":
-        return CorpusSource.from_skills(name=name, embedder=embedder)
+        return CorpusSource.from_skills(name=name, embedder=embedder, strategy=strategy)
     if kind == "packages":
-        return CorpusSource.from_packages(name=name, embedder=embedder)
+        return CorpusSource.from_packages(
+            name=name, embedder=embedder, strategy=strategy
+        )
     if kind == "reports":
-        return CorpusSource.from_md_reports(name=name, embedder=embedder)
+        return CorpusSource.from_md_reports(
+            name=name, embedder=embedder, strategy=strategy
+        )
+    if kind == "sessions":
+        return CorpusSource.from_claude_sessions(
+            name=name, embedder=embedder, strategy=strategy, **params
+        )
     if kind == "files":
         root = params.pop("root")
-        return CorpusSource.from_files(root, name=name, embedder=embedder, **params)
+        return CorpusSource.from_files(
+            root, name=name, embedder=embedder, strategy=strategy, **params
+        )
     raise ValueError(f"Unknown corpus kind {kind!r}.")
+
+
+def policy_for(name: str):
+    """The effective :class:`ir.policy.MaintenancePolicy` for corpus *name*.
+
+    Resolves the registered entry's ``maintenance`` over its kind's smart default
+    over the global default (see :func:`ir.policy.resolve_policy`). An unregistered
+    name resolves to the global default policy.
+    """
+    from .policy import resolve_policy
+
+    return resolve_policy(get(name))
 
 
 def source_for(name: str) -> CorpusSource:

@@ -444,7 +444,7 @@ def make_llm_selector(
     The model reads the candidates' descriptions and commits to a subset.
     ``chooser`` is an injectable ``(query, candidates) -> [id, …]`` callable
     (a test double, or your own router); when omitted it is built lazily on
-    :mod:`oa` (``oa.prompt_function``), so importing this module stays offline.
+    :mod:`aix` (``aix.prompt_func``), so importing this module stays offline.
 
     Robustness: any error or empty/garbled reply falls back to ``fallback``
     (default: the ``"conservative"`` heuristic), because LLM selection is known
@@ -490,13 +490,13 @@ def _conservative_selector() -> Selector:
 
 
 def _default_llm_chooser(prompt: str, **prompt_function_kwargs: Any):
-    """Build the default LLM chooser on :mod:`oa` (lazy import)."""
-    import oa
+    """Build the default LLM chooser on :mod:`aix` (lazy import)."""
+    import aix
 
     def _parse_ids(text: str) -> list[str]:
         return [line.strip(" -\t") for line in str(text).splitlines() if line.strip()]
 
-    fn = oa.prompt_function(
+    fn = aix.prompt_func(
         prompt, egress=_parse_ids, name="select_capabilities", **prompt_function_kwargs
     )
 
