@@ -45,7 +45,11 @@ class MaintenanceResult:
 
     def __str__(self) -> str:
         verb = "maintained" if self.ran else "skipped"
-        bits = [b for b, on in (("reindex", self.reindex), ("synopsis", self.synopsis)) if on]
+        bits = [
+            b
+            for b, on in (("reindex", self.reindex), ("synopsis", self.synopsis))
+            if on
+        ]
         what = "+".join(bits) or "-"
         recs = f", {self.records} records" if self.records is not None else ""
         return f"{self.name}: {verb} [{what}] ({self.reason}){recs}"

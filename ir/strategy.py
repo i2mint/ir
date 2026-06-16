@@ -344,15 +344,11 @@ class ClaudeTurn:
             )
         if summary:
             surfaces.append(
-                Surface(
-                    artifact_id, "assistant_summary", summary, granularity="field"
-                )
+                Surface(artifact_id, "assistant_summary", summary, granularity="field")
             )
         if self.include_full and full and full != summary:
             surfaces.append(
-                Surface(
-                    artifact_id, "assistant_full", full, granularity="document"
-                )
+                Surface(artifact_id, "assistant_full", full, granularity="document")
             )
         return IndexPlan(filter_fields=filter_fields, surfaces=surfaces)
 
