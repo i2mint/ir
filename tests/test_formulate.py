@@ -2,7 +2,7 @@
 
 Identity by default (search unchanged); a single rewrite redirects retrieval;
 multi-query fan-out unions+fuses; the LLM formulator is injectable and falls back
-to identity on any failure. Hermetic: the light embedder, no ``oa``.
+to identity on any failure. Hermetic: the light embedder, no ``aix``.
 """
 
 import ir
@@ -94,8 +94,8 @@ def test_make_llm_formulator_falls_back_on_empty_reply():
     assert make_llm_formulator(rewriter=lambda q: [])("deploy") == "deploy"
 
 
-def test_make_llm_formulator_with_injected_rewriter_needs_no_oa():
-    # The injected-rewriter path must not touch the lazy oa builder; a single-str
+def test_make_llm_formulator_with_injected_rewriter_needs_no_aix():
+    # The injected-rewriter path must not touch the lazy aix builder; a single-str
     # rewrite is normalized to a one-element list (a valid Formulator output).
     f = make_llm_formulator(rewriter=lambda q: q)
     assert f("anything") == ["anything"]

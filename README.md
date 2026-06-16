@@ -13,7 +13,8 @@ is the central selection risk — fewer, better candidates beat more), and
 import ir
 
 # Define a corpus, build the index (incremental), then discover:
-source = ir.CorpusSource.from_skills()       # or from_packages(), from_md_reports(), from_files(...)
+source = ir.CorpusSource.from_skills()       # or from_packages(), from_md_reports(),
+                                              # from_claude_sessions(), from_files(...)
 corpus = ir.build(source)                     # embed + persist under XDG dirs
 result = ir.discover(corpus, "how do I deploy the app to the server")
 
@@ -242,8 +243,11 @@ ir search skills "deploy the app"        # rank candidates (retrieval only)
 ir discover skills "deploy the app"      # retrieve -> select
 ir discover skills "deploy the app" --disclose       # + load bodies
 ir discover skills "deploy the app" --min-score auto # + calibrated abstention
+ir build sessions                        # index recent Claude Code sessions (turn pairs)
+ir search sessions "numpy abi error" --mode lexical   # find past sessions
 ir ls                                    # list corpora + record counts
-ir info skills                           # config, stats, calibrated floors
+ir info skills                           # config, stats, policy, calibrated floors
+ir maintain --all                        # run due background work (idempotent; cron-friendly)
 ir register notes files --root ~/notes --pattern '.*\.md$'  # register a custom corpus
 ir rm notes                              # unregister (keeps built data)
 ir eval-gen skills skills_eval.jsonl     # generate eval cases (needs oa/LLM)

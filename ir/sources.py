@@ -26,9 +26,19 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .strategy import Chunked, IndexingStrategy, Package, Skill, WholeText
+from .strategy import (
+    Chunked,
+    ClaudeTurn,
+    IndexingStrategy,
+    Package,
+    Skill,
+    WholeText,
+)
 
 ALLCAPS_MD = re.compile(r"^[A-Z0-9_ ]+\.md$")
+
+#: Default look-back window (days) for :meth:`CorpusSource.from_claude_sessions`.
+DFLT_SESSIONS_SINCE_DAYS = 90
 
 
 def content_hash_signal(artifact_id: str, raw: Any) -> str:
@@ -190,6 +200,67 @@ class CorpusSource:
             scope=scope,
             indexing_strategy=strategy or Skill(),
             metadata_of=metadata_of,
+            **kwargs,
+        )
+
+    @classmethod
+    def from_claude_sessions(
+        cls,
+        *,
+        name: str = "sessions",
+        since: float | None = DFLT_SESSIONS_SINCE_DAYS,
+        projects: Any = None,
+        include_full: bool = False,
+        include_session_title: bool = True,
+        max_sessions: int | None = None,
+        root: str | Path | None = None,
+        fetcher: Callable[[], list] | None = None,
+        strategy: IndexingStrategy | None = None,
+        **kwargs,
+    ) -> "CorpusSource":
+        """The user's Claude Code session transcripts as a corpus (turn pairs).
+
+        Each artifact is one user→assistant turn pair; the default
+        :class:`~ir.strategy.ClaudeTurn` strategy indexes the user prompt and the
+        assistant's end-of-turn summary as separate surfaces (target either with
+        ``surfaces={"user_prompt"}`` / ``{"assistant_summary"}``). ``include_full``
+        adds the full assistant text surface (off by default — the summary is the
+        signal). ``include_session_title`` (default on) also indexes one record per
+        session whose surface is the session's persisted custom/AI title — a cheap
+        "what was this session about" surface. Scope defaults to the last ``since``
+        days (a full-history build is heavy); narrow with ``projects`` (a cwd
+        substring or list) and ``max_sessions``.
+
+        ``fetcher`` overrides the record source (each a mapping with
+        ``user_prompt`` / ``assistant_summary`` / ... ) — inject a test double to
+        avoid the ``priv`` dependency. Otherwise records come from
+        :func:`priv.claude_transcripts.turn_pair_records`.
+        """
+        if fetcher is not None:
+            records = list(fetcher())
+        else:
+            from priv.claude_transcripts import turn_pair_records
+
+            records = list(
+                turn_pair_records(
+                    root=root,
+                    since=since,
+                    projects=projects,
+                    max_sessions=max_sessions,
+                    include_session_title=include_session_title,
+                )
+            )
+        # Collision-safe scope: ids are session_id:user_uuid (already unique); a
+        # rare missing id falls back to enumeration so no pair is silently dropped.
+        scope: dict[str, dict] = {}
+        for i, r in enumerate(records):
+            key = r.get("id") or f"turn_{i}"
+            scope[key] = r
+
+        return cls(
+            name=name,
+            scope=scope,
+            indexing_strategy=strategy or ClaudeTurn(include_full=include_full),
             **kwargs,
         )
 

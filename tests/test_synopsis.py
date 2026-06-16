@@ -10,7 +10,7 @@ Pins the #48 acceptance:
 - incremental rebuild re-synthesizes only changed artifacts, and a
   synthesizer-identity (or inner-strategy) change re-synthesizes — staleness via
   the ledger ``strategy_id`` and the recursive ``_strategy_id``.
-- offline import preserved: ``oa`` is lazy, an injected synthesizer never needs it.
+- offline import preserved: ``aix`` is lazy, an injected synthesizer never needs it.
 
 Hermetic: light embedder + memory store + injected synthesizers.
 """
@@ -187,7 +187,7 @@ def test_strategy_id_recurses_into_inner_strategy_and_synthesizer():
 
 
 # --------------------------------------------------------------------------- #
-# Offline: oa is lazy; an injected synthesizer never needs it
+# Offline: aix is lazy; an injected synthesizer never needs it
 # --------------------------------------------------------------------------- #
 
 
@@ -209,15 +209,15 @@ def test_make_llm_synthesizer_swallows_summarizer_errors():
 
 
 def test_default_synthesizer_constructs_offline_and_stamps_identity():
-    # No synthesize injected -> the lazy-oa default; constructing must not need oa,
-    # and an empty-text artifact short-circuits before the oa path is reached.
+    # No synthesize injected -> the lazy-aix default; constructing must not need
+    # aix, and an empty-text artifact short-circuits before the aix path is reached.
     strat = with_synopsis(ir.Chunked())
-    assert strat.synthesizer_id.startswith("oa:")
+    assert strat.synthesizer_id.startswith("aix:")
     assert strat.synthesize(Artifact("x", "")) == ""
     # a prompt change shifts the default identity (re-synthesis trigger)
     a = make_llm_synthesizer()
     b = make_llm_synthesizer(prompt="a very different prompt {text}")
-    assert a.synthesizer_id.startswith("oa:") and a.synthesizer_id != b.synthesizer_id
+    assert a.synthesizer_id.startswith("aix:") and a.synthesizer_id != b.synthesizer_id
 
 
 # --------------------------------------------------------------------------- #
@@ -313,25 +313,25 @@ def test_with_synopsis_package_prepends_synopsis_before_description_and_routes()
 
 
 def test_default_synthesizer_construction_is_lazy_and_offline(monkeypatch):
-    # Mutation-resistant offline guarantee: poison oa so any use raises, then
+    # Mutation-resistant offline guarantee: poison aix so any use raises, then
     # confirm constructing the default synthesizer (and the wrapper) and the
     # injected path never reach it. An eager-import regression would fail here.
     import sys
     import types
 
-    poison = types.ModuleType("oa")
+    poison = types.ModuleType("aix")
 
     def _boom(*a, **k):
-        raise AssertionError("oa.prompt_function reached on an offline path")
+        raise AssertionError("aix.prompt_func reached on an offline path")
 
-    poison.prompt_function = _boom
-    monkeypatch.setitem(sys.modules, "oa", poison)
+    poison.prompt_func = _boom
+    monkeypatch.setitem(sys.modules, "aix", poison)
 
     synth = make_llm_synthesizer()  # lazy: builds nothing yet
-    strat = with_synopsis(ir.Chunked())  # default synth: still no oa
-    assert synth(Artifact("x", "")) == ""  # empty text short-circuits the oa path
+    strat = with_synopsis(ir.Chunked())  # default synth: still no aix
+    assert synth(Artifact("x", "")) == ""  # empty text short-circuits the aix path
     assert strat.synthesize(Artifact("y", "")) == ""
-    # an injected summarizer is wholly oa-free even on non-empty text
+    # an injected summarizer is wholly aix-free even on non-empty text
     assert make_llm_synthesizer(summarize=lambda t: "S")(Artifact("z", "body")) == "S"
 
 

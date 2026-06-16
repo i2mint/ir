@@ -11,7 +11,7 @@ Commands operate on **named** corpora from the registry (see
     ir info packages                # config + stats for a corpus
     ir register notes files --root ~/notes --pattern '.*\\.md$'
     ir rm notes                     # unregister (keeps built data)
-    ir eval-gen skills skills_eval.jsonl --k 5        # generate cases (needs oa/LLM)
+    ir eval-gen skills skills_eval.jsonl --k 5        # generate cases (needs aix/LLM)
     ir eval skills skills_eval.jsonl --mode hybrid    # score retrieval on a case file
     ir eval-select skills skills_eval.jsonl           # score the selection stage
     ir sweep-select skills skills_eval.jsonl          # tune max_k/rel for the selector
@@ -63,14 +63,38 @@ def ls():
     return "\n".join(lines)
 
 
-def register(name, kind, *, root=None, pattern=None, embedder="default"):
-    """Register a named corpus. kind: skills | packages | reports | files."""
+def register(
+    name,
+    kind,
+    *,
+    root=None,
+    pattern=None,
+    embedder="default",
+    reindex_on=None,
+    every_hours=None,
+    synopsis=False,
+):
+    """Register a named corpus. kind: skills | packages | reports | files.
+
+    Background-work policy (optional; smart per-kind defaults otherwise — see
+    `ir.policy`): reindex_on (source-change | interval | manual), every_hours (for
+    interval), synopsis (enable LLM synopses, run only in the policy's downtime
+    window by `ir maintain`).
+    """
     params = {}
     if root:
         params["root"] = root
     if pattern:
         params["pattern"] = pattern
-    registry.register(name, kind, embedder=embedder, **params)
+    maintenance = None
+    if reindex_on or every_hours or synopsis:
+        reindex = {}
+        if every_hours:
+            reindex = {"on": "interval", "every_hours": float(every_hours)}
+        elif reindex_on:
+            reindex = {"on": reindex_on}
+        maintenance = {"reindex": reindex, "synopsis": {"enabled": bool(synopsis)}}
+    registry.register(name, kind, embedder=embedder, maintenance=maintenance, **params)
     return f"registered {name!r} (kind={kind}, embedder={embedder})"
 
 
@@ -158,16 +182,43 @@ def discover(
 
 
 def info(name):
-    """Show a corpus's stored config, stats, and any calibrated abstention floors."""
+    """Show a corpus's stored config, stats, policy, and any abstention floors."""
     corpus = open_corpus(name)
     cfg = corpus.store.get_config()
     reg = registry.get(name)
     calibrated = corpus.store.calibration_modes()
     floors = {m: corpus.store.get_calibration(m).get("min_score") for m in calibrated}
     cal = f"\nmin_score floors: {floors}" if floors else ""
-    return (
-        f"name: {name}\nregistered: {reg}\nrecords: {len(corpus)}\nconfig: {cfg}{cal}"
+    pol = registry.policy_for(name)
+    state = corpus.store.get_maintenance_state()
+    last = state.get("last_maintained", "never")
+    syn = pol.synopsis
+    syn_str = f"enabled, scope={syn.scope}/{syn.window_days}d" if syn.enabled else "off"
+    window = f", downtime={syn.downtime_hours}" if syn.downtime_hours else ""
+    policy_str = (
+        f"\npolicy: reindex={pol.reindex.on}"
+        + (f"/{pol.reindex.every_hours}h" if pol.reindex.every_hours else "")
+        + f", synopsis={syn_str}{window}\nlast maintained: {last}"
     )
+    return (
+        f"name: {name}\nregistered: {reg}\nrecords: {len(corpus)}\n"
+        f"config: {cfg}{policy_str}{cal}"
+    )
+
+
+def maintain(name=None, *, all=False, dry_run=False):
+    """Run due background work: incremental reindex, synopsis in its downtime window.
+
+    With a name, maintains that corpus; with --all (or no name), every registered
+    corpus. Idempotent and safe to schedule (cron/launchd): it no-ops what is not
+    due. --dry-run reports what would run without doing it.
+    """
+    from .maintenance import maintain as _maintain
+
+    results = _maintain(name=name, all=all, dry_run=dry_run)
+    if not results:
+        return "no corpora registered"
+    return "\n".join(str(r) for r in results)
 
 
 def rm(name):
@@ -202,12 +253,12 @@ def eval(name, cases, *, mode="hybrid", k=10):
 
 
 def eval_gen(name, out, *, k=5, abstention_frac=0.15, max_artifacts=None):
-    """Generate an eval-case file for a corpus by back-translation (needs oa/LLM).
+    """Generate an eval-case file for a corpus by back-translation (needs aix/LLM).
 
     Writes a DiscoveryCase JSONL set (gold cases + an abstention slice) for the
     registered corpus *name* to *out*, stamping a corpus-signature into the
     header so the frozen file can be checked against the live corpus later. This
-    command calls an LLM via oa; scoring it afterwards (`ir eval`) is offline.
+    command calls an LLM via aix; scoring it afterwards (`ir eval`) is offline.
     """
     from .eval import save_cases
     from .eval_gen import build_eval_set, corpus_signature
@@ -375,6 +426,7 @@ COMMANDS = [
     search,
     discover,
     info,
+    maintain,
     rm,
     eval,
     eval_gen,

@@ -73,6 +73,37 @@ def _embed_batched(emb, texts, input_type, batch_size):
     return np.vstack(out) if out else np.zeros((0, 0), dtype=np.float32)
 
 
+class _LazyEmbedder:
+    """An embedder callable that resolves its model on first *call*, not first use.
+
+    :func:`open_corpus` binds this as a :class:`Corpus`'s ``embedder`` so the
+    (heavy, ~seconds) embedding-model load is paid only when a query is actually
+    embedded — ``ls`` / ``info`` and lexical-only search, which never embed,
+    never trigger it. The corpus's ``embedder_id`` is read from stored config, so
+    it is known without resolving the model. Transparent: it forwards ``__call__``
+    (including ``input_type=``) to the resolved embedder, so every existing call
+    site (``_embed`` and its ``TypeError`` fallback) works unchanged.
+    """
+
+    def __init__(self, spec: Any):
+        self._spec = spec
+        self._resolved: Callable | None = None
+        self._resolved_id: str | None = None
+
+    def _resolve(self) -> Callable:
+        if self._resolved is None:
+            self._resolved, self._resolved_id = make_embedder(self._spec)
+        return self._resolved
+
+    def __call__(self, texts, **kwargs):
+        return self._resolve()(texts, **kwargs)
+
+    @property
+    def embedder_id(self) -> str:
+        self._resolve()
+        return self._resolved_id or "custom"
+
+
 @dataclass
 class Corpus:
     """A built, queryable corpus: a store plus its embedder."""
@@ -222,9 +253,16 @@ def build(
 
 
 def open_corpus(name: str, *, embedder: Any = None) -> Corpus:
-    """Reopen a previously built corpus by name (resolves its embedder)."""
+    """Reopen a previously built corpus by name.
+
+    The embedding model is **lazily** resolved (see :class:`_LazyEmbedder`): the
+    returned corpus knows its ``embedder_id`` from stored config immediately, but
+    only loads the model when a dense/hybrid query actually embeds. So ``ir ls``,
+    ``ir info``, and lexical-only search open a corpus without the model-load
+    cost. Pass ``embedder=`` to override the stored spec.
+    """
     store = CorpusStore.local(name)
     cfg = store.get_config()
     spec = embedder if embedder is not None else cfg.get("embedder_spec", "default")
-    emb, emb_id = make_embedder(spec)
-    return Corpus(name, store, emb, cfg.get("embedder_id", emb_id))
+    emb_id = cfg.get("embedder_id") or ""
+    return Corpus(name, store, _LazyEmbedder(spec), emb_id)

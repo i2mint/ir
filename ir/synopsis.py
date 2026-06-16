@@ -19,9 +19,10 @@ synopsis, not the terse ``description``, routes). An empty synopsis is dropped, 
 a synth that returns ``""`` simply leaves the artifact with its other surfaces.
 
 ``synthesize: Callable[[Artifact], str]`` is **injectable** (a test double, or
-your own summarizer); omitted, it is built lazily on :mod:`oa` via
-:func:`make_llm_synthesizer` (the ``make_llm_*`` idiom — ``import ir`` stays
-offline, ``oa`` is imported only on the first synthesis).
+your own summarizer); omitted, it is built lazily on :mod:`aix` (the
+multi-provider LLM facade) via :func:`make_llm_synthesizer` (the ``make_llm_*``
+idiom — ``import ir`` stays offline, ``aix`` is imported only on the first
+synthesis).
 
 **Staleness.** The wrapper exposes its identity as scalar attributes
 (``synthesizer_id``, ``synopsis_kind``) and holds the inner strategy, so
@@ -79,13 +80,13 @@ def _prompt_hash(prompt: str) -> str:
 def _default_llm_summarizer(
     prompt: str, model: str | None, **prompt_function_kwargs: Any
 ):
-    """Build the default text→synopsis summarizer on :mod:`oa` (lazy import)."""
-    import oa
+    """Build the default text→synopsis summarizer on :mod:`aix` (lazy import)."""
+    import aix
 
     kwargs = dict(prompt_function_kwargs)
     if model is not None:
         kwargs.setdefault("model", model)
-    fn = oa.prompt_function(prompt, name="synthesize_synopsis", **kwargs)
+    fn = aix.prompt_func(prompt, name="synthesize_synopsis", **kwargs)
 
     def summarize(text: str) -> str:
         return str(fn(text=text) or "").strip()
@@ -105,8 +106,8 @@ def make_llm_synthesizer(
     """An LLM-backed :data:`Synthesizer` (:class:`~ir.base.Artifact` → synopsis).
 
     ``summarize`` is an injectable ``text -> str`` callable (a test double, or
-    your own summarizer); when omitted it is built lazily on :mod:`oa`
-    (``oa.prompt_function``) on the **first** synthesis and reused — so importing
+    your own summarizer); when omitted it is built lazily on :mod:`aix`
+    (``aix.prompt_func``) on the **first** synthesis and reused — so importing
     this module, and even constructing the synthesizer, stays offline. The
     artifact's text is extracted with :func:`ir.strategy.text_of` using
     ``text_key`` — which :func:`with_synopsis` threads from the inner strategy, so
@@ -115,7 +116,7 @@ def make_llm_synthesizer(
     fabricated summary).
 
     The returned callable carries a ``synthesizer_id`` attribute (default
-    ``"oa:{model}:{sha(prompt)[:12]}"``) that :func:`with_synopsis` reads into the
+    ``"aix:{model}:{sha(prompt)[:12]}"``) that :func:`with_synopsis` reads into the
     corpus's ``strategy_id`` for staleness — a prompt or model change re-synthesizes.
     """
     cache: dict[str, Callable[[str], str]] = {}
@@ -140,7 +141,7 @@ def make_llm_synthesizer(
         return out.strip() if isinstance(out, str) else ""
 
     synthesize.synthesizer_id = (
-        synthesizer_id or f"oa:{model or 'default'}:{_prompt_hash(prompt)}"
+        synthesizer_id or f"aix:{model or 'default'}:{_prompt_hash(prompt)}"
     )
     return synthesize
 
@@ -229,7 +230,7 @@ def with_synopsis(
         strategy: the inner :class:`~ir.strategy.IndexingStrategy` (``Chunked``,
             ``Package``, ...). Its surfaces are kept; the synopsis is prepended.
         synthesize: an injectable ``Artifact -> str`` (test double / custom
-            summarizer). Omitted → :func:`make_llm_synthesizer` (lazy ``oa``).
+            summarizer). Omitted → :func:`make_llm_synthesizer` (lazy ``aix``).
         synthesizer_id: explicit identity stamp for staleness (recommended when
             injecting an unnamed callable / lambda). Omitted → the synthesizer's
             own ``synthesizer_id`` / ``__qualname__``.

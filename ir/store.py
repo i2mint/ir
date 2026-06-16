@@ -30,13 +30,19 @@ from __future__ import annotations
 
 import copy
 import io
+import json
 import os
 from collections.abc import Iterator, Mapping, MutableMapping
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from .base import Record
+
+#: Bump when the on-disk packed-matrix layout changes so a stale cache from an
+#: older ``ir`` is treated as invalid (rebuilt) rather than mis-read.
+_PACKED_FORMAT = 1
 
 
 def _ndarray_store(rootdir) -> MutableMapping[str, np.ndarray]:
@@ -78,6 +84,8 @@ class CorpusStore:
         config: MutableMapping[str, Any],
         calibration: MutableMapping[str, Any] | None = None,
         links: MutableMapping[str, Any] | None = None,
+        *,
+        packed_dir: str | Path | None = None,
     ):
         self.meta = meta
         self.vectors = vectors
@@ -89,6 +97,13 @@ class CorpusStore:
         self.calibration = {} if calibration is None else calibration
         self.links = {} if links is None else links
         self._matrix_cache: tuple | None = None
+        # Optional on-disk packed-matrix cache (a single normalized matrix + its
+        # ids/metas as three files), so reopening a corpus skips the per-record
+        # vector-file storm. ``None`` (e.g. for the in-memory store) keeps the
+        # matrix purely in-process, preserving the original behavior. The cache
+        # is a *write-invalidated read cache*: any record write clears it.
+        self._packed_dir = Path(packed_dir) if packed_dir is not None else None
+        self._packed_stale = False
 
     # ----- factories ------------------------------------------------------ #
 
@@ -105,6 +120,7 @@ class CorpusStore:
             config=_json_store(root / "config"),
             calibration=_json_store(root / "calibration"),
             links=_json_store(root / "links"),
+            packed_dir=root / "matrix",
         )
 
     @classmethod
@@ -124,7 +140,7 @@ class CorpusStore:
             "metadata": dict(record.metadata),
         }
         self.vectors[record.id] = np.asarray(record.vector, dtype=np.float32)
-        self._matrix_cache = None
+        self._invalidate_matrix()
 
     def delete_record(self, record_id: str) -> None:
         """Remove a record's metadata + vector; a missing id is tolerated."""
@@ -133,7 +149,7 @@ class CorpusStore:
             del self.vectors[record_id]
         except KeyError:
             pass
-        self._matrix_cache = None
+        self._invalidate_matrix()
 
     def record_ids(self) -> Iterator[str]:
         """Iterate the record ids currently stored."""
@@ -184,6 +200,19 @@ class CorpusStore:
     def set_config(self, settings: Mapping[str, Any]) -> None:
         """Persist the corpus build *settings* (name / embedder spec + id)."""
         self.config["config"] = dict(settings)
+
+    def get_maintenance_state(self) -> dict:
+        """Background-work bookkeeping (e.g. ``last_maintained``); ``{}`` if unset.
+
+        Kept under a separate ``config``-view key from the build settings: it is
+        regenerable scheduler state (when ``ir maintain`` last ran), not part of
+        the corpus's build identity, so it must never clobber it.
+        """
+        return dict(self.config.get("maintenance", {}))
+
+    def set_maintenance_state(self, state: Mapping[str, Any]) -> None:
+        """Persist the maintenance bookkeeping for this corpus."""
+        self.config["maintenance"] = dict(state)
 
     # ----- calibration (per-mode) ----------------------------------------- #
 
@@ -251,19 +280,144 @@ class CorpusStore:
         """Return ``(record_ids, normalized_matrix, metas)`` for brute force.
 
         Rows are L2-normalized so cosine similarity is a dot product. Empty
-        corpora return a ``(0, 0)`` matrix. Cached until the next write.
+        corpora return a ``(0, 0)`` matrix.
+
+        Caching is two-tier: an in-process cache (invalidated on the next write)
+        backed, for file-rooted stores, by an on-disk **packed** cache — one
+        normalized-matrix ``.npy`` plus its ids/metas, written once and reloaded
+        with a single memory-mapped read. The packed cache turns a cold reopen
+        from a per-record vector-file storm (thousands of tiny reads) into three
+        file reads; it is cleared by any record write, so it never goes stale.
         """
         if self._matrix_cache is not None:
             return self._matrix_cache
+        packed = self._load_packed()
+        if packed is not None:
+            self._matrix_cache = packed
+            return packed
+        result = self._build_matrix()
+        self._save_packed(result)
+        self._matrix_cache = result
+        return result
+
+    def metas(self) -> tuple[list[str], list[dict]]:
+        """Return ``(record_ids, metas)`` **without** loading any vectors.
+
+        The vector-free counterpart of :meth:`matrix`, for ranking modes that
+        score on text alone (``mode="lexical"``): they need candidate metadata
+        (text + filter fields) but never the embedding matrix, so they must not
+        pay its I/O. Reuses the in-process or packed cache when present; else
+        reads only the ``meta`` view (not ``vectors``).
+        """
+        if self._matrix_cache is not None:
+            ids, _mat, metas = self._matrix_cache
+            return ids, metas
+        packed = self._load_packed()
+        if packed is not None:
+            self._matrix_cache = packed
+            return packed[0], packed[2]
+        ids = list(self.meta)
+        metas = [self.meta[rid] for rid in ids]
+        return ids, metas
+
+    def _build_matrix(self) -> tuple[list[str], np.ndarray, list[dict]]:
+        """Build ``(ids, normalized_matrix, metas)`` from the per-record stores.
+
+        One pass over the ids reads each record's meta and vector together
+        (the previous implementation iterated the meta view three times).
+        """
         ids = list(self.meta)
         if not ids:
-            self._matrix_cache = ([], np.zeros((0, 0), dtype=np.float32), [])
-            return self._matrix_cache
-        rows = [np.asarray(self.vectors[rid], dtype=np.float32) for rid in ids]
+            return ([], np.zeros((0, 0), dtype=np.float32), [])
+        metas: list[dict] = []
+        rows: list[np.ndarray] = []
+        for rid in ids:
+            metas.append(self.meta[rid])
+            rows.append(np.asarray(self.vectors[rid], dtype=np.float32))
         mat = np.vstack(rows)
         norms = np.linalg.norm(mat, axis=1, keepdims=True)
         norms[norms == 0] = 1.0
         mat = mat / norms
-        metas = [self.meta[rid] for rid in ids]
-        self._matrix_cache = (ids, mat, metas)
-        return self._matrix_cache
+        return (ids, mat, metas)
+
+    # ----- packed-matrix disk cache --------------------------------------- #
+
+    def _invalidate_matrix(self) -> None:
+        """Drop the in-process matrix and clear the on-disk packed cache once.
+
+        Called on every record write. The on-disk clear happens at most once per
+        rebuild (guarded by ``_packed_stale``) so a bulk build's thousands of
+        ``put_record`` calls don't each touch the filesystem.
+        """
+        self._matrix_cache = None
+        if self._packed_dir is not None and not self._packed_stale:
+            self._clear_packed()
+            self._packed_stale = True
+
+    def _packed_paths(self):
+        d = self._packed_dir
+        # ``sig`` is written last and removed first, so a half-written or
+        # half-cleared cache (no/sig-less dir) always reads as invalid.
+        return {
+            "sig": d / "sig.json",
+            "matrix": d / "matrix.npy",
+            "ids": d / "ids.json",
+            "metas": d / "metas.json",
+        }
+
+    def _clear_packed(self) -> None:
+        if self._packed_dir is None:
+            return
+        paths = self._packed_paths()
+        for key in ("sig", "matrix", "ids", "metas"):  # sig first
+            try:
+                paths[key].unlink()
+            except OSError:
+                pass
+
+    def _load_packed(self):
+        """Load ``(ids, mmap_matrix, metas)`` from the packed cache, or ``None``."""
+        if self._packed_dir is None:
+            return None
+        paths = self._packed_paths()
+        if not paths["sig"].exists():
+            return None
+        try:
+            sig = json.loads(paths["sig"].read_text(encoding="utf-8"))
+            if sig.get("format") != _PACKED_FORMAT:
+                return None
+            mat = np.load(paths["matrix"], mmap_mode="r")
+            ids = json.loads(paths["ids"].read_text(encoding="utf-8"))
+            metas = json.loads(paths["metas"].read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        if len(ids) != mat.shape[0] or len(metas) != len(ids):
+            return None
+        return (ids, mat, metas)
+
+    def _save_packed(self, result: tuple[list[str], np.ndarray, list[dict]]) -> None:
+        """Persist a freshly built matrix to the packed cache (best-effort).
+
+        Skips empty corpora. Writes ``sig.json`` last so a crash mid-write
+        leaves the cache marked invalid (no sig) rather than torn.
+        """
+        if self._packed_dir is None:
+            return
+        ids, mat, metas = result
+        if not ids:
+            return
+        try:
+            self._packed_dir.mkdir(parents=True, exist_ok=True)
+            paths = self._packed_paths()
+            np.save(paths["matrix"], np.asarray(mat, dtype=np.float32))
+            paths["ids"].write_text(json.dumps(ids), encoding="utf-8")
+            paths["metas"].write_text(json.dumps(metas), encoding="utf-8")
+            paths["sig"].write_text(
+                json.dumps({"format": _PACKED_FORMAT, "count": len(ids)}),
+                encoding="utf-8",
+            )
+            self._packed_stale = False
+        except OSError:
+            # A read cache that can't be written is non-fatal: fall back to the
+            # in-process cache (already set by the caller) for this process.
+            self._clear_packed()

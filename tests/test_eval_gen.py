@@ -2,7 +2,7 @@
 
 The LLM is injected (`query_generator` / `abstention_generator`), so masking, the
 leakage guard, gold assignment, the abstention fraction, and end-to-end
-scorability are all tested without `oa` or a model.
+scorability are all tested without `aix` or a model.
 """
 
 import warnings
@@ -372,31 +372,37 @@ def test_build_eval_set_forwards_mask_names_false():
 
 
 # --------------------------------------------------------------------------- #
-# Default oa-backed generators — prompt assembly (skipped if oa absent)
+# Default aix-backed generators — prompt assembly + egress wiring
+# (mock aix's chat so no LLM/network is touched; skipped if aix absent)
 # --------------------------------------------------------------------------- #
 
 
-def test_oa_prompts_substitute_placeholders():
-    oa = pytest.importorskip("oa")
-    # prompt-only (prompt_func=None): assert on the ASSEMBLED PROMPT, not the
-    # generate() wrapper (which, with prompt_func=None, would iterate the string).
-    bt = oa.prompt_function(eg.BACKTRANSLATION_PROMPT, name="bt", prompt_func=None)
-    prompt = bt(description="DESC_MARKER", n=4)
-    assert "DESC_MARKER" in prompt and "Write 4 natural" in prompt
-    ab = oa.prompt_function(eg.ABSTENTION_PROMPT, name="ab", prompt_func=None)
-    assert "THEME_MARKER" in ab(theme="THEME_MARKER", n=2)
+def test_default_generator_prompts_substitute_placeholders(monkeypatch):
+    aix_prompts = pytest.importorskip("aix.prompts")
+    captured = {}
+
+    def fake_chat(prompt, **kwargs):
+        captured["prompt"] = prompt
+        return "q1\nq2\nq3\nq4"
+
+    monkeypatch.setattr(aix_prompts, "chat", fake_chat)
+    gen = eg.make_default_query_generator()
+    out = gen("DESC_MARKER", n=4)
+    assert "DESC_MARKER" in captured["prompt"] and "Write 4 natural" in captured["prompt"]
+    assert out == ["q1", "q2", "q3", "q4"]
+
+    monkeypatch.setattr(aix_prompts, "chat", lambda p, **k: captured.update(prompt=p) or "t")
+    eg.make_default_abstention_generator()(n=2, theme="THEME_MARKER")
+    assert "THEME_MARKER" in captured["prompt"]
 
 
-def test_parse_lines_is_wired_as_egress():
-    oa = pytest.importorskip("oa")
-
-    def fake_llm(*args, **kwargs):
-        return "1. foo\n- bar"
-
-    fn = oa.prompt_function(
-        "x {description} {n}", egress=eg._parse_lines, prompt_func=fake_llm
-    )
-    assert fn(description="d", n=2) == ["foo", "bar"]
+def test_parse_lines_is_wired_as_egress(monkeypatch):
+    aix_prompts = pytest.importorskip("aix.prompts")
+    # The default generator's egress (_parse_lines) strips list markers like
+    # "1. " / "- " from the LLM text.
+    monkeypatch.setattr(aix_prompts, "chat", lambda p, **k: "1. foo\n- bar")
+    gen = eg.make_default_query_generator()
+    assert gen("d", n=2) == ["foo", "bar"]
 
 
 # --------------------------------------------------------------------------- #

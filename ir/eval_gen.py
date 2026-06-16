@@ -19,9 +19,9 @@ Two ideas make the generated set honest:
 The LLM is **injected** (`query_generator` / `abstention_generator` callables),
 so the generation *logic* — masking, gold assignment, the leakage guard, the
 abstention fraction — is fully testable with a deterministic stub and no network.
-The default generators are built lazily on :mod:`oa` (`oa.prompt_function`), so
-``import ir.eval_gen`` stays cheap and offline; ``oa`` is only imported when you
-actually generate with the real LLM.
+The default generators are built lazily on :mod:`aix` (`aix.prompt_func`, the
+multi-provider LLM facade), so ``import ir.eval_gen`` stays cheap and offline;
+``aix`` is only imported when you actually generate with the real LLM.
 
 The output is plain :class:`~ir.eval.DiscoveryCase` data — freeze it with
 :func:`ir.eval.save_cases` (stamping :func:`corpus_signature` into the
@@ -34,7 +34,7 @@ Quick start::
     from ir import eval_gen as eg
 
     source = ir.CorpusSource.from_skills()
-    cases = eg.build_eval_set(source, k=5, corpus_name="skills")   # uses oa
+    cases = eg.build_eval_set(source, k=5, corpus_name="skills")   # uses aix
     from ir.eval import save_cases
     save_cases(cases, "skills_eval.jsonl",
                meta={"corpus": "skills", "corpus_signature": eg.corpus_signature(source)})
@@ -173,7 +173,7 @@ def _leaks_name(text: str, name: str) -> bool:
 
 
 # =========================================================================== #
-# Default (oa-backed) generators — lazily built, only when actually used
+# Default (aix-backed) generators — lazily built, only when actually used
 # =========================================================================== #
 
 
@@ -199,13 +199,13 @@ def _parse_lines(text: Any) -> list[str]:
     return lines
 
 
-def make_oa_query_generator(
+def make_default_query_generator(
     *, prompt: str = BACKTRANSLATION_PROMPT, **prompt_function_kwargs: Any
 ) -> QueryGenerator:
-    """Build the default back-translation generator on :mod:`oa` (lazy import)."""
-    import oa
+    """Build the default back-translation generator on :mod:`aix` (lazy import)."""
+    import aix
 
-    fn = oa.prompt_function(
+    fn = aix.prompt_func(
         prompt, egress=_parse_lines, name="backtranslate", **prompt_function_kwargs
     )
 
@@ -215,13 +215,13 @@ def make_oa_query_generator(
     return generate
 
 
-def make_oa_abstention_generator(
+def make_default_abstention_generator(
     *, prompt: str = ABSTENTION_PROMPT, **prompt_function_kwargs: Any
 ) -> AbstentionGenerator:
-    """Build the default abstention generator on :mod:`oa` (lazy import)."""
-    import oa
+    """Build the default abstention generator on :mod:`aix` (lazy import)."""
+    import aix
 
-    fn = oa.prompt_function(
+    fn = aix.prompt_func(
         prompt, egress=_parse_lines, name="abstention", **prompt_function_kwargs
     )
 
@@ -287,7 +287,7 @@ def generate_cases(
         mask_names: scrub the artifact name from the description before
             generating, and drop any generated intent that still contains it.
         query_generator: ``(description, *, n) -> [intent, …]``. Defaults to the
-            :mod:`oa`-backed back-translator (built lazily; needs a model).
+            :mod:`aix`-backed back-translator (built lazily; needs a model).
         describe: ``raw -> description`` (default: the ``description`` / ``text``
             field, else the joined string fields).
         min_chars: skip artifacts whose description is shorter than this.
@@ -304,7 +304,7 @@ def generate_cases(
     """
     if k < 1:
         raise ValueError(f"k must be >= 1, got {k!r}.")
-    gen = query_generator or make_oa_query_generator()
+    gen = query_generator or make_default_query_generator()
     describe = describe or _default_describe
     cases: list[DiscoveryCase] = []
     skipped = 0
@@ -368,7 +368,7 @@ def generate_abstention_cases(
     """Generate ``n`` abstention cases — out-of-scope intents (empty ``gold``)."""
     if n <= 0:
         return []
-    gen = generator or make_oa_abstention_generator()
+    gen = generator or make_default_abstention_generator()
     intents = gen(n=n, theme=theme)
     cases = [
         DiscoveryCase(
