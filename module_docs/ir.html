@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.23 documentation</title>
+  <title>ir &mdash; ir 0.1.24 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=20522496"></script>
+      <script src="../_static/documentation_options.js?v=ebdbb45b"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -791,10 +791,21 @@ conforming adapter from an arbitrary object, but it cannot validate that
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ir.Package">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">Package</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">200</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/strategy.html#Package"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.Package" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">Package</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embed_deps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deps_template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/strategy.html#Package"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.Package" title="Link to this definition"></a></dt>
 <dd><p>Package strategy: <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">+</span> <span class="pre">description</span></code> surface plus README chunks.</p>
 <p>Filter fields capture ownership (ours vs third-party), name, deps. AI
 synopsis / problem-class surfaces are a documented extension point.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">embed_deps=True</span></code>, <code class="docutils literal notranslate"><span class="pre">decompose</span></code> additionally emits one
+<code class="docutils literal notranslate"><span class="pre">Surface(kind=&quot;deps&quot;,</span> <span class="pre">granularity=&quot;field&quot;)</span></code> whose text is a prefix-form
+serialization of the <strong>bare</strong> dependency names (<code class="docutils literal notranslate"><span class="pre">deps_template</span></code>, default
+<code class="xref py py-func docutils literal notranslate"><span class="pre">_default_deps_text()</span></code>) — so a query for a domain matches a package by the
+libraries it depends on (e.g. <code class="docutils literal notranslate"><span class="pre">sentence-transformers</span></code> -&gt; embeddings,
+<code class="docutils literal notranslate"><span class="pre">networkx</span></code> -&gt; graphs), and the BM25 leg picks up exact dep-token matches. The
+deps bag is kept <strong>separate from prose</strong> (its own surface) so a rare library
+name is not diluted, and deps remain a filter field regardless. <code class="docutils literal notranslate"><span class="pre">embed_deps</span></code>
+defaults <code class="docutils literal notranslate"><span class="pre">False</span></code> (today’s behavior); it folds into the strategy id, so
+toggling it re-decomposes incrementally. The deps surface is appended <strong>last</strong>,
+leaving the <code class="docutils literal notranslate"><span class="pre">description</span></code> (position 0) and <code class="docutils literal notranslate"><span class="pre">readme_chunk</span></code> indices unchanged.</p>
 <p>Surface indexing: the <code class="docutils literal notranslate"><span class="pre">description</span></code> surface (kept whenever <em>name</em> or
 <em>description</em> is non-empty) occupies plan position 0, so <code class="docutils literal notranslate"><span class="pre">readme_chunk</span></code>
 <em>j</em> is stored with
