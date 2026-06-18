@@ -1762,3 +1762,588 @@ def _pick_floor(grid: Sequence[dict], sensitivity_weight: float) -> dict:
         return w * g["sensitivity"] + (1.0 - w) * g["specificity"]
 
     return max(grid, key=lambda g: (objective(g), g["min_score"]))
+
+
+# =========================================================================== #
+# Package-relevance graded harness (issue #66 / tracking #61)
+#
+# A graded, named-diagnostic scoreboard for topical-relevance runs. Where a
+# DiscoveryCase is (query -> gold ids) with a flat-binary gold, here the unit is
+# one *artifact* carrying a graded level per theme, so graded gains reach nDCG
+# and a *named distractor* / *hard-positive* set can be regression-checked. It is
+# the shared, offline, model-free measurement contract that both ef model
+# bake-offs and the raglab labeling recipe score against.
+# =========================================================================== #
+
+#: Graded relevance levels for the package-relevance harness, weakest -> strongest.
+#: The SSOT consumed by :data:`LEVEL_GAINS`, :class:`PackageRelevanceCase`, and
+#: :func:`to_graded_qrels`.
+RELEVANCE_LEVELS = ("none", "tangential", "uses-tools", "strong", "core")
+
+#: Graded relevance gains per level — fed straight to ``ef.evaluation``'s graded
+#: nDCG. ``uses-tools`` is a *weak* positive (a package that merely uses the
+#: relevant tooling); ``tangential``/``none`` are non-relevant (gain ``0``). These
+#: gains are the knob that lets nDCG rank a core-first ordering strictly above a
+#: uses-tools-first one at identical recall.
+LEVEL_GAINS = {
+    "none": 0.0,
+    "tangential": 0.0,
+    "uses-tools": 1.0,
+    "strong": 2.0,
+    "core": 3.0,
+}
+
+
+@dataclass(frozen=True)
+class PackageRelevanceCase:
+    """One artifact's graded relevance to one or more themes.
+
+    Unlike :class:`DiscoveryCase` (one query -> gold ids, flat-binary gold), a
+    case here is one **artifact** carrying its graded label per theme. The
+    per-theme *probe text* (the query each theme is scored with) is **not** on the
+    case — it lives in the JSONL ``__meta__`` header (see
+    :func:`save_package_cases`), alongside the corpus signature
+    (:func:`ir.eval_gen.corpus_signature`), so a frozen label set pins to the
+    corpus snapshot it was judged against.
+
+    Attributes:
+        artifact_id: the package id (matches the corpus' ``artifact_id``).
+        labels: ``{theme: level}`` with each level in :data:`RELEVANCE_LEVELS`.
+        evidence: ``{theme: short reason}`` — the human-auditable *why*.
+        observed: ``{theme: score}`` the ranking gave this artifact in the frozen
+            run (optional; used to *derive* the named distractor set).
+        thin_description: True when the package had an empty/near-empty pyproject
+            description (used to derive the hard-positive set).
+        is_distractor: optional cached ``{theme: bool}``; when absent it is
+            derived (see :func:`derive_named_sets`).
+        metadata: free-form per-case metadata.
+    """
+
+    artifact_id: str
+    labels: Mapping[str, str] = field(default_factory=dict)
+    evidence: Mapping[str, str] = field(default_factory=dict)
+    observed: Mapping[str, float] = field(default_factory=dict)
+    thin_description: bool = False
+    is_distractor: Mapping[str, bool] = field(default_factory=dict)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def level(self, theme: str) -> str:
+        """This artifact's graded level for ``theme`` (``"none"`` if unlabeled)."""
+        return self.labels.get(theme, "none")
+
+    def gain(self, theme: str, *, gains: Mapping[str, float] = LEVEL_GAINS) -> float:
+        """The graded gain for ``theme`` under ``gains`` (default :data:`LEVEL_GAINS`).
+
+        A level missing from ``gains`` (e.g. a partial caller-supplied mapping)
+        defaults to ``0.0`` — the non-relevant convention — rather than raising.
+        """
+        return float(gains.get(self.level(theme), 0.0))
+
+    def to_dict(self) -> dict:
+        """JSON-serializable form (omitting empty optional fields)."""
+        out: dict[str, Any] = {
+            "artifact_id": self.artifact_id,
+            "labels": dict(self.labels),
+        }
+        if self.evidence:
+            out["evidence"] = dict(self.evidence)
+        if self.observed:
+            out["observed"] = {k: float(v) for k, v in self.observed.items()}
+        if self.thin_description:
+            out["thin_description"] = True
+        if self.is_distractor:
+            out["is_distractor"] = dict(self.is_distractor)
+        if self.metadata:
+            out["metadata"] = dict(self.metadata)
+        return out
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "PackageRelevanceCase":
+        """Inverse of :meth:`to_dict`; rejects any level outside :data:`RELEVANCE_LEVELS`."""
+        labels = dict(d.get("labels") or {})
+        bad = {t: lv for t, lv in labels.items() if lv not in RELEVANCE_LEVELS}
+        if bad:
+            raise ValueError(
+                f"unknown relevance level(s) {bad}; "
+                f"expected one of {RELEVANCE_LEVELS}"
+            )
+        return cls(
+            artifact_id=d["artifact_id"],
+            labels=labels,
+            evidence=dict(d.get("evidence") or {}),
+            observed={k: float(v) for k, v in (d.get("observed") or {}).items()},
+            thin_description=bool(d.get("thin_description", False)),
+            is_distractor=dict(d.get("is_distractor") or {}),
+            metadata=dict(d.get("metadata") or {}),
+        )
+
+
+def save_package_cases(
+    cases: Iterable[PackageRelevanceCase],
+    path: str | Path,
+    *,
+    meta: Mapping[str, Any] | None = None,
+) -> None:
+    """Write :class:`PackageRelevanceCase`\\ s to JSONL (mirrors :func:`save_cases`).
+
+    ``meta`` is written as a leading ``{"__meta__": …}`` line — the home for the
+    per-theme probe text (``probes``) and the corpus signature
+    (:func:`ir.eval_gen.corpus_signature`) that pin the labels to a corpus snapshot.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as out:
+        if meta is not None:
+            out.write(json.dumps({"__meta__": dict(meta)}) + "\n")
+        for case in cases:
+            out.write(json.dumps(case.to_dict()) + "\n")
+
+
+def load_package_cases(path: str | Path) -> list[PackageRelevanceCase]:
+    """Read :class:`PackageRelevanceCase`\\ s from JSONL (skips a ``__meta__`` header)."""
+    cases: list[PackageRelevanceCase] = []
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        obj = json.loads(line)
+        if "__meta__" in obj:
+            continue
+        cases.append(PackageRelevanceCase.from_dict(obj))
+    return cases
+
+
+def read_package_meta(path: str | Path) -> dict[str, Any]:
+    """Return the ``__meta__`` header dict from a package-cases JSONL (``{}`` if absent).
+
+    The header carries the per-theme probe text (``probes``) and the corpus
+    signature the labels were frozen against — everything :func:`compare_indexings`
+    needs that is not on a per-artifact case.
+    """
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        obj = json.loads(line)
+        if "__meta__" in obj:
+            return dict(obj["__meta__"])
+        return {}
+    return {}
+
+
+def level_histogram(
+    cases: Sequence[PackageRelevanceCase], theme: str
+) -> dict[str, int]:
+    """Count of artifacts at each level for ``theme`` (every level represented)."""
+    counts = Counter(c.level(theme) for c in cases)
+    return {level: counts.get(level, 0) for level in RELEVANCE_LEVELS}
+
+
+def to_graded_qrels(
+    cases: Sequence[PackageRelevanceCase],
+    theme: str,
+    *,
+    probe: str | None = None,
+    gains: Mapping[str, float] = LEVEL_GAINS,
+    query_id: str | None = None,
+) -> tuple[dict[str, str], dict[str, dict[str, float]]]:
+    """Build ``ef``'s **graded** ``(queries, qrels)`` for one ``theme``.
+
+    Unlike :func:`to_qrels` (which hardcodes grade ``1``), every positive artifact
+    is judged at its graded :data:`LEVEL_GAINS` value, so graded gains reach
+    ``ef.evaluation``'s nDCG with zero ``ef`` change. There is exactly **one**
+    query per theme (the theme *probe*); ``qrels`` maps it to ``{artifact_id:
+    gain}`` for every artifact with a positive gain. Non-positive
+    (``none``/``tangential``) artifacts are omitted, matching ``ef``'s
+    judged-positive qrels convention.
+    """
+    qid = query_id or f"theme:{theme}"
+    queries = {qid: probe or theme}
+    qrels = {
+        qid: {
+            c.artifact_id: c.gain(theme, gains=gains)
+            for c in cases
+            if c.gain(theme, gains=gains) > 0
+        }
+    }
+    return queries, qrels
+
+
+@dataclass(frozen=True)
+class NamedSets:
+    """The two named diagnostic sets for one theme.
+
+    Attributes:
+        theme: the theme these sets diagnose.
+        distractors: ids that are NOT relevant (``none``/``tangential``) yet rank
+            prominently — every appearance in the top-``k`` is a false positive.
+        hard_positives: ids that ARE relevant (``core``/``strong``) but hard to
+            rank (e.g. thin-description packages) — recall on these is the
+            headline gap a fix must close.
+    """
+
+    theme: str
+    distractors: tuple[str, ...] = ()
+    hard_positives: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict:
+        """JSON-serializable form."""
+        return {
+            "theme": self.theme,
+            "distractors": list(self.distractors),
+            "hard_positives": list(self.hard_positives),
+        }
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "NamedSets":
+        """Inverse of :meth:`to_dict`."""
+        return cls(
+            theme=d["theme"],
+            distractors=tuple(d.get("distractors") or ()),
+            hard_positives=tuple(d.get("hard_positives") or ()),
+        )
+
+
+def derive_named_sets(
+    cases: Sequence[PackageRelevanceCase],
+    theme: str,
+    *,
+    observed_floor: float,
+    gains: Mapping[str, float] = LEVEL_GAINS,
+) -> NamedSets:
+    """Derive the :class:`NamedSets` for ``theme`` deterministically from labels.
+
+    ``distractors`` = non-relevant (``none``/``tangential``) packages whose frozen
+    ``observed`` score for the theme is at or above ``observed_floor`` (they
+    ranked high enough to pollute the top-``k``) — unless a case carries an
+    explicit cached ``is_distractor[theme]``, which then overrides the
+    observed-floor rule. ``hard_positives`` = relevant (``core``/``strong``)
+    packages flagged ``thin_description`` (the ones a description+README index
+    struggles to surface). Both lists are de-duplicated and sorted, so the result
+    is a stable, committable artifact.
+    """
+    distractors: list[str] = []
+    hard_positives: list[str] = []
+    for c in cases:
+        cached = c.is_distractor.get(theme)
+        if cached is not None:
+            is_distractor = bool(cached)
+        else:
+            positive = c.gain(theme, gains=gains) > 0
+            observed = c.observed.get(theme)
+            is_distractor = (
+                not positive and observed is not None and observed >= observed_floor
+            )
+        if is_distractor:
+            distractors.append(c.artifact_id)
+        if c.level(theme) in ("core", "strong") and c.thin_description:
+            hard_positives.append(c.artifact_id)
+    return NamedSets(
+        theme=theme,
+        distractors=tuple(sorted(set(distractors))),
+        hard_positives=tuple(sorted(set(hard_positives))),
+    )
+
+
+def fp_rate_on_distractors(
+    ranking: Sequence[str], distractor_ids: Iterable[str], *, k: int
+) -> float:
+    """Fraction of named distractors that appear in the top-``k`` of ``ranking``.
+
+    A distractor surfacing in the committed top-``k`` is a false positive; this is
+    the rate over the named set (``0.0`` when the set is empty). Duplicate ids are
+    counted once.
+    """
+    ids = tuple(dict.fromkeys(distractor_ids))
+    if not ids:
+        return 0.0
+    top = set(ranking[:k])
+    return sum(1 for d in ids if d in top) / len(ids)
+
+
+def recall_on_hard_positives(
+    ranking: Sequence[str], hard_positive_ids: Iterable[str], *, k: int
+) -> float:
+    """Fraction of named hard-positives in the top-``k`` (duplicate ids counted once)."""
+    ids = tuple(dict.fromkeys(hard_positive_ids))
+    if not ids:
+        return 0.0
+    top = set(ranking[:k])
+    return sum(1 for h in ids if h in top) / len(ids)
+
+
+def _probe_hits(
+    corpus: Any,
+    probe: str,
+    *,
+    mode: str,
+    k: int,
+    surfaces: Iterable[str] | None = None,
+    **search_kw: Any,
+) -> list[SearchHit]:
+    """Run one theme probe and return its ranked hits (best first, per artifact)."""
+    corpus = _as_corpus(corpus)
+    return _search(
+        corpus, probe, k=k, mode=mode, surfaces=surfaces, per_artifact=True, **search_kw
+    )
+
+
+@dataclass(frozen=True)
+class NamedSetReport:
+    """The outcome of :func:`evaluate_named_sets` for one theme.
+
+    Attributes:
+        theme / k: the theme and the rank cutoff scored.
+        fp_rate: distractor false-positive rate at ``k`` (lower is better).
+        hard_positive_recall: recall over the hard-positive set at ``k`` (higher
+            is better).
+        distractors_seen: the distractor ids actually in the top-``k`` — so the
+            ``fp_rate`` is auditable back to specific packages.
+        hard_positives_missed: the hard-positive ids NOT in the top-``k``.
+    """
+
+    theme: str
+    k: int
+    fp_rate: float
+    hard_positive_recall: float
+    distractors_seen: tuple[str, ...] = ()
+    hard_positives_missed: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict:
+        """JSON-serializable form."""
+        return {
+            "theme": self.theme,
+            "k": self.k,
+            "fp_rate": self.fp_rate,
+            "hard_positive_recall": self.hard_positive_recall,
+            "distractors_seen": list(self.distractors_seen),
+            "hard_positives_missed": list(self.hard_positives_missed),
+        }
+
+    def __str__(self) -> str:
+        return (
+            f"[{self.theme}] fp_rate@{self.k}={self.fp_rate:.3f} "
+            f"(seen {list(self.distractors_seen)}) "
+            f"hard_pos_recall@{self.k}={self.hard_positive_recall:.3f} "
+            f"(missed {list(self.hard_positives_missed)})"
+        )
+
+
+def evaluate_named_sets(
+    corpus: Any,
+    named_sets: NamedSets,
+    theme: str | None = None,
+    *,
+    probe: str,
+    mode: str = DFLT_MODE,
+    k: int = 10,
+    surfaces: Iterable[str] | None = None,
+    **search_kw: Any,
+) -> NamedSetReport:
+    """Score one theme's named distractor / hard-positive sets with a single probe.
+
+    Runs the theme ``probe`` once, takes the per-artifact ranking, and reports the
+    distractor false-positive rate and hard-positive recall at ``k`` — plus the
+    distractor ids actually seen in the top-``k`` and the hard-positives missed, so
+    a number is always auditable back to specific packages. ``theme`` defaults to
+    ``named_sets.theme`` (the only thing it labels); pass it only to override.
+    """
+    theme = theme or named_sets.theme
+    hits = _probe_hits(corpus, probe, mode=mode, k=k, surfaces=surfaces, **search_kw)
+    ranking = [h.artifact_id for h in hits]
+    top = set(ranking[:k])
+    return NamedSetReport(
+        theme=theme,
+        k=k,
+        fp_rate=fp_rate_on_distractors(ranking, named_sets.distractors, k=k),
+        hard_positive_recall=recall_on_hard_positives(
+            ranking, named_sets.hard_positives, k=k
+        ),
+        distractors_seen=tuple(d for d in named_sets.distractors if d in top),
+        hard_positives_missed=tuple(
+            h for h in named_sets.hard_positives if h not in top
+        ),
+    )
+
+
+@dataclass(frozen=True)
+class ComparisonReport:
+    """The outcome of :func:`compare_indexings` — an N-way indexing/embedder bake-off.
+
+    Attributes:
+        k: the rank cutoff all ``@k`` metrics use.
+        themes / labels: the themes scored and the corpus labels compared.
+        baseline: the label every :meth:`regressions` check compares against
+            (the first entry of ``corpora``).
+        metrics: ``{label: {theme: {"ndcg", "fp_rate"?, "hard_positive_recall"?}}}``.
+        deltas: ``{theme: {artifact_id: {"role", "by_label": {label: {"rank",
+            "score"}}}}}`` for every named FP/FN id — the per-package effect.
+    """
+
+    k: int
+    themes: tuple[str, ...]
+    labels: tuple[str, ...]
+    baseline: str
+    metrics: Mapping[str, Mapping[str, Mapping[str, float]]]
+    deltas: Mapping[str, Mapping[str, dict]]
+
+    def to_dict(self) -> dict:
+        """JSON-serializable form — the qh / HTTP surface."""
+        return {
+            "k": self.k,
+            "themes": list(self.themes),
+            "labels": list(self.labels),
+            "baseline": self.baseline,
+            "metrics": {
+                label: {theme: dict(row) for theme, row in by_theme.items()}
+                for label, by_theme in self.metrics.items()
+            },
+            "deltas": {
+                theme: {aid: dict(info) for aid, info in ids.items()}
+                for theme, ids in self.deltas.items()
+            },
+        }
+
+    def regressions(
+        self, *, threshold: int = 0, baseline: str | None = None
+    ) -> list[dict]:
+        """Named packages that got WORSE than ``baseline`` — drives a pytest gate.
+
+        For a ``hard_positive``, worse = its rank dropped (grew larger) by more
+        than ``threshold`` positions. For a ``distractor``, worse = its rank rose
+        (grew smaller, more prominent) by more than ``threshold``. A package
+        absent from a ranking is treated as rank ``inf`` (worst), so a vanished
+        hard-positive and a newly-appearing distractor both register. Returns one
+        dict per regressing ``(theme, id, label)``.
+        """
+        base = baseline or self.baseline
+        inf = 10**9
+        out: list[dict] = []
+        for theme, ids in self.deltas.items():
+            for aid, info in ids.items():
+                role = info.get("role")
+                by_label = info.get("by_label", {})
+                if role is None or base not in by_label:
+                    continue
+                base_rank = by_label[base].get("rank") or inf
+                for label, cell in by_label.items():
+                    if label == base:
+                        continue
+                    cand_rank = cell.get("rank") or inf
+                    if role == "hard_positive":
+                        worse = (cand_rank - base_rank) > threshold
+                    else:  # distractor: smaller rank == more prominent == worse
+                        worse = (base_rank - cand_rank) > threshold
+                    if worse:
+                        out.append(
+                            {
+                                "theme": theme,
+                                "artifact_id": aid,
+                                "role": role,
+                                "label": label,
+                                # rank 0/absent -> None: ranks are 1-based, so 0
+                                # would misleadingly read as "top of list".
+                                "baseline_rank": by_label[base].get("rank") or None,
+                                "candidate_rank": cell.get("rank") or None,
+                            }
+                        )
+        return out
+
+    def __str__(self) -> str:
+        lines = [f"ComparisonReport(k={self.k}, baseline={self.baseline!r})"]
+        for label in self.labels:
+            for theme in self.themes:
+                row = self.metrics[label][theme]
+                parts = [f"ndcg@{self.k}={row['ndcg']:.3f}"]
+                if "fp_rate" in row:
+                    parts.append(f"fp_rate={row['fp_rate']:.3f}")
+                if "hard_positive_recall" in row:
+                    parts.append(f"hp_recall={row['hard_positive_recall']:.3f}")
+                lines.append(f"  {label:<12} {theme:<12} " + "  ".join(parts))
+        return "\n".join(lines)
+
+
+def compare_indexings(
+    corpora: Mapping[str, Any],
+    cases: Sequence[PackageRelevanceCase],
+    *,
+    themes: Sequence[str],
+    probes: Mapping[str, str],
+    k: int = 20,
+    named_sets: Mapping[str, NamedSets] | None = None,
+    mode: str = DFLT_MODE,
+    rank_depth: int = 1000,
+    gains: Mapping[str, float] = LEVEL_GAINS,
+    surfaces: Iterable[str] | None = None,
+    **search_kw: Any,
+) -> ComparisonReport:
+    """A/B (or N-way) regression gate over indexing / embedder configurations.
+
+    ``corpora`` maps a label -> a built corpus (an ``ef`` instruction-tuned-embedder
+    corpus or an ``ir`` deps-as-text corpus is just another entry — the harness is
+    embedder-agnostic). For each ``(label, theme)`` it computes graded nDCG@k (via
+    :func:`to_graded_qrels` + ``ef.evaluation.ndcg_at_k``), the named-set FP-rate /
+    hard-positive recall@k (when ``named_sets`` is given), and the rank+score of
+    every named FP/FN id — so a change's effect is quantified *per package*.
+    ``probes`` supplies the per-theme query text (normally loaded from the JSONL
+    ``__meta__`` via :func:`read_package_meta`). The first label is the baseline
+    that :meth:`ComparisonReport.regressions` compares against. Each ranking is
+    fetched once to depth ``rank_depth`` (deep enough that even a buried named id
+    gets a real rank) and sliced at ``k`` for the ``@k`` metrics.
+    """
+    from ef.evaluation import ndcg_at_k
+
+    labels = tuple(corpora)
+    if not labels:
+        raise ValueError("compare_indexings needs at least one corpus")
+    if rank_depth < k:
+        raise ValueError(f"rank_depth ({rank_depth}) must be >= k ({k})")
+    missing_probes = [theme for theme in themes if theme not in probes]
+    if missing_probes:
+        raise ValueError(f"no probe text for theme(s): {missing_probes}")
+    metrics: dict[str, dict[str, dict[str, float]]] = {}
+    deltas: dict[str, dict[str, dict]] = {theme: {} for theme in themes}
+    for label in labels:
+        corpus = _as_corpus(corpora[label])
+        metrics[label] = {}
+        for theme in themes:
+            hits = _probe_hits(
+                corpus, probes[theme], mode=mode, k=rank_depth, surfaces=surfaces,
+                **search_kw,
+            )
+            ranking = [h.artifact_id for h in hits]
+            score_by = {h.artifact_id: float(h.score) for h in hits}
+            rank_by = {aid: i + 1 for i, aid in enumerate(ranking)}
+            relevant = {
+                c.artifact_id: c.gain(theme, gains=gains)
+                for c in cases
+                if c.gain(theme, gains=gains) > 0
+            }
+            row: dict[str, float] = {"ndcg": ndcg_at_k(ranking, relevant, k)}
+            ns = named_sets.get(theme) if named_sets else None
+            if ns is not None:
+                row["fp_rate"] = fp_rate_on_distractors(ranking, ns.distractors, k=k)
+                row["hard_positive_recall"] = recall_on_hard_positives(
+                    ranking, ns.hard_positives, k=k
+                )
+                roles = {
+                    **{d: "distractor" for d in ns.distractors},
+                    **{h: "hard_positive" for h in ns.hard_positives},
+                }
+                for aid, role in roles.items():
+                    entry = deltas[theme].setdefault(
+                        aid, {"role": role, "by_label": {}}
+                    )
+                    entry["by_label"][label] = {
+                        "rank": rank_by.get(aid, 0),
+                        "score": score_by.get(aid),
+                    }
+            metrics[label][theme] = row
+    return ComparisonReport(
+        k=k,
+        themes=tuple(themes),
+        labels=labels,
+        baseline=labels[0],
+        metrics=metrics,
+        deltas=deltas,
+    )
