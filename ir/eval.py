@@ -1864,8 +1864,7 @@ class PackageRelevanceCase:
         bad = {t: lv for t, lv in labels.items() if lv not in RELEVANCE_LEVELS}
         if bad:
             raise ValueError(
-                f"unknown relevance level(s) {bad}; "
-                f"expected one of {RELEVANCE_LEVELS}"
+                f"unknown relevance level(s) {bad}; expected one of {RELEVANCE_LEVELS}"
             )
         return cls(
             artifact_id=d["artifact_id"],
@@ -2308,7 +2307,11 @@ def compare_indexings(
         metrics[label] = {}
         for theme in themes:
             hits = _probe_hits(
-                corpus, probes[theme], mode=mode, k=rank_depth, surfaces=surfaces,
+                corpus,
+                probes[theme],
+                mode=mode,
+                k=rank_depth,
+                surfaces=surfaces,
                 **search_kw,
             )
             ranking = [h.artifact_id for h in hits]
