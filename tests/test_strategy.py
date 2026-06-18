@@ -1,6 +1,15 @@
 """Unit tests for indexing strategies (artifact -> filter fields + surfaces)."""
 
-from ir.strategy import Chunked, Package, Skill, WholeText, _split
+from ir.strategy import (
+    Chunked,
+    Package,
+    Skill,
+    WholeText,
+    _default_deps_text,
+    _split,
+    strategy_from_spec,
+    strategy_to_spec,
+)
 
 
 def test_wholetext_str_and_mapping():
@@ -55,6 +64,64 @@ def test_package_description_plus_readme_chunks_and_filter_fields():
     assert plan.filter_fields["name"] == "vd"
     assert plan.filter_fields["has_readme"] is True
     assert plan.filter_fields["deps"] == ["dol", "numpy"]
+    # embed_deps defaults off: no deps surface, today's behavior preserved
+    assert "deps" not in {s.kind for s in plan.surfaces}
+
+
+def _pkg_raw(deps):
+    return {
+        "name": "vd",
+        "description": "Facade over vector databases.",
+        "readme": "Some readme body about vectors.",
+        "owner": "ours",
+        "deps": deps,
+    }
+
+
+def test_package_embed_deps_adds_a_deps_surface_last():
+    raw = _pkg_raw(["sentence-transformers>=2.0", "networkx", "numpy"])
+    plan = Package(embed_deps=True).decompose("vd", raw, {})
+    deps_surfaces = [s for s in plan.surfaces if s.kind == "deps"]
+    assert len(deps_surfaces) == 1
+    s = deps_surfaces[0]
+    assert s.granularity == "field"
+    # bare names, version specifier stripped, prefix form
+    assert s.text == "Depends on: sentence-transformers, networkx, numpy"
+    # appended last (keeps description/readme_chunk surface_index stable)
+    assert plan.surfaces[-1].kind == "deps"
+    # deps remain a filter field too
+    assert plan.filter_fields["deps"] == ["sentence-transformers>=2.0", "networkx", "numpy"]
+
+
+def test_package_embed_deps_empty_deps_yields_no_surface():
+    plan = Package(embed_deps=True).decompose("vd", _pkg_raw([]), {})
+    assert "deps" not in {s.kind for s in plan.surfaces}
+
+
+def test_package_custom_deps_template():
+    raw = _pkg_raw(["ef", "imbed"])
+    plan = Package(
+        embed_deps=True, deps_template=lambda ds: "uses " + "|".join(ds)
+    ).decompose("vd", raw, {})
+    s = next(s for s in plan.surfaces if s.kind == "deps")
+    assert s.text == "uses ef|imbed"
+
+
+def test_default_deps_text_strips_dedups_and_lowercases():
+    assert _default_deps_text(["NumPy>=1.2", "numpy", "torch[cuda]", "oa ; python_version>'3.9'"]) == (
+        "Depends on: numpy, torch, oa"
+    )
+    assert _default_deps_text([]) == ""
+
+
+def test_package_embed_deps_round_trips_via_spec():
+    spec = strategy_to_spec(Package(embed_deps=True, chunk_size=900))
+    assert spec["name"] == "Package"
+    assert spec["params"]["embed_deps"] is True  # bool param captured
+    restored = strategy_from_spec(spec)
+    assert isinstance(restored, Package)
+    assert restored.embed_deps is True
+    assert restored.chunk_size == 900
 
 
 def test_split_packs_to_chunk_size_not_per_paragraph():
