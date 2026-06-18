@@ -1,0 +1,13 @@
+{"__meta__": {"description": "Public-name-only fixture for the graded package-relevance harness (issue #66). No private package names. Mirrors the real failure shapes: thin-description hard positives + modality/pipeline distractors.", "probes": {"embeddings": "embedding semantic vector text similarity search", "graphs": "graph network node edge directed"}, "corpus_signature": "fixture-not-pinned"}}
+{"artifact_id": "sentence-transformers", "labels": {"embeddings": "core"}, "evidence": {"embeddings": "sentence/text embedding models"}, "observed": {"embeddings": 0.60}}
+{"artifact_id": "chromadb", "labels": {"embeddings": "core"}, "evidence": {"embeddings": "vector database for embeddings"}, "observed": {"embeddings": 0.55}}
+{"artifact_id": "transformers", "labels": {"embeddings": "strong"}, "evidence": {"embeddings": "transformer language models, text embeddings"}, "observed": {"embeddings": 0.50}}
+{"artifact_id": "torch", "labels": {"embeddings": "uses-tools"}, "evidence": {"embeddings": "tensor backend other libs embed with"}, "observed": {"embeddings": 0.45}}
+{"artifact_id": "sklearn", "labels": {"embeddings": "uses-tools"}, "evidence": {"embeddings": "feature vectorizers used as a means"}, "observed": {"embeddings": 0.42}}
+{"artifact_id": "fasttext", "labels": {"embeddings": "core"}, "evidence": {"embeddings": "word embedding library"}, "observed": {"embeddings": 0.05}, "thin_description": true}
+{"artifact_id": "librosa", "labels": {"embeddings": "none"}, "evidence": {"embeddings": "audio/signal DSP - a modality false positive"}, "observed": {"embeddings": 0.46}}
+{"artifact_id": "networkx", "labels": {"graphs": "core"}, "evidence": {"graphs": "graph data structures and algorithms"}, "observed": {"graphs": 0.60}}
+{"artifact_id": "igraph", "labels": {"graphs": "core"}, "evidence": {"graphs": "graph/network analysis"}, "observed": {"graphs": 0.55}}
+{"artifact_id": "graphviz", "labels": {"graphs": "strong"}, "evidence": {"graphs": "graph rendering"}, "observed": {"graphs": 0.50}}
+{"artifact_id": "kroki", "labels": {"graphs": "strong"}, "evidence": {"graphs": "renders graphviz/mermaid digraphs"}, "observed": {"graphs": 0.10}, "thin_description": true}
+{"artifact_id": "airflow", "labels": {"graphs": "none"}, "evidence": {"graphs": "pipeline/DAG scheduler - a flow false positive"}, "observed": {"graphs": 0.44}}
