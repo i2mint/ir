@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.eval &mdash; ir 0.1.22 documentation</title>
+  <title>ir.eval &mdash; ir 0.1.23 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
+      <script src="../../_static/documentation_options.js?v=20522496"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -57,6 +57,15 @@
 <li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.eval</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#design-stance-retrieval-centric-reuse-ef">Design stance (retrieval-centric, reuse <code class="docutils literal notranslate"><span class="pre">ef</span></code>)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.ComparisonReport"><code class="docutils literal notranslate"><span class="pre">ComparisonReport</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.ComparisonReport.k"><code class="docutils literal notranslate"><span class="pre">ComparisonReport.k</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.ComparisonReport.baseline"><code class="docutils literal notranslate"><span class="pre">ComparisonReport.baseline</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.ComparisonReport.metrics"><code class="docutils literal notranslate"><span class="pre">ComparisonReport.metrics</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.ComparisonReport.deltas"><code class="docutils literal notranslate"><span class="pre">ComparisonReport.deltas</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.ComparisonReport.regressions"><code class="docutils literal notranslate"><span class="pre">ComparisonReport.regressions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.ComparisonReport.to_dict"><code class="docutils literal notranslate"><span class="pre">ComparisonReport.to_dict()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.DFLT_CALIB_SENSITIVITY_WEIGHT"><code class="docutils literal notranslate"><span class="pre">DFLT_CALIB_SENSITIVITY_WEIGHT</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.DFLT_CURVE_MODE"><code class="docutils literal notranslate"><span class="pre">DFLT_CURVE_MODE</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.DFLT_DISTRACTOR_SIZES"><code class="docutils literal notranslate"><span class="pre">DFLT_DISTRACTOR_SIZES</span></code></a></li>
@@ -88,6 +97,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ir.eval.DiscoveryReport.primary"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport.primary</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.LEVEL_GAINS"><code class="docutils literal notranslate"><span class="pre">LEVEL_GAINS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.MinScoreCalibration"><code class="docutils literal notranslate"><span class="pre">MinScoreCalibration</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ir.eval.MinScoreCalibration.min_score"><code class="docutils literal notranslate"><span class="pre">MinScoreCalibration.min_score</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ir.eval.MinScoreCalibration.sensitivity"><code class="docutils literal notranslate"><span class="pre">MinScoreCalibration.sensitivity</span></code></a></li>
@@ -107,6 +117,37 @@
 <li class="toctree-l3"><a class="reference internal" href="#ir.eval.MinScoreCalibration.to_dict"><code class="docutils literal notranslate"><span class="pre">MinScoreCalibration.to_dict()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.NamedSetReport"><code class="docutils literal notranslate"><span class="pre">NamedSetReport</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.NamedSetReport.fp_rate"><code class="docutils literal notranslate"><span class="pre">NamedSetReport.fp_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.NamedSetReport.hard_positive_recall"><code class="docutils literal notranslate"><span class="pre">NamedSetReport.hard_positive_recall</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.NamedSetReport.distractors_seen"><code class="docutils literal notranslate"><span class="pre">NamedSetReport.distractors_seen</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.NamedSetReport.hard_positives_missed"><code class="docutils literal notranslate"><span class="pre">NamedSetReport.hard_positives_missed</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.NamedSetReport.to_dict"><code class="docutils literal notranslate"><span class="pre">NamedSetReport.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.NamedSets"><code class="docutils literal notranslate"><span class="pre">NamedSets</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.NamedSets.theme"><code class="docutils literal notranslate"><span class="pre">NamedSets.theme</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.NamedSets.distractors"><code class="docutils literal notranslate"><span class="pre">NamedSets.distractors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.NamedSets.hard_positives"><code class="docutils literal notranslate"><span class="pre">NamedSets.hard_positives</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.NamedSets.from_dict"><code class="docutils literal notranslate"><span class="pre">NamedSets.from_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.NamedSets.to_dict"><code class="docutils literal notranslate"><span class="pre">NamedSets.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.PackageRelevanceCase"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.artifact_id"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.artifact_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.labels"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.labels</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.evidence"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.evidence</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.observed"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.observed</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.thin_description"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.thin_description</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.is_distractor"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.is_distractor</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.metadata"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.from_dict"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.from_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.gain"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.gain()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.level"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.level()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.eval.PackageRelevanceCase.to_dict"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.RELEVANCE_LEVELS"><code class="docutils literal notranslate"><span class="pre">RELEVANCE_LEVELS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.SWEEP_METRICS"><code class="docutils literal notranslate"><span class="pre">SWEEP_METRICS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.SelectionGridPoint"><code class="docutils literal notranslate"><span class="pre">SelectionGridPoint</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ir.eval.SelectionGridPoint.report"><code class="docutils literal notranslate"><span class="pre">SelectionGridPoint.report</span></code></a></li>
@@ -136,16 +177,26 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.as_doc_retriever"><code class="docutils literal notranslate"><span class="pre">as_doc_retriever()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.calibrate_min_score"><code class="docutils literal notranslate"><span class="pre">calibrate_min_score()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.compare_indexings"><code class="docutils literal notranslate"><span class="pre">compare_indexings()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.corpus_artifact_ids"><code class="docutils literal notranslate"><span class="pre">corpus_artifact_ids()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.derive_named_sets"><code class="docutils literal notranslate"><span class="pre">derive_named_sets()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.distractor_curve_from_cases"><code class="docutils literal notranslate"><span class="pre">distractor_curve_from_cases()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.distractor_robustness_curve"><code class="docutils literal notranslate"><span class="pre">distractor_robustness_curve()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.evaluate_discovery"><code class="docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.evaluate_named_sets"><code class="docutils literal notranslate"><span class="pre">evaluate_named_sets()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.evaluate_selection"><code class="docutils literal notranslate"><span class="pre">evaluate_selection()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.fp_rate_on_distractors"><code class="docutils literal notranslate"><span class="pre">fp_rate_on_distractors()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.level_histogram"><code class="docutils literal notranslate"><span class="pre">level_histogram()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.load_calibration"><code class="docutils literal notranslate"><span class="pre">load_calibration()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.load_cases"><code class="docutils literal notranslate"><span class="pre">load_cases()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.load_package_cases"><code class="docutils literal notranslate"><span class="pre">load_package_cases()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.read_package_meta"><code class="docutils literal notranslate"><span class="pre">read_package_meta()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.recall_on_hard_positives"><code class="docutils literal notranslate"><span class="pre">recall_on_hard_positives()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.retrieval_report"><code class="docutils literal notranslate"><span class="pre">retrieval_report()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.save_cases"><code class="docutils literal notranslate"><span class="pre">save_cases()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.save_package_cases"><code class="docutils literal notranslate"><span class="pre">save_package_cases()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.sweep_selector"><code class="docutils literal notranslate"><span class="pre">sweep_selector()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.eval.to_graded_qrels"><code class="docutils literal notranslate"><span class="pre">to_graded_qrels()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.to_qrels"><code class="docutils literal notranslate"><span class="pre">to_qrels()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.eval.validate_cases"><code class="docutils literal notranslate"><span class="pre">validate_cases()</span></code></a></li>
 </ul>
@@ -249,6 +300,82 @@ was absent is flagged in the report.)</p>
 </pre></div>
 </div>
 </section>
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.eval.ComparisonReport">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">ComparisonReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">themes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deltas</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/eval.html#ComparisonReport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.ComparisonReport" title="Link to this definition"></a></dt>
+<dd><p>The outcome of <a class="reference internal" href="#ir.eval.compare_indexings" title="ir.eval.compare_indexings"><code class="xref py py-func docutils literal notranslate"><span class="pre">compare_indexings()</span></code></a> — an N-way indexing/embedder bake-off.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.ComparisonReport.k">
+<span class="sig-name descname"><span class="pre">k</span></span><a class="headerlink" href="#ir.eval.ComparisonReport.k" title="Link to this definition"></a></dt>
+<dd><p>the rank cutoff all <code class="docutils literal notranslate"><span class="pre">&#64;k</span></code> metrics use.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">themes</span> <span class="pre">/</span> <span class="pre">labels</span></span></dt>
+<dd><p>the themes scored and the corpus labels compared.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.ComparisonReport.baseline">
+<span class="sig-name descname"><span class="pre">baseline</span></span><a class="headerlink" href="#ir.eval.ComparisonReport.baseline" title="Link to this definition"></a></dt>
+<dd><p>the label every <a class="reference internal" href="#ir.eval.ComparisonReport.regressions" title="ir.eval.ComparisonReport.regressions"><code class="xref py py-meth docutils literal notranslate"><span class="pre">regressions()</span></code></a> check compares against
+(the first entry of <code class="docutils literal notranslate"><span class="pre">corpora</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.ComparisonReport.metrics">
+<span class="sig-name descname"><span class="pre">metrics</span></span><a class="headerlink" href="#ir.eval.ComparisonReport.metrics" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">{label:</span> <span class="pre">{theme:</span> <span class="pre">{&quot;ndcg&quot;,</span> <span class="pre">&quot;fp_rate&quot;?,</span> <span class="pre">&quot;hard_positive_recall&quot;?}}}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, collections.abc.Mapping[str, collections.abc.Mapping[str, float]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.ComparisonReport.deltas">
+<span class="sig-name descname"><span class="pre">deltas</span></span><a class="headerlink" href="#ir.eval.ComparisonReport.deltas" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">{theme:</span> <span class="pre">{artifact_id:</span> <span class="pre">{&quot;role&quot;,</span> <span class="pre">&quot;by_label&quot;:</span> <span class="pre">{label:</span> <span class="pre">{&quot;rank&quot;,</span>
+<span class="pre">&quot;score&quot;}}}}}</span></code> for every named FP/FN id — the per-package effect.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, collections.abc.Mapping[str, dict]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.ComparisonReport.regressions">
+<span class="sig-name descname"><span class="pre">regressions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#ComparisonReport.regressions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.ComparisonReport.regressions" title="Link to this definition"></a></dt>
+<dd><p>Named packages that got WORSE than <code class="docutils literal notranslate"><span class="pre">baseline</span></code> — drives a pytest gate.</p>
+<p>For a <code class="docutils literal notranslate"><span class="pre">hard_positive</span></code>, worse = its rank dropped (grew larger) by more
+than <code class="docutils literal notranslate"><span class="pre">threshold</span></code> positions. For a <code class="docutils literal notranslate"><span class="pre">distractor</span></code>, worse = its rank rose
+(grew smaller, more prominent) by more than <code class="docutils literal notranslate"><span class="pre">threshold</span></code>. A package
+absent from a ranking is treated as rank <code class="docutils literal notranslate"><span class="pre">inf</span></code> (worst), so a vanished
+hard-positive and a newly-appearing distractor both register. Returns one
+dict per regressing <code class="docutils literal notranslate"><span class="pre">(theme,</span> <span class="pre">id,</span> <span class="pre">label)</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.ComparisonReport.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#ComparisonReport.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.ComparisonReport.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable form — the qh / HTTP surface.</p>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py data">
 <dt class="sig sig-object py" id="ir.eval.DFLT_CALIB_SENSITIVITY_WEIGHT">
 <span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">DFLT_CALIB_SENSITIVITY_WEIGHT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.5</span></span><a class="headerlink" href="#ir.eval.DFLT_CALIB_SENSITIVITY_WEIGHT" title="Link to this definition"></a></dt>
@@ -497,6 +624,16 @@ are <em>not</em> the requested configuration’s).</p>
 
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.eval.LEVEL_GAINS">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">LEVEL_GAINS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'core':</span> <span class="pre">3.0,</span> <span class="pre">'none':</span> <span class="pre">0.0,</span> <span class="pre">'strong':</span> <span class="pre">2.0,</span> <span class="pre">'tangential':</span> <span class="pre">0.0,</span> <span class="pre">'uses-tools':</span> <span class="pre">1.0}</span></span><a class="headerlink" href="#ir.eval.LEVEL_GAINS" title="Link to this definition"></a></dt>
+<dd><p>Graded relevance gains per level — fed straight to <code class="docutils literal notranslate"><span class="pre">ef.evaluation</span></code>’s graded
+nDCG. <code class="docutils literal notranslate"><span class="pre">uses-tools</span></code> is a <em>weak</em> positive (a package that merely uses the
+relevant tooling); <code class="docutils literal notranslate"><span class="pre">tangential</span></code>/<code class="docutils literal notranslate"><span class="pre">none</span></code> are non-relevant (gain <code class="docutils literal notranslate"><span class="pre">0</span></code>). These
+gains are the knob that lets nDCG rank a core-first ordering strictly above a
+uses-tools-first one at identical recall.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="ir.eval.MinScoreCalibration">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">MinScoreCalibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specificity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">youden_j</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">balanced_accuracy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_positive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_abstention</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_retrieval_miss</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positive_scores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">abstention_scores</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'conservative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vd_degraded</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/eval.html#MinScoreCalibration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.MinScoreCalibration" title="Link to this definition"></a></dt>
@@ -701,6 +838,251 @@ never committed to source control.</p>
 <dd><p>JSON-serializable form (for persistence and the qh / HTTP surface).</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.eval.NamedSetReport">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">NamedSetReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theme</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fp_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hard_positive_recall</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distractors_seen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hard_positives_missed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/eval.html#NamedSetReport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.NamedSetReport" title="Link to this definition"></a></dt>
+<dd><p>The outcome of <a class="reference internal" href="#ir.eval.evaluate_named_sets" title="ir.eval.evaluate_named_sets"><code class="xref py py-func docutils literal notranslate"><span class="pre">evaluate_named_sets()</span></code></a> for one theme.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">theme</span> <span class="pre">/</span> <span class="pre">k</span></span></dt>
+<dd><p>the theme and the rank cutoff scored.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.NamedSetReport.fp_rate">
+<span class="sig-name descname"><span class="pre">fp_rate</span></span><a class="headerlink" href="#ir.eval.NamedSetReport.fp_rate" title="Link to this definition"></a></dt>
+<dd><p>distractor false-positive rate at <code class="docutils literal notranslate"><span class="pre">k</span></code> (lower is better).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.NamedSetReport.hard_positive_recall">
+<span class="sig-name descname"><span class="pre">hard_positive_recall</span></span><a class="headerlink" href="#ir.eval.NamedSetReport.hard_positive_recall" title="Link to this definition"></a></dt>
+<dd><p>recall over the hard-positive set at <code class="docutils literal notranslate"><span class="pre">k</span></code> (higher
+is better).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.NamedSetReport.distractors_seen">
+<span class="sig-name descname"><span class="pre">distractors_seen</span></span><a class="headerlink" href="#ir.eval.NamedSetReport.distractors_seen" title="Link to this definition"></a></dt>
+<dd><p>the distractor ids actually in the top-<code class="docutils literal notranslate"><span class="pre">k</span></code> — so the
+<code class="docutils literal notranslate"><span class="pre">fp_rate</span></code> is auditable back to specific packages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[str, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.NamedSetReport.hard_positives_missed">
+<span class="sig-name descname"><span class="pre">hard_positives_missed</span></span><a class="headerlink" href="#ir.eval.NamedSetReport.hard_positives_missed" title="Link to this definition"></a></dt>
+<dd><p>the hard-positive ids NOT in the top-<code class="docutils literal notranslate"><span class="pre">k</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[str, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.NamedSetReport.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#NamedSetReport.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.NamedSetReport.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable form.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.eval.NamedSets">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">NamedSets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theme</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distractors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hard_positives</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/eval.html#NamedSets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.NamedSets" title="Link to this definition"></a></dt>
+<dd><p>The two named diagnostic sets for one theme.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.NamedSets.theme">
+<span class="sig-name descname"><span class="pre">theme</span></span><a class="headerlink" href="#ir.eval.NamedSets.theme" title="Link to this definition"></a></dt>
+<dd><p>the theme these sets diagnose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.NamedSets.distractors">
+<span class="sig-name descname"><span class="pre">distractors</span></span><a class="headerlink" href="#ir.eval.NamedSets.distractors" title="Link to this definition"></a></dt>
+<dd><p>ids that are NOT relevant (<code class="docutils literal notranslate"><span class="pre">none</span></code>/<code class="docutils literal notranslate"><span class="pre">tangential</span></code>) yet rank
+prominently — every appearance in the top-<code class="docutils literal notranslate"><span class="pre">k</span></code> is a false positive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[str, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.NamedSets.hard_positives">
+<span class="sig-name descname"><span class="pre">hard_positives</span></span><a class="headerlink" href="#ir.eval.NamedSets.hard_positives" title="Link to this definition"></a></dt>
+<dd><p>ids that ARE relevant (<code class="docutils literal notranslate"><span class="pre">core</span></code>/<code class="docutils literal notranslate"><span class="pre">strong</span></code>) but hard to
+rank (e.g. thin-description packages) — recall on these is the
+headline gap a fix must close.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[str, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.NamedSets.from_dict">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.eval.NamedSets" title="ir.eval.NamedSets"><span class="pre">NamedSets</span></a></span></span><a class="reference internal" href="../../_modules/ir/eval.html#NamedSets.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.NamedSets.from_dict" title="Link to this definition"></a></dt>
+<dd><p>Inverse of <a class="reference internal" href="#ir.eval.NamedSets.to_dict" title="ir.eval.NamedSets.to_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.NamedSets.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#NamedSets.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.NamedSets.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable form.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">PackageRelevanceCase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evidence</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">float]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin_description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_distractor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bool]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/eval.html#PackageRelevanceCase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.PackageRelevanceCase" title="Link to this definition"></a></dt>
+<dd><p>One artifact’s graded relevance to one or more themes.</p>
+<p>Unlike <a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscoveryCase</span></code></a> (one query -&gt; gold ids, flat-binary gold), a
+case here is one <strong>artifact</strong> carrying its graded label per theme. The
+per-theme <em>probe text</em> (the query each theme is scored with) is <strong>not</strong> on the
+case — it lives in the JSONL <code class="docutils literal notranslate"><span class="pre">__meta__</span></code> header (see
+<a class="reference internal" href="#ir.eval.save_package_cases" title="ir.eval.save_package_cases"><code class="xref py py-func docutils literal notranslate"><span class="pre">save_package_cases()</span></code></a>), alongside the corpus signature
+(<a class="reference internal" href="eval_gen.html#ir.eval_gen.corpus_signature" title="ir.eval_gen.corpus_signature"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.eval_gen.corpus_signature()</span></code></a>), so a frozen label set pins to the
+corpus snapshot it was judged against.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.artifact_id">
+<span class="sig-name descname"><span class="pre">artifact_id</span></span><a class="headerlink" href="#ir.eval.PackageRelevanceCase.artifact_id" title="Link to this definition"></a></dt>
+<dd><p>the package id (matches the corpus’ <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.labels">
+<span class="sig-name descname"><span class="pre">labels</span></span><a class="headerlink" href="#ir.eval.PackageRelevanceCase.labels" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">{theme:</span> <span class="pre">level}</span></code> with each level in <a class="reference internal" href="#ir.eval.RELEVANCE_LEVELS" title="ir.eval.RELEVANCE_LEVELS"><code class="xref py py-data docutils literal notranslate"><span class="pre">RELEVANCE_LEVELS</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.evidence">
+<span class="sig-name descname"><span class="pre">evidence</span></span><a class="headerlink" href="#ir.eval.PackageRelevanceCase.evidence" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">{theme:</span> <span class="pre">short</span> <span class="pre">reason}</span></code> — the human-auditable <em>why</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.observed">
+<span class="sig-name descname"><span class="pre">observed</span></span><a class="headerlink" href="#ir.eval.PackageRelevanceCase.observed" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">{theme:</span> <span class="pre">score}</span></code> the ranking gave this artifact in the frozen
+run (optional; used to <em>derive</em> the named distractor set).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.thin_description">
+<span class="sig-name descname"><span class="pre">thin_description</span></span><a class="headerlink" href="#ir.eval.PackageRelevanceCase.thin_description" title="Link to this definition"></a></dt>
+<dd><p>True when the package had an empty/near-empty pyproject
+description (used to derive the hard-positive set).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.is_distractor">
+<span class="sig-name descname"><span class="pre">is_distractor</span></span><a class="headerlink" href="#ir.eval.PackageRelevanceCase.is_distractor" title="Link to this definition"></a></dt>
+<dd><p>optional cached <code class="docutils literal notranslate"><span class="pre">{theme:</span> <span class="pre">bool}</span></code>; when absent it is
+derived (see <a class="reference internal" href="#ir.eval.derive_named_sets" title="ir.eval.derive_named_sets"><code class="xref py py-func docutils literal notranslate"><span class="pre">derive_named_sets()</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, bool]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><a class="headerlink" href="#ir.eval.PackageRelevanceCase.metadata" title="Link to this definition"></a></dt>
+<dd><p>free-form per-case metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>collections.abc.Mapping[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.from_dict">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.eval.PackageRelevanceCase" title="ir.eval.PackageRelevanceCase"><span class="pre">PackageRelevanceCase</span></a></span></span><a class="reference internal" href="../../_modules/ir/eval.html#PackageRelevanceCase.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.PackageRelevanceCase.from_dict" title="Link to this definition"></a></dt>
+<dd><p>Inverse of <a class="reference internal" href="#ir.eval.PackageRelevanceCase.to_dict" title="ir.eval.PackageRelevanceCase.to_dict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dict()</span></code></a>; rejects any level outside <a class="reference internal" href="#ir.eval.RELEVANCE_LEVELS" title="ir.eval.RELEVANCE_LEVELS"><code class="xref py py-data docutils literal notranslate"><span class="pre">RELEVANCE_LEVELS</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.gain">
+<span class="sig-name descname"><span class="pre">gain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theme</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">gains</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'core':</span> <span class="pre">3.0,</span> <span class="pre">'none':</span> <span class="pre">0.0,</span> <span class="pre">'strong':</span> <span class="pre">2.0,</span> <span class="pre">'tangential':</span> <span class="pre">0.0,</span> <span class="pre">'uses-tools':</span> <span class="pre">1.0}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#PackageRelevanceCase.gain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.PackageRelevanceCase.gain" title="Link to this definition"></a></dt>
+<dd><p>The graded gain for <code class="docutils literal notranslate"><span class="pre">theme</span></code> under <code class="docutils literal notranslate"><span class="pre">gains</span></code> (default <a class="reference internal" href="#ir.eval.LEVEL_GAINS" title="ir.eval.LEVEL_GAINS"><code class="xref py py-data docutils literal notranslate"><span class="pre">LEVEL_GAINS</span></code></a>).</p>
+<p>A level missing from <code class="docutils literal notranslate"><span class="pre">gains</span></code> (e.g. a partial caller-supplied mapping)
+defaults to <code class="docutils literal notranslate"><span class="pre">0.0</span></code> — the non-relevant convention — rather than raising.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.level">
+<span class="sig-name descname"><span class="pre">level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theme</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#PackageRelevanceCase.level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.PackageRelevanceCase.level" title="Link to this definition"></a></dt>
+<dd><p>This artifact’s graded level for <code class="docutils literal notranslate"><span class="pre">theme</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> if unlabeled).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.eval.PackageRelevanceCase.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#PackageRelevanceCase.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.PackageRelevanceCase.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-serializable form (omitting empty optional fields).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.eval.RELEVANCE_LEVELS">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">RELEVANCE_LEVELS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('none',</span> <span class="pre">'tangential',</span> <span class="pre">'uses-tools',</span> <span class="pre">'strong',</span> <span class="pre">'core')</span></span><a class="headerlink" href="#ir.eval.RELEVANCE_LEVELS" title="Link to this definition"></a></dt>
+<dd><p>Graded relevance levels for the package-relevance harness, weakest -&gt; strongest.
+The SSOT consumed by <a class="reference internal" href="#ir.eval.LEVEL_GAINS" title="ir.eval.LEVEL_GAINS"><code class="xref py py-data docutils literal notranslate"><span class="pre">LEVEL_GAINS</span></code></a>, <a class="reference internal" href="#ir.eval.PackageRelevanceCase" title="ir.eval.PackageRelevanceCase"><code class="xref py py-class docutils literal notranslate"><span class="pre">PackageRelevanceCase</span></code></a>, and
+<a class="reference internal" href="#ir.eval.to_graded_qrels" title="ir.eval.to_graded_qrels"><code class="xref py py-func docutils literal notranslate"><span class="pre">to_graded_qrels()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
@@ -1013,9 +1395,40 @@ corpus so <code class="docutils literal notranslate"><span class="pre">discover(
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.compare_indexings">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">compare_indexings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpora</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.PackageRelevanceCase" title="ir.eval.PackageRelevanceCase"><span class="pre">PackageRelevanceCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">themes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">named_sets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#ir.eval.NamedSets" title="ir.eval.NamedSets"><span class="pre">NamedSets</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rank_depth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gains</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'core':</span> <span class="pre">3.0,</span> <span class="pre">'none':</span> <span class="pre">0.0,</span> <span class="pre">'strong':</span> <span class="pre">2.0,</span> <span class="pre">'tangential':</span> <span class="pre">0.0,</span> <span class="pre">'uses-tools':</span> <span class="pre">1.0}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.eval.ComparisonReport" title="ir.eval.ComparisonReport"><span class="pre">ComparisonReport</span></a></span></span><a class="reference internal" href="../../_modules/ir/eval.html#compare_indexings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.compare_indexings" title="Link to this definition"></a></dt>
+<dd><p>A/B (or N-way) regression gate over indexing / embedder configurations.</p>
+<p><code class="docutils literal notranslate"><span class="pre">corpora</span></code> maps a label -&gt; a built corpus (an <code class="docutils literal notranslate"><span class="pre">ef</span></code> instruction-tuned-embedder
+corpus or an <code class="docutils literal notranslate"><span class="pre">ir</span></code> deps-as-text corpus is just another entry — the harness is
+embedder-agnostic). For each <code class="docutils literal notranslate"><span class="pre">(label,</span> <span class="pre">theme)</span></code> it computes graded nDCG&#64;k (via
+<a class="reference internal" href="#ir.eval.to_graded_qrels" title="ir.eval.to_graded_qrels"><code class="xref py py-func docutils literal notranslate"><span class="pre">to_graded_qrels()</span></code></a> + <code class="docutils literal notranslate"><span class="pre">ef.evaluation.ndcg_at_k</span></code>), the named-set FP-rate /
+hard-positive recall&#64;k (when <code class="docutils literal notranslate"><span class="pre">named_sets</span></code> is given), and the rank+score of
+every named FP/FN id — so a change’s effect is quantified <em>per package</em>.
+<code class="docutils literal notranslate"><span class="pre">probes</span></code> supplies the per-theme query text (normally loaded from the JSONL
+<code class="docutils literal notranslate"><span class="pre">__meta__</span></code> via <a class="reference internal" href="#ir.eval.read_package_meta" title="ir.eval.read_package_meta"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_package_meta()</span></code></a>). The first label is the baseline
+that <a class="reference internal" href="#ir.eval.ComparisonReport.regressions" title="ir.eval.ComparisonReport.regressions"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ComparisonReport.regressions()</span></code></a> compares against. Each ranking is
+fetched once to depth <code class="docutils literal notranslate"><span class="pre">rank_depth</span></code> (deep enough that even a buried named id
+gets a real rank) and sliced at <code class="docutils literal notranslate"><span class="pre">k</span></code> for the <code class="docutils literal notranslate"><span class="pre">&#64;k</span></code> metrics.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.eval.corpus_artifact_ids">
 <span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">corpus_artifact_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#corpus_artifact_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.corpus_artifact_ids" title="Link to this definition"></a></dt>
 <dd><p>The set of <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code>s present in a built corpus.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.derive_named_sets">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">derive_named_sets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.PackageRelevanceCase" title="ir.eval.PackageRelevanceCase"><span class="pre">PackageRelevanceCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theme</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">observed_floor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gains</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'core':</span> <span class="pre">3.0,</span> <span class="pre">'none':</span> <span class="pre">0.0,</span> <span class="pre">'strong':</span> <span class="pre">2.0,</span> <span class="pre">'tangential':</span> <span class="pre">0.0,</span> <span class="pre">'uses-tools':</span> <span class="pre">1.0}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.eval.NamedSets" title="ir.eval.NamedSets"><span class="pre">NamedSets</span></a></span></span><a class="reference internal" href="../../_modules/ir/eval.html#derive_named_sets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.derive_named_sets" title="Link to this definition"></a></dt>
+<dd><p>Derive the <a class="reference internal" href="#ir.eval.NamedSets" title="ir.eval.NamedSets"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedSets</span></code></a> for <code class="docutils literal notranslate"><span class="pre">theme</span></code> deterministically from labels.</p>
+<p><code class="docutils literal notranslate"><span class="pre">distractors</span></code> = non-relevant (<code class="docutils literal notranslate"><span class="pre">none</span></code>/<code class="docutils literal notranslate"><span class="pre">tangential</span></code>) packages whose frozen
+<code class="docutils literal notranslate"><span class="pre">observed</span></code> score for the theme is at or above <code class="docutils literal notranslate"><span class="pre">observed_floor</span></code> (they
+ranked high enough to pollute the top-<code class="docutils literal notranslate"><span class="pre">k</span></code>) — unless a case carries an
+explicit cached <code class="docutils literal notranslate"><span class="pre">is_distractor[theme]</span></code>, which then overrides the
+observed-floor rule. <code class="docutils literal notranslate"><span class="pre">hard_positives</span></code> = relevant (<code class="docutils literal notranslate"><span class="pre">core</span></code>/<code class="docutils literal notranslate"><span class="pre">strong</span></code>)
+packages flagged <code class="docutils literal notranslate"><span class="pre">thin_description</span></code> (the ones a description+README index
+struggles to surface). Both lists are de-duplicated and sorted, so the result
+is a stable, committable artifact.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1103,6 +1516,17 @@ input).</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.evaluate_named_sets">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">evaluate_named_sets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">named_sets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ir.eval.NamedSets" title="ir.eval.NamedSets"><span class="pre">NamedSets</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">theme</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">probe</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.eval.NamedSetReport" title="ir.eval.NamedSetReport"><span class="pre">NamedSetReport</span></a></span></span><a class="reference internal" href="../../_modules/ir/eval.html#evaluate_named_sets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.evaluate_named_sets" title="Link to this definition"></a></dt>
+<dd><p>Score one theme’s named distractor / hard-positive sets with a single probe.</p>
+<p>Runs the theme <code class="docutils literal notranslate"><span class="pre">probe</span></code> once, takes the per-artifact ranking, and reports the
+distractor false-positive rate and hard-positive recall at <code class="docutils literal notranslate"><span class="pre">k</span></code> — plus the
+distractor ids actually seen in the top-<code class="docutils literal notranslate"><span class="pre">k</span></code> and the hard-positives missed, so
+a number is always auditable back to specific packages. <code class="docutils literal notranslate"><span class="pre">theme</span></code> defaults to
+<code class="docutils literal notranslate"><span class="pre">named_sets.theme</span></code> (the only thing it labels); pass it only to override.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.eval.evaluate_selection">
 <span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">evaluate_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'conservative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfaces</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gap_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">search_kw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.eval.SelectionReport" title="ir.eval.SelectionReport"><span class="pre">SelectionReport</span></a></span></span><a class="reference internal" href="../../_modules/ir/eval.html#evaluate_selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.evaluate_selection" title="Link to this definition"></a></dt>
 <dd><p>Score a selector against <code class="docutils literal notranslate"><span class="pre">cases</span></code> — selection quality, isolated.</p>
@@ -1136,6 +1560,21 @@ having surfaced the gold among those <code class="docutils literal notranslate">
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.fp_rate_on_distractors">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">fp_rate_on_distractors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ranking</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distractor_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#fp_rate_on_distractors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.fp_rate_on_distractors" title="Link to this definition"></a></dt>
+<dd><p>Fraction of named distractors that appear in the top-<code class="docutils literal notranslate"><span class="pre">k</span></code> of <code class="docutils literal notranslate"><span class="pre">ranking</span></code>.</p>
+<p>A distractor surfacing in the committed top-<code class="docutils literal notranslate"><span class="pre">k</span></code> is a false positive; this is
+the rate over the named set (<code class="docutils literal notranslate"><span class="pre">0.0</span></code> when the set is empty). Duplicate ids are
+counted once.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.level_histogram">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">level_histogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.PackageRelevanceCase" title="ir.eval.PackageRelevanceCase"><span class="pre">PackageRelevanceCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theme</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#level_histogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.level_histogram" title="Link to this definition"></a></dt>
+<dd><p>Count of artifacts at each level for <code class="docutils literal notranslate"><span class="pre">theme</span></code> (every level represented).</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.eval.load_calibration">
 <span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">load_calibration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.eval.MinScoreCalibration" title="ir.eval.MinScoreCalibration"><span class="pre">MinScoreCalibration</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#load_calibration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.load_calibration" title="Link to this definition"></a></dt>
 <dd><p>Load a persisted <a class="reference internal" href="#ir.eval.MinScoreCalibration" title="ir.eval.MinScoreCalibration"><code class="xref py py-class docutils literal notranslate"><span class="pre">MinScoreCalibration</span></code></a> for <code class="docutils literal notranslate"><span class="pre">(corpus,</span> <span class="pre">mode)</span></code>.</p>
@@ -1149,6 +1588,27 @@ embedder id.</p>
 <dt class="sig sig-object py" id="ir.eval.load_cases">
 <span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">load_cases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><span class="pre">DiscoveryCase</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#load_cases"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.load_cases" title="Link to this definition"></a></dt>
 <dd><p>Read <a class="reference internal" href="#ir.eval.DiscoveryCase" title="ir.eval.DiscoveryCase"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiscoveryCase</span></code></a>s from a JSONL file (skips a <code class="docutils literal notranslate"><span class="pre">__meta__</span></code> header).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.load_package_cases">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">load_package_cases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.PackageRelevanceCase" title="ir.eval.PackageRelevanceCase"><span class="pre">PackageRelevanceCase</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#load_package_cases"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.load_package_cases" title="Link to this definition"></a></dt>
+<dd><p>Read <a class="reference internal" href="#ir.eval.PackageRelevanceCase" title="ir.eval.PackageRelevanceCase"><code class="xref py py-class docutils literal notranslate"><span class="pre">PackageRelevanceCase</span></code></a>s from JSONL (skips a <code class="docutils literal notranslate"><span class="pre">__meta__</span></code> header).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.read_package_meta">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">read_package_meta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#read_package_meta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.read_package_meta" title="Link to this definition"></a></dt>
+<dd><p>Return the <code class="docutils literal notranslate"><span class="pre">__meta__</span></code> header dict from a package-cases JSONL (<code class="docutils literal notranslate"><span class="pre">{}</span></code> if absent).</p>
+<p>The header carries the per-theme probe text (<code class="docutils literal notranslate"><span class="pre">probes</span></code>) and the corpus
+signature the labels were frozen against — everything <a class="reference internal" href="#ir.eval.compare_indexings" title="ir.eval.compare_indexings"><code class="xref py py-func docutils literal notranslate"><span class="pre">compare_indexings()</span></code></a>
+needs that is not on a per-artifact case.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.recall_on_hard_positives">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">recall_on_hard_positives</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ranking</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hard_positive_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#recall_on_hard_positives"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.recall_on_hard_positives" title="Link to this definition"></a></dt>
+<dd><p>Fraction of named hard-positives in the top-<code class="docutils literal notranslate"><span class="pre">k</span></code> (duplicate ids counted once).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1178,6 +1638,15 @@ a reranker — on the standard BEIR/MTEB metrics.</p>
 <p>An optional <code class="docutils literal notranslate"><span class="pre">meta</span></code> mapping is written as a leading <code class="docutils literal notranslate"><span class="pre">{&quot;__meta__&quot;:</span> <span class="pre">…}</span></code>
 line — the natural home for a corpus-version anchor that pins the cases to
 the corpus snapshot they were generated against.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.save_package_cases">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">save_package_cases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.PackageRelevanceCase" title="ir.eval.PackageRelevanceCase"><span class="pre">PackageRelevanceCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#save_package_cases"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.save_package_cases" title="Link to this definition"></a></dt>
+<dd><p>Write <a class="reference internal" href="#ir.eval.PackageRelevanceCase" title="ir.eval.PackageRelevanceCase"><code class="xref py py-class docutils literal notranslate"><span class="pre">PackageRelevanceCase</span></code></a>s to JSONL (mirrors <a class="reference internal" href="#ir.eval.save_cases" title="ir.eval.save_cases"><code class="xref py py-func docutils literal notranslate"><span class="pre">save_cases()</span></code></a>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">meta</span></code> is written as a leading <code class="docutils literal notranslate"><span class="pre">{&quot;__meta__&quot;:</span> <span class="pre">…}</span></code> line — the home for the
+per-theme probe text (<code class="docutils literal notranslate"><span class="pre">probes</span></code>) and the corpus signature
+(<a class="reference internal" href="eval_gen.html#ir.eval_gen.corpus_signature" title="ir.eval_gen.corpus_signature"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.eval_gen.corpus_signature()</span></code></a>) that pin the labels to a corpus snapshot.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1215,6 +1684,19 @@ ignores some knobs simply yields duplicate rows).</p></li>
 <code class="docutils literal notranslate"><span class="pre">.to_dict()</span></code>).</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.eval.to_graded_qrels">
+<span class="sig-prename descclassname"><span class="pre">ir.eval.</span></span><span class="sig-name descname"><span class="pre">to_graded_qrels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ir.eval.PackageRelevanceCase" title="ir.eval.PackageRelevanceCase"><span class="pre">PackageRelevanceCase</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theme</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">probe</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gains</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'core':</span> <span class="pre">3.0,</span> <span class="pre">'none':</span> <span class="pre">0.0,</span> <span class="pre">'strong':</span> <span class="pre">2.0,</span> <span class="pre">'tangential':</span> <span class="pre">0.0,</span> <span class="pre">'uses-tools':</span> <span class="pre">1.0}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/eval.html#to_graded_qrels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.eval.to_graded_qrels" title="Link to this definition"></a></dt>
+<dd><p>Build <code class="docutils literal notranslate"><span class="pre">ef</span></code>’s <strong>graded</strong> <code class="docutils literal notranslate"><span class="pre">(queries,</span> <span class="pre">qrels)</span></code> for one <code class="docutils literal notranslate"><span class="pre">theme</span></code>.</p>
+<p>Unlike <a class="reference internal" href="#ir.eval.to_qrels" title="ir.eval.to_qrels"><code class="xref py py-func docutils literal notranslate"><span class="pre">to_qrels()</span></code></a> (which hardcodes grade <code class="docutils literal notranslate"><span class="pre">1</span></code>), every positive artifact
+is judged at its graded <a class="reference internal" href="#ir.eval.LEVEL_GAINS" title="ir.eval.LEVEL_GAINS"><code class="xref py py-data docutils literal notranslate"><span class="pre">LEVEL_GAINS</span></code></a> value, so graded gains reach
+<code class="docutils literal notranslate"><span class="pre">ef.evaluation</span></code>’s nDCG with zero <code class="docutils literal notranslate"><span class="pre">ef</span></code> change. There is exactly <strong>one</strong>
+query per theme (the theme <em>probe</em>); <code class="docutils literal notranslate"><span class="pre">qrels</span></code> maps it to <code class="docutils literal notranslate"><span class="pre">{artifact_id:</span>
+<span class="pre">gain}</span></code> for every artifact with a positive gain. Non-positive
+(<code class="docutils literal notranslate"><span class="pre">none</span></code>/<code class="docutils literal notranslate"><span class="pre">tangential</span></code>) artifacts are omitted, matching <code class="docutils literal notranslate"><span class="pre">ef</span></code>’s
+judged-positive qrels convention.</p>
 </dd></dl>
 
 <dl class="py function">

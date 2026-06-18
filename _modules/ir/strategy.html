@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.strategy &mdash; ir 0.1.22 documentation</title>
+  <title>ir.strategy &mdash; ir 0.1.23 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=842aa08f"></script>
+      <script src="../../_static/documentation_options.js?v=20522496"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -468,15 +468,11 @@
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">summary</span><span class="p">:</span>
             <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="n">Surface</span><span class="p">(</span>
-                    <span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;assistant_summary&quot;</span><span class="p">,</span> <span class="n">summary</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span>
-                <span class="p">)</span>
+                <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;assistant_summary&quot;</span><span class="p">,</span> <span class="n">summary</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">)</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_full</span> <span class="ow">and</span> <span class="n">full</span> <span class="ow">and</span> <span class="n">full</span> <span class="o">!=</span> <span class="n">summary</span><span class="p">:</span>
             <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="n">Surface</span><span class="p">(</span>
-                    <span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;assistant_full&quot;</span><span class="p">,</span> <span class="n">full</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;document&quot;</span>
-                <span class="p">)</span>
+                <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;assistant_full&quot;</span><span class="p">,</span> <span class="n">full</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;document&quot;</span><span class="p">)</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">IndexPlan</span><span class="p">(</span><span class="n">filter_fields</span><span class="o">=</span><span class="n">filter_fields</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">)</span></div>
 
