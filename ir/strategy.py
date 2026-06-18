@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Callable, Protocol, runtime_checkable
 
 from .base import IndexPlan, Surface
 
@@ -231,11 +231,38 @@ def strategy_from_spec(spec: Mapping[str, Any] | None) -> "IndexingStrategy | No
     return cls(**dict(spec.get("params") or {}))
 
 
+def _default_deps_text(deps: list[str]) -> str:
+    """Prefix-form serialization of bare dependency names for the ``deps`` surface.
+
+    Strips version specifiers / extras / markers (via :func:`ir.graph._dep_name`),
+    de-duplicates, preserves order, and drops empties — e.g.
+    ``["numpy>=1", "sentence-transformers", "numpy"]`` ->
+    ``"Depends on: numpy, sentence-transformers"``. Returns ``""`` when there are
+    no usable names (``decompose`` then drops the empty surface).
+    """
+    from .graph import _dep_name
+
+    names = list(dict.fromkeys(n for n in (_dep_name(d) for d in deps) if n))
+    return "Depends on: " + ", ".join(names) if names else ""
+
+
 class Package:
     """Package strategy: ``name + description`` surface plus README chunks.
 
     Filter fields capture ownership (ours vs third-party), name, deps. AI
     synopsis / problem-class surfaces are a documented extension point.
+
+    With ``embed_deps=True``, ``decompose`` additionally emits one
+    ``Surface(kind="deps", granularity="field")`` whose text is a prefix-form
+    serialization of the **bare** dependency names (``deps_template``, default
+    :func:`_default_deps_text`) — so a query for a domain matches a package by the
+    libraries it depends on (e.g. ``sentence-transformers`` -> embeddings,
+    ``networkx`` -> graphs), and the BM25 leg picks up exact dep-token matches. The
+    deps bag is kept **separate from prose** (its own surface) so a rare library
+    name is not diluted, and deps remain a filter field regardless. ``embed_deps``
+    defaults ``False`` (today's behavior); it folds into the strategy id, so
+    toggling it re-decomposes incrementally. The deps surface is appended **last**,
+    leaving the ``description`` (position 0) and ``readme_chunk`` indices unchanged.
 
     Surface indexing: the ``description`` surface (kept whenever *name* or
     *description* is non-empty) occupies plan position 0, so ``readme_chunk``
@@ -250,9 +277,18 @@ class Package:
     strategy change) — read it with ``metadata.get("n_chunks")``.
     """
 
-    def __init__(self, *, chunk_size: int = 1500, overlap: int = 200):
+    def __init__(
+        self,
+        *,
+        chunk_size: int = 1500,
+        overlap: int = 200,
+        embed_deps: bool = False,
+        deps_template: Callable[[list[str]], str] | None = None,
+    ):
         self.chunk_size = chunk_size
         self.overlap = overlap
+        self.embed_deps = embed_deps
+        self.deps_template = deps_template
 
     def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
         meta = dict(metadata or {})
@@ -286,6 +322,15 @@ class Package:
                     metadata={"chunk_index": i, "n_chunks": len(chunks)},
                 )
             )
+        if self.embed_deps:
+            template = self.deps_template or _default_deps_text
+            deps_text = template(list(filter_fields["deps"]))
+            if deps_text and deps_text.strip():
+                # Appended last: keeps the description (0) and readme_chunk indices
+                # stable, so the surface_index contract holds for existing corpora.
+                surfaces.append(
+                    Surface(artifact_id, "deps", deps_text, granularity="field")
+                )
         # Drop empty surfaces (e.g. no description and no README).
         surfaces = [s for s in surfaces if s.text.strip()]
         return IndexPlan(filter_fields=filter_fields, surfaces=surfaces)
