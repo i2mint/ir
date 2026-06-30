@@ -75,9 +75,13 @@ from .strategy import (
     WholeText,
 )
 from .synopsis import Synthesizer, make_llm_synthesizer, with_synopsis
+from .tools import make_search
+from .tools import search as search_tool
 from .traverse import WalkPolicy, WalkState, collapsed_tree_policy, traverse
 
 __all__ = [
+    "search_tool",
+    "make_search",
     "Artifact",
     "Surface",
     "Record",
