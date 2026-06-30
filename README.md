@@ -45,8 +45,12 @@ Notes for the default (semantic) path:
   (which crashes on some numpy ABIs); import `ir` before anything that imports
   `transformers`.
 - Case generation (`ir.eval_gen`) and the optional LLM selector need an LLM via
-  [`oa`](https://github.com/thorwhalen/oa) — install the extra,
-  `pip install "ir[llm]"`. Scoring and evaluation themselves stay offline.
+  [`aix`](https://github.com/thorwhalen/aix) — install the extra,
+  `pip install "ir[llm]"`. Scoring and evaluation themselves stay offline. The
+  LLM is an *injected callable* at every seam, so it can run on a Claude
+  subscription instead of a metered key — see
+  [`ir_10`](misc/docs/ir_10%20--%20LLM%20Routing%20--%20Running%20Agentic%20Search%20on%20a%20Claude%20Subscription%20instead%20of%20pay-as-you-go.md)
+  (MCP sampling for connectors / the Agent SDK for Claude Code).
 
 ## The pipeline
 
@@ -150,7 +154,7 @@ Selection is *relative* (ratios to the top score), so one selector works across
 `dense` / `hybrid` / `lexical` whose absolute scales differ by orders of
 magnitude. The result carries auditable `signals` and a `reason` — no opaque
 "confidence" float. An optional LLM selector (`make_llm_selector`, lazy on
-[`oa`](https://github.com/thorwhalen/oa), injectable for tests) falls back to the
+[`aix`](https://github.com/thorwhalen/aix), injectable for tests) falls back to the
 heuristic on any failure.
 
 ### Disclose
@@ -194,13 +198,13 @@ pattern: build-time cost, ≈free at query time), and that synopsis becomes the
 collapsed-tree router:
 
 ```python
-strat  = ir.with_synopsis(ir.Chunked(), synthesize=my_summarizer)  # or default (lazy oa)
+strat  = ir.with_synopsis(ir.Chunked(), synthesize=my_summarizer)  # or default (lazy aix)
 corpus = ir.build(ir.CorpusSource.from_mapping(docs, name="d", strategy=strat))
 hits   = ir.traverse(q, corpus, policy=ir.collapsed_tree_policy())  # routes via the synopsis
 ```
 
 `synthesize` is injectable (a test double or your own summarizer); omitted, it is
-built lazily on [`oa`](https://github.com/thorwhalen/oa) so `import ir` stays
+built lazily on [`aix`](https://github.com/thorwhalen/aix) so `import ir` stays
 offline. Synopses are derived state with a stamped synthesizer identity, so a
 prompt/model change re-synthesizes only the affected artifacts on the next
 incremental `build` — no silent staleness.
