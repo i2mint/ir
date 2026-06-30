@@ -1,0 +1,184 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.tools &mdash; ir 0.1.26 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=785bba28"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ir.traverse" href="traverse.html" />
+    <link rel="prev" title="ir.synopsis" href="synopsis.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="expand.html">ir.expand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formulate.html">ir.formulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="graph.html">ir.graph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="strategy.html">ir.strategy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="synopsis.html">ir.synopsis</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ir.tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.tools.make_search"><code class="docutils literal notranslate"><span class="pre">make_search()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.tools.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="traverse.html">ir.traverse</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ir.tools</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/ir/tools.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ir.tools">
+<span id="ir-tools"></span><h1>ir.tools<a class="headerlink" href="#module-ir.tools" title="Link to this heading"></a></h1>
+<p>Agent-callable tool surface over <code class="docutils literal notranslate"><span class="pre">ir</span></code> — plain functions returning JSON-ready
+dicts, deliberately MCP/HTTP-agnostic.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ir</span></code> knows nothing about MCP, HTTP, or any agent host. This module is the SSOT
+for “expose ir’s retrieval as a single agent-callable tool”: a wrapper
+(<code class="docutils literal notranslate"><span class="pre">py2mcp</span></code>, <code class="docutils literal notranslate"><span class="pre">qh</span></code>, a hand-written agent tool) references e.g. <code class="docutils literal notranslate"><span class="pre">ir.tools:search</span></code>
+and gets a clean JSON <code class="docutils literal notranslate"><span class="pre">dict</span></code> back. The corpus is a <strong>parameter</strong>, so one
+function serves every corpus with no per-corpus code — and <a class="reference internal" href="#ir.tools.make_search" title="ir.tools.make_search"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_search()</span></code></a>
+returns a <em>corpus-bound</em> tool when a connector should expose exactly one corpus.</p>
+<p>This pairs with <code class="docutils literal notranslate"><span class="pre">ir.discover</span></code> (which <code class="docutils literal notranslate"><span class="pre">ir</span></code> already calls “the single
+agent-callable tool”); <a class="reference internal" href="#ir.tools.search" title="ir.tools.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">search()</span></code></a> is just its JSON-returning, tool-shaped
+front door.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.tools.make_search">
+<span class="sig-prename descclassname"><span class="pre">ir.tools.</span></span><span class="sig-name descname"><span class="pre">make_search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/tools.html#make_search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.tools.make_search" title="Link to this definition"></a></dt>
+<dd><p>Return a <strong>corpus-bound</strong> <code class="docutils literal notranslate"><span class="pre">search(query,</span> <span class="pre">k=...)</span> <span class="pre">-&gt;</span> <span class="pre">dict</span></code> tool.</p>
+<p>The returned function exposes only <code class="docutils literal notranslate"><span class="pre">query</span></code> (and <code class="docutils literal notranslate"><span class="pre">k</span></code>) — the corpus is fixed
+— so a connector built over it surfaces exactly one corpus and nothing else.
+Its <code class="docutils literal notranslate"><span class="pre">__name__</span></code> / <code class="docutils literal notranslate"><span class="pre">__doc__</span></code> are set so an MCP/agent host shows a clean tool
+name and description. Use this when wiring a single-corpus connector; use
+<a class="reference internal" href="#ir.tools.search" title="ir.tools.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">search()</span></code></a> when the caller should choose the corpus.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.tools.search">
+<span class="sig-prename descclassname"><span class="pre">ir.tools.</span></span><span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../_modules/ir/tools.html#search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.tools.search" title="Link to this definition"></a></dt>
+<dd><p>Search a named <code class="docutils literal notranslate"><span class="pre">ir</span></code> corpus and return a JSON-serializable result dict.</p>
+<p>Thin agent-callable wrapper over <a class="reference internal" href="../ir.html#ir.discover" title="ir.discover"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.discover()</span></code></a> — returns its
+<code class="docutils literal notranslate"><span class="pre">.to_dict()</span></code> (committed results, scores, disclosures), fit to hand straight
+back from an MCP tool or HTTP endpoint. The <em>corpus</em> is a parameter, so this
+single function serves any corpus.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> – the natural-language query.</p></li>
+<li><p><strong>corpus</strong> – a registered corpus <strong>name</strong> (str), a list of names (federated
+search), or a built <a class="reference internal" href="../ir.html#ir.Corpus" title="ir.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">ir.Corpus</span></code></a>.</p></li>
+<li><p><strong>k</strong> – maximum number of results.</p></li>
+<li><p><strong>mode</strong> – <code class="docutils literal notranslate"><span class="pre">&quot;dense&quot;</span></code> | <code class="docutils literal notranslate"><span class="pre">&quot;lexical&quot;</span></code> | <code class="docutils literal notranslate"><span class="pre">&quot;hybrid&quot;</span></code>.</p></li>
+<li><p><strong>filter</strong> – optional <code class="docutils literal notranslate"><span class="pre">vd</span></code> Mongo-style metadata filter (hard pre-filter).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="synopsis.html" class="btn btn-neutral float-left" title="ir.synopsis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="traverse.html" class="btn btn-neutral float-right" title="ir.traverse" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

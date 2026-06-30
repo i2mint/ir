@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.25 documentation</title>
+  <title>ir &mdash; ir 0.1.26 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=4fa33042"></script>
+      <script src="../_static/documentation_options.js?v=785bba28"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -175,6 +175,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.maintain_corpus"><code class="docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.make_llm_formulator"><code class="docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.make_llm_synthesizer"><code class="docutils literal notranslate"><span class="pre">make_llm_synthesizer()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.make_search"><code class="docutils literal notranslate"><span class="pre">make_search()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.parent_policy"><code class="docutils literal notranslate"><span class="pre">parent_policy()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.policy_for"><code class="docutils literal notranslate"><span class="pre">policy_for()</span></code></a></li>
@@ -184,6 +185,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.retriever_for"><code class="docutils literal notranslate"><span class="pre">retriever_for()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrievers"><code class="docutils literal notranslate"><span class="pre">retrievers()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.search_tool"><code class="docutils literal notranslate"><span class="pre">search_tool()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.select"><code class="docutils literal notranslate"><span class="pre">select()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.sentence_window_policy"><code class="docutils literal notranslate"><span class="pre">sentence_window_policy()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.tag_source"><code class="docutils literal notranslate"><span class="pre">tag_source()</span></code></a></li>
@@ -211,6 +213,7 @@
 <li class="toctree-l1"><a class="reference internal" href="ir/store.html">ir.store</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/strategy.html">ir.strategy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/synopsis.html">ir.synopsis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ir/tools.html">ir.tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/traverse.html">ir.traverse</a></li>
 </ul>
 
@@ -1456,6 +1459,17 @@ corpus’s <code class="docutils literal notranslate"><span class="pre">strategy
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.make_search">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">make_search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/ir/tools.html#make_search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.make_search" title="Link to this definition"></a></dt>
+<dd><p>Return a <strong>corpus-bound</strong> <code class="docutils literal notranslate"><span class="pre">search(query,</span> <span class="pre">k=...)</span> <span class="pre">-&gt;</span> <span class="pre">dict</span></code> tool.</p>
+<p>The returned function exposes only <code class="docutils literal notranslate"><span class="pre">query</span></code> (and <code class="docutils literal notranslate"><span class="pre">k</span></code>) — the corpus is fixed
+— so a connector built over it surfaces exactly one corpus and nothing else.
+Its <code class="docutils literal notranslate"><span class="pre">__name__</span></code> / <code class="docutils literal notranslate"><span class="pre">__doc__</span></code> are set so an MCP/agent host shows a clean tool
+name and description. Use this when wiring a single-corpus connector; use
+<a class="reference internal" href="#ir.search" title="ir.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">search()</span></code></a> when the caller should choose the corpus.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.open_corpus">
 <span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">open_corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="ir/index.html#ir.index.Corpus" title="ir.index.Corpus"><span class="pre">Corpus</span></a></span></span><a class="reference internal" href="../_modules/ir/index.html#open_corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.open_corpus" title="Link to this definition"></a></dt>
 <dd><p>Reopen a previously built corpus by name.</p>
@@ -1581,6 +1595,28 @@ it — the useful ones are <code class="docutils literal notranslate"><span clas
 filter), <code class="docutils literal notranslate"><span class="pre">surfaces</span></code> (restrict to surface kinds), and <code class="docutils literal notranslate"><span class="pre">per_artifact</span></code>
 (collapse to the best surface per artifact). See <a class="reference internal" href="ir/retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a>
 for the full signature and defaults.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.search_tool">
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">search_tool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#ir.search_tool" title="Link to this definition"></a></dt>
+<dd><p>Search a named <code class="docutils literal notranslate"><span class="pre">ir</span></code> corpus and return a JSON-serializable result dict.</p>
+<p>Thin agent-callable wrapper over <a class="reference internal" href="#ir.discover" title="ir.discover"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.discover()</span></code></a> — returns its
+<code class="docutils literal notranslate"><span class="pre">.to_dict()</span></code> (committed results, scores, disclosures), fit to hand straight
+back from an MCP tool or HTTP endpoint. The <em>corpus</em> is a parameter, so this
+single function serves any corpus.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> – the natural-language query.</p></li>
+<li><p><strong>corpus</strong> – a registered corpus <strong>name</strong> (str), a list of names (federated
+search), or a built <a class="reference internal" href="#ir.Corpus" title="ir.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">ir.Corpus</span></code></a>.</p></li>
+<li><p><strong>k</strong> – maximum number of results.</p></li>
+<li><p><strong>mode</strong> – <code class="docutils literal notranslate"><span class="pre">&quot;dense&quot;</span></code> | <code class="docutils literal notranslate"><span class="pre">&quot;lexical&quot;</span></code> | <code class="docutils literal notranslate"><span class="pre">&quot;hybrid&quot;</span></code>.</p></li>
+<li><p><strong>filter</strong> – optional <code class="docutils literal notranslate"><span class="pre">vd</span></code> Mongo-style metadata filter (hard pre-filter).</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">

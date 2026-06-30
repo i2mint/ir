@@ -23,4 +23,5 @@
    module_docs/ir/store
    module_docs/ir/strategy
    module_docs/ir/synopsis
+   module_docs/ir/tools
    module_docs/ir/traverse
