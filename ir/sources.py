@@ -21,12 +21,13 @@ from __future__ import annotations
 import os
 import re
 import warnings
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from .strategy import (
+    DFLT_CHUNK_MAX_TOKENS,
     Chunked,
     ClaudeTurn,
     IndexingStrategy,
@@ -36,6 +37,27 @@ from .strategy import (
 )
 
 ALLCAPS_MD = re.compile(r"^[A-Z0-9_ ]+\.md$")
+
+#: Directory names never descended into when walking a docs tree for reports.
+#: Vendored / build / hidden noise — kept as an SSOT so ingestion and any
+#: coverage diagnostic exclude exactly the same set (see :func:`_md_in`).
+DFLT_EXCLUDE_DIRS = frozenset(
+    {
+        ".git",
+        ".hg",
+        ".svn",
+        ".venv",
+        "venv",
+        "node_modules",
+        "__pycache__",
+        "site-packages",
+        ".tox",
+        "build",
+        "dist",
+        ".ipynb_checkpoints",
+        ".obsidian",
+    }
+)
 
 #: Default look-back window (days) for :meth:`CorpusSource.from_claude_sessions`.
 DFLT_SESSIONS_SINCE_DAYS = 90
@@ -113,7 +135,7 @@ class CorpusSource:
         return cls(
             name=name or root.name,
             scope=scope,
-            indexing_strategy=strategy or Chunked(),
+            indexing_strategy=strategy or Chunked(max_tokens=DFLT_CHUNK_MAX_TOKENS),
             metadata_of=metadata_of,
             **kwargs,
         )
@@ -125,17 +147,29 @@ class CorpusSource:
         name: str = "reports",
         projects_root: str | Path | None = None,
         strategy: IndexingStrategy | None = None,
+        recursive: bool = True,
+        exclude_dirs: Iterable[str] | None = None,
         **kwargs,
     ) -> "CorpusSource":
-        """Markdown reports under projects' ``docs/`` and ``misc/docs/``.
+        """Markdown reports under projects' ``docs/`` and ``misc/docs/`` trees.
 
-        Excludes ALL-CAPS filenames (README/CLAUDE/MEMORY/SKILL...). Each record
-        is a project-tagged document; ids are paths relative to the projects root.
+        Walks each ``*/*/docs`` and ``*/*/misc/docs`` folder **recursively**
+        (``recursive=True``, default) so reports nested one or more levels deep —
+        ``docs/research/…``, ``docs/decisions/…``, ``docs/adr/…`` — are indexed,
+        not just files sitting directly in the folder. Pass ``recursive=False``
+        for the old shallow (top-level-only) behavior.
+
+        Excludes ALL-CAPS filenames (README/CLAUDE/MEMORY/SKILL...) and any file
+        under a vendored/hidden directory (``exclude_dirs``, default
+        :data:`DFLT_EXCLUDE_DIRS`; a dotted directory is always skipped). Each
+        record is a project-tagged document; ids are paths relative to the
+        projects root.
         """
         root = Path(projects_root or _projects_root())
+        exclude = DFLT_EXCLUDE_DIRS if exclude_dirs is None else frozenset(exclude_dirs)
         scope: dict[str, dict] = {}
         meta: dict[str, dict] = {}
-        for path in _iter_md_reports(root):
+        for path in _iter_md_reports(root, recursive=recursive, exclude_dirs=exclude):
             rel = str(path.relative_to(root))
             try:
                 text = path.read_text(encoding="utf-8", errors="ignore")
@@ -153,7 +187,7 @@ class CorpusSource:
         return cls(
             name=name,
             scope=scope,
-            indexing_strategy=strategy or Chunked(),
+            indexing_strategy=strategy or Chunked(max_tokens=DFLT_CHUNK_MAX_TOKENS),
             metadata_of=lambda aid, raw: meta.get(aid, {}),
             **kwargs,
         )
@@ -283,7 +317,7 @@ class CorpusSource:
         return cls(
             name=name,
             scope=scope,
-            indexing_strategy=strategy or Package(),
+            indexing_strategy=strategy or Package(max_tokens=DFLT_CHUNK_MAX_TOKENS),
             metadata_of=metadata_of,
             **kwargs,
         )
@@ -317,19 +351,77 @@ def _projects_root() -> Path:
     )
 
 
-def _iter_md_reports(root: Path):
-    """Yield non-ALLCAPS ``*.md`` files under projects' docs/ and misc/docs/."""
-    for sub in root.glob("*/*/docs"):
-        yield from _md_in(sub)
-    for sub in root.glob("*/*/misc/docs"):
-        yield from _md_in(sub)
+#: The two per-project doc-tree roots reports are drawn from (relative globs).
+REPORT_DOC_GLOBS = ("*/*/docs", "*/*/misc/docs")
 
 
-def _md_in(folder: Path):
+def report_exclude_reason(
+    path: Path, folder: Path, *, exclude_dirs: Iterable[str] = DFLT_EXCLUDE_DIRS
+) -> str | None:
+    """Why a ``*.md`` under *folder* is excluded from the reports corpus.
+
+    The **SSOT** for "does this report file get indexed" — consumed by both the
+    ingestion walk (:func:`_md_in`) and the coverage diagnostic
+    (:func:`ir.coverage.reports_coverage`) so the two can never drift. Returns
+    ``None`` when the file *should* be indexed, else a short reason tag:
+    ``"allcaps"`` (a README/CLAUDE/… metadata file) or ``"excluded_dir"`` (under a
+    vendored/hidden subtree).
+    """
+    if ALLCAPS_MD.match(path.name):
+        return "allcaps"
+    exclude = (
+        exclude_dirs if isinstance(exclude_dirs, frozenset) else frozenset(exclude_dirs)
+    )
+    rel_dirs = path.relative_to(folder).parts[:-1]
+    if any(part in exclude or part.startswith(".") for part in rel_dirs):
+        return "excluded_dir"
+    return None
+
+
+def iter_report_doc_folders(root: Path):
+    """Yield each existing ``*/*/docs`` and ``*/*/misc/docs`` folder under *root*."""
+    for pattern in REPORT_DOC_GLOBS:
+        for folder in root.glob(pattern):
+            if folder.is_dir():
+                yield folder
+
+
+def _iter_md_reports(
+    root: Path,
+    *,
+    recursive: bool = True,
+    exclude_dirs: Iterable[str] = DFLT_EXCLUDE_DIRS,
+):
+    """Yield non-ALLCAPS ``*.md`` files under projects' docs/ and misc/docs/.
+
+    Each ``*/*/docs`` and ``*/*/misc/docs`` folder is walked recursively by
+    default (``recursive=True``); ``exclude_dirs`` (plus any dotted directory)
+    prunes vendored/hidden subtrees.
+    """
+    for folder in iter_report_doc_folders(root):
+        yield from _md_in(folder, recursive=recursive, exclude_dirs=exclude_dirs)
+
+
+def _md_in(
+    folder: Path,
+    *,
+    recursive: bool = True,
+    exclude_dirs: Iterable[str] = DFLT_EXCLUDE_DIRS,
+):
+    """Yield report ``*.md`` files in *folder*.
+
+    Recurses into subdirectories when *recursive* (default), skipping ALL-CAPS
+    filenames and any file living under an *exclude_dirs* or dotted directory
+    (per :func:`report_exclude_reason`, the shared inclusion SSOT).
+    """
     if not folder.is_dir():
         return
-    for f in folder.glob("*.md"):
-        if f.is_file() and not ALLCAPS_MD.match(f.name):
+    exclude = frozenset(exclude_dirs)
+    walk = folder.rglob if recursive else folder.glob
+    for f in walk("*.md"):
+        if not f.is_file():
+            continue
+        if report_exclude_reason(f, folder, exclude_dirs=exclude) is None:
             yield f
 
 
