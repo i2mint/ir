@@ -22,6 +22,17 @@ item becomes filter fields + embeddable surfaces), and an ``embedder``. The
 default embedder is a decent *local* model (``all-MiniLM-L6-v2``); ``"light"``
 selects a numpy-only hashing embedder. Data persists under XDG dirs through a
 ``dol`` repository layer.
+
+``ir`` is a retrieval **substrate, not a search agent** — it has no agent of its
+own. :func:`ir.discover` is a deterministic single-shot ``retrieve → select →
+disclose`` pipeline: the query is embedded verbatim (no LLM query rewriting) and
+committed by a score rule (no LLM reviewing results), with no planner and no
+*back-edge* (evaluate → reformulate → search again). The agent layer — planner,
+LLM query formulator, and the evaluator→reformulate loop — lives in **raglab**
+(https://github.com/thorwhalen/raglab), which is built *on top of* ``ir``:
+``raglab`` imports ``ir``; ``ir`` never imports ``raglab``. To drive an agentic
+search from Claude Code instead of a coded agent, see the ``ir-search`` skill and
+the reviewing search subagent shipped under ``.claude/``.
 """
 
 from __future__ import annotations
@@ -53,6 +64,7 @@ from .policy import (
     default_policy_for_kind,
     resolve_policy,
 )
+from .coverage import CoverageReport, reports_coverage
 from .registry import policy_for, retriever_for, retrievers
 from .retrieve import Retriever, as_retriever, fuse_hits, records_for_artifact
 from .retrieve import search as _search
@@ -101,6 +113,8 @@ __all__ = [
     "Corpus",
     "build",
     "open_corpus",
+    "reports_coverage",
+    "CoverageReport",
     "search",
     "as_retriever",
     "Retriever",

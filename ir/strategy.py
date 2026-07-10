@@ -24,11 +24,21 @@ custom strategies need only match the :class:`IndexingStrategy` protocol.
 
 from __future__ import annotations
 
+import functools
 import re
+import warnings
 from collections.abc import Mapping
 from typing import Any, Callable, Protocol, runtime_checkable
 
 from .base import IndexPlan, Surface
+
+#: Content-token budget for token-aware chunking under the default embedder.
+#: ``all-MiniLM-L6-v2`` caps input at 256 tokens and silently truncates beyond
+#: it. We target 250 (not 254) to leave headroom for the two special tokens
+#: (``[CLS]``/``[SEP]``) *and* the ±1–2 token drift when an offset-sliced
+#: substring is re-tokenized on its own — so an embedded chunk stays within
+#: budget and its tail is never silently truncated (see :func:`_chunk_text`).
+DFLT_CHUNK_MAX_TOKENS = 250
 
 
 @runtime_checkable
@@ -111,6 +121,106 @@ def _split(text: str, *, chunk_size: int, overlap: int) -> list[str]:
     return chunks
 
 
+@functools.lru_cache(maxsize=8)
+def _tokenizer_for(model_name: str):
+    """A cached *fast* tokenizer for *model_name*, or ``None`` if unavailable.
+
+    Lazy (keeps ``import ir`` offline) and self-degrading: any import/load
+    failure — or a slow tokenizer that cannot report char offsets — returns
+    ``None`` so token-aware chunking falls back to char-based splitting, mirroring
+    the embedder's degrade-to-hashing discipline (:mod:`ir.embed`).
+    """
+    try:
+        from transformers import AutoTokenizer
+    except Exception:
+        return None
+    # A bare sentence-transformers name (e.g. "all-MiniLM-L6-v2") is a valid
+    # SentenceTransformer id but not a Hub repo id — AutoTokenizer needs the
+    # "sentence-transformers/" prefix. Try the name as given, then prefixed.
+    candidates = [model_name]
+    if "/" not in model_name:
+        candidates.append(f"sentence-transformers/{model_name}")
+    for candidate in candidates:
+        try:
+            tok = AutoTokenizer.from_pretrained(candidate)
+        except Exception:
+            continue
+        # Offset mapping (used to cut the original text at token boundaries) needs
+        # a Rust "fast" tokenizer; a slow one would force a lossy id round-trip.
+        if getattr(tok, "is_fast", False):
+            return tok
+    return None
+
+
+def _split_by_tokens(
+    text: str, *, tokenizer: Any, max_tokens: int, overlap_tokens: int
+) -> list[str]:
+    """Split *text* into windows of at most *max_tokens* tokens, text preserved.
+
+    Cuts the **original** string at token boundaries using the tokenizer's char
+    offset-mapping — so each stored surface stays verbatim (for lexical search and
+    disclosure), never a lossy decode of token ids — with *overlap_tokens* of
+    overlap between consecutive windows.
+    """
+    text = text.strip()
+    if not text:
+        return []
+    enc = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True)
+    offsets = enc["offset_mapping"]
+    n = len(offsets)
+    if n <= max_tokens:
+        return [text]
+    step = max(1, max_tokens - overlap_tokens)
+    chunks: list[str] = []
+    i = 0
+    while i < n:
+        j = min(i + max_tokens, n)
+        piece = text[offsets[i][0] : offsets[j - 1][1]].strip()
+        if piece:
+            chunks.append(piece)
+        if j >= n:
+            break
+        i += step
+    return chunks
+
+
+def _chunk_text(
+    text: str,
+    *,
+    chunk_size: int,
+    overlap: int,
+    max_tokens: int | None = None,
+    token_model: str | None = None,
+) -> list[str]:
+    """Chunk *text* by tokens when *max_tokens* is set, else by characters.
+
+    Token mode bounds every chunk to the embedder's token budget, so no chunk is
+    silently truncated at embed time; the token overlap is derived from the char
+    ``overlap / chunk_size`` ratio. It degrades to char-based splitting (with a
+    warning) when the tokenizer for *token_model* cannot be loaded. Char mode
+    (``max_tokens=None``) is the historical behavior.
+    """
+    if not max_tokens:
+        return _split(text, chunk_size=chunk_size, overlap=overlap)
+    from .embed import DEFAULT_MODEL
+
+    model = token_model or DEFAULT_MODEL
+    tokenizer = _tokenizer_for(model)
+    if tokenizer is None:
+        warnings.warn(
+            f"token-aware chunking requested (max_tokens={max_tokens}) but no fast "
+            f"tokenizer for {model!r} is available; falling back to char-based "
+            f"chunking (chunks may exceed the embedder's token budget and be "
+            f"truncated). Install `transformers` for token-aware chunking.",
+            stacklevel=2,
+        )
+        return _split(text, chunk_size=chunk_size, overlap=overlap)
+    overlap_tokens = round(max_tokens * overlap / chunk_size) if chunk_size else 0
+    return _split_by_tokens(
+        text, tokenizer=tokenizer, max_tokens=max_tokens, overlap_tokens=overlap_tokens
+    )
+
+
 class WholeText:
     """One surface = the entire text. Sensible default for a naive corpus."""
 
@@ -130,7 +240,16 @@ class WholeText:
 
 
 class Chunked:
-    """Split the artifact's text into overlapping chunk surfaces."""
+    """Split the artifact's text into overlapping chunk surfaces.
+
+    By default chunks are packed to ~``chunk_size`` **characters**. Set
+    ``max_tokens`` to chunk by **tokens** instead — each chunk is bounded to
+    ``max_tokens`` tokens of ``token_model`` (default: the default embedding
+    model), so no chunk overflows the embedder's sequence limit and is silently
+    truncated. Token mode degrades to char mode with a warning if the tokenizer
+    is unavailable. The char ``chunk_size`` / ``overlap`` still set the overlap
+    *ratio* used in token mode.
+    """
 
     def __init__(
         self,
@@ -139,16 +258,26 @@ class Chunked:
         overlap: int = 200,
         text_key: str | None = None,
         kind: str = "chunk",
+        max_tokens: int | None = None,
+        token_model: str | None = None,
     ):
         self.chunk_size = chunk_size
         self.overlap = overlap
         self.text_key = text_key
         self.kind = kind
+        self.max_tokens = max_tokens
+        self.token_model = token_model
 
     def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
         meta = dict(metadata or {})
         text = _text_of(raw, self.text_key)
-        chunks = _split(text, chunk_size=self.chunk_size, overlap=self.overlap)
+        chunks = _chunk_text(
+            text,
+            chunk_size=self.chunk_size,
+            overlap=self.overlap,
+            max_tokens=self.max_tokens,
+            token_model=self.token_model,
+        )
         surfaces = [
             Surface(
                 artifact_id,
@@ -284,11 +413,15 @@ class Package:
         overlap: int = 200,
         embed_deps: bool = False,
         deps_template: Callable[[list[str]], str] | None = None,
+        max_tokens: int | None = None,
+        token_model: str | None = None,
     ):
         self.chunk_size = chunk_size
         self.overlap = overlap
         self.embed_deps = embed_deps
         self.deps_template = deps_template
+        self.max_tokens = max_tokens
+        self.token_model = token_model
 
     def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
         meta = dict(metadata or {})
@@ -311,7 +444,13 @@ class Package:
                 granularity="field",
             )
         ]
-        chunks = _split(readme, chunk_size=self.chunk_size, overlap=self.overlap)
+        chunks = _chunk_text(
+            readme,
+            chunk_size=self.chunk_size,
+            overlap=self.overlap,
+            max_tokens=self.max_tokens,
+            token_model=self.token_model,
+        )
         for i, chunk in enumerate(chunks):
             surfaces.append(
                 Surface(

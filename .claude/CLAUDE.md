@@ -41,6 +41,24 @@ local `$PP/t/raglab`), **on top of ir**. The split (epic #38, decided 2026-06-11
 **Dependency direction is one-way: `raglab` imports `ir`; `ir` must NEVER import
 `raglab`.** This keeps ir installable-light and offline-by-default.
 
+## Agentic search from Claude Code (no coded agent in ir)
+
+For driving `ir` agentically **without** putting an agent in the codebase, ir
+ships two Claude-Code-native artifacts (a lightweight "raglab-in-instructions"):
+
+- `.claude/skills/ir-search/SKILL.md` — the entry-point skill: when to search
+  `ir` corpora, the CLI cheat-sheet, the corpus map, and the mode/scoring/coverage
+  gotchas.
+- `.claude/agents/ir-discover-agent.md` — a **reviewing search subagent**: it
+  formulates several queries, retrieves, **reads and grades** candidates against
+  the real intent, reformulates (the back-edge), and returns only the verified
+  few. It supplies the query-writing + relevance-review + reformulate loop that
+  the deterministic `ir discover` pipeline lacks.
+
+These are the correct home for the *back-edge as instructions* — they don't
+violate the boundary above, because no loop or `refinement` directive enters the
+`ir` package code. The coded loop still belongs to `raglab`.
+
 ## House style (inherited)
 
 Functional > OOP; SOLID when OOP; facades, SSOT, dependency injection;

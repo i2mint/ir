@@ -129,14 +129,16 @@ def source_from_entry(name: str, entry: dict) -> CorpusSource:
     embedder = entry.get("embedder", "default")
     strategy = strategy_from_spec(entry.get("strategy"))
     if kind == "skills":
-        return CorpusSource.from_skills(name=name, embedder=embedder, strategy=strategy)
+        return CorpusSource.from_skills(
+            name=name, embedder=embedder, strategy=strategy, **params
+        )
     if kind == "packages":
         return CorpusSource.from_packages(
-            name=name, embedder=embedder, strategy=strategy
+            name=name, embedder=embedder, strategy=strategy, **params
         )
     if kind == "reports":
         return CorpusSource.from_md_reports(
-            name=name, embedder=embedder, strategy=strategy
+            name=name, embedder=embedder, strategy=strategy, **params
         )
     if kind == "sessions":
         return CorpusSource.from_claude_sessions(

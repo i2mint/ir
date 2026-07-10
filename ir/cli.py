@@ -8,6 +8,7 @@ Commands operate on **named** corpora from the registry (see
     ir discover skills "deploy app" # retrieve -> commit to a high-precision subset
     ir discover skills "deploy app" --disclose   # + load each selected item's body
     ir ls                           # list corpora + record counts
+    ir coverage reports             # disk-vs-index coverage (silent-gap detector)
     ir info packages                # config + stats for a corpus
     ir register notes files --root ~/notes --pattern '.*\\.md$'
     ir rm notes                     # unregister (keeps built data)
@@ -179,6 +180,23 @@ def discover(
             preview = d.body.strip().replace("\n", " ")[:160]
             lines.append(f"           {preview}…")
     return "\n".join(lines)
+
+
+def coverage(name="reports"):
+    """Report disk-vs-index coverage for a reports corpus (silent-gap detector).
+
+    Independently walks every ``*/*/docs`` and ``*/*/misc/docs`` tree on disk and
+    diffs the includable reports against what is actually indexed, listing any
+    file that is on disk but missing from the index (rebuild with ``ir build`` to
+    fix). Catches the ingestion gaps that back-translation evals structurally
+    cannot — a doc that was never indexed can never be an eval gold id.
+    """
+    from .coverage import reports_coverage
+
+    corpus = open_corpus(name)
+    if len(corpus) == 0:
+        return _empty_corpus_msg(name)
+    return str(reports_coverage(name))
 
 
 def info(name):
@@ -425,6 +443,7 @@ COMMANDS = [
     build,
     search,
     discover,
+    coverage,
     info,
     maintain,
     rm,

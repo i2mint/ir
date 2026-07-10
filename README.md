@@ -9,6 +9,28 @@ candidates, **commits to a small high-precision subset** (the distractor problem
 is the central selection risk — fewer, better candidates beat more), and
 **discloses** each committed item's payload only when asked.
 
+> ### Looking for a search *agent*?
+>
+> **`ir` is a retrieval *substrate*, not a search agent — it has no agent of its
+> own.** `ir.discover` is a deterministic, single-shot `retrieve → select →
+> disclose` pipeline: it embeds your query *verbatim* (no LLM query rewriting)
+> and commits via a score rule (no LLM reviewing the results). There is no
+> planner and no *back-edge* (evaluate → reformulate → search again) — and that
+> back-edge is precisely what makes a system an agent.
+>
+> If you want the **agent** — a planner, an LLM formulator that rewrites queries,
+> and the evaluator→reformulate loop over one or more `ir` corpora — reach for
+> **[`raglab`](https://github.com/thorwhalen/raglab)**, which is **built on top of
+> `ir`** (`raglab` imports `ir`; `ir` never imports `raglab`, so it stays
+> installable-light and offline-by-default).
+>
+> Prefer to drive it from **Claude Code** instead of a coded agent? `ir` ships a
+> reviewing **search subagent** and an `ir-search` **skill** under
+> [`.claude/`](.claude/) — a lightweight "raglab-in-instructions" that formulates
+> queries, *reads and judges* candidates against your real intent, filters, and
+> reformulates, all on your Claude subscription (see
+> [`ir_10`](misc/docs/ir_10%20--%20LLM%20Routing%20--%20Running%20Agentic%20Search%20on%20a%20Claude%20Subscription%20instead%20of%20pay-as-you-go.md)).
+
 ```python
 import ir
 
@@ -250,6 +272,7 @@ ir discover skills "deploy the app" --min-score auto # + calibrated abstention
 ir build sessions                        # index recent Claude Code sessions (turn pairs)
 ir search sessions "numpy abi error" --mode lexical   # find past sessions
 ir ls                                    # list corpora + record counts
+ir coverage reports                      # disk-vs-index coverage (silent-gap detector)
 ir info skills                           # config, stats, policy, calibrated floors
 ir maintain --all                        # run due background work (idempotent; cron-friendly)
 ir register notes files --root ~/notes --pattern '.*\.md$'  # register a custom corpus
