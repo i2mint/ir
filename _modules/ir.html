@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.27 documentation</title>
+  <title>ir &mdash; ir 0.1.28 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=dc233e31"></script>
+      <script src="../_static/documentation_options.js?v=34399df3"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/base.html">ir.base</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/cli.html">ir.cli</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/coverage.html">ir.coverage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
@@ -120,6 +121,17 @@
 <span class="sd">default embedder is a decent *local* model (``all-MiniLM-L6-v2``); ``&quot;light&quot;``</span>
 <span class="sd">selects a numpy-only hashing embedder. Data persists under XDG dirs through a</span>
 <span class="sd">``dol`` repository layer.</span>
+
+<span class="sd">``ir`` is a retrieval **substrate, not a search agent** — it has no agent of its</span>
+<span class="sd">own. :func:`ir.discover` is a deterministic single-shot ``retrieve → select →</span>
+<span class="sd">disclose`` pipeline: the query is embedded verbatim (no LLM query rewriting) and</span>
+<span class="sd">committed by a score rule (no LLM reviewing results), with no planner and no</span>
+<span class="sd">*back-edge* (evaluate → reformulate → search again). The agent layer — planner,</span>
+<span class="sd">LLM query formulator, and the evaluator→reformulate loop — lives in **raglab**</span>
+<span class="sd">(https://github.com/thorwhalen/raglab), which is built *on top of* ``ir``:</span>
+<span class="sd">``raglab`` imports ``ir``; ``ir`` never imports ``raglab``. To drive an agentic</span>
+<span class="sd">search from Claude Code instead of a coded agent, see the ``ir-search`` skill and</span>
+<span class="sd">the reviewing search subagent shipped under ``.claude/``.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -151,6 +163,7 @@
     <span class="n">default_policy_for_kind</span><span class="p">,</span>
     <span class="n">resolve_policy</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.coverage</span><span class="w"> </span><span class="kn">import</span> <span class="n">CoverageReport</span><span class="p">,</span> <span class="n">reports_coverage</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">policy_for</span><span class="p">,</span> <span class="n">retriever_for</span><span class="p">,</span> <span class="n">retrievers</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">Retriever</span><span class="p">,</span> <span class="n">as_retriever</span><span class="p">,</span> <span class="n">fuse_hits</span><span class="p">,</span> <span class="n">records_for_artifact</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span> <span class="k">as</span> <span class="n">_search</span>
@@ -199,6 +212,8 @@
     <span class="s2">&quot;Corpus&quot;</span><span class="p">,</span>
     <span class="s2">&quot;build&quot;</span><span class="p">,</span>
     <span class="s2">&quot;open_corpus&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;reports_coverage&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CoverageReport&quot;</span><span class="p">,</span>
     <span class="s2">&quot;search&quot;</span><span class="p">,</span>
     <span class="s2">&quot;as_retriever&quot;</span><span class="p">,</span>
     <span class="s2">&quot;Retriever&quot;</span><span class="p">,</span>

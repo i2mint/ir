@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.cli &mdash; ir 0.1.27 documentation</title>
+  <title>ir.cli &mdash; ir 0.1.28 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=dc233e31"></script>
+      <script src="../../_static/documentation_options.js?v=34399df3"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/cli.html">ir.cli</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/coverage.html">ir.coverage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
@@ -107,6 +108,7 @@
 <span class="sd">    ir discover skills &quot;deploy app&quot; # retrieve -&gt; commit to a high-precision subset</span>
 <span class="sd">    ir discover skills &quot;deploy app&quot; --disclose   # + load each selected item&#39;s body</span>
 <span class="sd">    ir ls                           # list corpora + record counts</span>
+<span class="sd">    ir coverage reports             # disk-vs-index coverage (silent-gap detector)</span>
 <span class="sd">    ir info packages                # config + stats for a corpus</span>
 <span class="sd">    ir register notes files --root ~/notes --pattern &#39;.*\\.md$&#39;</span>
 <span class="sd">    ir rm notes                     # unregister (keeps built data)</span>
@@ -292,6 +294,26 @@
             <span class="n">preview</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)[:</span><span class="mi">160</span><span class="p">]</span>
             <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;           </span><span class="si">{</span><span class="n">preview</span><span class="si">}</span><span class="s2">…&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="coverage">
+<a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.coverage">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">coverage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;reports&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Report disk-vs-index coverage for a reports corpus (silent-gap detector).</span>
+
+<span class="sd">    Independently walks every ``*/*/docs`` and ``*/*/misc/docs`` tree on disk and</span>
+<span class="sd">    diffs the includable reports against what is actually indexed, listing any</span>
+<span class="sd">    file that is on disk but missing from the index (rebuild with ``ir build`` to</span>
+<span class="sd">    fix). Catches the ingestion gaps that back-translation evals structurally</span>
+<span class="sd">    cannot — a doc that was never indexed can never be an eval gold id.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.coverage</span><span class="w"> </span><span class="kn">import</span> <span class="n">reports_coverage</span>
+
+    <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_empty_corpus_msg</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">reports_coverage</span><span class="p">(</span><span class="n">name</span><span class="p">))</span></div>
 
 
 
@@ -563,6 +585,7 @@
     <span class="n">build</span><span class="p">,</span>
     <span class="n">search</span><span class="p">,</span>
     <span class="n">discover</span><span class="p">,</span>
+    <span class="n">coverage</span><span class="p">,</span>
     <span class="n">info</span><span class="p">,</span>
     <span class="n">maintain</span><span class="p">,</span>
     <span class="n">rm</span><span class="p">,</span>

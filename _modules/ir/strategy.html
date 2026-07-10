@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.strategy &mdash; ir 0.1.27 documentation</title>
+  <title>ir.strategy &mdash; ir 0.1.28 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=dc233e31"></script>
+      <script src="../../_static/documentation_options.js?v=34399df3"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/cli.html">ir.cli</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/coverage.html">ir.coverage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
@@ -123,11 +124,21 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">IndexPlan</span><span class="p">,</span> <span class="n">Surface</span>
+
+<span class="c1">#: Content-token budget for token-aware chunking under the default embedder.</span>
+<span class="c1">#: ``all-MiniLM-L6-v2`` caps input at 256 tokens and silently truncates beyond</span>
+<span class="c1">#: it. We target 250 (not 254) to leave headroom for the two special tokens</span>
+<span class="c1">#: (``[CLS]``/``[SEP]``) *and* the ±1–2 token drift when an offset-sliced</span>
+<span class="c1">#: substring is re-tokenized on its own — so an embedded chunk stays within</span>
+<span class="c1">#: budget and its tail is never silently truncated (see :func:`_chunk_text`).</span>
+<span class="n">DFLT_CHUNK_MAX_TOKENS</span> <span class="o">=</span> <span class="mi">250</span>
 
 
 <div class="viewcode-block" id="IndexingStrategy">
@@ -216,6 +227,106 @@
     <span class="k">return</span> <span class="n">chunks</span>
 
 
+<span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_tokenizer_for</span><span class="p">(</span><span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A cached *fast* tokenizer for *model_name*, or ``None`` if unavailable.</span>
+
+<span class="sd">    Lazy (keeps ``import ir`` offline) and self-degrading: any import/load</span>
+<span class="sd">    failure — or a slow tokenizer that cannot report char offsets — returns</span>
+<span class="sd">    ``None`` so token-aware chunking falls back to char-based splitting, mirroring</span>
+<span class="sd">    the embedder&#39;s degrade-to-hashing discipline (:mod:`ir.embed`).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="c1"># A bare sentence-transformers name (e.g. &quot;all-MiniLM-L6-v2&quot;) is a valid</span>
+    <span class="c1"># SentenceTransformer id but not a Hub repo id — AutoTokenizer needs the</span>
+    <span class="c1"># &quot;sentence-transformers/&quot; prefix. Try the name as given, then prefixed.</span>
+    <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span><span class="n">model_name</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_name</span><span class="p">:</span>
+        <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sentence-transformers/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">candidate</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="c1"># Offset mapping (used to cut the original text at token boundaries) needs</span>
+        <span class="c1"># a Rust &quot;fast&quot; tokenizer; a slow one would force a lossy id round-trip.</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tok</span><span class="p">,</span> <span class="s2">&quot;is_fast&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">tok</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_split_by_tokens</span><span class="p">(</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">overlap_tokens</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Split *text* into windows of at most *max_tokens* tokens, text preserved.</span>
+
+<span class="sd">    Cuts the **original** string at token boundaries using the tokenizer&#39;s char</span>
+<span class="sd">    offset-mapping — so each stored surface stays verbatim (for lexical search and</span>
+<span class="sd">    disclosure), never a lossy decode of token ids — with *overlap_tokens* of</span>
+<span class="sd">    overlap between consecutive windows.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">enc</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">return_offsets_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">offsets</span> <span class="o">=</span> <span class="n">enc</span><span class="p">[</span><span class="s2">&quot;offset_mapping&quot;</span><span class="p">]</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">offsets</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="n">max_tokens</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">text</span><span class="p">]</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_tokens</span> <span class="o">-</span> <span class="n">overlap_tokens</span><span class="p">)</span>
+    <span class="n">chunks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">max_tokens</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+        <span class="n">piece</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="n">offsets</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="p">:</span> <span class="n">offsets</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">piece</span><span class="p">:</span>
+            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">piece</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;=</span> <span class="n">n</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="n">step</span>
+    <span class="k">return</span> <span class="n">chunks</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_chunk_text</span><span class="p">(</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">overlap</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">token_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Chunk *text* by tokens when *max_tokens* is set, else by characters.</span>
+
+<span class="sd">    Token mode bounds every chunk to the embedder&#39;s token budget, so no chunk is</span>
+<span class="sd">    silently truncated at embed time; the token overlap is derived from the char</span>
+<span class="sd">    ``overlap / chunk_size`` ratio. It degrades to char-based splitting (with a</span>
+<span class="sd">    warning) when the tokenizer for *token_model* cannot be loaded. Char mode</span>
+<span class="sd">    (``max_tokens=None``) is the historical behavior.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">max_tokens</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_split</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="n">overlap</span><span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.embed</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_MODEL</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">token_model</span> <span class="ow">or</span> <span class="n">DEFAULT_MODEL</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">_tokenizer_for</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tokenizer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;token-aware chunking requested (max_tokens=</span><span class="si">{</span><span class="n">max_tokens</span><span class="si">}</span><span class="s2">) but no fast &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;tokenizer for </span><span class="si">{</span><span class="n">model</span><span class="si">!r}</span><span class="s2"> is available; falling back to char-based &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;chunking (chunks may exceed the embedder&#39;s token budget and be &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;truncated). Install `transformers` for token-aware chunking.&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">_split</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="n">overlap</span><span class="p">)</span>
+    <span class="n">overlap_tokens</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">max_tokens</span> <span class="o">*</span> <span class="n">overlap</span> <span class="o">/</span> <span class="n">chunk_size</span><span class="p">)</span> <span class="k">if</span> <span class="n">chunk_size</span> <span class="k">else</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">_split_by_tokens</span><span class="p">(</span>
+        <span class="n">text</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span> <span class="n">overlap_tokens</span><span class="o">=</span><span class="n">overlap_tokens</span>
+    <span class="p">)</span>
+
+
 <div class="viewcode-block" id="WholeText">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.WholeText">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">WholeText</span><span class="p">:</span>
@@ -240,7 +351,16 @@
 <div class="viewcode-block" id="Chunked">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.Chunked">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Chunked</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Split the artifact&#39;s text into overlapping chunk surfaces.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Split the artifact&#39;s text into overlapping chunk surfaces.</span>
+
+<span class="sd">    By default chunks are packed to ~``chunk_size`` **characters**. Set</span>
+<span class="sd">    ``max_tokens`` to chunk by **tokens** instead — each chunk is bounded to</span>
+<span class="sd">    ``max_tokens`` tokens of ``token_model`` (default: the default embedding</span>
+<span class="sd">    model), so no chunk overflows the embedder&#39;s sequence limit and is silently</span>
+<span class="sd">    truncated. Token mode degrades to char mode with a warning if the tokenizer</span>
+<span class="sd">    is unavailable. The char ``chunk_size`` / ``overlap`` still set the overlap</span>
+<span class="sd">    *ratio* used in token mode.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -249,16 +369,26 @@
         <span class="n">overlap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span>
         <span class="n">text_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;chunk&quot;</span><span class="p">,</span>
+        <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">token_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size</span> <span class="o">=</span> <span class="n">chunk_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">overlap</span> <span class="o">=</span> <span class="n">overlap</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">text_key</span> <span class="o">=</span> <span class="n">text_key</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">=</span> <span class="n">kind</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_tokens</span> <span class="o">=</span> <span class="n">max_tokens</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_model</span> <span class="o">=</span> <span class="n">token_model</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexPlan</span><span class="p">:</span>
         <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
         <span class="n">text</span> <span class="o">=</span> <span class="n">_text_of</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_key</span><span class="p">)</span>
-        <span class="n">chunks</span> <span class="o">=</span> <span class="n">_split</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">overlap</span><span class="p">)</span>
+        <span class="n">chunks</span> <span class="o">=</span> <span class="n">_chunk_text</span><span class="p">(</span>
+            <span class="n">text</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">overlap</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">overlap</span><span class="p">,</span>
+            <span class="n">max_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_tokens</span><span class="p">,</span>
+            <span class="n">token_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">token_model</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="n">surfaces</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">Surface</span><span class="p">(</span>
                 <span class="n">artifact_id</span><span class="p">,</span>
@@ -406,11 +536,15 @@
         <span class="n">overlap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span>
         <span class="n">embed_deps</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">deps_template</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">token_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size</span> <span class="o">=</span> <span class="n">chunk_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">overlap</span> <span class="o">=</span> <span class="n">overlap</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">embed_deps</span> <span class="o">=</span> <span class="n">embed_deps</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">deps_template</span> <span class="o">=</span> <span class="n">deps_template</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_tokens</span> <span class="o">=</span> <span class="n">max_tokens</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token_model</span> <span class="o">=</span> <span class="n">token_model</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexPlan</span><span class="p">:</span>
         <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
@@ -433,7 +567,13 @@
                 <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">]</span>
-        <span class="n">chunks</span> <span class="o">=</span> <span class="n">_split</span><span class="p">(</span><span class="n">readme</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">overlap</span><span class="p">)</span>
+        <span class="n">chunks</span> <span class="o">=</span> <span class="n">_chunk_text</span><span class="p">(</span>
+            <span class="n">readme</span><span class="p">,</span>
+            <span class="n">chunk_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chunk_size</span><span class="p">,</span>
+            <span class="n">overlap</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">overlap</span><span class="p">,</span>
+            <span class="n">max_tokens</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_tokens</span><span class="p">,</span>
+            <span class="n">token_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">token_model</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">):</span>
             <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="n">Surface</span><span class="p">(</span>

@@ -7,6 +7,7 @@
    module_docs/ir/base
    module_docs/ir/cli
    module_docs/ir/config
+   module_docs/ir/coverage
    module_docs/ir/embed
    module_docs/ir/eval
    module_docs/ir/eval_gen

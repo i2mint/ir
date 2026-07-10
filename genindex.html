@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.27 documentation</title>
+  <title>Index &mdash; ir 0.1.28 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=dc233e31"></script>
+      <script src="_static/documentation_options.js?v=34399df3"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -51,6 +51,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/base.html">ir.base</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/cli.html">ir.cli</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/coverage.html">ir.coverage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
@@ -260,12 +261,12 @@
         <li><a href="module_docs/ir/traverse.html#ir.traverse.collapsed_tree_policy">(in module ir.traverse)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.compare_indexings">compare_indexings() (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.ComparisonReport">ComparisonReport (class in ir.eval)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.conditional_commit_rate">conditional_commit_rate (ir.eval.SelectionReport attribute)</a>
 </li>
       <li><a href="module_docs/ir/config.html#ir.config.config_dir">config_dir() (in module ir.config)</a>
@@ -304,6 +305,20 @@
 
       <ul>
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore">(class in ir.store)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir/cli.html#ir.cli.coverage">coverage() (in module ir.cli)</a>
+</li>
+      <li><a href="module_docs/ir/coverage.html#ir.coverage.CoverageReport.coverage_ratio">coverage_ratio (ir.coverage.CoverageReport property)</a>
+
+      <ul>
+        <li><a href="module_docs/ir.html#ir.CoverageReport.coverage_ratio">(ir.CoverageReport property)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir.html#ir.CoverageReport">CoverageReport (class in ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/coverage.html#ir.coverage.CoverageReport">(class in ir.coverage)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -360,9 +375,13 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_CALIB_SENSITIVITY_WEIGHT">DFLT_CALIB_SENSITIVITY_WEIGHT (in module ir.eval)</a>
 </li>
+      <li><a href="module_docs/ir/strategy.html#ir.strategy.DFLT_CHUNK_MAX_TOKENS">DFLT_CHUNK_MAX_TOKENS (in module ir.strategy)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_CURVE_MODE">DFLT_CURVE_MODE (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_DISTRACTOR_SIZES">DFLT_DISTRACTOR_SIZES (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/sources.html#ir.sources.DFLT_EXCLUDE_DIRS">DFLT_EXCLUDE_DIRS (in module ir.sources)</a>
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.DFLT_FETCH_K">DFLT_FETCH_K (in module ir.select)</a>
 </li>
@@ -378,10 +397,10 @@
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.DFLT_MAX_K">DFLT_MAX_K (in module ir.select)</a>
 </li>
-      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_METRICS">DFLT_METRICS (in module ir.eval)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_METRICS">DFLT_METRICS (in module ir.eval)</a>
+</li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_MIN_DESCRIPTION_CHARS">DFLT_MIN_DESCRIPTION_CHARS (in module ir.eval_gen)</a>
 </li>
       <li><a href="module_docs/ir/expand.html#ir.expand.DFLT_MIN_STITCH_OVERLAP">DFLT_MIN_STITCH_OVERLAP (in module ir.expand)</a>
@@ -712,6 +731,13 @@
 </li>
       </ul></li>
       <li>
+    ir.coverage
+
+      <ul>
+        <li><a href="module_docs/ir/coverage.html#module-ir.coverage">module</a>
+</li>
+      </ul></li>
+      <li>
     ir.embed
 
       <ul>
@@ -849,6 +875,8 @@
         <li><a href="module_docs/ir/sources.html#ir.sources.CorpusSource.items">(ir.sources.CorpusSource method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/sources.html#ir.sources.iter_report_doc_folders">iter_report_doc_folders() (in module ir.sources)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -1036,6 +1064,8 @@
         <li><a href="module_docs/ir/cli.html#module-ir.cli">ir.cli</a>
 </li>
         <li><a href="module_docs/ir/config.html#module-ir.config">ir.config</a>
+</li>
+        <li><a href="module_docs/ir/coverage.html#module-ir.coverage">ir.coverage</a>
 </li>
         <li><a href="module_docs/ir/embed.html#module-ir.embed">ir.embed</a>
 </li>
@@ -1268,8 +1298,6 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.ComparisonReport.regressions">regressions() (ir.eval.ComparisonReport method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/policy.html#ir.policy.REINDEX_TRIGGERS">REINDEX_TRIGGERS (in module ir.policy)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.ReindexPolicy">ReindexPolicy (class in ir)</a>
@@ -1278,12 +1306,24 @@
         <li><a href="module_docs/ir/policy.html#ir.policy.ReindexPolicy">(class in ir.policy)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/select.html#ir.select.rel_threshold">rel_threshold() (in module ir.select)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.RELEVANCE_LEVELS">RELEVANCE_LEVELS (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint.report">report (ir.eval.SelectionGridPoint attribute)</a>
 </li>
+      <li><a href="module_docs/ir/sources.html#ir.sources.REPORT_DOC_GLOBS">REPORT_DOC_GLOBS (in module ir.sources)</a>
+</li>
+      <li><a href="module_docs/ir/sources.html#ir.sources.report_exclude_reason">report_exclude_reason() (in module ir.sources)</a>
+</li>
+      <li><a href="module_docs/ir.html#ir.reports_coverage">reports_coverage() (in module ir)</a>
+
+      <ul>
+        <li><a href="module_docs/ir/coverage.html#ir.coverage.reports_coverage">(in module ir.coverage)</a>
+</li>
+      </ul></li>
       <li><a href="module_docs/ir.html#ir.resolve_policy">resolve_policy() (in module ir)</a>
 
       <ul>
@@ -1416,14 +1456,14 @@
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.set_calibration">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.CorpusStore.set_config">set_config() (ir.CorpusStore method)</a>
 
       <ul>
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.set_config">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.CorpusStore.set_ledger_entry">set_ledger_entry() (ir.CorpusStore method)</a>
 
       <ul>
@@ -1440,6 +1480,12 @@
 
       <ul>
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.set_maintenance_state">(ir.store.CorpusStore method)</a>
+</li>
+      </ul></li>
+      <li><a href="module_docs/ir/coverage.html#ir.coverage.CoverageReport.should_index">should_index (ir.coverage.CoverageReport property)</a>
+
+      <ul>
+        <li><a href="module_docs/ir.html#ir.CoverageReport.should_index">(ir.CoverageReport property)</a>
 </li>
       </ul></li>
       <li><a href="module_docs/ir/select.html#ir.select.Selection.signals">signals (ir.select.Selection attribute)</a>

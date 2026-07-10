@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.cli &mdash; ir 0.1.27 documentation</title>
+  <title>ir.cli &mdash; ir 0.1.28 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=dc233e31"></script>
+      <script src="../../_static/documentation_options.js?v=34399df3"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -55,6 +55,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.cli</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.calibrate_min_score"><code class="docutils literal notranslate"><span class="pre">calibrate_min_score()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.cli.coverage"><code class="docutils literal notranslate"><span class="pre">coverage()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.eval"><code class="docutils literal notranslate"><span class="pre">eval()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.eval_gen"><code class="docutils literal notranslate"><span class="pre">eval_gen()</span></code></a></li>
@@ -69,6 +70,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coverage.html">ir.coverage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
 <li class="toctree-l1"><a class="reference internal" href="eval.html">ir.eval</a></li>
 <li class="toctree-l1"><a class="reference internal" href="eval_gen.html">ir.eval_gen</a></li>
@@ -123,6 +125,7 @@
 <span class="n">ir</span> <span class="n">discover</span> <span class="n">skills</span> <span class="s2">&quot;deploy app&quot;</span> <span class="c1"># retrieve -&gt; commit to a high-precision subset</span>
 <span class="n">ir</span> <span class="n">discover</span> <span class="n">skills</span> <span class="s2">&quot;deploy app&quot;</span> <span class="o">--</span><span class="n">disclose</span>   <span class="c1"># + load each selected item&#39;s body</span>
 <span class="n">ir</span> <span class="n">ls</span>                           <span class="c1"># list corpora + record counts</span>
+<span class="n">ir</span> <span class="n">coverage</span> <span class="n">reports</span>             <span class="c1"># disk-vs-index coverage (silent-gap detector)</span>
 <span class="n">ir</span> <span class="n">info</span> <span class="n">packages</span>                <span class="c1"># config + stats for a corpus</span>
 <span class="n">ir</span> <span class="n">register</span> <span class="n">notes</span> <span class="n">files</span> <span class="o">--</span><span class="n">root</span> <span class="o">~/</span><span class="n">notes</span> <span class="o">--</span><span class="n">pattern</span> <span class="s1">&#39;.*\.md$&#39;</span>
 <span class="n">ir</span> <span class="n">rm</span> <span class="n">notes</span>                     <span class="c1"># unregister (keeps built data)</span>
@@ -154,6 +157,17 @@ lower it to abstain more readily (precision-leaning). For hybrid, calibrate
 with <code class="docutils literal notranslate"><span class="pre">--fusion</span> <span class="pre">blend</span></code> (rank-based RRF barely separates — see ir_08) and
 query under the same fusion. mode: dense | lexical | hybrid. fusion (hybrid
 only): rrf | blend.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.cli.coverage">
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">coverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'reports'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#coverage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.coverage" title="Link to this definition"></a></dt>
+<dd><p>Report disk-vs-index coverage for a reports corpus (silent-gap detector).</p>
+<p>Independently walks every <code class="docutils literal notranslate"><span class="pre">*/*/docs</span></code> and <code class="docutils literal notranslate"><span class="pre">*/*/misc/docs</span></code> tree on disk and
+diffs the includable reports against what is actually indexed, listing any
+file that is on disk but missing from the index (rebuild with <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">build</span></code> to
+fix). Catches the ingestion gaps that back-translation evals structurally
+cannot — a doc that was never indexed can never be an eval gold id.</p>
 </dd></dl>
 
 <dl class="py function">
