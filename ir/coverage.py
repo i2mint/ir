@@ -118,7 +118,9 @@ def reports_coverage(
         for path in folder.rglob("*.md"):
             if not path.is_file():
                 continue
-            rel = str(path.relative_to(root))
+            # Match the POSIX-normalized ids from_md_reports stores (forward
+            # slashes on every platform), so the disk↔index diff is exact.
+            rel = path.relative_to(root).as_posix()
             if rel in seen:  # a file can't be double-counted across globs
                 continue
             seen.add(rel)

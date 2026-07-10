@@ -170,7 +170,9 @@ class CorpusSource:
         scope: dict[str, dict] = {}
         meta: dict[str, dict] = {}
         for path in _iter_md_reports(root, recursive=recursive, exclude_dirs=exclude):
-            rel = str(path.relative_to(root))
+            # POSIX-normalize the id so it's stable across platforms (forward
+            # slashes on Windows too); a no-op on posix systems.
+            rel = path.relative_to(root).as_posix()
             try:
                 text = path.read_text(encoding="utf-8", errors="ignore")
             except OSError:
