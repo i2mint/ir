@@ -81,7 +81,10 @@ def _lock_holder_is_live(path: Path, stale_after: timedelta) -> bool:
         age = datetime.now() - datetime.fromtimestamp(path.stat().st_mtime)
     except OSError:
         return False
-    return age < stale_after
+    # Clamp: filesystem timestamp granularity (and clock skew) can put a
+    # just-written mtime marginally in the future, and a negative age would then
+    # compare as "younger than any threshold" -- making the lock immortal.
+    return max(age, timedelta(0)) < stale_after
 
 
 @contextmanager

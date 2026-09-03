@@ -1,6 +1,7 @@
 """Regression tests for incremental-maintenance edge cases."""
 
 import os
+import time
 
 import pytest
 
@@ -129,6 +130,24 @@ def test_single_run_lock_reclaims_a_stale_lock(tmp_path):
 
     lock = tmp_path / "maintain.lock"
     lock.write_text("not-a-pid\n", encoding="utf-8")
+    # Backdate rather than lean on sub-second timing: a just-written mtime can
+    # land marginally in the *future* on some filesystems.
+    old_time = time.time() - 3600
+    os.utime(lock, (old_time, old_time))
+    with single_run(path=lock, stale_after=timedelta(minutes=1)):
+        assert lock.exists()
+
+
+def test_a_future_dated_lock_is_not_immortal(tmp_path):
+    # A negative age must not compare as "younger than any threshold".
+    from datetime import timedelta
+
+    from ir.maintenance import single_run
+
+    lock = tmp_path / "maintain.lock"
+    lock.write_text("not-a-pid\n", encoding="utf-8")
+    ahead = time.time() + 3600
+    os.utime(lock, (ahead, ahead))
     with single_run(path=lock, stale_after=timedelta(seconds=0)):
         assert lock.exists()
 
