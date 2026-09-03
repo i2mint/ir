@@ -17,19 +17,120 @@ and records ``last_maintained`` so interval policies converge. ir runs the work;
 *scheduling* it is external — a cron / launchd entry calls ``ir maintain --all``
 every N minutes, and the downtime window lives in the policy (data), not in ir.
 
-    # crontab: try the queue every 15 minutes; ir decides what is actually due.
-    */15 * * * *  ir maintain --all >> ~/.cache/ir/maintain.log 2>&1
+:mod:`ir.schedule` installs that entry for you (``ir schedule``) and reports on it;
+it writes a definition and exits, so the executor is still cron / launchd::
+
+    # what `ir schedule --every 15m` writes on a cron machine:
+    */15 * * * *  <python> -m ir maintain --all >> ~/.cache/ir/maintain.log 2>&1
+
+Because a scheduled run has nobody watching it, :func:`maintain` is fault-isolated
+per corpus: one corpus failing is recorded on its own result and the sweep carries
+on, rather than aborting and leaving the corpora after it silently unmaintained.
 """
 
 from __future__ import annotations
 
+import os
+from contextlib import contextmanager
 from dataclasses import dataclass, replace as dc_replace
-from datetime import datetime
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from . import registry
+from .config import cache_dir
 from .index import build, open_corpus
 from .policy import in_downtime, is_reindex_due, resolve_policy
+
+
+#: A lock older than this is assumed to belong to a run that was killed rather
+#: than one still working. Generous, because a first full build of a large corpus
+#: legitimately takes a long time and reclaiming a *live* lock is the bad outcome.
+DFLT_STALE_LOCK_AFTER = timedelta(hours=6)
+
+
+class MaintenanceBusy(RuntimeError):
+    """Another maintenance run holds the lock."""
+
+
+def lock_path() -> Path:
+    """Where the single-run lock lives (regenerable, so the cache dir)."""
+    return cache_dir() / "maintain.lock"
+
+
+def _lock_holder_is_live(path: Path, stale_after: timedelta) -> bool:
+    """Whether the process that wrote the lock at *path* is plausibly still going."""
+    try:
+        pid = int(path.read_text(encoding="utf-8").split("\n", 1)[0].strip() or 0)
+    except (OSError, ValueError):
+        pid = 0
+    # os.kill(pid, 0) is a liveness probe on POSIX only -- on Windows os.kill
+    # terminates the process, so never probe there; fall back to age alone.
+    if pid > 0 and os.name == "posix":
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True  # alive, just not ours
+        except OSError:
+            pass
+        else:
+            return True
+    try:
+        age = datetime.now() - datetime.fromtimestamp(path.stat().st_mtime)
+    except OSError:
+        return False
+    # Clamp: filesystem timestamp granularity (and clock skew) can put a
+    # just-written mtime marginally in the future, and a negative age would then
+    # compare as "younger than any threshold" -- making the lock immortal.
+    return max(age, timedelta(0)) < stale_after
+
+
+@contextmanager
+def single_run(*, path: Path | None = None, stale_after: timedelta | None = None):
+    """Hold the maintenance lock, or raise :class:`MaintenanceBusy`.
+
+    Two maintenance runs on one corpus store are not safe: the packed store
+    rewrites ``matrix``/``ids``/``metas`` as separate files, so interleaved
+    writers can leave a matrix whose rows no longer line up with its ids — an
+    index that answers confidently and wrongly, with nothing raised. launchd
+    already runs one instance per label, but that does not cover cron (which
+    happily stacks runs) or the manual ``ir maintain --all`` this tool's own
+    menu suggests while the agent may be mid-run.
+
+    A lock whose owning process is gone, or which is older than *stale_after*, is
+    reclaimed — a killed run must not wedge maintenance forever.
+    """
+    path = Path(path) if path is not None else lock_path()
+    stale_after = DFLT_STALE_LOCK_AFTER if stale_after is None else stale_after
+    for _ in range(3):  # bounded: reclaim, then retry the create exactly once more
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            if _lock_holder_is_live(path, stale_after):
+                raise MaintenanceBusy(
+                    f"another ir maintain run is in progress (lock: {path}). "
+                    "Wait for it, or delete that file if you are sure it is dead."
+                ) from None
+            try:
+                path.unlink()
+            except OSError:
+                pass
+            continue
+        try:
+            os.write(fd, f"{os.getpid()}\n{datetime.now().isoformat()}\n".encode())
+        finally:
+            os.close(fd)
+        try:
+            yield path
+        finally:
+            try:
+                path.unlink()
+            except OSError:
+                pass
+        return
+    raise MaintenanceBusy(f"could not take the maintenance lock at {path}")
 
 
 @dataclass
@@ -42,8 +143,11 @@ class MaintenanceResult:
     reindex: bool = False
     synopsis: bool = False
     records: int | None = None
+    error: str | None = None
 
     def __str__(self) -> str:
+        if self.error:
+            return f"{self.name}: FAILED ({self.error})"
         verb = "maintained" if self.ran else "skipped"
         bits = [
             b
@@ -132,9 +236,26 @@ def maintain(
 
     With neither, defaults to all registered corpora. Returns one
     :class:`MaintenanceResult` per corpus considered.
+
+    **A named corpus raises; a sweep records.** Asking for one corpus by name is a
+    direct request, and swallowing its error would turn a typo'd name into a
+    result that reads as success to any caller written before ``error`` existed.
+    A sweep is the unattended case, where the opposite is true: one corpus
+    failing must not leave every corpus after it stale with nothing to say so.
     """
-    if name and not all:
-        names = [name]
-    else:
-        names = list(registry.registered())
-    return [maintain_corpus(n, now=now, dry_run=dry_run) for n in names]
+    sweep = not (name and not all)
+    names = list(registry.registered()) if sweep else [name]
+    results = []
+    for n in names:
+        if not sweep:
+            results.append(maintain_corpus(n, now=now, dry_run=dry_run))
+            continue
+        try:
+            results.append(maintain_corpus(n, now=now, dry_run=dry_run))
+        except Exception as exc:
+            results.append(
+                MaintenanceResult(
+                    n, False, f"error: {exc}", error=f"{type(exc).__name__}: {exc}"
+                )
+            )
+    return results
