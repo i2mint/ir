@@ -106,8 +106,12 @@ def test_single_run_lock_excludes_a_second_run(tmp_path):
     assert not lock.exists()  # released on the way out
 
 
+@pytest.mark.skipif(
+    os.name != "posix", reason="pid liveness probing is POSIX-only (os.kill kills on Windows)"
+)
 def test_single_run_lock_reclaims_a_dead_holder(tmp_path):
-    # A killed run must not wedge maintenance forever.
+    # A killed run must not wedge maintenance forever. On POSIX the owning pid is
+    # probed directly, so a dead holder is reclaimed however fresh its lockfile.
     from ir.maintenance import single_run
 
     lock = tmp_path / "maintain.lock"
@@ -117,6 +121,8 @@ def test_single_run_lock_reclaims_a_dead_holder(tmp_path):
 
 
 def test_single_run_lock_reclaims_a_stale_lock(tmp_path):
+    # Where the pid cannot be probed (Windows) or is unreadable, age is the only
+    # signal -- so that path has to work on its own.
     from datetime import timedelta
 
     from ir.maintenance import single_run

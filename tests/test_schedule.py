@@ -396,7 +396,7 @@ def test_interpreter_check_sees_two_different_venvs(tmp_path):
     other.parent.mkdir(parents=True)
     other.write_text("#!/bin/sh\n", encoding="utf-8")
     problems = schedule._interpreter_problems(str(other))
-    assert problems and "different installed" in problems[0]
+    assert any("different installed" in problem for problem in problems)
 
 
 def test_interpreter_check_is_quiet_for_the_running_interpreter():
@@ -405,7 +405,7 @@ def test_interpreter_check_is_quiet_for_the_running_interpreter():
 
 def test_missing_interpreter_is_reported_with_the_repair():
     problems = schedule._interpreter_problems("/gone/bin/python")
-    assert problems and "--restart" in problems[0]
+    assert any("--restart" in problem for problem in problems)
 
 
 def test_a_job_missing_load_bearing_env_is_reported(monkeypatch):
@@ -414,7 +414,7 @@ def test_a_job_missing_load_bearing_env_is_reported(monkeypatch):
     monkeypatch.setenv("PP", "/home/me/proj")
     monkeypatch.delenv("PTH_FILEPATH", raising=False)
     problems = schedule._env_problems((("HOME", "/home/me"),))
-    assert problems and "PP" in problems[0]
+    assert any("PP" in problem for problem in problems)
     # A job that carries what this shell has is not flagged.
     assert schedule._env_problems((("PP", "/home/me/proj"),)) == ()
 
@@ -470,7 +470,7 @@ def test_restart_preserves_the_environment_while_repinning_the_interpreter(
     monkeypatch.setenv("PP", "/home/me/proj")
     schedule.install(backend="cron", every="30m", python="/gone/bin/python")
     stale = schedule.status(backend="cron")
-    assert stale.problems and "no longer exists" in stale.problems[0]
+    assert any("no longer exists" in problem for problem in stale.problems)
 
     monkeypatch.delenv("PP")
     healed = schedule.restart(backend="cron")

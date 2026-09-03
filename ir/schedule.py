@@ -450,7 +450,9 @@ def _parse_cron_line(line: str, label: str) -> dict[str, Any]:
         seen_env_tool = False
         for token in tokens:
             if not seen_env_tool:
-                seen_env_tool = Path(token).name == "env"
+                # Tolerant of a hand-edited path to env (and of a .exe suffix, so
+                # a definition written elsewhere still reads back here).
+                seen_env_tool = Path(token).stem.lower() == "env"
                 continue
             if "=" in token and not token.startswith("/"):
                 name, _, value = token.partition("=")
@@ -588,7 +590,12 @@ def _text(raw: bytes | str | None) -> str:
 
 
 #: The ``env`` binary used to carry a job's environment inline on a cron line.
-_ENV_TOOL = shutil.which("env") or "/usr/bin/env"
+#: Hardcoded rather than looked up: cron is POSIX-only, ``/usr/bin/env`` is where
+#: it lives on every POSIX system, and cron runs jobs with a minimal ``PATH`` of
+#: its own anyway. A ``shutil.which`` here would make the definition depend on the
+#: machine that wrote it — and on Windows it finds Git-Bash's ``env.EXE``, which
+#: is not a thing any crontab should ever contain.
+_ENV_TOOL = "/usr/bin/env"
 
 
 class _LaunchdBackend:
