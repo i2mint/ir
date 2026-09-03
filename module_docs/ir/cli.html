@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.cli &mdash; ir 0.1.28 documentation</title>
+  <title>ir.cli &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -65,6 +65,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.rm"><code class="docutils literal notranslate"><span class="pre">rm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.cli.schedule"><code class="docutils literal notranslate"><span class="pre">schedule()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.cli.sweep_select"><code class="docutils literal notranslate"><span class="pre">sweep_select()</span></code></a></li>
 </ul>
@@ -82,6 +83,7 @@
 <li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
@@ -121,20 +123,22 @@
 <p>Commands operate on <strong>named</strong> corpora from the registry (see
 <a class="reference internal" href="registry.html#module-ir.registry" title="ir.registry"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.registry</span></code></a>):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ir</span> <span class="n">build</span> <span class="n">skills</span>                 <span class="c1"># build/update the skills preset corpus</span>
-<span class="n">ir</span> <span class="n">search</span> <span class="n">skills</span> <span class="s2">&quot;deploy app&quot;</span>   <span class="c1"># rank candidates (retrieval only)</span>
-<span class="n">ir</span> <span class="n">discover</span> <span class="n">skills</span> <span class="s2">&quot;deploy app&quot;</span> <span class="c1"># retrieve -&gt; commit to a high-precision subset</span>
-<span class="n">ir</span> <span class="n">discover</span> <span class="n">skills</span> <span class="s2">&quot;deploy app&quot;</span> <span class="o">--</span><span class="n">disclose</span>   <span class="c1"># + load each selected item&#39;s body</span>
+<span class="n">ir</span> <span class="n">search</span> <span class="n">skills</span> <span class="s2">"deploy app"</span>   <span class="c1"># rank candidates (retrieval only)</span>
+<span class="n">ir</span> <span class="n">discover</span> <span class="n">skills</span> <span class="s2">"deploy app"</span> <span class="c1"># retrieve -&gt; commit to a high-precision subset</span>
+<span class="n">ir</span> <span class="n">discover</span> <span class="n">skills</span> <span class="s2">"deploy app"</span> <span class="o">--</span><span class="n">disclose</span>   <span class="c1"># + load each selected item's body</span>
 <span class="n">ir</span> <span class="n">ls</span>                           <span class="c1"># list corpora + record counts</span>
 <span class="n">ir</span> <span class="n">coverage</span> <span class="n">reports</span>             <span class="c1"># disk-vs-index coverage (silent-gap detector)</span>
 <span class="n">ir</span> <span class="n">info</span> <span class="n">packages</span>                <span class="c1"># config + stats for a corpus</span>
-<span class="n">ir</span> <span class="n">register</span> <span class="n">notes</span> <span class="n">files</span> <span class="o">--</span><span class="n">root</span> <span class="o">~/</span><span class="n">notes</span> <span class="o">--</span><span class="n">pattern</span> <span class="s1">&#39;.*\.md$&#39;</span>
+<span class="n">ir</span> <span class="n">maintain</span> <span class="o">--</span><span class="nb">all</span>               <span class="c1"># run due background work (idempotent)</span>
+<span class="n">ir</span> <span class="n">schedule</span>                     <span class="c1"># install/inspect the OS job that runs it</span>
+<span class="n">ir</span> <span class="n">register</span> <span class="n">notes</span> <span class="n">files</span> <span class="o">--</span><span class="n">root</span> <span class="o">~/</span><span class="n">notes</span> <span class="o">--</span><span class="n">pattern</span> <span class="s1">'.*\.md$'</span>
 <span class="n">ir</span> <span class="n">rm</span> <span class="n">notes</span>                     <span class="c1"># unregister (keeps built data)</span>
 <span class="n">ir</span> <span class="nb">eval</span><span class="o">-</span><span class="n">gen</span> <span class="n">skills</span> <span class="n">skills_eval</span><span class="o">.</span><span class="n">jsonl</span> <span class="o">--</span><span class="n">k</span> <span class="mi">5</span>        <span class="c1"># generate cases (needs aix/LLM)</span>
 <span class="n">ir</span> <span class="nb">eval</span> <span class="n">skills</span> <span class="n">skills_eval</span><span class="o">.</span><span class="n">jsonl</span> <span class="o">--</span><span class="n">mode</span> <span class="n">hybrid</span>    <span class="c1"># score retrieval on a case file</span>
 <span class="n">ir</span> <span class="nb">eval</span><span class="o">-</span><span class="n">select</span> <span class="n">skills</span> <span class="n">skills_eval</span><span class="o">.</span><span class="n">jsonl</span>           <span class="c1"># score the selection stage</span>
 <span class="n">ir</span> <span class="n">sweep</span><span class="o">-</span><span class="n">select</span> <span class="n">skills</span> <span class="n">skills_eval</span><span class="o">.</span><span class="n">jsonl</span>          <span class="c1"># tune max_k/rel for the selector</span>
 <span class="n">ir</span> <span class="n">calibrate</span><span class="o">-</span><span class="nb">min</span><span class="o">-</span><span class="n">score</span> <span class="n">skills</span> <span class="n">skills_eval</span><span class="o">.</span><span class="n">jsonl</span> <span class="o">--</span><span class="n">persist</span>  <span class="c1"># abstention floor</span>
-<span class="n">ir</span> <span class="n">discover</span> <span class="n">skills</span> <span class="s2">&quot;deploy app&quot;</span> <span class="o">--</span><span class="nb">min</span><span class="o">-</span><span class="n">score</span> <span class="n">auto</span>  <span class="c1"># use the calibrated floor</span>
+<span class="n">ir</span> <span class="n">discover</span> <span class="n">skills</span> <span class="s2">"deploy app"</span> <span class="o">--</span><span class="nb">min</span><span class="o">-</span><span class="n">score</span> <span class="n">auto</span>  <span class="c1"># use the calibrated floor</span>
 </pre></div>
 </div>
 <dl class="py function">
@@ -250,6 +254,25 @@ window by <cite>ir maintain</cite>).</p>
 <dt class="sig sig-object py" id="ir.cli.rm">
 <span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">rm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#rm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.rm" title="Link to this definition"></a></dt>
 <dd><p>Unregister a corpus (does not delete its built data).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.cli.schedule">
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">every</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/cli.html#schedule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.cli.schedule" title="Link to this definition"></a></dt>
+<dd><p>Install, inspect, and operate the OS job that runs <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span></code>.</p>
+<p>Bare <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">schedule</span></code> is idempotent: it creates the schedule when there is
+none, and when there already is one it reports it (interval, definition,
+whether the OS has it loaded, last run) plus how to operate it, rather than
+silently reinstalling over a schedule you tuned.</p>
+<p>An existing definition’s environment is carried forward by every operation,
+so operating a working schedule from a shell that happens to lack $PP never
+silently re-points it at a different corpus store.</p>
+<p>every: interval as 15m / 2h / 1d, or a plain number of minutes.
+status: report only; never mutates.
+restart: reload the definition and re-pin it to this interpreter.
+remove: stop the schedule and delete its definition.
+dry_run: print the definition that would be written, and write nothing.
+backend: launchd | cron (default: whichever this machine provides).</p>
 </dd></dl>
 
 <dl class="py function">

@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.cli &mdash; ir 0.1.28 documentation</title>
+  <title>ir.cli &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,27 +99,29 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.cli</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Command-line surface for ``ir`` (argh-dispatched).</span>
+<span></span><span class="sd">"""Command-line surface for ``ir`` (argh-dispatched).</span>
 
 <span class="sd">Commands operate on **named** corpora from the registry (see</span>
 <span class="sd">:mod:`ir.registry`)::</span>
 
 <span class="sd">    ir build skills                 # build/update the skills preset corpus</span>
-<span class="sd">    ir search skills &quot;deploy app&quot;   # rank candidates (retrieval only)</span>
-<span class="sd">    ir discover skills &quot;deploy app&quot; # retrieve -&gt; commit to a high-precision subset</span>
-<span class="sd">    ir discover skills &quot;deploy app&quot; --disclose   # + load each selected item&#39;s body</span>
+<span class="sd">    ir search skills "deploy app"   # rank candidates (retrieval only)</span>
+<span class="sd">    ir discover skills "deploy app" # retrieve -&gt; commit to a high-precision subset</span>
+<span class="sd">    ir discover skills "deploy app" --disclose   # + load each selected item's body</span>
 <span class="sd">    ir ls                           # list corpora + record counts</span>
 <span class="sd">    ir coverage reports             # disk-vs-index coverage (silent-gap detector)</span>
 <span class="sd">    ir info packages                # config + stats for a corpus</span>
-<span class="sd">    ir register notes files --root ~/notes --pattern &#39;.*\\.md$&#39;</span>
+<span class="sd">    ir maintain --all               # run due background work (idempotent)</span>
+<span class="sd">    ir schedule                     # install/inspect the OS job that runs it</span>
+<span class="sd">    ir register notes files --root ~/notes --pattern '.*\\.md$'</span>
 <span class="sd">    ir rm notes                     # unregister (keeps built data)</span>
 <span class="sd">    ir eval-gen skills skills_eval.jsonl --k 5        # generate cases (needs aix/LLM)</span>
 <span class="sd">    ir eval skills skills_eval.jsonl --mode hybrid    # score retrieval on a case file</span>
 <span class="sd">    ir eval-select skills skills_eval.jsonl           # score the selection stage</span>
 <span class="sd">    ir sweep-select skills skills_eval.jsonl          # tune max_k/rel for the selector</span>
 <span class="sd">    ir calibrate-min-score skills skills_eval.jsonl --persist  # abstention floor</span>
-<span class="sd">    ir discover skills &quot;deploy app&quot; --min-score auto  # use the calibrated floor</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ir discover skills "deploy app" --min-score auto  # use the calibrated floor</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -129,31 +132,31 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_empty_corpus_msg</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The shared &#39;corpus is empty, build it first&#39; guard message.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is empty; build it first: ir build </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">    </span><span class="sd">"""The shared 'corpus is empty, build it first' guard message."""</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is empty; build it first: ir build </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_drift_warning</span><span class="p">(</span><span class="n">drift</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A warning suffix when cases reference gold ids absent from the corpus.</span>
+<span class="w">    </span><span class="sd">"""A warning suffix when cases reference gold ids absent from the corpus.</span>
 
-<span class="sd">    Returns ``&quot;&quot;`` when there is no drift, so call sites can ``out +=`` it</span>
+<span class="sd">    Returns ``""`` when there is no drift, so call sites can ``out +=`` it</span>
 <span class="sd">    unconditionally.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">drift</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">""</span>
     <span class="k">return</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  WARNING: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">drift</span><span class="p">)</span><span class="si">}</span><span class="s2"> case(s) reference gold ids absent from &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> (stale fixture?); their misses are not real.&quot;</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">  WARNING: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">drift</span><span class="p">)</span><span class="si">}</span><span class="s2"> case(s) reference gold ids absent from "</span>
+        <span class="sa">f</span><span class="s2">"corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> (stale fixture?); their misses are not real."</span>
     <span class="p">)</span>
 
 
 <div class="viewcode-block" id="ls">
 <a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.ls">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">ls</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List registered corpora with their kind, embedder, and record count.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""List registered corpora with their kind, embedder, and record count."""</span>
     <span class="n">entries</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">registered</span><span class="p">()</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">entries</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;No corpora registered. Try: ir build skills&quot;</span>
+        <span class="k">return</span> <span class="s2">"No corpora registered. Try: ir build skills"</span>
     <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">entries</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
@@ -161,9 +164,9 @@
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">&#39;kind&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">10</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;embedder&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;default&#39;</span><span class="p">)</span><span class="si">:</span><span class="s2">10</span><span class="si">}</span><span class="s2"> records=</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">18</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span><span class="si">:</span><span class="s2">10</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'embedder'</span><span class="p">,</span><span class="w"> </span><span class="s1">'default'</span><span class="p">)</span><span class="si">:</span><span class="s2">10</span><span class="si">}</span><span class="s2"> records=</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
 
 
 
@@ -175,64 +178,64 @@
     <span class="o">*</span><span class="p">,</span>
     <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">pattern</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">embedder</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+    <span class="n">embedder</span><span class="o">=</span><span class="s2">"default"</span><span class="p">,</span>
     <span class="n">reindex_on</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">every_hours</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">synopsis</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register a named corpus. kind: skills | packages | reports | files.</span>
+<span class="w">    </span><span class="sd">"""Register a named corpus. kind: skills | packages | reports | files.</span>
 
 <span class="sd">    Background-work policy (optional; smart per-kind defaults otherwise — see</span>
 <span class="sd">    `ir.policy`): reindex_on (source-change | interval | manual), every_hours (for</span>
-<span class="sd">    interval), synopsis (enable LLM synopses, run only in the policy&#39;s downtime</span>
+<span class="sd">    interval), synopsis (enable LLM synopses, run only in the policy's downtime</span>
 <span class="sd">    window by `ir maintain`).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="n">root</span><span class="p">:</span>
-        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;root&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">root</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"root"</span><span class="p">]</span> <span class="o">=</span> <span class="n">root</span>
     <span class="k">if</span> <span class="n">pattern</span><span class="p">:</span>
-        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;pattern&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pattern</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"pattern"</span><span class="p">]</span> <span class="o">=</span> <span class="n">pattern</span>
     <span class="n">maintenance</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">reindex_on</span> <span class="ow">or</span> <span class="n">every_hours</span> <span class="ow">or</span> <span class="n">synopsis</span><span class="p">:</span>
         <span class="n">reindex</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="n">every_hours</span><span class="p">:</span>
-            <span class="n">reindex</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;on&quot;</span><span class="p">:</span> <span class="s2">&quot;interval&quot;</span><span class="p">,</span> <span class="s2">&quot;every_hours&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">every_hours</span><span class="p">)}</span>
+            <span class="n">reindex</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"on"</span><span class="p">:</span> <span class="s2">"interval"</span><span class="p">,</span> <span class="s2">"every_hours"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">every_hours</span><span class="p">)}</span>
         <span class="k">elif</span> <span class="n">reindex_on</span><span class="p">:</span>
-            <span class="n">reindex</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;on&quot;</span><span class="p">:</span> <span class="n">reindex_on</span><span class="p">}</span>
-        <span class="n">maintenance</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;reindex&quot;</span><span class="p">:</span> <span class="n">reindex</span><span class="p">,</span> <span class="s2">&quot;synopsis&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">synopsis</span><span class="p">)}}</span>
+            <span class="n">reindex</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"on"</span><span class="p">:</span> <span class="n">reindex_on</span><span class="p">}</span>
+        <span class="n">maintenance</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"reindex"</span><span class="p">:</span> <span class="n">reindex</span><span class="p">,</span> <span class="s2">"synopsis"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"enabled"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">synopsis</span><span class="p">)}}</span>
     <span class="n">registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="n">maintenance</span><span class="o">=</span><span class="n">maintenance</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;registered </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> (kind=</span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">, embedder=</span><span class="si">{</span><span class="n">embedder</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"registered </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> (kind=</span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">, embedder=</span><span class="si">{</span><span class="n">embedder</span><span class="si">}</span><span class="s2">)"</span></div>
 
 
 
 <div class="viewcode-block" id="build">
 <a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.build">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build or incrementally update a registered (or preset) corpus.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Build or incrementally update a registered (or preset) corpus."""</span>
     <span class="n">source</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">source_for</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">corpus</span> <span class="o">=</span> <span class="n">_build</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="n">full</span><span class="p">)</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;built </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span><span class="si">}</span><span class="s2"> records (embedder </span><span class="si">{</span><span class="n">corpus</span><span class="o">.</span><span class="n">embedder_id</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"built </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span><span class="si">}</span><span class="s2"> records (embedder </span><span class="si">{</span><span class="n">corpus</span><span class="o">.</span><span class="n">embedder_id</span><span class="si">}</span><span class="s2">)"</span></div>
 
 
 
 <div class="viewcode-block" id="search">
 <a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.search">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;dense&quot;</span><span class="p">,</span> <span class="n">fusion</span><span class="o">=</span><span class="s2">&quot;rrf&quot;</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search a built corpus and print the top-k hits.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"dense"</span><span class="p">,</span> <span class="n">fusion</span><span class="o">=</span><span class="s2">"rrf"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Search a built corpus and print the top-k hits.</span>
 
 <span class="sd">    mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused). fusion</span>
 <span class="sd">    (hybrid only): rrf (rank-based, default) | blend (magnitude-preserving;</span>
 <span class="sd">    better abstention separability — see ir_08).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_empty_corpus_msg</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">corpus</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">fusion</span><span class="o">=</span><span class="n">fusion</span><span class="p">):</span>
         <span class="c1"># artifact_id is the unique label across corpora (skill name[@parent],</span>
-        <span class="c1"># package name, or a report&#39;s relative path).</span>
-        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">score</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="si">}</span><span class="s2">  [</span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">surface_kind</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;(no matches)&quot;</span></div>
+        <span class="c1"># package name, or a report's relative path).</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">score</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="si">}</span><span class="s2">  [</span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">surface_kind</span><span class="si">}</span><span class="s2">]"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"(no matches)"</span></div>
 
 
 
@@ -243,31 +246,31 @@
     <span class="n">query</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span>
-    <span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;conservative&quot;</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="o">=</span><span class="s2">"conservative"</span><span class="p">,</span>
     <span class="n">disclose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">min_score</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">fusion</span><span class="o">=</span><span class="s2">&quot;rrf&quot;</span><span class="p">,</span>
+    <span class="n">fusion</span><span class="o">=</span><span class="s2">"rrf"</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search a corpus, commit to a distractor-robust subset, and show it.</span>
+<span class="w">    </span><span class="sd">"""Search a corpus, commit to a distractor-robust subset, and show it.</span>
 
 <span class="sd">    Retrieves ``k`` candidates, then *selects* the few high-precision results an</span>
 <span class="sd">    agent should act on (or abstains). ``--disclose`` additionally loads each</span>
-<span class="sd">    selected item&#39;s body (SKILL.md / file text) via its stored pointer.</span>
+<span class="sd">    selected item's body (SKILL.md / file text) via its stored pointer.</span>
 <span class="sd">    ``--min-score auto`` turns on absolute abstention using the floor calibrated</span>
 <span class="sd">    by ``ir calibrate-min-score`` (or pass a float). mode: dense | lexical |</span>
 <span class="sd">    hybrid. fusion (hybrid only): rrf (default) | blend (magnitude-preserving;</span>
 <span class="sd">    pair with --min-score for abstention — see ir_08). strategy: conservative |</span>
 <span class="sd">    top_k | rel_threshold | score_gap.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.select</span><span class="w"> </span><span class="kn">import</span> <span class="n">discover</span> <span class="k">as</span> <span class="n">_discover</span>
 
     <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_empty_corpus_msg</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">floor</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="s2">&quot;auto&quot;</span>
-        <span class="k">if</span> <span class="n">min_score</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span>
+        <span class="s2">"auto"</span>
+        <span class="k">if</span> <span class="n">min_score</span> <span class="o">==</span> <span class="s2">"auto"</span>
         <span class="k">else</span> <span class="p">(</span><span class="kc">None</span> <span class="k">if</span> <span class="n">min_score</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_score</span><span class="p">))</span>
     <span class="p">)</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">_discover</span><span class="p">(</span>
@@ -276,38 +279,38 @@
         <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
         <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
         <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
-        <span class="n">disclose_level</span><span class="o">=</span><span class="s2">&quot;body&quot;</span> <span class="k">if</span> <span class="n">disclose</span> <span class="k">else</span> <span class="s2">&quot;metadata&quot;</span><span class="p">,</span>
+        <span class="n">disclose_level</span><span class="o">=</span><span class="s2">"body"</span> <span class="k">if</span> <span class="n">disclose</span> <span class="k">else</span> <span class="s2">"metadata"</span><span class="p">,</span>
         <span class="n">min_score</span><span class="o">=</span><span class="n">floor</span><span class="p">,</span>
         <span class="n">fusion</span><span class="o">=</span><span class="n">fusion</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">abstained</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;(abstained: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">n_retrieved</span><span class="si">}</span><span class="s2"> candidates retrieved)&quot;</span>
+            <span class="sa">f</span><span class="s2">"(abstained: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">n_retrieved</span><span class="si">}</span><span class="s2"> candidates retrieved)"</span>
         <span class="p">)</span>
     <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="sa">f</span><span class="s2">&quot;selected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">n_retrieved</span><span class="si">}</span><span class="s2"> &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">strategy</span><span class="si">}</span><span class="s2"> / </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">):&quot;</span>
+        <span class="sa">f</span><span class="s2">"selected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">n_retrieved</span><span class="si">}</span><span class="s2"> "</span>
+        <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">strategy</span><span class="si">}</span><span class="s2"> / </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">):"</span>
     <span class="p">]</span>
     <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">results</span><span class="p">:</span>
-        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">d</span><span class="o">.</span><span class="n">score</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">d</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">d</span><span class="o">.</span><span class="n">score</span><span class="si">:</span><span class="s2">+.3f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">d</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">disclose</span> <span class="ow">and</span> <span class="n">d</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
-            <span class="n">preview</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)[:</span><span class="mi">160</span><span class="p">]</span>
-            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;           </span><span class="si">{</span><span class="n">preview</span><span class="si">}</span><span class="s2">…&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+            <span class="n">preview</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">" "</span><span class="p">)[:</span><span class="mi">160</span><span class="p">]</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"           </span><span class="si">{</span><span class="n">preview</span><span class="si">}</span><span class="s2">…"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="coverage">
 <a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.coverage">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">coverage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;reports&quot;</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Report disk-vs-index coverage for a reports corpus (silent-gap detector).</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">coverage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"reports"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Report disk-vs-index coverage for a reports corpus (silent-gap detector).</span>
 
 <span class="sd">    Independently walks every ``*/*/docs`` and ``*/*/misc/docs`` tree on disk and</span>
 <span class="sd">    diffs the includable reports against what is actually indexed, listing any</span>
 <span class="sd">    file that is on disk but missing from the index (rebuild with ``ir build`` to</span>
 <span class="sd">    fix). Catches the ingestion gaps that back-translation evals structurally</span>
 <span class="sd">    cannot — a doc that was never indexed can never be an eval gold id.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.coverage</span><span class="w"> </span><span class="kn">import</span> <span class="n">reports_coverage</span>
 
     <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
@@ -320,27 +323,27 @@
 <div class="viewcode-block" id="info">
 <a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.info">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">info</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Show a corpus&#39;s stored config, stats, policy, and any abstention floors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Show a corpus's stored config, stats, policy, and any abstention floors."""</span>
     <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">cfg</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
     <span class="n">reg</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">calibrated</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">calibration_modes</span><span class="p">()</span>
-    <span class="n">floors</span> <span class="o">=</span> <span class="p">{</span><span class="n">m</span><span class="p">:</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_calibration</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;min_score&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">calibrated</span><span class="p">}</span>
-    <span class="n">cal</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">min_score floors: </span><span class="si">{</span><span class="n">floors</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">floors</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">floors</span> <span class="o">=</span> <span class="p">{</span><span class="n">m</span><span class="p">:</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_calibration</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"min_score"</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">calibrated</span><span class="p">}</span>
+    <span class="n">cal</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">min_score floors: </span><span class="si">{</span><span class="n">floors</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">floors</span> <span class="k">else</span> <span class="s2">""</span>
     <span class="n">pol</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">policy_for</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">state</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_maintenance_state</span><span class="p">()</span>
-    <span class="n">last</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;last_maintained&quot;</span><span class="p">,</span> <span class="s2">&quot;never&quot;</span><span class="p">)</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"last_maintained"</span><span class="p">,</span> <span class="s2">"never"</span><span class="p">)</span>
     <span class="n">syn</span> <span class="o">=</span> <span class="n">pol</span><span class="o">.</span><span class="n">synopsis</span>
-    <span class="n">syn_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;enabled, scope=</span><span class="si">{</span><span class="n">syn</span><span class="o">.</span><span class="n">scope</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">syn</span><span class="o">.</span><span class="n">window_days</span><span class="si">}</span><span class="s2">d&quot;</span> <span class="k">if</span> <span class="n">syn</span><span class="o">.</span><span class="n">enabled</span> <span class="k">else</span> <span class="s2">&quot;off&quot;</span>
-    <span class="n">window</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;, downtime=</span><span class="si">{</span><span class="n">syn</span><span class="o">.</span><span class="n">downtime_hours</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">syn</span><span class="o">.</span><span class="n">downtime_hours</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">syn_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"enabled, scope=</span><span class="si">{</span><span class="n">syn</span><span class="o">.</span><span class="n">scope</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">syn</span><span class="o">.</span><span class="n">window_days</span><span class="si">}</span><span class="s2">d"</span> <span class="k">if</span> <span class="n">syn</span><span class="o">.</span><span class="n">enabled</span> <span class="k">else</span> <span class="s2">"off"</span>
+    <span class="n">window</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">", downtime=</span><span class="si">{</span><span class="n">syn</span><span class="o">.</span><span class="n">downtime_hours</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">syn</span><span class="o">.</span><span class="n">downtime_hours</span> <span class="k">else</span> <span class="s2">""</span>
     <span class="n">policy_str</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">policy: reindex=</span><span class="si">{</span><span class="n">pol</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">on</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="o">+</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/</span><span class="si">{</span><span class="n">pol</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">every_hours</span><span class="si">}</span><span class="s2">h&quot;</span> <span class="k">if</span> <span class="n">pol</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">every_hours</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-        <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;, synopsis=</span><span class="si">{</span><span class="n">syn_str</span><span class="si">}{</span><span class="n">window</span><span class="si">}</span><span class="se">\n</span><span class="s2">last maintained: </span><span class="si">{</span><span class="n">last</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">policy: reindex=</span><span class="si">{</span><span class="n">pol</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">on</span><span class="si">}</span><span class="s2">"</span>
+        <span class="o">+</span> <span class="p">(</span><span class="sa">f</span><span class="s2">"/</span><span class="si">{</span><span class="n">pol</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">every_hours</span><span class="si">}</span><span class="s2">h"</span> <span class="k">if</span> <span class="n">pol</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">every_hours</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="o">+</span> <span class="sa">f</span><span class="s2">", synopsis=</span><span class="si">{</span><span class="n">syn_str</span><span class="si">}{</span><span class="n">window</span><span class="si">}</span><span class="se">\n</span><span class="s2">last maintained: </span><span class="si">{</span><span class="n">last</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;name: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s2">registered: </span><span class="si">{</span><span class="n">reg</span><span class="si">}</span><span class="se">\n</span><span class="s2">records: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;config: </span><span class="si">{</span><span class="n">cfg</span><span class="si">}{</span><span class="n">policy_str</span><span class="si">}{</span><span class="n">cal</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">"name: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="se">\n</span><span class="s2">registered: </span><span class="si">{</span><span class="n">reg</span><span class="si">}</span><span class="se">\n</span><span class="s2">records: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"config: </span><span class="si">{</span><span class="n">cfg</span><span class="si">}{</span><span class="n">policy_str</span><span class="si">}{</span><span class="n">cal</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span></div>
 
 
@@ -348,40 +351,132 @@
 <div class="viewcode-block" id="maintain">
 <a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.maintain">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">maintain</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="nb">all</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run due background work: incremental reindex, synopsis in its downtime window.</span>
+<span class="w">    </span><span class="sd">"""Run due background work: incremental reindex, synopsis in its downtime window.</span>
 
 <span class="sd">    With a name, maintains that corpus; with --all (or no name), every registered</span>
 <span class="sd">    corpus. Idempotent and safe to schedule (cron/launchd): it no-ops what is not</span>
 <span class="sd">    due. --dry-run reports what would run without doing it.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.maintenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">maintain</span> <span class="k">as</span> <span class="n">_maintain</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.maintenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">MaintenanceBusy</span><span class="p">,</span> <span class="n">maintain</span> <span class="k">as</span> <span class="n">_maintain</span><span class="p">,</span> <span class="n">single_run</span>
 
-    <span class="n">results</span> <span class="o">=</span> <span class="n">_maintain</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="nb">all</span><span class="o">=</span><span class="nb">all</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">_maintain</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="nb">all</span><span class="o">=</span><span class="nb">all</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Overlapping runs can interleave writes to one corpus store; the</span>
+            <span class="c1"># scheduled job and a manual run both arrive through here.</span>
+            <span class="k">with</span> <span class="n">single_run</span><span class="p">():</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="n">_maintain</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="nb">all</span><span class="o">=</span><span class="nb">all</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">MaintenanceBusy</span> <span class="k">as</span> <span class="n">busy</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"skipped: </span><span class="si">{</span><span class="n">busy</span><span class="si">}</span><span class="s2">"</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">results</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;no corpora registered&quot;</span>
-    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="s2">"no corpora registered"</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">)</span>
+    <span class="n">failures</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span> <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">error</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">failures</span><span class="p">:</span>
+        <span class="c1"># The report goes to stdout even when the run failed -- `ir maintain --all</span>
+        <span class="c1"># &gt; report.txt` must not lose the corpora that succeeded just because one</span>
+        <span class="c1"># did not. Only the summary rides SystemExit, whose job here is the</span>
+        <span class="c1"># non-zero exit code: a sweep that half-fails and exits 0 is</span>
+        <span class="c1"># indistinguishable from a healthy one, which is how corpora go stale</span>
+        <span class="c1"># unnoticed. `ir schedule --status` reads that exit code back.</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">failures</span><span class="p">)</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2"> corpora failed to maintain."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="schedule">
+<a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.schedule">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">schedule</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">every</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">status</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">restart</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">remove</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">backend</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Install, inspect, and operate the OS job that runs ``ir maintain``.</span>
+
+<span class="sd">    Bare ``ir schedule`` is idempotent: it creates the schedule when there is</span>
+<span class="sd">    none, and when there already is one it reports it (interval, definition,</span>
+<span class="sd">    whether the OS has it loaded, last run) plus how to operate it, rather than</span>
+<span class="sd">    silently reinstalling over a schedule you tuned.</span>
+
+<span class="sd">    An existing definition's environment is carried forward by every operation,</span>
+<span class="sd">    so operating a working schedule from a shell that happens to lack $PP never</span>
+<span class="sd">    silently re-points it at a different corpus store.</span>
+
+<span class="sd">    every: interval as 15m / 2h / 1d, or a plain number of minutes.</span>
+<span class="sd">    status: report only; never mutates.</span>
+<span class="sd">    restart: reload the definition and re-pin it to this interpreter.</span>
+<span class="sd">    remove: stop the schedule and delete its definition.</span>
+<span class="sd">    dry_run: print the definition that would be written, and write nothing.</span>
+<span class="sd">    backend: launchd | cron (default: whichever this machine provides).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">schedule</span> <span class="k">as</span> <span class="n">_schedule</span>
+
+    <span class="c1"># Mutually exclusive: silently letting one flag win would make</span>
+    <span class="c1"># `--restart --every 15m` report success while ignoring the interval.</span>
+    <span class="n">chosen</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">flag</span>
+        <span class="k">for</span> <span class="n">flag</span><span class="p">,</span> <span class="n">on</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s2">"--status"</span><span class="p">,</span> <span class="n">status</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"--restart"</span><span class="p">,</span> <span class="n">restart</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"--remove"</span><span class="p">,</span> <span class="n">remove</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"--dry-run"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">on</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chosen</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"ir schedule: </span><span class="si">{</span><span class="s1">' and '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chosen</span><span class="p">)</span><span class="si">}</span><span class="s2"> cannot be combined"</span>
+    <span class="k">if</span> <span class="n">every</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">restart</span> <span class="ow">or</span> <span class="n">remove</span> <span class="ow">or</span> <span class="n">status</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"ir schedule: --every cannot be combined with </span><span class="si">{</span><span class="n">chosen</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">_schedule</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">remove</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">_schedule</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">restart</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">_schedule</span><span class="o">.</span><span class="n">restart</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">_schedule</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="n">every</span><span class="o">=</span><span class="n">every</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">_schedule</span><span class="o">.</span><span class="n">ensure</span><span class="p">(</span><span class="n">every</span><span class="o">=</span><span class="n">every</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">_schedule</span><span class="o">.</span><span class="n">ScheduleError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"ir schedule: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="c1"># The whole point of this command is to report on the machine's</span>
+        <span class="c1"># scheduler; an unreadable definition or a vanished directory has to read</span>
+        <span class="c1"># as a message, not a traceback.</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"ir schedule: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">return</span> <span class="n">_schedule</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">state</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="rm">
 <a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.rm">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">rm</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unregister a corpus (does not delete its built data).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Unregister a corpus (does not delete its built data)."""</span>
     <span class="n">registry</span><span class="o">.</span><span class="n">unregister</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;unregistered </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">&quot;</span></div>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"unregistered </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">"</span></div>
 
 
 
 <div class="viewcode-block" id="eval">
 <a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.eval">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">eval</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score a built corpus&#39;s retrieval against a DiscoveryCase JSONL file.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">eval</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Score a built corpus's retrieval against a DiscoveryCase JSONL file.</span>
 
 <span class="sd">    cases: path to a JSONL file of cases (see :mod:`ir.eval`); each line is a</span>
-<span class="sd">    ``{&quot;query&quot;: ..., &quot;gold&quot;: [artifact_id, ...]}`` record (empty ``gold`` = an</span>
+<span class="sd">    ``{"query": ..., "gold": [artifact_id, ...]}`` record (empty ``gold`` = an</span>
 <span class="sd">    abstention case). Prints recall@k / NDCG@k / MRR / MAP plus the failure-mode</span>
 <span class="sd">    taxonomy. mode: dense | lexical | hybrid.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">evaluate_discovery</span><span class="p">,</span> <span class="n">load_cases</span><span class="p">,</span> <span class="n">validate_cases</span>
 
     <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
@@ -389,7 +484,7 @@
         <span class="k">return</span> <span class="n">_empty_corpus_msg</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">case_list</span> <span class="o">=</span> <span class="n">load_cases</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">case_list</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;no cases found in </span><span class="si">{</span><span class="n">cases</span><span class="si">!r}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"no cases found in </span><span class="si">{</span><span class="n">cases</span><span class="si">!r}</span><span class="s2">"</span>
     <span class="n">drift</span> <span class="o">=</span> <span class="n">validate_cases</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">case_list</span><span class="p">)</span>
     <span class="n">report</span> <span class="o">=</span> <span class="n">evaluate_discovery</span><span class="p">(</span>
         <span class="n">corpus</span><span class="p">,</span> <span class="n">case_list</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">primary_k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">k_values</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">k</span><span class="p">}))</span>
@@ -403,32 +498,32 @@
 <div class="viewcode-block" id="eval_gen">
 <a class="viewcode-back" href="../../module_docs/ir/cli.html#ir.cli.eval_gen">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">eval_gen</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">abstention_frac</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">max_artifacts</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate an eval-case file for a corpus by back-translation (needs aix/LLM).</span>
+<span class="w">    </span><span class="sd">"""Generate an eval-case file for a corpus by back-translation (needs aix/LLM).</span>
 
 <span class="sd">    Writes a DiscoveryCase JSONL set (gold cases + an abstention slice) for the</span>
 <span class="sd">    registered corpus *name* to *out*, stamping a corpus-signature into the</span>
 <span class="sd">    header so the frozen file can be checked against the live corpus later. This</span>
 <span class="sd">    command calls an LLM via aix; scoring it afterwards (`ir eval`) is offline.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_cases</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.eval_gen</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_eval_set</span><span class="p">,</span> <span class="n">corpus_signature</span>
 
     <span class="n">source</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">source_for</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="n">max_artifacts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;max_artifacts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_artifacts</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">"max_artifacts"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_artifacts</span><span class="p">)</span>
     <span class="n">cases</span> <span class="o">=</span> <span class="n">build_eval_set</span><span class="p">(</span>
         <span class="n">source</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">abstention_frac</span><span class="o">=</span><span class="n">abstention_frac</span><span class="p">,</span> <span class="n">corpus_name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span>
     <span class="n">save_cases</span><span class="p">(</span>
         <span class="n">cases</span><span class="p">,</span>
         <span class="n">out</span><span class="p">,</span>
-        <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;corpus&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;corpus_signature&quot;</span><span class="p">:</span> <span class="n">corpus_signature</span><span class="p">(</span><span class="n">source</span><span class="p">),</span> <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="n">k</span><span class="p">},</span>
+        <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">"corpus"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"corpus_signature"</span><span class="p">:</span> <span class="n">corpus_signature</span><span class="p">(</span><span class="n">source</span><span class="p">),</span> <span class="s2">"k"</span><span class="p">:</span> <span class="n">k</span><span class="p">},</span>
     <span class="p">)</span>
     <span class="n">n_gold</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">gold_is_none</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cases</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;wrote </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span><span class="si">}</span><span class="s2"> cases (</span><span class="si">{</span><span class="n">n_gold</span><span class="si">}</span><span class="s2"> gold, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">n_gold</span><span class="si">}</span><span class="s2"> abstention) &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;to </span><span class="si">{</span><span class="n">out</span><span class="si">!r}</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">"wrote </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span><span class="si">}</span><span class="s2"> cases (</span><span class="si">{</span><span class="n">n_gold</span><span class="si">}</span><span class="s2"> gold, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">n_gold</span><span class="si">}</span><span class="s2"> abstention) "</span>
+        <span class="sa">f</span><span class="s2">"to </span><span class="si">{</span><span class="n">out</span><span class="si">!r}</span><span class="s2">"</span>
     <span class="p">)</span></div>
 
 
@@ -439,21 +534,21 @@
     <span class="n">name</span><span class="p">,</span>
     <span class="n">cases</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;conservative&quot;</span><span class="p">,</span>
-    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="o">=</span><span class="s2">"conservative"</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">,</span>
     <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="n">max_k</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
     <span class="n">rel</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
     <span class="n">min_score</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score a selector against a DiscoveryCase JSONL file (selection quality).</span>
+<span class="w">    </span><span class="sd">"""Score a selector against a DiscoveryCase JSONL file (selection quality).</span>
 
 <span class="sd">    Reports the conditional commit rate (the selection decision isolated from</span>
 <span class="sd">    retrieval) plus selection precision / recall / F1 and abstention accuracy.</span>
 <span class="sd">    strategy: conservative | top_k | rel_threshold | score_gap. mode: dense |</span>
 <span class="sd">    lexical | hybrid. max_k / rel / min_score tune the commit (see `ir.select`);</span>
 <span class="sd">    `ir sweep-select` sweeps them to find good values.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">evaluate_selection</span><span class="p">,</span> <span class="n">load_cases</span><span class="p">,</span> <span class="n">validate_cases</span>
 
     <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
@@ -461,7 +556,7 @@
         <span class="k">return</span> <span class="n">_empty_corpus_msg</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">case_list</span> <span class="o">=</span> <span class="n">load_cases</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">case_list</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;no cases found in </span><span class="si">{</span><span class="n">cases</span><span class="si">!r}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"no cases found in </span><span class="si">{</span><span class="n">cases</span><span class="si">!r}</span><span class="s2">"</span>
     <span class="n">drift</span> <span class="o">=</span> <span class="n">validate_cases</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">case_list</span><span class="p">)</span>
     <span class="n">report</span> <span class="o">=</span> <span class="n">evaluate_selection</span><span class="p">(</span>
         <span class="n">corpus</span><span class="p">,</span>
@@ -485,19 +580,19 @@
     <span class="n">name</span><span class="p">,</span>
     <span class="n">cases</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;conservative&quot;</span><span class="p">,</span>
-    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="o">=</span><span class="s2">"conservative"</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">,</span>
     <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">objective</span><span class="o">=</span><span class="s2">&quot;selection_f1&quot;</span><span class="p">,</span>
+    <span class="n">objective</span><span class="o">=</span><span class="s2">"selection_f1"</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sweep selector knobs (max_k × rel) against a case file; print the grid + best.</span>
+<span class="w">    </span><span class="sd">"""Sweep selector knobs (max_k × rel) against a case file; print the grid + best.</span>
 
 <span class="sd">    Retrieves once per case and reuses the candidates across the whole grid, so</span>
 <span class="sd">    the sweep is cheap. Prints a table (one row per setting, best objective first)</span>
 <span class="sd">    and the winning max_k / rel. Use it to pick `ir.select` defaults empirically.</span>
 <span class="sd">    objective: selection_f1 | selection_precision | selection_recall |</span>
 <span class="sd">    conditional_commit_rate | mean_selected_size. mode: dense | lexical | hybrid.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_cases</span><span class="p">,</span> <span class="n">sweep_selector</span><span class="p">,</span> <span class="n">validate_cases</span>
 
     <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
@@ -505,7 +600,7 @@
         <span class="k">return</span> <span class="n">_empty_corpus_msg</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">case_list</span> <span class="o">=</span> <span class="n">load_cases</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">case_list</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;no cases found in </span><span class="si">{</span><span class="n">cases</span><span class="si">!r}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"no cases found in </span><span class="si">{</span><span class="n">cases</span><span class="si">!r}</span><span class="s2">"</span>
     <span class="n">drift</span> <span class="o">=</span> <span class="n">validate_cases</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">case_list</span><span class="p">)</span>
     <span class="n">sweep</span> <span class="o">=</span> <span class="n">sweep_selector</span><span class="p">(</span>
         <span class="n">corpus</span><span class="p">,</span> <span class="n">case_list</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="n">objective</span>
@@ -522,17 +617,17 @@
     <span class="n">name</span><span class="p">,</span>
     <span class="n">cases</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">,</span>
     <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="n">sensitivity_weight</span><span class="o">=</span><span class="n">DFLT_CALIB_SENSITIVITY_WEIGHT</span><span class="p">,</span>
     <span class="n">persist</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">fusion</span><span class="o">=</span><span class="s2">&quot;rrf&quot;</span><span class="p">,</span>
+    <span class="n">fusion</span><span class="o">=</span><span class="s2">"rrf"</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calibrate the absolute abstention min_score floor for a corpus + mode.</span>
+<span class="w">    </span><span class="sd">"""Calibrate the absolute abstention min_score floor for a corpus + mode.</span>
 
 <span class="sd">    Separates in-scope (gold-bearing) from out-of-scope (empty-gold) query top</span>
 <span class="sd">    scores and reports the floor that best splits them, with sensitivity /</span>
-<span class="sd">    specificity / Youden&#39;s J. ``cases`` must include BOTH gold-bearing and</span>
+<span class="sd">    specificity / Youden's J. ``cases`` must include BOTH gold-bearing and</span>
 <span class="sd">    abstention cases — generate them with ``ir eval-gen`` (it adds an abstention</span>
 <span class="sd">    slice). ``--persist`` stores the floor so ``ir discover ... --min-score auto``</span>
 <span class="sd">    will abstain by it. ``--sensitivity-weight`` (0..1, balanced default);</span>
@@ -540,7 +635,7 @@
 <span class="sd">    with ``--fusion blend`` (rank-based RRF barely separates — see ir_08) and</span>
 <span class="sd">    query under the same fusion. mode: dense | lexical | hybrid. fusion (hybrid</span>
 <span class="sd">    only): rrf | blend.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">calibrate_min_score</span> <span class="k">as</span> <span class="n">_calibrate</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_cases</span><span class="p">,</span> <span class="n">validate_cases</span>
 
@@ -549,7 +644,7 @@
         <span class="k">return</span> <span class="n">_empty_corpus_msg</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">case_list</span> <span class="o">=</span> <span class="n">load_cases</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">case_list</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;no cases found in </span><span class="si">{</span><span class="n">cases</span><span class="si">!r}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"no cases found in </span><span class="si">{</span><span class="n">cases</span><span class="si">!r}</span><span class="s2">"</span>
     <span class="n">drift</span> <span class="o">=</span> <span class="n">validate_cases</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">case_list</span><span class="p">)</span>
     <span class="n">calib</span> <span class="o">=</span> <span class="n">_calibrate</span><span class="p">(</span>
         <span class="n">corpus</span><span class="p">,</span>
@@ -563,16 +658,16 @@
     <span class="n">out</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">calib</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">persist</span> <span class="ow">and</span> <span class="n">calib</span><span class="o">.</span><span class="n">min_score</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">fusion_hint</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot; --fusion </span><span class="si">{</span><span class="n">fusion</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;hybrid&quot;</span> <span class="ow">and</span> <span class="n">fusion</span> <span class="o">!=</span> <span class="s2">&quot;rrf&quot;</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+            <span class="sa">f</span><span class="s2">" --fusion </span><span class="si">{</span><span class="n">fusion</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"hybrid"</span> <span class="ow">and</span> <span class="n">fusion</span> <span class="o">!=</span> <span class="s2">"rrf"</span> <span class="k">else</span> <span class="s2">""</span>
         <span class="p">)</span>
         <span class="n">out</span> <span class="o">+=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  persisted → ir discover </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> ... --mode </span><span class="si">{</span><span class="n">mode</span><span class="si">}{</span><span class="n">fusion_hint</span><span class="si">}</span><span class="s2"> &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;--min-score auto&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">  persisted → ir discover </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> ... --mode </span><span class="si">{</span><span class="n">mode</span><span class="si">}{</span><span class="n">fusion_hint</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"--min-score auto"</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">calib</span><span class="o">.</span><span class="n">min_score</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">out</span> <span class="o">+=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  NOTE: no floor calibrated (</span><span class="si">{</span><span class="n">calib</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">); a floor needs both &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;gold-bearing and abstention cases. Add abstention cases via ir eval-gen.&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">  NOTE: no floor calibrated (</span><span class="si">{</span><span class="n">calib</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">); a floor needs both "</span>
+            <span class="sa">f</span><span class="s2">"gold-bearing and abstention cases. Add abstention cases via ir eval-gen."</span>
         <span class="p">)</span>
     <span class="n">out</span> <span class="o">+=</span> <span class="n">_drift_warning</span><span class="p">(</span><span class="n">drift</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span></div>
@@ -588,6 +683,7 @@
     <span class="n">coverage</span><span class="p">,</span>
     <span class="n">info</span><span class="p">,</span>
     <span class="n">maintain</span><span class="p">,</span>
+    <span class="n">schedule</span><span class="p">,</span>
     <span class="n">rm</span><span class="p">,</span>
     <span class="nb">eval</span><span class="p">,</span>
     <span class="n">eval_gen</span><span class="p">,</span>

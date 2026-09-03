@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.index &mdash; ir 0.1.28 documentation</title>
+  <title>ir.index &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,12 +99,12 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.index</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;The indexing pipeline and incremental maintenance.</span>
+<span></span><span class="sd">"""The indexing pipeline and incremental maintenance.</span>
 
 <span class="sd">:func:`build` turns a :class:`~ir.sources.CorpusSource` into a queryable</span>
 <span class="sd">:class:`Corpus`, persisting records through a</span>
 <span class="sd">:class:`~ir.store.CorpusStore`. It is **incremental and idempotent**: each</span>
-<span class="sd">artifact&#39;s change signal is compared to the ledger, and only new, changed, or</span>
+<span class="sd">artifact's change signal is compared to the ledger, and only new, changed, or</span>
 <span class="sd">re-modeled artifacts are decomposed and embedded. Artifacts that vanished from</span>
 <span class="sd">the source are pruned (full-refresh). Re-running ``build`` on an unchanged</span>
 <span class="sd">source is a near-no-op.</span>
@@ -112,7 +113,7 @@
 <span class="sd">is the right tool for the small corpora ``ir`` targets. The heavier</span>
 <span class="sd">content-addressed artifact-graph (``ef.artifact_graph``) is the documented</span>
 <span class="sd">upgrade for corpora large enough that recomputing surfaces is the bottleneck.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -130,7 +131,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_strategy_id</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stable id for a strategy: class name + its simple parameters.</span>
+<span class="w">    </span><span class="sd">"""Stable id for a strategy: class name + its simple parameters.</span>
 
 <span class="sd">    Changing the strategy (or its parameters) changes this id, so an unchanged</span>
 <span class="sd">    corpus rebuilt under a different strategy is correctly re-decomposed rather</span>
@@ -139,24 +140,24 @@
 <span class="sd">    Scalar parameters are taken verbatim; a parameter that is *itself* a</span>
 <span class="sd">    strategy (an attribute with a ``decompose`` method — e.g. the inner</span>
 <span class="sd">    strategy a :func:`ir.with_synopsis` wrapper holds) folds in its own</span>
-<span class="sd">    ``_strategy_id`` recursively. So a wrapper&#39;s identity tracks both the inner</span>
-<span class="sd">    strategy&#39;s parameters and the wrapper&#39;s own scalar stamps (e.g. a</span>
+<span class="sd">    ``_strategy_id`` recursively. So a wrapper's identity tracks both the inner</span>
+<span class="sd">    strategy's parameters and the wrapper's own scalar stamps (e.g. a</span>
 <span class="sd">    synthesizer id), and a change to either re-decomposes through the normal</span>
 <span class="sd">    incremental path. Non-scalar, non-strategy attributes (callables,</span>
 <span class="sd">    embedders) are deliberately excluded — identity for those rides on an</span>
 <span class="sd">    explicit scalar stamp the wrapper exposes, not on a volatile ``repr``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))):</span>
             <span class="n">params</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
-        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">&quot;decompose&quot;</span><span class="p">):</span>  <span class="c1"># a nested strategy (wrapper)</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">"decompose"</span><span class="p">):</span>  <span class="c1"># a nested strategy (wrapper)</span>
             <span class="n">params</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_strategy_id</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_embed</span><span class="p">(</span><span class="n">emb</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">texts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">input_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Call an embedder, tolerating those that don&#39;t accept ``input_type``.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Call an embedder, tolerating those that don't accept ``input_type``."""</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">texts</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
@@ -174,16 +175,16 @@
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_LazyEmbedder</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An embedder callable that resolves its model on first *call*, not first use.</span>
+<span class="w">    </span><span class="sd">"""An embedder callable that resolves its model on first *call*, not first use.</span>
 
-<span class="sd">    :func:`open_corpus` binds this as a :class:`Corpus`&#39;s ``embedder`` so the</span>
+<span class="sd">    :func:`open_corpus` binds this as a :class:`Corpus`'s ``embedder`` so the</span>
 <span class="sd">    (heavy, ~seconds) embedding-model load is paid only when a query is actually</span>
 <span class="sd">    embedded — ``ls`` / ``info`` and lexical-only search, which never embed,</span>
-<span class="sd">    never trigger it. The corpus&#39;s ``embedder_id`` is read from stored config, so</span>
+<span class="sd">    never trigger it. The corpus's ``embedder_id`` is read from stored config, so</span>
 <span class="sd">    it is known without resolving the model. Transparent: it forwards ``__call__``</span>
 <span class="sd">    (including ``input_type=``) to the resolved embedder, so every existing call</span>
 <span class="sd">    site (``_embed`` and its ``TypeError`` fallback) works unchanged.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_spec</span> <span class="o">=</span> <span class="n">spec</span>
@@ -201,14 +202,14 @@
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">embedder_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_resolve</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_id</span> <span class="ow">or</span> <span class="s2">&quot;custom&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_id</span> <span class="ow">or</span> <span class="s2">"custom"</span>
 
 
 <div class="viewcode-block" id="Corpus">
 <a class="viewcode-back" href="../../module_docs/ir/index.html#ir.Corpus">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Corpus</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A built, queryable corpus: a store plus its embedder.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A built, queryable corpus: a store plus its embedder."""</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">store</span><span class="p">:</span> <span class="n">CorpusStore</span>
@@ -218,11 +219,11 @@
 <div class="viewcode-block" id="Corpus.search">
 <a class="viewcode-back" href="../../module_docs/ir/index.html#ir.Corpus.search">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Search this corpus for *query*.</span>
+<span class="w">        </span><span class="sd">"""Search this corpus for *query*.</span>
 
 <span class="sd">        ``**kwargs`` (``k`` / ``mode`` / ``filter`` / ``surfaces`` /</span>
 <span class="sd">        ``per_artifact`` / ...) are forwarded to :func:`ir.retrieve.search`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">search</span>
 
         <span class="k">return</span> <span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
@@ -244,17 +245,17 @@
     <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
     <span class="n">edge_extractor</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Corpus</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build or incrementally update *source* into a :class:`Corpus`.</span>
+<span class="w">    </span><span class="sd">"""Build or incrementally update *source* into a :class:`Corpus`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    store : the persistence backend (default: file-backed under XDG data dir).</span>
-<span class="sd">    embedder : override the source&#39;s embedder spec.</span>
+<span class="sd">    embedder : override the source's embedder spec.</span>
 <span class="sd">    full : when True (default), prune artifacts no longer in the source.</span>
 <span class="sd">    batch_size : embedding batch size.</span>
 <span class="sd">    edge_extractor : an optional :data:`~ir.graph.EdgeExtractor`</span>
 <span class="sd">        (``(artifact_id, filter_fields) -&gt; {edge_type: [target]}``) that</span>
-<span class="sd">        populates the corpus&#39;s semantic ``links`` graph (see :mod:`ir.graph`;</span>
+<span class="sd">        populates the corpus's semantic ``links`` graph (see :mod:`ir.graph`;</span>
 <span class="sd">        pass :func:`ir.default_edge_extractor` for the latent deps/parent</span>
 <span class="sd">        edges). Ingest is **eager** — edges are (re)written for *every*</span>
 <span class="sd">        in-scope artifact, a decompose-only pass with no embedding, so the</span>
@@ -264,7 +265,7 @@
 <span class="sd">        (they are only refreshed by re-running with one, and only cleared per</span>
 <span class="sd">        artifact by the ``full`` prune below) — so dropping ``edge_extractor``</span>
 <span class="sd">        does not wipe a graph.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">store</span> <span class="o">=</span> <span class="n">CorpusStore</span><span class="o">.</span><span class="n">local</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">store</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">store</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="n">embedder</span> <span class="k">if</span> <span class="n">embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">source</span><span class="o">.</span><span class="n">embedder</span>
     <span class="n">emb</span><span class="p">,</span> <span class="n">emb_id</span> <span class="o">=</span> <span class="n">make_embedder</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
@@ -280,9 +281,9 @@
         <span class="n">prev</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_ledger_entry</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="n">unchanged</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">prev</span>
-            <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;version&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">version</span>
-            <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_id&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">emb_id</span>
-            <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;strategy_id&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">strat_id</span>
+            <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"version"</span><span class="p">)</span> <span class="o">==</span> <span class="n">version</span>
+            <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"embedder_id"</span><span class="p">)</span> <span class="o">==</span> <span class="n">emb_id</span>
+            <span class="ow">and</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"strategy_id"</span><span class="p">)</span> <span class="o">==</span> <span class="n">strat_id</span>
         <span class="p">)</span>
         <span class="c1"># Unchanged + no edges to refresh → nothing to do for this artifact.</span>
         <span class="k">if</span> <span class="n">unchanged</span> <span class="ow">and</span> <span class="n">edge_extractor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -302,12 +303,12 @@
         <span class="k">for</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="p">(</span><span class="n">_k</span><span class="p">,</span> <span class="n">_v</span><span class="p">,</span> <span class="n">_p</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span> <span class="ow">in</span> <span class="n">changed</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">surface</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">surfaces</span><span class="p">)</span>
     <span class="p">]</span>
-    <span class="n">vectors</span> <span class="o">=</span> <span class="n">_embed_batched</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">flat</span><span class="p">],</span> <span class="s2">&quot;document&quot;</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+    <span class="n">vectors</span> <span class="o">=</span> <span class="n">_embed_batched</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">flat</span><span class="p">],</span> <span class="s2">"document"</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
 
     <span class="c1"># Replace records of changed artifacts (delete-then-write).</span>
     <span class="k">for</span> <span class="n">_artifact_id</span><span class="p">,</span> <span class="p">(</span><span class="n">_k</span><span class="p">,</span> <span class="n">_v</span><span class="p">,</span> <span class="n">prev</span><span class="p">,</span> <span class="n">_plan</span><span class="p">)</span> <span class="ow">in</span> <span class="n">changed</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">prev</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;record_ids&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">prev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"record_ids"</span><span class="p">,</span> <span class="p">[]):</span>
                 <span class="n">store</span><span class="o">.</span><span class="n">delete_record</span><span class="p">(</span><span class="n">rid</span><span class="p">)</span>
 
     <span class="n">record_ids</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
@@ -334,27 +335,27 @@
         <span class="n">store</span><span class="o">.</span><span class="n">set_ledger_entry</span><span class="p">(</span>
             <span class="n">key</span><span class="p">,</span>
             <span class="p">{</span>
-                <span class="s2">&quot;artifact_id&quot;</span><span class="p">:</span> <span class="n">artifact_id</span><span class="p">,</span>
-                <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">version</span><span class="p">,</span>
-                <span class="s2">&quot;embedder_id&quot;</span><span class="p">:</span> <span class="n">emb_id</span><span class="p">,</span>
-                <span class="s2">&quot;strategy_id&quot;</span><span class="p">:</span> <span class="n">strat_id</span><span class="p">,</span>
-                <span class="s2">&quot;record_ids&quot;</span><span class="p">:</span> <span class="n">record_ids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="s2">"artifact_id"</span><span class="p">:</span> <span class="n">artifact_id</span><span class="p">,</span>
+                <span class="s2">"version"</span><span class="p">:</span> <span class="n">version</span><span class="p">,</span>
+                <span class="s2">"embedder_id"</span><span class="p">:</span> <span class="n">emb_id</span><span class="p">,</span>
+                <span class="s2">"strategy_id"</span><span class="p">:</span> <span class="n">strat_id</span><span class="p">,</span>
+                <span class="s2">"record_ids"</span><span class="p">:</span> <span class="n">record_ids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="p">[]),</span>
             <span class="p">},</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">full</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">ledger_items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;artifact_id&quot;</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;record_ids&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"artifact_id"</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"record_ids"</span><span class="p">,</span> <span class="p">[]):</span>
                     <span class="n">store</span><span class="o">.</span><span class="n">delete_record</span><span class="p">(</span><span class="n">rid</span><span class="p">)</span>
                 <span class="n">store</span><span class="o">.</span><span class="n">delete_ledger_entry</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-                <span class="n">store</span><span class="o">.</span><span class="n">delete_links</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;artifact_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">delete_links</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"artifact_id"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
 
     <span class="n">store</span><span class="o">.</span><span class="n">set_config</span><span class="p">(</span>
         <span class="p">{</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;embedder_spec&quot;</span><span class="p">:</span> <span class="n">spec</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;embedder_id&quot;</span><span class="p">:</span> <span class="n">emb_id</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">"embedder_spec"</span><span class="p">:</span> <span class="n">spec</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"custom"</span><span class="p">,</span>
+            <span class="s2">"embedder_id"</span><span class="p">:</span> <span class="n">emb_id</span><span class="p">,</span>
         <span class="p">}</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">Corpus</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">store</span><span class="p">,</span> <span class="n">emb</span><span class="p">,</span> <span class="n">emb_id</span><span class="p">)</span></div>
@@ -364,18 +365,18 @@
 <div class="viewcode-block" id="open_corpus">
 <a class="viewcode-back" href="../../module_docs/ir/index.html#ir.open_corpus">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">open_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">embedder</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Corpus</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reopen a previously built corpus by name.</span>
+<span class="w">    </span><span class="sd">"""Reopen a previously built corpus by name.</span>
 
 <span class="sd">    The embedding model is **lazily** resolved (see :class:`_LazyEmbedder`): the</span>
 <span class="sd">    returned corpus knows its ``embedder_id`` from stored config immediately, but</span>
 <span class="sd">    only loads the model when a dense/hybrid query actually embeds. So ``ir ls``,</span>
 <span class="sd">    ``ir info``, and lexical-only search open a corpus without the model-load</span>
 <span class="sd">    cost. Pass ``embedder=`` to override the stored spec.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">store</span> <span class="o">=</span> <span class="n">CorpusStore</span><span class="o">.</span><span class="n">local</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">cfg</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_config</span><span class="p">()</span>
-    <span class="n">spec</span> <span class="o">=</span> <span class="n">embedder</span> <span class="k">if</span> <span class="n">embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_spec&quot;</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span>
-    <span class="n">emb_id</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_id&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">embedder</span> <span class="k">if</span> <span class="n">embedder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"embedder_spec"</span><span class="p">,</span> <span class="s2">"default"</span><span class="p">)</span>
+    <span class="n">emb_id</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"embedder_id"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
     <span class="k">return</span> <span class="n">Corpus</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">store</span><span class="p">,</span> <span class="n">_LazyEmbedder</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span> <span class="n">emb_id</span><span class="p">)</span></div>
 
 </pre></div>

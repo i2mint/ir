@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.base &mdash; ir 0.1.28 documentation</title>
+  <title>ir.base &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,7 +99,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.base</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Core data model for ``ir``.</span>
+<span></span><span class="sd">"""Core data model for ``ir``.</span>
 
 <span class="sd">Retrieval in ``ir`` flows through four small, explicit types:</span>
 
@@ -109,7 +110,7 @@
 <span class="sd">  AI-authored synopsis, a list of problem classes, body chunks). The</span>
 <span class="sd">  artifact→surfaces decomposition is the job of an</span>
 <span class="sd">  :class:`~ir.strategy.IndexingStrategy`.</span>
-<span class="sd">- :class:`IndexPlan` — a strategy&#39;s output for one artifact: the</span>
+<span class="sd">- :class:`IndexPlan` — a strategy's output for one artifact: the</span>
 <span class="sd">  ``filter_fields`` (hard-filterable metadata, *not* embedded) and the list of</span>
 <span class="sd">  surfaces (embedded).</span>
 <span class="sd">- :class:`Record` — a stored, embedded surface (one row in the index; maps</span>
@@ -120,7 +121,7 @@
 <span class="sd">The split between **filter_fields** (metadata you filter on) and **surfaces**</span>
 <span class="sd">(text you embed) is deliberate and central: good retrieval is hard metadata</span>
 <span class="sd">filtering *and* semantic ranking, not only embeddings.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -132,22 +133,22 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="n">FilterFields</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
-<span class="sd">&quot;&quot;&quot;Non-embedded, hard-filterable metadata for an artifact (name, owner, tags).&quot;&quot;&quot;</span>
+<span class="sd">"""Non-embedded, hard-filterable metadata for an artifact (name, owner, tags)."""</span>
 
 <span class="c1">#: Metadata keys checked, in order, for a disclosure *pointer* — the file/dir</span>
-<span class="c1">#: whose contents are an artifact&#39;s body. A :class:`SearchHit` is a</span>
+<span class="c1">#: whose contents are an artifact's body. A :class:`SearchHit` is a</span>
 <span class="c1">#: *pointer + snippet* (ir_09 §5): ``text`` is the snippet, the pointer is the</span>
 <span class="c1">#: key a resource store dereferences to the full payload. Skills stamp</span>
 <span class="c1">#: ``skill_path``; packages / reports / files stamp ``path`` (see</span>
 <span class="c1">#: :mod:`ir.sources`). :mod:`ir.select` re-exports this for disclosure.</span>
-<span class="n">POINTER_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;skill_path&quot;</span><span class="p">,</span> <span class="s2">&quot;path&quot;</span><span class="p">)</span>
+<span class="n">POINTER_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"skill_path"</span><span class="p">,</span> <span class="s2">"path"</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="storage_key">
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.storage_key">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">storage_key</span><span class="p">(</span><span class="o">*</span><span class="n">parts</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stable, filesystem-safe id from arbitrary string parts (truncated SHA-256).&quot;&quot;&quot;</span>
-    <span class="n">h</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="s2">&quot;␟&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+<span class="w">    </span><span class="sd">"""Stable, filesystem-safe id from arbitrary string parts (truncated SHA-256)."""</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="s2">"␟"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">h</span><span class="p">[:</span><span class="mi">24</span><span class="p">]</span></div>
 
 
@@ -155,13 +156,13 @@
 <div class="viewcode-block" id="ledger_key">
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.ledger_key">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">ledger_key</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The ledger key under which an artifact&#39;s entry is filed.</span>
+<span class="w">    </span><span class="sd">"""The ledger key under which an artifact's entry is filed.</span>
 
 <span class="sd">    The single source of truth for ledger keying — :func:`ir.index.build`</span>
 <span class="sd">    writes entries under this key and readers (e.g.</span>
 <span class="sd">    :func:`ir.retrieve.records_for_artifact`) resolve them with it, so the</span>
 <span class="sd">    two can never drift apart.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">storage_key</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">)</span></div>
 
 
@@ -170,7 +171,7 @@
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.Artifact">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Artifact</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A logical corpus item before decomposition into surfaces.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A logical corpus item before decomposition into surfaces."""</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">raw</span><span class="p">:</span> <span class="n">Any</span>
@@ -182,18 +183,18 @@
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.Surface">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Surface</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;One embeddable unit derived from an artifact.</span>
+<span class="w">    </span><span class="sd">"""One embeddable unit derived from an artifact.</span>
 
-<span class="sd">    ``kind`` names the surface type (e.g. ``&quot;description&quot;``, ``&quot;synopsis&quot;``,</span>
-<span class="sd">    ``&quot;problem_class&quot;``, ``&quot;chunk&quot;``) so a query can match the *right part* of</span>
-<span class="sd">    an artifact. ``granularity`` is a coarse hint (``&quot;document&quot;`` / ``&quot;chunk&quot;``</span>
-<span class="sd">    / ``&quot;field&quot;``). ``metadata`` is surface-local (e.g. chunk offsets).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    ``kind`` names the surface type (e.g. ``"description"``, ``"synopsis"``,</span>
+<span class="sd">    ``"problem_class"``, ``"chunk"``) so a query can match the *right part* of</span>
+<span class="sd">    an artifact. ``granularity`` is a coarse hint (``"document"`` / ``"chunk"``</span>
+<span class="sd">    / ``"field"``). ``metadata`` is surface-local (e.g. chunk offsets).</span>
+<span class="sd">    """</span>
 
     <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">granularity</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;document&quot;</span>
+    <span class="n">granularity</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"document"</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span></div>
 
 
@@ -202,7 +203,7 @@
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.IndexPlan">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">IndexPlan</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An :class:`~ir.strategy.IndexingStrategy`&#39;s output for one artifact.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""An :class:`~ir.strategy.IndexingStrategy`'s output for one artifact."""</span>
 
     <span class="n">filter_fields</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
     <span class="n">surfaces</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Surface</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span></div>
@@ -213,7 +214,7 @@
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.Record">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Record</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A stored, embedded surface — one row of the index.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A stored, embedded surface — one row of the index."""</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span>
@@ -227,21 +228,21 @@
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.Record.make_id">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">make_id</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">surface_kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">surface_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deterministic storage id for a surface of an artifact.</span>
+<span class="w">        </span><span class="sd">"""Deterministic storage id for a surface of an artifact.</span>
 
-<span class="sd">        ``surface_index`` is the surface&#39;s **plan-global** position — its</span>
-<span class="sd">        enumeration index across *all* surfaces of the artifact&#39;s</span>
+<span class="sd">        ``surface_index`` is the surface's **plan-global** position — its</span>
+<span class="sd">        enumeration index across *all* surfaces of the artifact's</span>
 <span class="sd">        :class:`IndexPlan`, regardless of kind — as assigned by</span>
 <span class="sd">        :func:`ir.index.build`. On multi-kind strategies it therefore differs</span>
-<span class="sd">        from per-kind counters like ``metadata[&quot;chunk_index&quot;]`` (e.g.</span>
+<span class="sd">        from per-kind counters like ``metadata["chunk_index"]`` (e.g.</span>
 <span class="sd">        :class:`~ir.strategy.Package`: the ``description`` surface takes</span>
 <span class="sd">        position 0, shifting ``readme_chunk`` *j* to ``surface_index`` ``j+1``</span>
 <span class="sd">        — and the offset is plan-dependent, since empty surfaces are dropped).</span>
 
 <span class="sd">        Ids of already-built corpora are a stability contract: never re-derive</span>
-<span class="sd">        a sibling&#39;s id from a per-kind index — address siblings through the</span>
+<span class="sd">        a sibling's id from a per-kind index — address siblings through the</span>
 <span class="sd">        ledger via :func:`ir.retrieve.records_for_artifact`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="n">storage_key</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">surface_kind</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">surface_index</span><span class="p">))</span></div>
 </div>
 
@@ -251,9 +252,9 @@
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.SearchHit">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SearchHit</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A scored record returned by retrieval (higher score = closer).</span>
+<span class="w">    </span><span class="sd">"""A scored record returned by retrieval (higher score = closer).</span>
 
-<span class="sd">    Maps onto ir_09&#39;s ``Result``: ``text`` is the snippet, ``score`` the rank</span>
+<span class="sd">    Maps onto ir_09's ``Result``: ``text`` is the snippet, ``score`` the rank</span>
 <span class="sd">    score, ``metadata`` the meta, and :attr:`pointer` the key into a resource</span>
 <span class="sd">    store (ir_09 §5). :meth:`to_dict` is the serialization-clean form for a</span>
 <span class="sd">    cross-process / subagent boundary (no numpy scalars leak).</span>
@@ -265,14 +266,14 @@
 <span class="sd">    only unique *within* a source, so any cross-source operation keys on</span>
 <span class="sd">    ``(source, artifact_id)`` (see :func:`best_per_artifact`).</span>
 
-<span class="sd">    ``surface_index`` is the stored :attr:`Record.surface_index` of the hit&#39;s</span>
-<span class="sd">    surface — its plan-global position among the artifact&#39;s surfaces — so a</span>
+<span class="sd">    ``surface_index`` is the stored :attr:`Record.surface_index` of the hit's</span>
+<span class="sd">    surface — its plan-global position among the artifact's surfaces — so a</span>
 <span class="sd">    hit can name *which* surface of its artifact it is (the prerequisite for</span>
 <span class="sd">    sibling addressing and context expansion). ``None`` when unknown (e.g. a</span>
-<span class="sd">    hand-built hit). It is **not** the per-kind ``metadata[&quot;chunk_index&quot;]``;</span>
+<span class="sd">    hand-built hit). It is **not** the per-kind ``metadata["chunk_index"]``;</span>
 <span class="sd">    see :meth:`Record.make_id` for why the two differ on multi-kind</span>
 <span class="sd">    strategies.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">surface_kind</span><span class="p">:</span> <span class="nb">str</span>
@@ -284,7 +285,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">pointer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The disclosure pointer on this hit, if any (see :data:`POINTER_KEYS`).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""The disclosure pointer on this hit, if any (see :data:`POINTER_KEYS`)."""</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">POINTER_KEYS</span><span class="p">:</span>
             <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">p</span><span class="p">:</span>
@@ -294,15 +295,15 @@
 <div class="viewcode-block" id="SearchHit.to_dict">
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.SearchHit.to_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form (``score`` cast to a Python ``float``).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""JSON-serializable form (``score`` cast to a Python ``float``)."""</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;artifact_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
-            <span class="s2">&quot;surface_kind&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
-            <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
-            <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
-            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
-            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
-            <span class="s2">&quot;surface_index&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_index</span><span class="p">,</span>
+            <span class="s2">"artifact_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+            <span class="s2">"surface_kind"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
+            <span class="s2">"score"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+            <span class="s2">"text"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="s2">"metadata"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
+            <span class="s2">"source"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="s2">"surface_index"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_index</span><span class="p">,</span>
         <span class="p">}</span></div>
 </div>
 
@@ -311,17 +312,17 @@
 <div class="viewcode-block" id="best_per_artifact">
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.best_per_artifact">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">best_per_artifact</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Collapse hits to the highest-scoring surface per artifact.</span>
+<span class="w">    </span><span class="sd">"""Collapse hits to the highest-scoring surface per artifact.</span>
 
 <span class="sd">    Returns the surviving hits sorted by score (descending). Identity is</span>
 <span class="sd">    ``(source, artifact_id)``: the same id in two different sources names two</span>
-<span class="sd">    different artifacts (the skills-corpus &quot;dol&quot; is not the packages-corpus</span>
-<span class="sd">    &quot;dol&quot;), so cross-source input never collapses them. Single-source input</span>
+<span class="sd">    different artifacts (the skills-corpus "dol" is not the packages-corpus</span>
+<span class="sd">    "dol"), so cross-source input never collapses them. Single-source input</span>
 <span class="sd">    (all hits sharing one ``source``, or all ``None``) behaves exactly as an</span>
 <span class="sd">    id-keyed collapse. Note the raw-score comparison and the final sort assume</span>
 <span class="sd">    one score scale — sound within a source; for mixed-source hits use</span>
 <span class="sd">    :func:`ir.retrieve.fuse_hits`, which only compares scores within a source.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">seen</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">SearchHit</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">:</span>
         <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">)</span>
@@ -335,13 +336,13 @@
 <div class="viewcode-block" id="tag_source">
 <a class="viewcode-back" href="../../module_docs/ir/base.html#ir.tag_source">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">tag_source</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">],</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stamp *source* on every hit that doesn&#39;t already carry one.</span>
+<span class="w">    </span><span class="sd">"""Stamp *source* on every hit that doesn't already carry one.</span>
 
 <span class="sd">    Existing tags win: a hit already attributed to a corpus keeps that</span>
 <span class="sd">    attribution (so re-tagging under a different registry key cannot</span>
 <span class="sd">    double-count one corpus as two sources). A ``None`` source is the</span>
 <span class="sd">    untagged pseudo-source — hits pass through unattributed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">h</span> <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">replace</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">]</span></div>
 
 </pre></div>

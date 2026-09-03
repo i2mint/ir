@@ -1,0 +1,4 @@
+ir.schedule
+===========
+.. automodule:: ir.schedule
+   :members:

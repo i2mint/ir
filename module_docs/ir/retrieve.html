@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.retrieve &mdash; ir 0.1.28 documentation</title>
+  <title>ir.retrieve &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -24,7 +24,7 @@
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="ir.select" href="select.html" />
+    <link rel="next" title="ir.schedule" href="schedule.html" />
     <link rel="prev" title="ir.registry" href="registry.html" /> 
 </head>
 
@@ -80,6 +80,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ir.retrieve.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
@@ -243,9 +244,9 @@ can register an ir corpus as one source key without importing ir internals.</p>
 default). A corpus <em>name</em> is resolved once via <a class="reference internal" href="../ir.html#ir.open_corpus" title="ir.open_corpus"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.open_corpus()</span></code></a>; pass
 an open <a class="reference internal" href="index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a> to skip that. The returned callable carries
 the bound corpus on <code class="docutils literal notranslate"><span class="pre">.corpus</span></code> for introspection.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">retr</span> <span class="o">=</span> <span class="n">as_retriever</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">retr</span><span class="p">(</span><span class="s2">&quot;how do I deploy the app&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">retr</span><span class="p">(</span><span class="s2">&quot;deploy&quot;</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;owner&quot;</span><span class="p">:</span> <span class="s2">&quot;me&quot;</span><span class="p">})</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">retr</span> <span class="o">=</span> <span class="n">as_retriever</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">retr</span><span class="p">(</span><span class="s2">"how do I deploy the app"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">retr</span><span class="p">(</span><span class="s2">"deploy"</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="p">{</span><span class="s2">"owner"</span><span class="p">:</span> <span class="s2">"me"</span><span class="p">})</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -386,7 +387,7 @@ per artifact). See <a class="reference internal" href="../ir.html#ir.make_llm_fo
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="registry.html" class="btn btn-neutral float-left" title="ir.registry" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="select.html" class="btn btn-neutral float-right" title="ir.select" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="schedule.html" class="btn btn-neutral float-right" title="ir.schedule" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

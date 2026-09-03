@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.config &mdash; ir 0.1.28 documentation</title>
+  <title>ir.config &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,7 +99,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.config</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Filesystem locations and process-wide defaults for ``ir``.</span>
+<span></span><span class="sd">"""Filesystem locations and process-wide defaults for ``ir``.</span>
 
 <span class="sd">``ir`` separates three kinds of on-disk state, each under an XDG-standard base</span>
 <span class="sd">(overridable per-install via ``IR_CONFIG_DIR`` / ``IR_DATA_DIR`` /</span>
@@ -113,7 +114,7 @@
 
 <span class="sd">Every path is a plain :class:`~pathlib.Path` created on demand, so callers can</span>
 <span class="sd">treat the directories as guaranteed to exist.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -121,19 +122,19 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
-<span class="n">APP_NAME</span> <span class="o">=</span> <span class="s2">&quot;ir&quot;</span>
+<span class="n">APP_NAME</span> <span class="o">=</span> <span class="s2">"ir"</span>
 
-<span class="n">_SAFE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[^A-Za-z0-9_.-]+&quot;</span><span class="p">)</span>
+<span class="n">_SAFE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[^A-Za-z0-9_.-]+"</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_ensure</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create *path* (and parents) if missing and return it.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create *path* (and parents) if missing and return it."""</span>
     <span class="n">path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">path</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_base</span><span class="p">(</span><span class="n">env_specific</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">xdg_var</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">home_subdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve an XDG base dir for ``ir`` from env vars, with a home fallback.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Resolve an XDG base dir for ``ir`` from env vars, with a home fallback."""</span>
     <span class="n">specific</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">env_specific</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">specific</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">specific</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span>
@@ -146,56 +147,56 @@
 <div class="viewcode-block" id="config_dir">
 <a class="viewcode-back" href="../../module_docs/ir/config.html#ir.config.config_dir">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">config_dir</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User configuration directory (default ``~/.config/ir``).&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_ensure</span><span class="p">(</span><span class="n">_base</span><span class="p">(</span><span class="s2">&quot;IR_CONFIG_DIR&quot;</span><span class="p">,</span> <span class="s2">&quot;XDG_CONFIG_HOME&quot;</span><span class="p">,</span> <span class="s2">&quot;.config&quot;</span><span class="p">))</span></div>
+<span class="w">    </span><span class="sd">"""User configuration directory (default ``~/.config/ir``)."""</span>
+    <span class="k">return</span> <span class="n">_ensure</span><span class="p">(</span><span class="n">_base</span><span class="p">(</span><span class="s2">"IR_CONFIG_DIR"</span><span class="p">,</span> <span class="s2">"XDG_CONFIG_HOME"</span><span class="p">,</span> <span class="s2">".config"</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="data_dir">
 <a class="viewcode-back" href="../../module_docs/ir/config.html#ir.config.data_dir">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">data_dir</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Durable data directory (default ``~/.local/share/ir``).&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_ensure</span><span class="p">(</span><span class="n">_base</span><span class="p">(</span><span class="s2">&quot;IR_DATA_DIR&quot;</span><span class="p">,</span> <span class="s2">&quot;XDG_DATA_HOME&quot;</span><span class="p">,</span> <span class="s2">&quot;.local/share&quot;</span><span class="p">))</span></div>
+<span class="w">    </span><span class="sd">"""Durable data directory (default ``~/.local/share/ir``)."""</span>
+    <span class="k">return</span> <span class="n">_ensure</span><span class="p">(</span><span class="n">_base</span><span class="p">(</span><span class="s2">"IR_DATA_DIR"</span><span class="p">,</span> <span class="s2">"XDG_DATA_HOME"</span><span class="p">,</span> <span class="s2">".local/share"</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="cache_dir">
 <a class="viewcode-back" href="../../module_docs/ir/config.html#ir.config.cache_dir">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">cache_dir</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Regenerable cache directory (default ``~/.cache/ir``).&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_ensure</span><span class="p">(</span><span class="n">_base</span><span class="p">(</span><span class="s2">&quot;IR_CACHE_DIR&quot;</span><span class="p">,</span> <span class="s2">&quot;XDG_CACHE_HOME&quot;</span><span class="p">,</span> <span class="s2">&quot;.cache&quot;</span><span class="p">))</span></div>
+<span class="w">    </span><span class="sd">"""Regenerable cache directory (default ``~/.cache/ir``)."""</span>
+    <span class="k">return</span> <span class="n">_ensure</span><span class="p">(</span><span class="n">_base</span><span class="p">(</span><span class="s2">"IR_CACHE_DIR"</span><span class="p">,</span> <span class="s2">"XDG_CACHE_HOME"</span><span class="p">,</span> <span class="s2">".cache"</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="safe_name">
 <a class="viewcode-back" href="../../module_docs/ir/config.html#ir.config.safe_name">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">safe_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filesystem-safe slug for a corpus/model identifier.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_SAFE</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;unnamed&quot;</span></div>
+<span class="w">    </span><span class="sd">"""Filesystem-safe slug for a corpus/model identifier."""</span>
+    <span class="k">return</span> <span class="n">_SAFE</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">"_"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"unnamed"</span></div>
 
 
 
 <div class="viewcode-block" id="corpus_dir">
 <a class="viewcode-back" href="../../module_docs/ir/config.html#ir.config.corpus_dir">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">corpus_dir</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Durable directory holding one corpus&#39;s stores.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_ensure</span><span class="p">(</span><span class="n">data_dir</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;corpora&quot;</span> <span class="o">/</span> <span class="n">safe_name</span><span class="p">(</span><span class="n">name</span><span class="p">))</span></div>
+<span class="w">    </span><span class="sd">"""Durable directory holding one corpus's stores."""</span>
+    <span class="k">return</span> <span class="n">_ensure</span><span class="p">(</span><span class="n">data_dir</span><span class="p">()</span> <span class="o">/</span> <span class="s2">"corpora"</span> <span class="o">/</span> <span class="n">safe_name</span><span class="p">(</span><span class="n">name</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="embeddings_cache_dir">
 <a class="viewcode-back" href="../../module_docs/ir/config.html#ir.config.embeddings_cache_dir">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">embeddings_cache_dir</span><span class="p">(</span><span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cache directory for one embedding model&#39;s vectors.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">_ensure</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;embeddings&quot;</span> <span class="o">/</span> <span class="n">safe_name</span><span class="p">(</span><span class="n">model_id</span><span class="p">))</span></div>
+<span class="w">    </span><span class="sd">"""Cache directory for one embedding model's vectors."""</span>
+    <span class="k">return</span> <span class="n">_ensure</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">()</span> <span class="o">/</span> <span class="s2">"embeddings"</span> <span class="o">/</span> <span class="n">safe_name</span><span class="p">(</span><span class="n">model_id</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="registry_path">
 <a class="viewcode-back" href="../../module_docs/ir/config.html#ir.config.registry_path">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">registry_path</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;JSON file mapping registered corpus names to their build settings.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">config_dir</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;corpora.json&quot;</span></div>
+<span class="w">    </span><span class="sd">"""JSON file mapping registered corpus names to their build settings."""</span>
+    <span class="k">return</span> <span class="n">config_dir</span><span class="p">()</span> <span class="o">/</span> <span class="s2">"corpora.json"</span></div>
 
 </pre></div>
 

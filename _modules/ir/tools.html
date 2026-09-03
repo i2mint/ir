@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.tools &mdash; ir 0.1.28 documentation</title>
+  <title>ir.tools &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,20 +99,20 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.tools</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Agent-callable tool surface over ``ir`` — plain functions returning JSON-ready</span>
+<span></span><span class="sd">"""Agent-callable tool surface over ``ir`` — plain functions returning JSON-ready</span>
 <span class="sd">dicts, deliberately MCP/HTTP-agnostic.</span>
 
 <span class="sd">``ir`` knows nothing about MCP, HTTP, or any agent host. This module is the SSOT</span>
-<span class="sd">for &quot;expose ir&#39;s retrieval as a single agent-callable tool&quot;: a wrapper</span>
+<span class="sd">for "expose ir's retrieval as a single agent-callable tool": a wrapper</span>
 <span class="sd">(``py2mcp``, ``qh``, a hand-written agent tool) references e.g. ``ir.tools:search``</span>
 <span class="sd">and gets a clean JSON ``dict`` back. The corpus is a **parameter**, so one</span>
 <span class="sd">function serves every corpus with no per-corpus code — and :func:`make_search`</span>
 <span class="sd">returns a *corpus-bound* tool when a connector should expose exactly one corpus.</span>
 
-<span class="sd">This pairs with ``ir.discover`` (which ``ir`` already calls &quot;the single</span>
-<span class="sd">agent-callable tool&quot;); :func:`search` is just its JSON-returning, tool-shaped</span>
+<span class="sd">This pairs with ``ir.discover`` (which ``ir`` already calls "the single</span>
+<span class="sd">agent-callable tool"); :func:`search` is just its JSON-returning, tool-shaped</span>
 <span class="sd">front door.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -119,7 +120,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.select</span><span class="w"> </span><span class="kn">import</span> <span class="n">discover</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;search&quot;</span><span class="p">,</span> <span class="s2">&quot;make_search&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"search"</span><span class="p">,</span> <span class="s2">"make_search"</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="search">
@@ -129,10 +130,10 @@
     <span class="o">*</span><span class="p">,</span>
     <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
-    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"hybrid"</span><span class="p">,</span>
     <span class="nb">filter</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search a named ``ir`` corpus and return a JSON-serializable result dict.</span>
+<span class="w">    </span><span class="sd">"""Search a named ``ir`` corpus and return a JSON-serializable result dict.</span>
 
 <span class="sd">    Thin agent-callable wrapper over :func:`ir.discover` — returns its</span>
 <span class="sd">    ``.to_dict()`` (committed results, scores, disclosures), fit to hand straight</span>
@@ -144,9 +145,9 @@
 <span class="sd">        corpus: a registered corpus **name** (str), a list of names (federated</span>
 <span class="sd">            search), or a built :class:`ir.Corpus`.</span>
 <span class="sd">        k: maximum number of results.</span>
-<span class="sd">        mode: ``&quot;dense&quot;`` | ``&quot;lexical&quot;`` | ``&quot;hybrid&quot;``.</span>
+<span class="sd">        mode: ``"dense"`` | ``"lexical"`` | ``"hybrid"``.</span>
 <span class="sd">        filter: optional ``vd`` Mongo-style metadata filter (hard pre-filter).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">discover</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="nb">filter</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span></div>
 
 
@@ -159,25 +160,25 @@
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
-    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"hybrid"</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a **corpus-bound** ``search(query, k=...) -&gt; dict`` tool.</span>
+<span class="w">    </span><span class="sd">"""Return a **corpus-bound** ``search(query, k=...) -&gt; dict`` tool.</span>
 
 <span class="sd">    The returned function exposes only ``query`` (and ``k``) — the corpus is fixed</span>
 <span class="sd">    — so a connector built over it surfaces exactly one corpus and nothing else.</span>
 <span class="sd">    Its ``__name__`` / ``__doc__`` are set so an MCP/agent host shows a clean tool</span>
 <span class="sd">    name and description. Use this when wiring a single-corpus connector; use</span>
 <span class="sd">    :func:`search` when the caller should choose the corpus.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">label</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="p">(</span><span class="n">corpus</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;corpus&quot;</span><span class="p">)</span>
-    <span class="n">safe</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">c</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">isalnum</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;_&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;corpus&quot;</span>
+<span class="sd">    """</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="p">(</span><span class="n">corpus</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"corpus"</span><span class="p">)</span>
+    <span class="n">safe</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">c</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">isalnum</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"_"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">"_"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"corpus"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">bound_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">k</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">discover</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 
-    <span class="n">bound_search</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;search_</span><span class="si">{</span><span class="n">safe</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">bound_search</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"search_</span><span class="si">{</span><span class="n">safe</span><span class="si">}</span><span class="s2">"</span>
     <span class="n">bound_search</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">description</span> <span class="ow">or</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Search the </span><span class="si">{</span><span class="n">label</span><span class="si">!r}</span><span class="s2"> knowledge base; returns ranked, JSON results.&quot;</span>
+        <span class="sa">f</span><span class="s2">"Search the </span><span class="si">{</span><span class="n">label</span><span class="si">!r}</span><span class="s2"> knowledge base; returns ranked, JSON results."</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">bound_search</span></div>
 

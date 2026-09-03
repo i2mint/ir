@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.formulate &mdash; ir 0.1.28 documentation</title>
+  <title>ir.formulate &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,29 +99,29 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.formulate</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Query formulation — the Formulator seam (ir_09 §3).</span>
+<span></span><span class="sd">"""Query formulation — the Formulator seam (ir_09 §3).</span>
 
 <span class="sd">Turn a user query into one or more concrete low-level queries *before* retrieval:</span>
 <span class="sd">rewrite, expand, paraphrase, HyDE. This is the single most-acknowledged gap in</span>
-<span class="sd">ir&#39;s standalone retrieval — the raw query is otherwise embedded as-is — and a</span>
+<span class="sd">ir's standalone retrieval — the raw query is otherwise embedded as-is — and a</span>
 <span class="sd">good formulation lifts recall on short, identifier-heavy capability text with</span>
 <span class="sd">**no agent and no loop**.</span>
 
 <span class="sd">The seam is **opt-in and identity by default**: ``ir.search(corpus, q)`` with no</span>
-<span class="sd">``formulate=`` embeds ``q`` verbatim (exactly today&#39;s behavior). A formulator</span>
+<span class="sd">``formulate=`` embeds ``q`` verbatim (exactly today's behavior). A formulator</span>
 <span class="sd">returns a ``str`` (one query) or a sequence of strings (multi-query fan-out);</span>
 <span class="sd">when it returns several, :func:`ir.retrieve.search` runs each and fuses the</span>
 <span class="sd">candidate lists (best surface per artifact across all queries).</span>
 
 <span class="sd">LOAD-BEARING BOUNDARY: a :data:`Formulator` returns **queries, never SubTasks**.</span>
-<span class="sd">Decomposing a goal into sub-tasks + source selection is the *Planner&#39;s* job — that</span>
+<span class="sd">Decomposing a goal into sub-tasks + source selection is the *Planner's* job — that</span>
 <span class="sd">lives in the agent layer (``raglab``), not here.</span>
 
 <span class="sd">:func:`make_llm_formulator` mirrors :func:`ir.select.make_llm_selector`: an</span>
 <span class="sd">injectable ``rewriter`` callable, built lazily on :mod:`aix` when omitted (so</span>
 <span class="sd">importing ir stays offline), falling back to identity on any failure — a</span>
 <span class="sd">formulator must never make retrieval *worse* than the raw query.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -130,34 +131,34 @@
 <span class="c1">#: A formulator: a query string -&gt; one query (``str``) or several</span>
 <span class="c1">#: (``Sequence[str]``). Identity by default; an LLM rewriter / HyDE / multi-query</span>
 <span class="c1">#: producer when injected.</span>
-<span class="n">Formulator</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">&quot;str | Sequence[str]&quot;</span><span class="p">]</span>
+<span class="n">Formulator</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">"str | Sequence[str]"</span><span class="p">]</span>
 
 <span class="c1">#: Default prompt for :func:`make_llm_formulator` — diverse paraphrases for recall.</span>
 <span class="n">FORMULATION_PROMPT</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="s2">&quot;Rewrite the search query into </span><span class="si">{n}</span><span class="s2"> short, diverse alternative search queries &quot;</span>
-    <span class="s2">&quot;that would retrieve the same target documents: fix typos, expand jargon, and &quot;</span>
-    <span class="s2">&quot;add synonyms, but keep each a terse search phrase. One query per line, no &quot;</span>
-    <span class="s2">&quot;numbering.</span><span class="se">\n\n</span><span class="s2">Query: </span><span class="si">{query}</span><span class="s2">&quot;</span>
+    <span class="s2">"Rewrite the search query into </span><span class="si">{n}</span><span class="s2"> short, diverse alternative search queries "</span>
+    <span class="s2">"that would retrieve the same target documents: fix typos, expand jargon, and "</span>
+    <span class="s2">"add synonyms, but keep each a terse search phrase. One query per line, no "</span>
+    <span class="s2">"numbering.</span><span class="se">\n\n</span><span class="s2">Query: </span><span class="si">{query}</span><span class="s2">"</span>
 <span class="p">)</span>
 
 
 <div class="viewcode-block" id="identity_formulator">
 <a class="viewcode-back" href="../../module_docs/ir/formulate.html#ir.identity_formulator">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">identity_formulator</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The default formulator: return the query unchanged (embed it verbatim).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""The default formulator: return the query unchanged (embed it verbatim)."""</span>
     <span class="k">return</span> <span class="n">query</span></div>
 
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_default_llm_rewriter</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the default LLM rewriter on :mod:`aix` (lazy import).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Build the default LLM rewriter on :mod:`aix` (lazy import)."""</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">aix</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_parse_lines</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot; -</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">" -</span><span class="se">\t</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
 
     <span class="n">fn</span> <span class="o">=</span> <span class="n">aix</span><span class="o">.</span><span class="n">prompt_func</span><span class="p">(</span>
-        <span class="n">prompt</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="n">_parse_lines</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;formulate_queries&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
+        <span class="n">prompt</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="n">_parse_lines</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"formulate_queries"</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
     <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">rewrite</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -170,20 +171,20 @@
 <a class="viewcode-back" href="../../module_docs/ir/formulate.html#ir.make_llm_formulator">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_llm_formulator</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">rewriter</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">&quot;str | Sequence[str]&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">rewriter</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">"str | Sequence[str]"</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">FORMULATION_PROMPT</span><span class="p">,</span>
     <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
     <span class="n">fallback</span><span class="p">:</span> <span class="n">Formulator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Formulator</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An LLM-backed :data:`Formulator` (rewrite / expand / multi-query).</span>
+<span class="w">    </span><span class="sd">"""An LLM-backed :data:`Formulator` (rewrite / expand / multi-query).</span>
 
 <span class="sd">    ``rewriter`` is an injectable ``query -&gt; str | [str, ...]`` callable (a test</span>
 <span class="sd">    double, or your own router); when omitted it is built lazily on :mod:`aix`</span>
 <span class="sd">    (``aix.prompt_func``), so importing this module stays offline. ``n`` is the</span>
 <span class="sd">    multi-query fan-out width. Any error or empty reply falls back to ``fallback``</span>
 <span class="sd">    (default: :func:`identity_formulator`).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">formulate</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
         <span class="n">fn</span> <span class="o">=</span> <span class="p">(</span>

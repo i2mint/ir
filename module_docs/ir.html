@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.28 documentation</title>
+  <title>ir &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../_static/documentation_options.js?v=904119ea"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -215,6 +215,7 @@
 <li class="toctree-l1"><a class="reference internal" href="ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ir/store.html">ir.store</a></li>
@@ -260,10 +261,10 @@ is the core; selection/expansion/reranking/generation are layered on top.</p>
 <span class="c1"># Define a corpus source (abstract strategy + parameters, smart defaults):</span>
 <span class="n">source</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_md_reports</span><span class="p">()</span>          <span class="c1"># project docs/ reports</span>
 <span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>                            <span class="c1"># index (incremental)</span>
-<span class="n">hits</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;how do I deploy the app&quot;</span><span class="p">)</span>  <span class="c1"># ranked SearchHits</span>
+<span class="n">hits</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">"how do I deploy the app"</span><span class="p">)</span>  <span class="c1"># ranked SearchHits</span>
 
 <span class="c1"># Light, dependency-free embedding for fast tests:</span>
-<span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="s2">&quot;light&quot;</span><span class="p">)</span>
+<span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="s2">"light"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>A corpus source is defined by a <code class="docutils literal notranslate"><span class="pre">scope</span></code> (what is in the corpus), a
@@ -838,7 +839,7 @@ conforming adapter from an arbitrary object, but it cannot validate that
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ir.MaintenanceResult">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">MaintenanceResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ran</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reindex</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">synopsis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">records</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/maintenance.html#MaintenanceResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.MaintenanceResult" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">MaintenanceResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ran</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reindex</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">synopsis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">records</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/maintenance.html#MaintenanceResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.MaintenanceResult" title="Link to this definition"></a></dt>
 <dd><p>What <a class="reference internal" href="#ir.maintain_corpus" title="ir.maintain_corpus"><code class="xref py py-func docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a> did (or would do) for one corpus.</p>
 </dd></dl>
 
@@ -1108,9 +1109,9 @@ a policy cannot opt out of termination.</p>
 default). A corpus <em>name</em> is resolved once via <a class="reference internal" href="#ir.open_corpus" title="ir.open_corpus"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.open_corpus()</span></code></a>; pass
 an open <a class="reference internal" href="ir/index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a> to skip that. The returned callable carries
 the bound corpus on <code class="docutils literal notranslate"><span class="pre">.corpus</span></code> for introspection.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">retr</span> <span class="o">=</span> <span class="n">as_retriever</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">retr</span><span class="p">(</span><span class="s2">&quot;how do I deploy the app&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">retr</span><span class="p">(</span><span class="s2">&quot;deploy&quot;</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;owner&quot;</span><span class="p">:</span> <span class="s2">&quot;me&quot;</span><span class="p">})</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">retr</span> <span class="o">=</span> <span class="n">as_retriever</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">retr</span><span class="p">(</span><span class="s2">"how do I deploy the app"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hits</span> <span class="o">=</span> <span class="n">retr</span><span class="p">(</span><span class="s2">"deploy"</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="p">{</span><span class="s2">"owner"</span><span class="p">:</span> <span class="s2">"me"</span><span class="p">})</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -1161,10 +1162,10 @@ visited-set must use so the same id in two corpora stays two nodes.
 <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code> (implicitly in <em>source</em>, the graph it came from) or a
 <code class="docutils literal notranslate"><span class="pre">[source,</span> <span class="pre">artifact_id]</span></code> cross-corpus pair. This resolves either to the
 canonical tuple.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">(</span><span class="s2">&quot;dol&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;packages&quot;</span><span class="p">)</span>
-<span class="go">(&#39;packages&#39;, &#39;dol&#39;)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">([</span><span class="s2">&quot;skills&quot;</span><span class="p">,</span> <span class="s2">&quot;deploy&quot;</span><span class="p">],</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;packages&quot;</span><span class="p">)</span>
-<span class="go">(&#39;skills&#39;, &#39;deploy&#39;)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">(</span><span class="s2">"dol"</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"packages"</span><span class="p">)</span>
+<span class="go">('packages', 'dol')</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">([</span><span class="s2">"skills"</span><span class="p">,</span> <span class="s2">"deploy"</span><span class="p">],</span> <span class="n">source</span><span class="o">=</span><span class="s2">"packages"</span><span class="p">)</span>
+<span class="go">('skills', 'deploy')</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -1468,6 +1469,11 @@ absolute floors — apply calibrated <code class="docutils literal notranslate">
 <dd><p>Run due background work for one corpus (<em>name</em>) or every registered one (<em>all</em>).</p>
 <p>With neither, defaults to all registered corpora. Returns one
 <a class="reference internal" href="#ir.MaintenanceResult" title="ir.MaintenanceResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a> per corpus considered.</p>
+<p><strong>A named corpus raises; a sweep records.</strong> Asking for one corpus by name is a
+direct request, and swallowing its error would turn a typo’d name into a
+result that reads as success to any caller written before <code class="docutils literal notranslate"><span class="pre">error</span></code> existed.
+A sweep is the unattended case, where the opposite is true: one corpus
+failing must not leave every corpus after it stale with nothing to say so.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1784,7 +1790,7 @@ own <code class="docutils literal notranslate"><span class="pre">synthesizer_id<
 <code class="docutils literal notranslate"><span class="pre">ir.CorpusSource.from_mapping(docs,</span> <span class="pre">name=...,</span> <span class="pre">strategy=with_synopsis(...))</span></code>.</p>
 </dd>
 </dl>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">strat</span> <span class="o">=</span> <span class="n">with_synopsis</span><span class="p">(</span><span class="n">Chunked</span><span class="p">(),</span> <span class="n">synthesize</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="s2">&quot;a summary&quot;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">strat</span> <span class="o">=</span> <span class="n">with_synopsis</span><span class="p">(</span><span class="n">Chunked</span><span class="p">(),</span> <span class="n">synthesize</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="s2">"a summary"</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>

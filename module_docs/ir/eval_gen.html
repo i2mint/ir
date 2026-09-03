@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.eval_gen &mdash; ir 0.1.28 documentation</title>
+  <title>ir.eval_gen &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -82,6 +82,7 @@
 <li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
@@ -148,10 +149,10 @@ scoring never does.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ir</span><span class="w"> </span><span class="kn">import</span> <span class="n">eval_gen</span> <span class="k">as</span> <span class="n">eg</span>
 
 <span class="n">source</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_skills</span><span class="p">()</span>
-<span class="n">cases</span> <span class="o">=</span> <span class="n">eg</span><span class="o">.</span><span class="n">build_eval_set</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">corpus_name</span><span class="o">=</span><span class="s2">&quot;skills&quot;</span><span class="p">)</span>   <span class="c1"># uses aix</span>
+<span class="n">cases</span> <span class="o">=</span> <span class="n">eg</span><span class="o">.</span><span class="n">build_eval_set</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">corpus_name</span><span class="o">=</span><span class="s2">"skills"</span><span class="p">)</span>   <span class="c1"># uses aix</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ir.eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_cases</span>
-<span class="n">save_cases</span><span class="p">(</span><span class="n">cases</span><span class="p">,</span> <span class="s2">&quot;skills_eval.jsonl&quot;</span><span class="p">,</span>
-           <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;corpus&quot;</span><span class="p">:</span> <span class="s2">&quot;skills&quot;</span><span class="p">,</span> <span class="s2">&quot;corpus_signature&quot;</span><span class="p">:</span> <span class="n">eg</span><span class="o">.</span><span class="n">corpus_signature</span><span class="p">(</span><span class="n">source</span><span class="p">)})</span>
+<span class="n">save_cases</span><span class="p">(</span><span class="n">cases</span><span class="p">,</span> <span class="s2">"skills_eval.jsonl"</span><span class="p">,</span>
+           <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">"corpus"</span><span class="p">:</span> <span class="s2">"skills"</span><span class="p">,</span> <span class="s2">"corpus_signature"</span><span class="p">:</span> <span class="n">eg</span><span class="o">.</span><span class="n">corpus_signature</span><span class="p">(</span><span class="n">source</span><span class="p">)})</span>
 </pre></div>
 </div>
 <dl class="py data">

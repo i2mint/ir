@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to ir’s documentation! &mdash; ir 0.1.28 documentation</title>
+  <title>Welcome to ir’s documentation! &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=34399df3"></script>
+      <script src="_static/documentation_options.js?v=904119ea"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -65,6 +65,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/store.html">ir.store</a></li>
@@ -197,6 +198,7 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.rm"><code class="docutils literal notranslate"><span class="pre">rm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.schedule"><code class="docutils literal notranslate"><span class="pre">schedule()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.sweep_select"><code class="docutils literal notranslate"><span class="pre">sweep_select()</span></code></a></li>
 </ul>
@@ -327,9 +329,13 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/maintenance.html">ir.maintenance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.DFLT_STALE_LOCK_AFTER"><code class="docutils literal notranslate"><span class="pre">DFLT_STALE_LOCK_AFTER</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.MaintenanceBusy"><code class="docutils literal notranslate"><span class="pre">MaintenanceBusy</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.MaintenanceResult"><code class="docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.lock_path"><code class="docutils literal notranslate"><span class="pre">lock_path()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.maintain_corpus"><code class="docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.single_run"><code class="docutils literal notranslate"><span class="pre">single_run()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/policy.html">ir.policy</a><ul>
@@ -372,6 +378,33 @@
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.records_for_artifact"><code class="docutils literal notranslate"><span class="pre">records_for_artifact()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/schedule.html">ir.schedule</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.BACKENDS"><code class="docutils literal notranslate"><span class="pre">BACKENDS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.DFLT_EVERY_MINUTES"><code class="docutils literal notranslate"><span class="pre">DFLT_EVERY_MINUTES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.DFLT_LABEL"><code class="docutils literal notranslate"><span class="pre">DFLT_LABEL</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.INHERITED_ENV_VARS"><code class="docutils literal notranslate"><span class="pre">INHERITED_ENV_VARS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.LOAD_BEARING_ENV_VARS"><code class="docutils literal notranslate"><span class="pre">LOAD_BEARING_ENV_VARS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.ScheduleError"><code class="docutils literal notranslate"><span class="pre">ScheduleError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.ScheduleSpec"><code class="docutils literal notranslate"><span class="pre">ScheduleSpec</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.ScheduleStatus"><code class="docutils literal notranslate"><span class="pre">ScheduleStatus</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.cron_expression"><code class="docutils literal notranslate"><span class="pre">cron_expression()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.cron_line"><code class="docutils literal notranslate"><span class="pre">cron_line()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.cron_marker"><code class="docutils literal notranslate"><span class="pre">cron_marker()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.crontab_with_line"><code class="docutils literal notranslate"><span class="pre">crontab_with_line()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.crontab_without_line"><code class="docutils literal notranslate"><span class="pre">crontab_without_line()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.ensure"><code class="docutils literal notranslate"><span class="pre">ensure()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.format_every"><code class="docutils literal notranslate"><span class="pre">format_every()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.install"><code class="docutils literal notranslate"><span class="pre">install()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.parse_every"><code class="docutils literal notranslate"><span class="pre">parse_every()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.plist_bytes"><code class="docutils literal notranslate"><span class="pre">plist_bytes()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.plist_dict"><code class="docutils literal notranslate"><span class="pre">plist_dict()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.remove"><code class="docutils literal notranslate"><span class="pre">remove()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.render"><code class="docutils literal notranslate"><span class="pre">render()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.resolve_backend"><code class="docutils literal notranslate"><span class="pre">resolve_backend()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.restart"><code class="docutils literal notranslate"><span class="pre">restart()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.status"><code class="docutils literal notranslate"><span class="pre">status()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/select.html">ir.select</a><ul>
@@ -459,8 +492,8 @@
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-<p>Release: 0.1.28</p>
-<p>Last change: Jul 10, 2026</p>
+<p>Release: 0.1.29</p>
+<p>Last change: Sep 03, 2026</p>
 </section>
 
 

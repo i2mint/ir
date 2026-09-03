@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.synopsis &mdash; ir 0.1.28 documentation</title>
+  <title>ir.synopsis &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,25 +99,25 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.synopsis</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).</span>
+<span></span><span class="sd">"""Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).</span>
 
 <span class="sd">The document-summary-index / collapsed-tree *fuel* (ADR #43): run a summarizer</span>
 <span class="sd">over each artifact at **build time** to produce a short *synopsis*, index it as a</span>
-<span class="sd">``&quot;synopsis&quot;`` surface, and let the collapsed-tree policy (:func:`ir.traverse`)</span>
-<span class="sd">route a synopsis match down to that artifact&#39;s chunks. Build-time cost, ≈free at</span>
+<span class="sd">``"synopsis"`` surface, and let the collapsed-tree policy (:func:`ir.traverse`)</span>
+<span class="sd">route a synopsis match down to that artifact's chunks. Build-time cost, ≈free at</span>
 <span class="sd">query time — and incremental, so only new / changed artifacts are re-synthesized.</span>
 
 <span class="sd">:func:`with_synopsis` wraps *any* :class:`~ir.strategy.IndexingStrategy` and adds</span>
 <span class="sd">one synopsis surface per artifact::</span>
 
 <span class="sd">    strat  = ir.with_synopsis(ir.Chunked(), synthesize=my_summarizer)</span>
-<span class="sd">    corpus = ir.build(ir.CorpusSource.from_mapping(docs, name=&quot;d&quot;, strategy=strat))</span>
+<span class="sd">    corpus = ir.build(ir.CorpusSource.from_mapping(docs, name="d", strategy=strat))</span>
 <span class="sd">    hits   = ir.traverse(q, corpus, policy=ir.collapsed_tree_policy())  # routes via synopsis</span>
 
 <span class="sd">The synopsis is **prepended** (plan position 0) so it is the *first* summary</span>
 <span class="sd">surface — hence the collapsed-tree *router* (on ``with_synopsis(Package())`` the</span>
 <span class="sd">synopsis, not the terse ``description``, routes). An empty synopsis is dropped, so</span>
-<span class="sd">a synth that returns ``&quot;&quot;`` simply leaves the artifact with its other surfaces.</span>
+<span class="sd">a synth that returns ``""`` simply leaves the artifact with its other surfaces.</span>
 
 <span class="sd">``synthesize: Callable[[Artifact], str]`` is **injectable** (a test double, or</span>
 <span class="sd">your own summarizer); omitted, it is built lazily on :mod:`aix` (the</span>
@@ -127,7 +128,7 @@
 <span class="sd">**Staleness.** The wrapper exposes its identity as scalar attributes</span>
 <span class="sd">(``synthesizer_id``, ``synopsis_kind``) and holds the inner strategy, so</span>
 <span class="sd">:func:`ir.index._strategy_id` (which recurses into nested strategies) folds both</span>
-<span class="sd">the inner strategy&#39;s parameters *and* the synthesizer identity into the corpus&#39;s</span>
+<span class="sd">the inner strategy's parameters *and* the synthesizer identity into the corpus's</span>
 <span class="sd">``strategy_id``. A prompt / model change — or an inner-strategy change — therefore</span>
 <span class="sd">re-synthesizes exactly the affected artifacts, the same way an ``embedder_id``</span>
 <span class="sd">change does; no silent staleness. (An injected *unnamed* synthesizer — a lambda</span>
@@ -145,7 +146,7 @@
 <span class="sd">``decompose``; so combining :func:`with_synopsis` with an ``edge_extractor``</span>
 <span class="sd">re-runs synthesis on every rebuild. The common path — synopsis routing with no</span>
 <span class="sd">``edge_extractor`` — stays fully incremental.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -156,40 +157,40 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Artifact</span><span class="p">,</span> <span class="n">IndexPlan</span><span class="p">,</span> <span class="n">Surface</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">IndexingStrategy</span><span class="p">,</span> <span class="n">text_of</span>
 
-<span class="c1">#: A synthesizer: an :class:`~ir.base.Artifact` → its synopsis text (``&quot;&quot;`` to</span>
+<span class="c1">#: A synthesizer: an :class:`~ir.base.Artifact` → its synopsis text (``""`` to</span>
 <span class="c1">#: skip — no synopsis surface is added for that artifact).</span>
 <span class="n">Synthesizer</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Artifact</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span>
 
 <span class="c1">#: The surface kind a synopsis is indexed under — a member of</span>
 <span class="c1">#: :data:`ir.traverse.DFLT_SUMMARY_KINDS`, so collapsed-tree routes from it.</span>
-<span class="n">SYNOPSIS_KIND</span> <span class="o">=</span> <span class="s2">&quot;synopsis&quot;</span>
+<span class="n">SYNOPSIS_KIND</span> <span class="o">=</span> <span class="s2">"synopsis"</span>
 
 <span class="c1">#: Default prompt for :func:`make_llm_synthesizer` (a routing-oriented summary).</span>
 <span class="n">SYNOPSIS_PROMPT</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="s2">&quot;Write a concise synopsis (2-4 sentences) of the document below: what it is &quot;</span>
-    <span class="s2">&quot;about and what questions it answers, so that a search over synopses can route &quot;</span>
-    <span class="s2">&quot;to it. Output only the synopsis, no preamble.</span><span class="se">\n\n</span><span class="s2">Document:</span><span class="se">\n</span><span class="si">{text}</span><span class="s2">&quot;</span>
+    <span class="s2">"Write a concise synopsis (2-4 sentences) of the document below: what it is "</span>
+    <span class="s2">"about and what questions it answers, so that a search over synopses can route "</span>
+    <span class="s2">"to it. Output only the synopsis, no preamble.</span><span class="se">\n\n</span><span class="s2">Document:</span><span class="se">\n</span><span class="si">{text}</span><span class="s2">"</span>
 <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_prompt_hash</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Short stable hash of a prompt, for the default synthesizer identity.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">12</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Short stable hash of a prompt, for the default synthesizer identity."""</span>
+    <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">12</span><span class="p">]</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_default_llm_summarizer</span><span class="p">(</span>
     <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the default text→synopsis summarizer on :mod:`aix` (lazy import).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Build the default text→synopsis summarizer on :mod:`aix` (lazy import)."""</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">aix</span>
 
     <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">prompt_function_kwargs</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-    <span class="n">fn</span> <span class="o">=</span> <span class="n">aix</span><span class="o">.</span><span class="n">prompt_func</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;synthesize_synopsis&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"model"</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">aix</span><span class="o">.</span><span class="n">prompt_func</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"synthesize_synopsis"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">summarize</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">summarize</span>
 
@@ -205,58 +206,58 @@
     <span class="n">text_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Synthesizer</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An LLM-backed :data:`Synthesizer` (:class:`~ir.base.Artifact` → synopsis).</span>
+<span class="w">    </span><span class="sd">"""An LLM-backed :data:`Synthesizer` (:class:`~ir.base.Artifact` → synopsis).</span>
 
 <span class="sd">    ``summarize`` is an injectable ``text -&gt; str`` callable (a test double, or</span>
 <span class="sd">    your own summarizer); when omitted it is built lazily on :mod:`aix`</span>
 <span class="sd">    (``aix.prompt_func``) on the **first** synthesis and reused — so importing</span>
 <span class="sd">    this module, and even constructing the synthesizer, stays offline. The</span>
-<span class="sd">    artifact&#39;s text is extracted with :func:`ir.strategy.text_of` using</span>
+<span class="sd">    artifact's text is extracted with :func:`ir.strategy.text_of` using</span>
 <span class="sd">    ``text_key`` — which :func:`with_synopsis` threads from the inner strategy, so</span>
 <span class="sd">    the synopsis summarizes the *same* field the strategy indexes. An empty text,</span>
-<span class="sd">    or any synthesis error, yields ``&quot;&quot;`` (the surface is then skipped, never a</span>
+<span class="sd">    or any synthesis error, yields ``""`` (the surface is then skipped, never a</span>
 <span class="sd">    fabricated summary).</span>
 
 <span class="sd">    The returned callable carries a ``synthesizer_id`` attribute (default</span>
-<span class="sd">    ``&quot;aix:{model}:{sha(prompt)[:12]}&quot;``) that :func:`with_synopsis` reads into the</span>
-<span class="sd">    corpus&#39;s ``strategy_id`` for staleness — a prompt or model change re-synthesizes.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    ``"aix:{model}:{sha(prompt)[:12]}"``) that :func:`with_synopsis` reads into the</span>
+<span class="sd">    corpus's ``strategy_id`` for staleness — a prompt or model change re-synthesizes.</span>
+<span class="sd">    """</span>
     <span class="n">cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_summarizer</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
         <span class="k">if</span> <span class="n">summarize</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">summarize</span>
-        <span class="k">if</span> <span class="s2">&quot;fn&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
-            <span class="n">cache</span><span class="p">[</span><span class="s2">&quot;fn&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_default_llm_summarizer</span><span class="p">(</span>
+        <span class="k">if</span> <span class="s2">"fn"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
+            <span class="n">cache</span><span class="p">[</span><span class="s2">"fn"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_default_llm_summarizer</span><span class="p">(</span>
                 <span class="n">prompt</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
             <span class="p">)</span>
-        <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="s2">&quot;fn&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="s2">"fn"</span><span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">synthesize</span><span class="p">(</span><span class="n">artifact</span><span class="p">:</span> <span class="n">Artifact</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">text</span> <span class="o">=</span> <span class="n">text_of</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">raw</span><span class="p">,</span> <span class="n">text_key</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">return</span> <span class="s2">""</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">out</span> <span class="o">=</span> <span class="n">_summarizer</span><span class="p">()(</span><span class="n">text</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span>
 
     <span class="n">synthesize</span><span class="o">.</span><span class="n">synthesizer_id</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">synthesizer_id</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;aix:</span><span class="si">{</span><span class="n">model</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;default&#39;</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">_prompt_hash</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">synthesizer_id</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"aix:</span><span class="si">{</span><span class="n">model</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'default'</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">_prompt_hash</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">synthesize</span></div>
 
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_SynopsisStrategy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An :class:`~ir.strategy.IndexingStrategy` that prepends a synopsis surface.</span>
+<span class="w">    </span><span class="sd">"""An :class:`~ir.strategy.IndexingStrategy` that prepends a synopsis surface.</span>
 
 <span class="sd">    Delegates decomposition to the wrapped ``strategy``, then prepends one</span>
 <span class="sd">    ``synopsis`` surface (skipped if the synthesizer returns empty). Exposes</span>
 <span class="sd">    ``synthesizer_id`` / ``synopsis_kind`` as scalar attributes and holds the</span>
 <span class="sd">    inner strategy, so :func:`ir.index._strategy_id` captures the full identity.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -272,49 +273,49 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">:</span> <span class="n">Synthesizer</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">synthesize</span>
             <span class="k">if</span> <span class="n">synthesize</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="n">make_llm_synthesizer</span><span class="p">(</span><span class="n">text_key</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="s2">&quot;text_key&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+            <span class="k">else</span> <span class="n">make_llm_synthesizer</span><span class="p">(</span><span class="n">text_key</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="s2">"text_key"</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">synthesizer_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_synthesizer_id</span><span class="p">(</span><span class="n">synthesizer_id</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">synopsis_kind</span> <span class="o">=</span> <span class="n">synopsis_kind</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_synthesizer_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">explicit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Identity for staleness: explicit id, else a stamp, else a stable name.</span>
+<span class="w">        </span><span class="sd">"""Identity for staleness: explicit id, else a stamp, else a stable name.</span>
 
 <span class="sd">        An explicit ``synthesizer_id`` wins; else a ``synthesizer_id`` the</span>
-<span class="sd">        synthesizer carries (e.g. :func:`make_llm_synthesizer`&#39;s). Failing both,</span>
-<span class="sd">        a *named* callable&#39;s ``__qualname__`` is a stable identity — but an</span>
-<span class="sd">        unnamed lambda (``&quot;&lt;lambda&gt;&quot;``) or a local closure (``&quot;&lt;locals&gt;&quot;``) is</span>
+<span class="sd">        synthesizer carries (e.g. :func:`make_llm_synthesizer`'s). Failing both,</span>
+<span class="sd">        a *named* callable's ``__qualname__`` is a stable identity — but an</span>
+<span class="sd">        unnamed lambda (``"&lt;lambda&gt;"``) or a local closure (``"&lt;locals&gt;"``) is</span>
 <span class="sd">        **not**: distinct such callables share one qualname, so swapping them</span>
 <span class="sd">        would silently *not* re-synthesize. In that case we warn and fall back to</span>
 <span class="sd">        a sentinel, surfacing the lost guarantee at construction time.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">stamped</span> <span class="o">=</span> <span class="n">explicit</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">,</span> <span class="s2">&quot;synthesizer_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="n">stamped</span> <span class="o">=</span> <span class="n">explicit</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">,</span> <span class="s2">"synthesizer_id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">stamped</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">stamped</span>
-        <span class="n">qualname</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">,</span> <span class="s2">&quot;__qualname__&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">&quot;&lt;lambda&gt;&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">&quot;&lt;locals&gt;&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span><span class="p">:</span>
+        <span class="n">qualname</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">,</span> <span class="s2">"__qualname__"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">"&lt;lambda&gt;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">"&lt;locals&gt;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">qualname</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-            <span class="s2">&quot;with_synopsis: could not derive a stable identity for the injected &quot;</span>
-            <span class="s2">&quot;synthesizer (an unnamed lambda or a local closure), so synopsis &quot;</span>
-            <span class="s2">&quot;staleness tracking is disabled — pass synthesizer_id=... so that &quot;</span>
-            <span class="s2">&quot;swapping the synthesizer re-synthesizes the corpus on the next build.&quot;</span><span class="p">,</span>
+            <span class="s2">"with_synopsis: could not derive a stable identity for the injected "</span>
+            <span class="s2">"synthesizer (an unnamed lambda or a local closure), so synopsis "</span>
+            <span class="s2">"staleness tracking is disabled — pass synthesizer_id=... so that "</span>
+            <span class="s2">"swapping the synthesizer re-synthesizes the corpus on the next build."</span><span class="p">,</span>
             <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="s2">&quot;custom&quot;</span>
+        <span class="k">return</span> <span class="s2">"custom"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexPlan</span><span class="p">:</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>
         <span class="n">artifact</span> <span class="o">=</span> <span class="n">Artifact</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">(</span><span class="n">artifact</span><span class="p">)</span>
-        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span>
         <span class="k">if</span> <span class="n">text</span><span class="p">:</span>
             <span class="n">synopsis</span> <span class="o">=</span> <span class="n">Surface</span><span class="p">(</span>
                 <span class="n">artifact_id</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">synopsis_kind</span><span class="p">,</span>
                 <span class="n">text</span><span class="p">,</span>
-                <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;document&quot;</span><span class="p">,</span>
-                <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;synthesizer_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesizer_id</span><span class="p">},</span>
+                <span class="n">granularity</span><span class="o">=</span><span class="s2">"document"</span><span class="p">,</span>
+                <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"synthesizer_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesizer_id</span><span class="p">},</span>
             <span class="p">)</span>
             <span class="n">plan</span><span class="o">.</span><span class="n">surfaces</span> <span class="o">=</span> <span class="p">[</span><span class="n">synopsis</span><span class="p">,</span> <span class="o">*</span><span class="n">plan</span><span class="o">.</span><span class="n">surfaces</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">plan</span>
@@ -329,7 +330,7 @@
     <span class="n">synthesizer_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">synopsis_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SYNOPSIS_KIND</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexingStrategy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrap *strategy* to add one LLM-derived ``synopsis`` surface per artifact.</span>
+<span class="w">    </span><span class="sd">"""Wrap *strategy* to add one LLM-derived ``synopsis`` surface per artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        strategy: the inner :class:`~ir.strategy.IndexingStrategy` (``Chunked``,</span>
@@ -337,16 +338,16 @@
 <span class="sd">        synthesize: an injectable ``Artifact -&gt; str`` (test double / custom</span>
 <span class="sd">            summarizer). Omitted → :func:`make_llm_synthesizer` (lazy ``aix``).</span>
 <span class="sd">        synthesizer_id: explicit identity stamp for staleness (recommended when</span>
-<span class="sd">            injecting an unnamed callable / lambda). Omitted → the synthesizer&#39;s</span>
+<span class="sd">            injecting an unnamed callable / lambda). Omitted → the synthesizer's</span>
 <span class="sd">            own ``synthesizer_id`` / ``__qualname__``.</span>
-<span class="sd">        synopsis_kind: the surface kind (default ``&quot;synopsis&quot;``, a summary kind).</span>
+<span class="sd">        synopsis_kind: the surface kind (default ``"synopsis"``, a summary kind).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        an :class:`~ir.strategy.IndexingStrategy` usable anywhere a strategy is —</span>
 <span class="sd">        ``ir.CorpusSource.from_mapping(docs, name=..., strategy=with_synopsis(...))``.</span>
 
-<span class="sd">    &gt;&gt;&gt; strat = with_synopsis(Chunked(), synthesize=lambda a: &quot;a summary&quot;)  # doctest: +SKIP</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    &gt;&gt;&gt; strat = with_synopsis(Chunked(), synthesize=lambda a: "a summary")  # doctest: +SKIP</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">_SynopsisStrategy</span><span class="p">(</span>
         <span class="n">strategy</span><span class="p">,</span>
         <span class="n">synthesize</span><span class="o">=</span><span class="n">synthesize</span><span class="p">,</span>

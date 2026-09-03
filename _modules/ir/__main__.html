@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.__main__ &mdash; ir 0.1.28 documentation</title>
+  <title>ir.__main__ &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,7 +99,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.__main__</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;``python -m ir`` / ``ir`` CLI entry point (argh dispatch).&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""``python -m ir`` / ``ir`` CLI entry point (argh dispatch)."""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -108,14 +109,14 @@
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../../module_docs/ir/__main__.html#ir.__main__.main">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dispatch the ``ir`` command-line interface.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Dispatch the ``ir`` command-line interface."""</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">argh</span>
 
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argh</span><span class="o">.</span><span class="n">ArghParser</span><span class="p">()</span>
     <span class="c1"># argh &gt;= 0.30 requires an explicit name-mapping policy as soon as a command</span>
     <span class="c1"># has an *optional positional* (e.g. ``maintain(name=None, ...)``).</span>
     <span class="c1"># ``BY_NAME_IF_KWONLY`` keeps positional params positional and maps</span>
-    <span class="c1"># keyword-only params to options — exactly ir&#39;s existing command convention,</span>
+    <span class="c1"># keyword-only params to options — exactly ir's existing command convention,</span>
     <span class="c1"># so it changes nothing for the other commands. Fall back gracefully on</span>
     <span class="c1"># older argh that lacks the policy.</span>
     <span class="k">try</span><span class="p">:</span>
@@ -138,7 +139,7 @@
 
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 

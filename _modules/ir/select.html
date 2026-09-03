@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.select &mdash; ir 0.1.28 documentation</title>
+  <title>ir.select &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,12 +99,12 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.select</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Selection &amp; progressive disclosure — committing to a subset, then revealing it.</span>
+<span></span><span class="sd">"""Selection &amp; progressive disclosure — committing to a subset, then revealing it.</span>
 
 <span class="sd">Retrieval (:func:`ir.retrieve.search`) ranks *candidates*; **selection** commits</span>
 <span class="sd">to the small, high-precision *subset* an agent should actually act on, and</span>
 <span class="sd">**disclosure** loads the heavy payload (a SKILL.md body, a package pointer, a</span>
-<span class="sd">file&#39;s full text) for only those committed items — and only when asked.</span>
+<span class="sd">file's full text) for only those committed items — and only when asked.</span>
 
 <span class="sd">The split is deliberate and grounded in the capability-discovery research</span>
 <span class="sd">(``misc/docs/ir_01``):</span>
@@ -113,13 +114,13 @@
 <span class="sd">  default selector is **conservative and adaptive**, not a fixed top-*k*: it</span>
 <span class="sd">  keeps the best candidate and admits the next only while the score stays close</span>
 <span class="sd">  to the top (relative threshold), capped at a small ``max_k``. A score-gap</span>
-<span class="sd">  &quot;elbow&quot; cut is offered as its own strategy (:func:`score_gap`) rather than</span>
+<span class="sd">  "elbow" cut is offered as its own strategy (:func:`score_gap`) rather than</span>
 <span class="sd">  folded into the default, where it would only duplicate the relative threshold.</span>
 <span class="sd">- *Progressive disclosure is append-only.* Naively injecting full payloads into</span>
 <span class="sd">  context destroys prompt-cache hits. Disclosure here is a *pure* function that</span>
 <span class="sd">  reads pointers already stored on each hit and returns **new** payload objects;</span>
 <span class="sd">  it never mutates the ranked hits and never re-embeds. The append-only *benefit*</span>
-<span class="sd">  is the caller&#39;s to realize, not ``ir``&#39;s to enforce: ``ir`` only hands back</span>
+<span class="sd">  is the caller's to realize, not ``ir``'s to enforce: ``ir`` only hands back</span>
 <span class="sd">  additive :class:`Disclosure` objects. To keep the prompt cache warm in an</span>
 <span class="sd">  agent loop, append each disclosed payload into the **message history** (the</span>
 <span class="sd">  cheap, append-only end of the prefix) rather than mutating the tool</span>
@@ -131,11 +132,11 @@
 <span class="sd">- :func:`select` — ranked hits → a :class:`Selection` (a committed subset, or</span>
 <span class="sd">  abstention). Pure; offline; no model.</span>
 <span class="sd">- :func:`disclose` — a :class:`Selection` → per-item :class:`Disclosure`</span>
-<span class="sd">  payloads at a chosen level (``&quot;metadata&quot;`` / ``&quot;body&quot;`` / ``&quot;bundled&quot;``).</span>
+<span class="sd">  payloads at a chosen level (``"metadata"`` / ``"body"`` / ``"bundled"``).</span>
 <span class="sd">  Orthogonally, ``expand=`` (a :data:`~ir.expand.NeighborhoodPolicy`, with</span>
-<span class="sd">  ``corpus=``) stitches each hit&#39;s stored neighborhood into</span>
+<span class="sd">  ``corpus=``) stitches each hit's stored neighborhood into</span>
 <span class="sd">  :attr:`Disclosure.passage` — the mid-granularity payload between the matched</span>
-<span class="sd">  surface and the pointer&#39;s full body (see :mod:`ir.expand`).</span>
+<span class="sd">  surface and the pointer's full body (see :mod:`ir.expand`).</span>
 <span class="sd">- :func:`discover` — the single agent-callable tool: retrieve → select →</span>
 <span class="sd">  (optionally) disclose, returning a JSON-serializable :class:`DiscoveryResult`.</span>
 <span class="sd">  This is the qh-exposable surface (pass a corpus *name*; get back ``.to_dict()``).</span>
@@ -148,15 +149,15 @@
 <span class="sd">Selection scores are compared **relatively** (ratios to the top score), so the</span>
 <span class="sd">same selector works across ``dense`` cosine, ``hybrid`` RRF, and ``lexical``</span>
 <span class="sd">BM25 — whose absolute scales differ by orders of magnitude — without</span>
-<span class="sd">per-mode calibration. Absolute abstention (``&quot;nothing applies&quot;``) requires</span>
+<span class="sd">per-mode calibration. Absolute abstention (``"nothing applies"``) requires</span>
 <span class="sd">either an explicit ``min_score`` floor or an LLM selector; pure relative</span>
-<span class="sd">structure cannot tell &quot;all irrelevant&quot; from &quot;all relevant&quot;. Because a useful</span>
+<span class="sd">structure cannot tell "all irrelevant" from "all relevant". Because a useful</span>
 <span class="sd">floor is mode- and corpus-specific, it is *calibrated* rather than guessed:</span>
 <span class="sd">:func:`ir.eval.calibrate_min_score` separates in-scope from out-of-scope query</span>
 <span class="sd">scores and persists the floor, and :func:`discover` loads it on</span>
-<span class="sd">``min_score=&quot;auto&quot;`` — the opt-in that turns relative selection into one that</span>
+<span class="sd">``min_score="auto"`` — the opt-in that turns relative selection into one that</span>
 <span class="sd">can also abstain.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -175,8 +176,8 @@
 <span class="c1">#: A selector: ranked hits → the committed subset (a pure ranking decision).</span>
 <span class="n">Selector</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]],</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]]</span>
 
-<span class="c1">#: A body loader: a hit&#39;s metadata → its disclosed payload text (or ``None``).</span>
-<span class="n">BodyLoader</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="s2">&quot;str | None&quot;</span><span class="p">]</span>
+<span class="c1">#: A body loader: a hit's metadata → its disclosed payload text (or ``None``).</span>
+<span class="n">BodyLoader</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="s2">"str | None"</span><span class="p">]</span>
 
 <span class="c1">#: A resource store: ``pointer -&gt; payload`` (ir_09 §5). Any ``Mapping`` works —</span>
 <span class="c1">#: a ``dol`` file/blob/URL store, an in-memory dict, etc. — so lazy disclosure</span>
@@ -184,14 +185,14 @@
 <span class="n">ResourceStore</span> <span class="o">=</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 
 <span class="c1">#: Max items the conservative selector will ever commit to. Small on purpose:</span>
-<span class="c1">#: ir_01 §3 (&quot;fewer, higher-precision candidates beat more&quot;), echoing MCP-Atlas&#39;s</span>
+<span class="c1">#: ir_01 §3 ("fewer, higher-precision candidates beat more"), echoing MCP-Atlas's</span>
 <span class="c1">#: 3–7 target tools per task. Tuned to 3 in ir_06 (the F1-optimal commit cap over</span>
 <span class="c1">#: real skills/packages/reports corpora); leaves headroom for genuine multi-gold</span>
 <span class="c1">#: queries while the strict ``rel`` band keeps padding out.</span>
 <span class="n">DFLT_MAX_K</span> <span class="o">=</span> <span class="mi">3</span>
 
 <span class="c1">#: Keep a follow-on hit only if its score is at least this fraction of the top.</span>
-<span class="c1">#: 0.9 is a strict &quot;near-tie only&quot; band: for MiniLM cosine and RRF hybrid the</span>
+<span class="c1">#: 0.9 is a strict "near-tie only" band: for MiniLM cosine and RRF hybrid the</span>
 <span class="c1">#: informative second-best sits within ~10–15% of the top, while the distractor</span>
 <span class="c1">#: tail starts below ~0.8×top, so a looser band just rakes in distractors. Tuned</span>
 <span class="c1">#: empirically in ir_06 (``sweep_selector`` over three real corpora, both modes —</span>
@@ -200,7 +201,7 @@
 <span class="n">DFLT_REL_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.9</span>
 
 <span class="c1">#: Cut before a hit whose score drops below this fraction of the previous one</span>
-<span class="c1">#: (the score-gap &quot;elbow&quot;): a sharp relative drop marks the end of the signal.</span>
+<span class="c1">#: (the score-gap "elbow"): a sharp relative drop marks the end of the signal.</span>
 <span class="c1">#: Used by the ``score_gap`` strategy only — the conservative default uses the</span>
 <span class="c1">#: relative-to-top threshold above, which would otherwise subsume a weaker elbow.</span>
 <span class="n">DFLT_GAP_RATIO</span> <span class="o">=</span> <span class="mf">0.5</span>
@@ -209,7 +210,7 @@
 <span class="n">DFLT_FETCH_K</span> <span class="o">=</span> <span class="mi">10</span>
 
 <span class="c1">#: Disclosure levels, cheapest → richest (each a superset of the previous).</span>
-<span class="n">DISCLOSURE_LEVELS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="s2">&quot;bundled&quot;</span><span class="p">)</span>
+<span class="n">DISCLOSURE_LEVELS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"metadata"</span><span class="p">,</span> <span class="s2">"body"</span><span class="p">,</span> <span class="s2">"bundled"</span><span class="p">)</span>
 
 <span class="c1">#: Truncate a disclosed body to this many characters (a guard, not a feature).</span>
 <span class="n">DFLT_MAX_BODY_CHARS</span> <span class="o">=</span> <span class="mi">20000</span>
@@ -227,18 +228,18 @@
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Selection">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Selection</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A selector&#39;s commitment: the chosen subset of a ranked candidate list.</span>
+<span class="w">    </span><span class="sd">"""A selector's commitment: the chosen subset of a ranked candidate list.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        selected: the committed hits, best-first (empty iff ``abstained``).</span>
 <span class="sd">        candidates: the full ranked input, kept for provenance / audit.</span>
 <span class="sd">        abstained: True iff the selector committed to nothing by policy.</span>
-<span class="sd">        reason: which rule ended the commit (e.g. ``&quot;rel_threshold&quot;``,</span>
-<span class="sd">            ``&quot;score_gap&quot;``, ``&quot;max_k&quot;``, ``&quot;abstain:below_floor&quot;``).</span>
+<span class="sd">        reason: which rule ended the commit (e.g. ``"rel_threshold"``,</span>
+<span class="sd">            ``"score_gap"``, ``"max_k"``, ``"abstain:below_floor"``).</span>
 <span class="sd">        signals: concrete, defined numbers behind the decision (``top_score``,</span>
 <span class="sd">            ``n_candidates``, ``n_selected``, ``min_ratio``) — the auditable</span>
-<span class="sd">            replacement for an opaque &quot;confidence&quot; float.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">            replacement for an opaque "confidence" float.</span>
+<span class="sd">    """</span>
 
     <span class="n">selected</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]</span>
     <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]</span>
@@ -248,39 +249,39 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">selected_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The committed artifact ids, best-first.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""The committed artifact ids, best-first."""</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">sufficient</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;A model-free sufficiency *hint* for an agent&#39;s Evaluator (ir_09 §3).</span>
+<span class="w">        </span><span class="sd">"""A model-free sufficiency *hint* for an agent's Evaluator (ir_09 §3).</span>
 
 <span class="sd">        ``True`` when this selection committed to at least one item (i.e. did not</span>
 <span class="sd">        abstain). It is a **signal, not a directive**: the re-query / ``refinement``</span>
 <span class="sd">        decision and the loop belong to the agent layer (the back-edge, ir_09 §4)</span>
 <span class="sd">        — ``ir`` derives this from its own outcome and never acts on it.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstained</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
 <div class="viewcode-block" id="Selection.to_dict">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Selection.to_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form (scores cast to ``float``).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""JSON-serializable form (scores cast to ``float``)."""</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;selected&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">_hit_to_dict</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">],</span>
-            <span class="s2">&quot;selected_ids&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="p">,</span>
-            <span class="s2">&quot;abstained&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>
-            <span class="s2">&quot;sufficient&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sufficient</span><span class="p">,</span>
-            <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
-            <span class="s2">&quot;signals&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">),</span>
-            <span class="s2">&quot;n_candidates&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">candidates</span><span class="p">),</span>
+            <span class="s2">"selected"</span><span class="p">:</span> <span class="p">[</span><span class="n">_hit_to_dict</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected</span><span class="p">],</span>
+            <span class="s2">"selected_ids"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_ids</span><span class="p">,</span>
+            <span class="s2">"abstained"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>
+            <span class="s2">"sufficient"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sufficient</span><span class="p">,</span>
+            <span class="s2">"reason"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+            <span class="s2">"signals"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">),</span>
+            <span class="s2">"n_candidates"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">candidates</span><span class="p">),</span>
         <span class="p">}</span></div>
 </div>
 
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_hit_to_dict</span><span class="p">(</span><span class="n">hit</span><span class="p">:</span> <span class="n">SearchHit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A SearchHit as a plain JSON-serializable dict.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A SearchHit as a plain JSON-serializable dict."""</span>
     <span class="k">return</span> <span class="n">hit</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 
 
@@ -292,7 +293,7 @@
 <div class="viewcode-block" id="top_k">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.top_k">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">top_k</span><span class="p">(</span><span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The naive baseline: always commit to the first ``k`` hits.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""The naive baseline: always commit to the first ``k`` hits."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">hits</span><span class="p">[:</span><span class="n">k</span><span class="p">])</span>
@@ -304,13 +305,13 @@
 <div class="viewcode-block" id="abs_threshold">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.abs_threshold">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">abs_threshold</span><span class="p">(</span><span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Keep every hit scoring at or above an absolute ``min_score``.</span>
+<span class="w">    </span><span class="sd">"""Keep every hit scoring at or above an absolute ``min_score``.</span>
 
 <span class="sd">    Mode-specific (cosine / RRF / BM25 scales differ); use when you have</span>
 <span class="sd">    calibrated a floor for one ranking mode. Like :func:`rel_threshold` /</span>
 <span class="sd">    :func:`score_gap`, this does **not** cap how many hits it keeps — bound the</span>
-<span class="sd">    commit size with the caller&#39;s ``max_k`` (:func:`select` already applies it).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    commit size with the caller's ``max_k`` (:func:`select` already applies it).</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span> <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;=</span> <span class="n">min_score</span><span class="p">]</span>
@@ -322,12 +323,12 @@
 <div class="viewcode-block" id="rel_threshold">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.rel_threshold">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">rel_threshold</span><span class="p">(</span><span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_REL_THRESHOLD</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Keep hits scoring at least ``ratio`` × the top score (mode-agnostic).</span>
+<span class="w">    </span><span class="sd">"""Keep hits scoring at least ``ratio`` × the top score (mode-agnostic).</span>
 
 <span class="sd">    Degenerate-input guard: a non-positive top score makes the ratio test</span>
 <span class="sd">    meaningless (e.g. a hashing embedder yielding negative cosines for an</span>
 <span class="sd">    unrelated query), so only the single best hit is kept.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">hits</span><span class="p">:</span>
@@ -344,12 +345,12 @@
 <div class="viewcode-block" id="score_gap">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.score_gap">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">score_gap</span><span class="p">(</span><span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Elbow cut: keep hits until one drops below ``gap_ratio`` × the previous.</span>
+<span class="w">    </span><span class="sd">"""Elbow cut: keep hits until one drops below ``gap_ratio`` × the previous.</span>
 
 <span class="sd">    A sharp relative drop marks where the ranked signal ends. Flat or</span>
 <span class="sd">    non-positive distributions have no such elbow, so the whole list passes</span>
-<span class="sd">    (the floor for over-selection is the caller&#39;s ``max_k`` / threshold).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    (the floor for over-selection is the caller's ``max_k`` / threshold).</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
         <span class="n">chosen</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -372,31 +373,31 @@
     <span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The default distractor-robust commit: ``(selected, reason, signals)``.</span>
+<span class="w">    </span><span class="sd">"""The default distractor-robust commit: ``(selected, reason, signals)``.</span>
 
 <span class="sd">    Keep the best hit, then admit each next hit only while it stays *close* to</span>
 <span class="sd">    the top score (``score_i &gt;= ratio * top``), up to ``max_k``. The test is</span>
 <span class="sd">    relative-to-top, so it is mode-agnostic (cosine / RRF / BM25 scales differ).</span>
 <span class="sd">    Abstain only when there are no candidates, or an explicit ``min_score`` floor</span>
 <span class="sd">    is set and even the top falls below it — relative structure alone cannot</span>
-<span class="sd">    justify &quot;nothing applies&quot;. (For an elbow cut on a consecutive cliff, use the</span>
+<span class="sd">    justify "nothing applies". (For an elbow cut on a consecutive cliff, use the</span>
 <span class="sd">    :func:`score_gap` strategy instead.)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
     <span class="n">signals</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;n_candidates&quot;</span><span class="p">:</span> <span class="n">n</span><span class="p">,</span>
-        <span class="s2">&quot;top_score&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="s2">&quot;min_ratio&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="s2">&quot;n_selected&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">"n_candidates"</span><span class="p">:</span> <span class="n">n</span><span class="p">,</span>
+        <span class="s2">"top_score"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"min_ratio"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"n_selected"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">[],</span> <span class="s2">&quot;abstain:no_candidates&quot;</span><span class="p">,</span> <span class="n">signals</span>
+        <span class="k">return</span> <span class="p">[],</span> <span class="s2">"abstain:no_candidates"</span><span class="p">,</span> <span class="n">signals</span>
 
     <span class="n">top</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
-    <span class="n">signals</span><span class="p">[</span><span class="s2">&quot;top_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">top</span>
+    <span class="n">signals</span><span class="p">[</span><span class="s2">"top_score"</span><span class="p">]</span> <span class="o">=</span> <span class="n">top</span>
     <span class="k">if</span> <span class="n">min_score</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">top</span> <span class="o">&lt;</span> <span class="n">min_score</span><span class="p">:</span>
-        <span class="n">signals</span><span class="p">[</span><span class="s2">&quot;min_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_score</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[],</span> <span class="s2">&quot;abstain:below_floor&quot;</span><span class="p">,</span> <span class="n">signals</span>
+        <span class="n">signals</span><span class="p">[</span><span class="s2">"min_score"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">min_score</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[],</span> <span class="s2">"abstain:below_floor"</span><span class="p">,</span> <span class="n">signals</span>
 
     <span class="n">chosen</span> <span class="o">=</span> <span class="p">[</span><span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
     <span class="n">limit</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">max_k</span><span class="p">)</span>
@@ -406,7 +407,7 @@
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="p">):</span>
             <span class="n">r</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">hits</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="o">/</span> <span class="n">top</span>
             <span class="k">if</span> <span class="n">r</span> <span class="o">&lt;</span> <span class="n">ratio</span><span class="p">:</span>
-                <span class="n">cut</span> <span class="o">=</span> <span class="s2">&quot;rel_threshold&quot;</span>
+                <span class="n">cut</span> <span class="o">=</span> <span class="s2">"rel_threshold"</span>
                 <span class="k">break</span>
             <span class="n">chosen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hits</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
             <span class="c1"># Track the edge only over *accepted* hits, so the signal reports how</span>
@@ -417,24 +418,24 @@
     <span class="k">if</span> <span class="n">cut</span><span class="p">:</span>
         <span class="n">reason</span> <span class="o">=</span> <span class="n">cut</span>
     <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;single&quot;</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">"single"</span>
     <span class="k">elif</span> <span class="n">top</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;nonpositive_top&quot;</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">"nonpositive_top"</span>
     <span class="k">elif</span> <span class="n">limit</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
-        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;max_k&quot;</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">"max_k"</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;exhausted&quot;</span>
-    <span class="n">signals</span><span class="p">[</span><span class="s2">&quot;min_ratio&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_ratio</span>
-    <span class="n">signals</span><span class="p">[</span><span class="s2">&quot;n_selected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">chosen</span><span class="p">)</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">"exhausted"</span>
+    <span class="n">signals</span><span class="p">[</span><span class="s2">"min_ratio"</span><span class="p">]</span> <span class="o">=</span> <span class="n">min_ratio</span>
+    <span class="n">signals</span><span class="p">[</span><span class="s2">"n_selected"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">chosen</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">chosen</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">signals</span>
 
 
 <span class="c1">#: Named selector strategies that take no query (built from :func:`select` kwargs).</span>
 <span class="n">_NAMED</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Selector</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;top_k&quot;</span><span class="p">:</span> <span class="n">top_k</span><span class="p">,</span>
-    <span class="s2">&quot;abs_threshold&quot;</span><span class="p">:</span> <span class="n">abs_threshold</span><span class="p">,</span>
-    <span class="s2">&quot;rel_threshold&quot;</span><span class="p">:</span> <span class="n">rel_threshold</span><span class="p">,</span>
-    <span class="s2">&quot;score_gap&quot;</span><span class="p">:</span> <span class="n">score_gap</span><span class="p">,</span>
+    <span class="s2">"top_k"</span><span class="p">:</span> <span class="n">top_k</span><span class="p">,</span>
+    <span class="s2">"abs_threshold"</span><span class="p">:</span> <span class="n">abs_threshold</span><span class="p">,</span>
+    <span class="s2">"rel_threshold"</span><span class="p">:</span> <span class="n">rel_threshold</span><span class="p">,</span>
+    <span class="s2">"score_gap"</span><span class="p">:</span> <span class="n">score_gap</span><span class="p">,</span>
 <span class="p">}</span>
 
 
@@ -443,36 +444,36 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span>
     <span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">],</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Selector</span> <span class="o">=</span> <span class="s2">&quot;conservative&quot;</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Selector</span> <span class="o">=</span> <span class="s2">"conservative"</span><span class="p">,</span>
     <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_K</span><span class="p">,</span>
     <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_REL_THRESHOLD</span><span class="p">,</span>
     <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">,</span>
     <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selection</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Commit to a subset of ranked ``hits`` — the selection stage.</span>
+<span class="w">    </span><span class="sd">"""Commit to a subset of ranked ``hits`` — the selection stage.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        hits: ranked :class:`~ir.base.SearchHit`\\ s (best first), as returned by</span>
 <span class="sd">            :func:`ir.retrieve.search`.</span>
-<span class="sd">        strategy: ``&quot;conservative&quot;`` (the default distractor-robust commit),</span>
-<span class="sd">            one of ``&quot;top_k&quot;`` / ``&quot;abs_threshold&quot;`` / ``&quot;rel_threshold&quot;`` /</span>
-<span class="sd">            ``&quot;score_gap&quot;``, or any :data:`Selector` callable (``hits -&gt;</span>
+<span class="sd">        strategy: ``"conservative"`` (the default distractor-robust commit),</span>
+<span class="sd">            one of ``"top_k"`` / ``"abs_threshold"`` / ``"rel_threshold"`` /</span>
+<span class="sd">            ``"score_gap"``, or any :data:`Selector` callable (``hits -&gt;</span>
 <span class="sd">            subset``) — e.g. one built by :func:`make_llm_selector`.</span>
 <span class="sd">        max_k: never commit to more than this many (caps distractor exposure).</span>
-<span class="sd">        rel: relative-to-top keep threshold for ``&quot;conservative&quot;`` / the ratio</span>
-<span class="sd">            for ``&quot;rel_threshold&quot;``.</span>
-<span class="sd">        gap_ratio: score-gap elbow ratio — used by the ``&quot;score_gap&quot;`` strategy</span>
-<span class="sd">            only (``&quot;conservative&quot;`` deliberately uses ``rel`` alone, not an</span>
-<span class="sd">            elbow; see this module&#39;s docstring).</span>
-<span class="sd">        min_score: optional absolute floor; with ``&quot;conservative&quot;`` the selector</span>
+<span class="sd">        rel: relative-to-top keep threshold for ``"conservative"`` / the ratio</span>
+<span class="sd">            for ``"rel_threshold"``.</span>
+<span class="sd">        gap_ratio: score-gap elbow ratio — used by the ``"score_gap"`` strategy</span>
+<span class="sd">            only (``"conservative"`` deliberately uses ``rel`` alone, not an</span>
+<span class="sd">            elbow; see this module's docstring).</span>
+<span class="sd">        min_score: optional absolute floor; with ``"conservative"`` the selector</span>
 <span class="sd">            abstains when even the top hit falls below it (also usable as the</span>
-<span class="sd">            ``&quot;abs_threshold&quot;`` floor).</span>
+<span class="sd">            ``"abs_threshold"`` floor).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a :class:`Selection`. ``abstained`` is True iff ``selected`` is empty.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">hits</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;conservative&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"conservative"</span><span class="p">:</span>
         <span class="n">chosen</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">signals</span> <span class="o">=</span> <span class="n">_conservative_select</span><span class="p">(</span>
             <span class="n">hits</span><span class="p">,</span> <span class="n">max_k</span><span class="o">=</span><span class="n">max_k</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="n">rel</span><span class="p">,</span> <span class="n">min_score</span><span class="o">=</span><span class="n">min_score</span>
         <span class="p">)</span>
@@ -489,16 +490,16 @@
     <span class="p">)</span>
     <span class="n">chosen</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">))[:</span><span class="n">max_k</span><span class="p">]</span>
     <span class="n">top</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="k">if</span> <span class="n">hits</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="n">strategy</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">strategy</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"custom"</span>
     <span class="k">return</span> <span class="n">Selection</span><span class="p">(</span>
         <span class="n">selected</span><span class="o">=</span><span class="n">chosen</span><span class="p">,</span>
         <span class="n">candidates</span><span class="o">=</span><span class="n">hits</span><span class="p">,</span>
         <span class="n">abstained</span><span class="o">=</span><span class="ow">not</span> <span class="n">chosen</span><span class="p">,</span>
-        <span class="n">reason</span><span class="o">=</span><span class="n">name</span> <span class="k">if</span> <span class="n">chosen</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;abstain:</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">reason</span><span class="o">=</span><span class="n">name</span> <span class="k">if</span> <span class="n">chosen</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"abstain:</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">signals</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;n_candidates&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">),</span>
-            <span class="s2">&quot;n_selected&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">chosen</span><span class="p">),</span>
-            <span class="s2">&quot;top_score&quot;</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span>
+            <span class="s2">"n_candidates"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">),</span>
+            <span class="s2">"n_selected"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">chosen</span><span class="p">),</span>
+            <span class="s2">"top_score"</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">)</span></div>
 
@@ -512,22 +513,22 @@
     <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve a strategy name (or pass a callable through) to a :data:`Selector`.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Resolve a strategy name (or pass a callable through) to a :data:`Selector`."""</span>
     <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">strategy</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">strategy</span>
     <span class="k">if</span> <span class="n">strategy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_NAMED</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;unknown selection strategy </span><span class="si">{</span><span class="n">strategy</span><span class="si">!r}</span><span class="s2">; expected &#39;conservative&#39;, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;a callable, or one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_NAMED</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"unknown selection strategy </span><span class="si">{</span><span class="n">strategy</span><span class="si">!r}</span><span class="s2">; expected 'conservative', "</span>
+            <span class="sa">f</span><span class="s2">"a callable, or one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_NAMED</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
     <span class="n">factory</span> <span class="o">=</span> <span class="n">_NAMED</span><span class="p">[</span><span class="n">strategy</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;top_k&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"top_k"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">factory</span><span class="p">(</span><span class="n">max_k</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;abs_threshold&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"abs_threshold"</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">min_score</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;strategy=&#39;abs_threshold&#39; requires min_score=...&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"strategy='abs_threshold' requires min_score=..."</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">factory</span><span class="p">(</span><span class="n">min_score</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;rel_threshold&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"rel_threshold"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">factory</span><span class="p">(</span><span class="n">rel</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">factory</span><span class="p">(</span><span class="n">gap_ratio</span><span class="p">)</span>  <span class="c1"># score_gap</span>
 
@@ -536,7 +537,7 @@
 <span class="c1"># LLM-as-selector — optional, lazy, injectable (mirrors ir.eval_gen)</span>
 <span class="c1"># =========================================================================== #</span>
 
-<span class="n">SELECTION_PROMPT</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="n">SELECTION_PROMPT</span> <span class="o">=</span> <span class="s2">"""</span><span class="se">\</span>
 <span class="s2">A user made this request:</span>
 
 <span class="si">{query}</span>
@@ -548,7 +549,7 @@
 <span class="si">{candidates}</span>
 
 <span class="s2">Reply with the chosen ids, one per line, and nothing else. No numbering, no prose.</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 
 
 <div class="viewcode-block" id="make_llm_selector">
@@ -562,22 +563,22 @@
     <span class="n">fallback</span><span class="p">:</span> <span class="n">Selector</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;An LLM-as-selector :data:`Selector`, grounded in the research&#39;s caveats.</span>
+<span class="w">    </span><span class="sd">"""An LLM-as-selector :data:`Selector`, grounded in the research's caveats.</span>
 
-<span class="sd">    The model reads the candidates&#39; descriptions and commits to a subset.</span>
+<span class="sd">    The model reads the candidates' descriptions and commits to a subset.</span>
 <span class="sd">    ``chooser`` is an injectable ``(query, candidates) -&gt; [id, …]`` callable</span>
 <span class="sd">    (a test double, or your own router); when omitted it is built lazily on</span>
 <span class="sd">    :mod:`aix` (``aix.prompt_func``), so importing this module stays offline.</span>
 
 <span class="sd">    Robustness: any error or empty/garbled reply falls back to ``fallback``</span>
-<span class="sd">    (default: the ``&quot;conservative&quot;`` heuristic), because LLM selection is known</span>
+<span class="sd">    (default: the ``"conservative"`` heuristic), because LLM selection is known</span>
 <span class="sd">    to be swayed by description phrasing (ir_01 §3) — it must never be the only</span>
 <span class="sd">    line of defense.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">choose</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
         <span class="n">cands</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">hits</span><span class="p">)[:</span><span class="n">max_candidates</span><span class="p">]</span>
-        <span class="n">rendered</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">cands</span><span class="p">)</span>
+        <span class="n">rendered</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">h</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">cands</span><span class="p">)</span>
         <span class="n">fn</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">chooser</span>
             <span class="k">if</span> <span class="n">chooser</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -602,7 +603,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_conservative_selector</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Selector</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The default heuristic selector as a bare :data:`Selector` (for fallback).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""The default heuristic selector as a bare :data:`Selector` (for fallback)."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">selector</span><span class="p">(</span><span class="n">hits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
         <span class="n">chosen</span><span class="p">,</span> <span class="n">_reason</span><span class="p">,</span> <span class="n">_signals</span> <span class="o">=</span> <span class="n">_conservative_select</span><span class="p">(</span>
@@ -614,14 +615,14 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_default_llm_chooser</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the default LLM chooser on :mod:`aix` (lazy import).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Build the default LLM chooser on :mod:`aix` (lazy import)."""</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">aix</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_parse_ids</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot; -</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">" -</span><span class="se">\t</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
 
     <span class="n">fn</span> <span class="o">=</span> <span class="n">aix</span><span class="o">.</span><span class="n">prompt_func</span><span class="p">(</span>
-        <span class="n">prompt</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="n">_parse_ids</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;select_capabilities&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
+        <span class="n">prompt</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="n">_parse_ids</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"select_capabilities"</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
     <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">choose</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">candidates</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -639,20 +640,20 @@
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Disclosure">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Disclosure</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The progressively-disclosed payload for one selected artifact.</span>
+<span class="w">    </span><span class="sd">"""The progressively-disclosed payload for one selected artifact.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        artifact_id: the artifact this payload belongs to.</span>
-<span class="sd">        level: how much was loaded — ``&quot;metadata&quot;`` (no I/O), ``&quot;body&quot;`` (the</span>
-<span class="sd">            pointer&#39;s full text), or ``&quot;bundled&quot;`` (body + extras).</span>
+<span class="sd">        level: how much was loaded — ``"metadata"`` (no I/O), ``"body"`` (the</span>
+<span class="sd">            pointer's full text), or ``"bundled"`` (body + extras).</span>
 <span class="sd">        name: a display name (the ``name`` filter field, else the id).</span>
-<span class="sd">        score: the selecting hit&#39;s score.</span>
+<span class="sd">        score: the selecting hit's score.</span>
 <span class="sd">        summary: the matched surface text — always present, always cheap.</span>
 <span class="sd">        body: the full payload (SKILL.md / file text); ``None`` below</span>
-<span class="sd">            ``&quot;body&quot;`` level or when the pointer could not be read.</span>
-<span class="sd">        pointer: the source pointer (``skill_path`` / ``path``) — the &quot;package</span>
-<span class="sd">            pointer&quot; an agent follows to act; ``None`` if the hit has none.</span>
-<span class="sd">        metadata: the hit&#39;s filter metadata, plus a ``disclosure`` note when a</span>
+<span class="sd">            ``"body"`` level or when the pointer could not be read.</span>
+<span class="sd">        pointer: the source pointer (``skill_path`` / ``path``) — the "package</span>
+<span class="sd">            pointer" an agent follows to act; ``None`` if the hit has none.</span>
+<span class="sd">        metadata: the hit's filter metadata, plus a ``disclosure`` note when a</span>
 <span class="sd">            pointer was present but unreadable (stale/moved/deleted), and an</span>
 <span class="sd">            ``expansion`` note when expansion was requested but not possible</span>
 <span class="sd">            for this hit.</span>
@@ -661,11 +662,11 @@
 <span class="sd">            tell two same-id artifacts from different corpora apart.</span>
 <span class="sd">        passage: the expanded neighborhood text (``disclose(..., expand=...)``)</span>
 <span class="sd">            — the mid-granularity payload between ``summary`` (the matched</span>
-<span class="sd">            surface) and ``body`` (the pointer&#39;s full text); ``None`` when</span>
+<span class="sd">            surface) and ``body`` (the pointer's full text); ``None`` when</span>
 <span class="sd">            expansion was not requested or not possible. Assembled from the</span>
-<span class="sd">            corpus&#39;s *stored records* (see :mod:`ir.expand`), unlike ``body``,</span>
+<span class="sd">            corpus's *stored records* (see :mod:`ir.expand`), unlike ``body``,</span>
 <span class="sd">            which dereferences the pointer to an external resource.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">level</span><span class="p">:</span> <span class="nb">str</span>
@@ -681,25 +682,25 @@
 <div class="viewcode-block" id="Disclosure.to_dict">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.Disclosure.to_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable form (score cast to ``float``).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""JSON-serializable form (score cast to ``float``)."""</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;artifact_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
-            <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">,</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
-            <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">,</span>
-            <span class="s2">&quot;body&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">,</span>
-            <span class="s2">&quot;pointer&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointer</span><span class="p">,</span>
-            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
-            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
-            <span class="s2">&quot;passage&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">passage</span><span class="p">,</span>
+            <span class="s2">"artifact_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+            <span class="s2">"level"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">"score"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
+            <span class="s2">"summary"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">,</span>
+            <span class="s2">"body"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">,</span>
+            <span class="s2">"pointer"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointer</span><span class="p">,</span>
+            <span class="s2">"metadata"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span>
+            <span class="s2">"source"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="s2">"passage"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">passage</span><span class="p">,</span>
         <span class="p">}</span></div>
 </div>
 
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_pointer_of</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The disclosure pointer in a hit&#39;s metadata, if any (see :data:`POINTER_KEYS`).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""The disclosure pointer in a hit's metadata, if any (see :data:`POINTER_KEYS`)."""</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">POINTER_KEYS</span><span class="p">:</span>
         <span class="n">val</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">val</span><span class="p">:</span>
@@ -708,13 +709,13 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_store_body_loader</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">ResourceStore</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BodyLoader</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A :data:`BodyLoader` that dereferences ``store[pointer]`` (ir_09 §5).</span>
+<span class="w">    </span><span class="sd">"""A :data:`BodyLoader` that dereferences ``store[pointer]`` (ir_09 §5).</span>
 
 <span class="sd">    Stale-tolerant exactly like the default disk loader: a missing pointer or a</span>
 <span class="sd">    missing key yields ``None`` (disclosure never raises). This is what lets lazy</span>
 <span class="sd">    disclosure work over any ``Mapping`` resource store — a ``dol`` file/blob/URL</span>
 <span class="sd">    store — not just local disk.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">pointer</span> <span class="o">=</span> <span class="n">_pointer_of</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
@@ -731,14 +732,14 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">_default_body_loader</span><span class="p">(</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_BODY_CHARS</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read the body a hit&#39;s pointer names, tolerating missing/moved targets.</span>
+<span class="w">    </span><span class="sd">"""Read the body a hit's pointer names, tolerating missing/moved targets.</span>
 
 <span class="sd">    A ``skill_path`` / file ``path`` is read directly; a directory ``path`` (a</span>
 <span class="sd">    package) discloses its README if present (the body), else stays ``None`` and</span>
 <span class="sd">    leaves the directory to serve as the actionable pointer. Any I/O error</span>
 <span class="sd">    returns ``None`` (the caller records the stale pointer); disclosure never</span>
 <span class="sd">    raises.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
     <span class="n">pointer</span> <span class="o">=</span> <span class="n">_pointer_of</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
@@ -746,14 +747,14 @@
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">pointer</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">cand</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;README.md&quot;</span><span class="p">,</span> <span class="s2">&quot;README.rst&quot;</span><span class="p">,</span> <span class="s2">&quot;README.txt&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">cand</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"README.md"</span><span class="p">,</span> <span class="s2">"README.rst"</span><span class="p">,</span> <span class="s2">"README.txt"</span><span class="p">):</span>
                 <span class="n">rp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pointer</span><span class="p">,</span> <span class="n">cand</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">rp</span><span class="p">):</span>
-                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">rp</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">rp</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                         <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">max_chars</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">pointer</span><span class="p">):</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pointer</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pointer</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">max_chars</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -761,15 +762,15 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_expansion_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve ``disclose``&#39;s ``corpus=`` spec once, upfront.</span>
+<span class="w">    </span><span class="sd">"""Resolve ``disclose``'s ``corpus=`` spec once, upfront.</span>
 
 <span class="sd">    A corpus *name* resolves straight to its local store — deliberately not</span>
-<span class="sd">    via :func:`ir.open_corpus`, which would eagerly load the corpus&#39;s</span>
+<span class="sd">    via :func:`ir.open_corpus`, which would eagerly load the corpus's</span>
 <span class="sd">    embedder; expansion only reads stored records and never embeds. Mapping</span>
 <span class="sd">    values resolve the same way. Resolving once per :func:`disclose` call</span>
 <span class="sd">    means an N-hit disclosure never re-opens a store (or re-loads a model)</span>
 <span class="sd">    per hit.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusStore</span>
 
@@ -785,27 +786,27 @@
     <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">policy</span><span class="p">:</span> <span class="n">NeighborhoodPolicy</span><span class="p">,</span>
     <span class="n">corpus_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;tuple[str | None, str | None]&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;``(passage, None)`` for *hit*, or ``(None, why_not)``.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str | None, str | None]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``(passage, None)`` for *hit*, or ``(None, why_not)``.</span>
 
 <span class="sd">    Per-hit tolerance mirrors the stale-pointer handling — these are *data*</span>
 <span class="sd">    conditions, and disclosure never raises on them:</span>
 
 <span class="sd">    - a federated source absent from the ``corpus`` mapping, or a single</span>
-<span class="sd">      named corpus that is not the hit&#39;s source (expanding against the wrong</span>
-<span class="sd">      corpus would silently stitch a same-id stranger&#39;s text — artifact</span>
-<span class="sd">      identity is only unique within a source) → ``&quot;no_corpus_for_source&quot;``;</span>
-<span class="sd">    - no ledger entry for the artifact → ``&quot;no_ledger_entry&quot;``;</span>
-<span class="sd">    - the seed no longer among its siblings (stale hit) → ``&quot;seed_not_found&quot;``.</span>
+<span class="sd">      named corpus that is not the hit's source (expanding against the wrong</span>
+<span class="sd">      corpus would silently stitch a same-id stranger's text — artifact</span>
+<span class="sd">      identity is only unique within a source) → ``"no_corpus_for_source"``;</span>
+<span class="sd">    - no ledger entry for the artifact → ``"no_ledger_entry"``;</span>
+<span class="sd">    - the seed no longer among its siblings (stale hit) → ``"seed_not_found"``.</span>
 
 <span class="sd">    Everything else still raises: a torn store (a ledger entry listing</span>
 <span class="sd">    missing records — corruption whose error names the remedy) and policy</span>
 <span class="sd">    bugs are programming/integrity errors, not data conditions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
         <span class="n">c</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;no_corpus_for_source&quot;</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"no_corpus_for_source"</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">c</span> <span class="o">=</span> <span class="n">corpus</span>
         <span class="k">if</span> <span class="p">(</span>
@@ -813,13 +814,13 @@
             <span class="ow">and</span> <span class="n">hit</span><span class="o">.</span><span class="n">source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="ow">and</span> <span class="n">hit</span><span class="o">.</span><span class="n">source</span> <span class="o">!=</span> <span class="n">corpus_name</span>
         <span class="p">):</span>
-            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;no_corpus_for_source&quot;</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"no_corpus_for_source"</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_expand</span><span class="p">(</span><span class="n">hit</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="kc">None</span>
     <span class="k">except</span> <span class="n">NoLedgerEntry</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;no_ledger_entry&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"no_ledger_entry"</span>
     <span class="k">except</span> <span class="n">SeedNotFound</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;seed_not_found&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"seed_not_found"</span>
 
 
 <div class="viewcode-block" id="disclose">
@@ -827,19 +828,19 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">disclose</span><span class="p">(</span>
     <span class="n">selection</span><span class="p">:</span> <span class="n">Selection</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;body&quot;</span><span class="p">,</span>
+    <span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"body"</span><span class="p">,</span>
     <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">store</span><span class="p">:</span> <span class="n">ResourceStore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">expand</span><span class="p">:</span> <span class="n">NeighborhoodPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Disclosure</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reveal the payload of each selected hit at ``level`` — append-only, pure.</span>
+<span class="w">    </span><span class="sd">"""Reveal the payload of each selected hit at ``level`` — append-only, pure.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        selection: a committed :class:`Selection`.</span>
-<span class="sd">        level: ``&quot;metadata&quot;`` (no I/O — summary + pointer only), ``&quot;body&quot;`` (load</span>
-<span class="sd">            the pointer&#39;s full text), or ``&quot;bundled&quot;`` (body + extras; today the</span>
-<span class="sd">            same as ``&quot;body&quot;``, reserved for bundled scripts/references).</span>
+<span class="sd">        level: ``"metadata"`` (no I/O — summary + pointer only), ``"body"`` (load</span>
+<span class="sd">            the pointer's full text), or ``"bundled"`` (body + extras; today the</span>
+<span class="sd">            same as ``"body"``, reserved for bundled scripts/references).</span>
 <span class="sd">        loader: override the body resolver — ``metadata -&gt; str | None``. The</span>
 <span class="sd">            default reads the ``skill_path`` / ``path`` pointer from disk and</span>
 <span class="sd">            tolerates a missing target (returns ``None``, never raises).</span>
@@ -847,13 +848,13 @@
 <span class="sd">            dereference instead of disk — ir_09 §5 pointer-passing over a ``dol``</span>
 <span class="sd">            store / URL map / blob storage. Mutually exclusive with ``loader``.</span>
 <span class="sd">        expand: a :data:`~ir.expand.NeighborhoodPolicy` to also stitch each</span>
-<span class="sd">            hit&#39;s neighborhood from the corpus&#39;s stored records into</span>
+<span class="sd">            hit's neighborhood from the corpus's stored records into</span>
 <span class="sd">            :attr:`Disclosure.passage` (see :mod:`ir.expand`). Orthogonal to</span>
 <span class="sd">            ``level``, which governs *pointer* payloads: e.g.</span>
-<span class="sd">            ``level=&quot;metadata&quot;, expand=sentence_window_policy()`` reads no</span>
+<span class="sd">            ``level="metadata", expand=sentence_window_policy()`` reads no</span>
 <span class="sd">            pointer at all but still returns mid-granularity passages.</span>
 <span class="sd">            Requires ``corpus=``.</span>
-<span class="sd">        corpus: where ``expand`` finds each hit&#39;s stored siblings — a</span>
+<span class="sd">        corpus: where ``expand`` finds each hit's stored siblings — a</span>
 <span class="sd">            :class:`~ir.index.Corpus` / :class:`~ir.store.CorpusStore` / name,</span>
 <span class="sd">            or, for cross-source selections, a ``{source_name: corpus}``</span>
 <span class="sd">            ``Mapping`` resolved per hit via ``hit.source``. Only meaningful</span>
@@ -863,20 +864,20 @@
 <span class="sd">        one :class:`Disclosure` per selected hit, best-first. This is a pure</span>
 <span class="sd">        read: the :class:`Selection` and its hits are never mutated, so a caller</span>
 <span class="sd">        can disclose append-only without disturbing a cached ranked prefix.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">level</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">DISCLOSURE_LEVELS</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;unknown disclosure level </span><span class="si">{</span><span class="n">level</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">DISCLOSURE_LEVELS</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"unknown disclosure level </span><span class="si">{</span><span class="n">level</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">DISCLOSURE_LEVELS</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;pass either loader= or store=, not both&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"pass either loader= or store=, not both"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">expand</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">corpus</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;disclose(expand=...) needs corpus= (a Corpus / CorpusStore / name, &quot;</span>
-            <span class="s2">&quot;or a {source_name: corpus} mapping) to fetch each hit&#39;s siblings&quot;</span>
+            <span class="s2">"disclose(expand=...) needs corpus= (a Corpus / CorpusStore / name, "</span>
+            <span class="s2">"or a {source_name: corpus} mapping) to fetch each hit's siblings"</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">corpus</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;corpus= is only meaningful together with expand=&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"corpus= is only meaningful together with expand="</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">load</span> <span class="o">=</span> <span class="n">_store_body_loader</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">loader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -888,29 +889,29 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">corpus_name</span> <span class="o">=</span> <span class="n">corpus</span>
         <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
-            <span class="n">corpus_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">corpus_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">corpus</span> <span class="o">=</span> <span class="n">_resolve_expansion_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
     <span class="n">out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Disclosure</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">selection</span><span class="o">.</span><span class="n">selected</span><span class="p">:</span>
         <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
         <span class="n">pointer</span> <span class="o">=</span> <span class="n">_pointer_of</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
         <span class="n">body</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">level</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="s2">&quot;bundled&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">level</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"body"</span><span class="p">,</span> <span class="s2">"bundled"</span><span class="p">):</span>
             <span class="n">body</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">body</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pointer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;disclosure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;pointer_unreadable&quot;</span>
+                <span class="n">meta</span><span class="p">[</span><span class="s2">"disclosure"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"pointer_unreadable"</span>
         <span class="n">passage</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">expand</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">passage</span><span class="p">,</span> <span class="n">note</span> <span class="o">=</span> <span class="n">_expand_passage</span><span class="p">(</span>
                 <span class="n">hit</span><span class="p">,</span> <span class="n">corpus</span><span class="o">=</span><span class="n">corpus</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">expand</span><span class="p">,</span> <span class="n">corpus_name</span><span class="o">=</span><span class="n">corpus_name</span>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">note</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;expansion&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">note</span>
+                <span class="n">meta</span><span class="p">[</span><span class="s2">"expansion"</span><span class="p">]</span> <span class="o">=</span> <span class="n">note</span>
         <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="n">Disclosure</span><span class="p">(</span>
                 <span class="n">artifact_id</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
-                <span class="n">name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">),</span>
+                <span class="n">name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">),</span>
                 <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">score</span><span class="p">),</span>
                 <span class="n">summary</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
                 <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
@@ -933,12 +934,12 @@
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.DiscoveryResult">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DiscoveryResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The result of :func:`discover` — retrieve → select → (optional) disclose.</span>
+<span class="w">    </span><span class="sd">"""The result of :func:`discover` — retrieve → select → (optional) disclose.</span>
 
 <span class="sd">    The qh-exposable payload: :meth:`to_dict` is fully JSON-serializable (lists</span>
 <span class="sd">    of dicts, floats, strings, bools — no numpy, no objects), so a FastAPI</span>
 <span class="sd">    facade can return it directly.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span>
@@ -952,68 +953,68 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">ids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The committed artifact ids, best-first.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""The committed artifact ids, best-first."""</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">]</span>
 
 <div class="viewcode-block" id="DiscoveryResult.to_dict">
 <a class="viewcode-back" href="../../module_docs/ir/select.html#ir.DiscoveryResult.to_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;JSON-serializable result for the qh / HTTP surface.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""JSON-serializable result for the qh / HTTP surface."""</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
-            <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
-            <span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="p">,</span>
-            <span class="s2">&quot;disclose_level&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">disclose_level</span><span class="p">,</span>
-            <span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">],</span>
-            <span class="s2">&quot;abstained&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>
-            <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
-            <span class="s2">&quot;n_retrieved&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_retrieved</span><span class="p">,</span>
-            <span class="s2">&quot;n_selected&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">),</span>
-            <span class="s2">&quot;signals&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">),</span>
+            <span class="s2">"query"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
+            <span class="s2">"mode"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+            <span class="s2">"strategy"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="p">,</span>
+            <span class="s2">"disclose_level"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">disclose_level</span><span class="p">,</span>
+            <span class="s2">"results"</span><span class="p">:</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">],</span>
+            <span class="s2">"abstained"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>
+            <span class="s2">"reason"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+            <span class="s2">"n_retrieved"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_retrieved</span><span class="p">,</span>
+            <span class="s2">"n_selected"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">),</span>
+            <span class="s2">"signals"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">),</span>
         <span class="p">}</span></div>
 </div>
 
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_auto_min_score</span><span class="p">(</span><span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the calibrated abstention floor for ``(corpus, mode)``, or ``None``.</span>
+<span class="w">    </span><span class="sd">"""Load the calibrated abstention floor for ``(corpus, mode)``, or ``None``.</span>
 
 <span class="sd">    Reads the per-mode record persisted by :func:`ir.eval.calibrate_min_score`</span>
-<span class="sd">    from the corpus&#39;s ``calibration`` store. Returns ``None`` (and warns) when no</span>
+<span class="sd">    from the corpus's ``calibration`` store. Returns ``None`` (and warns) when no</span>
 <span class="sd">    calibration is stored for the mode, or when the stored ``embedder_id`` no</span>
 <span class="sd">    longer matches the live corpus (a stale floor after a rebuild) — so</span>
-<span class="sd">    ``min_score=&quot;auto&quot;`` degrades safely to &quot;no absolute abstention&quot; rather than</span>
+<span class="sd">    ``min_score="auto"`` degrades safely to "no absolute abstention" rather than</span>
 <span class="sd">    abstaining on a mis-scaled floor. Kept here (not in :mod:`ir.eval`) so the</span>
-<span class="sd">    common ``discover`` path stays free of the eval module&#39;s heavier imports.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># stacklevel=3: warn → _resolve_auto_min_score → discover → the user&#39;s call.</span>
-    <span class="n">store</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;store&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="n">get</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;get_calibration&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="sd">    common ``discover`` path stays free of the eval module's heavier imports.</span>
+<span class="sd">    """</span>
+    <span class="c1"># stacklevel=3: warn → _resolve_auto_min_score → discover → the user's call.</span>
+    <span class="n">store</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">"store"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">get</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">"get_calibration"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="n">rec</span> <span class="o">=</span> <span class="n">get</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">get</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;?&quot;</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="s2">"?"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">rec</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;discover(min_score=&#39;auto&#39;): no calibration stored for corpus &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> mode </span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">; not abstaining by absolute score. Calibrate &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;with ir.eval.calibrate_min_score(corpus, cases, mode=</span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;persist=True).&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"discover(min_score='auto'): no calibration stored for corpus "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> mode </span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">; not abstaining by absolute score. Calibrate "</span>
+            <span class="sa">f</span><span class="s2">"with ir.eval.calibrate_min_score(corpus, cases, mode=</span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">, "</span>
+            <span class="sa">f</span><span class="s2">"persist=True)."</span><span class="p">,</span>
             <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="n">stored_emb</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;embedder_id&quot;</span><span class="p">)</span>
-    <span class="n">live_emb</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">&quot;embedder_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">stored_emb</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"embedder_id"</span><span class="p">)</span>
+    <span class="n">live_emb</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">"embedder_id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="c1"># Any presence/value mismatch is treated as stale: an unstamped or</span>
     <span class="c1"># differently-stamped floor cannot be confirmed to match the live scale.</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">stored_emb</span> <span class="ow">or</span> <span class="n">live_emb</span><span class="p">)</span> <span class="ow">and</span> <span class="n">stored_emb</span> <span class="o">!=</span> <span class="n">live_emb</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;discover(min_score=&#39;auto&#39;): calibration for corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> mode &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2"> was made with embedder </span><span class="si">{</span><span class="n">stored_emb</span><span class="si">!r}</span><span class="s2"> but the corpus now &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;uses </span><span class="si">{</span><span class="n">live_emb</span><span class="si">!r}</span><span class="s2">; ignoring the stale (possibly mis-scaled) floor. &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Re-run ir.eval.calibrate_min_score(..., persist=True).&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"discover(min_score='auto'): calibration for corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> mode "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2"> was made with embedder </span><span class="si">{</span><span class="n">stored_emb</span><span class="si">!r}</span><span class="s2"> but the corpus now "</span>
+            <span class="sa">f</span><span class="s2">"uses </span><span class="si">{</span><span class="n">live_emb</span><span class="si">!r}</span><span class="s2">; ignoring the stale (possibly mis-scaled) floor. "</span>
+            <span class="sa">f</span><span class="s2">"Re-run ir.eval.calibrate_min_score(..., persist=True)."</span><span class="p">,</span>
             <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="n">floor</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;min_score&quot;</span><span class="p">)</span>
+    <span class="n">floor</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"min_score"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">floor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="n">floor</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">floor</span><span class="p">)</span>
@@ -1021,9 +1022,9 @@
         <span class="c1"># A corrupted/hand-edited ±inf floor would abstain (or commit) on</span>
         <span class="c1"># everything; refuse it rather than silently breaking abstention.</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;discover(min_score=&#39;auto&#39;): calibration for corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> mode &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2"> has a non-finite floor (</span><span class="si">{</span><span class="n">floor</span><span class="si">}</span><span class="s2">); ignoring it. Re-run &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;ir.eval.calibrate_min_score(..., persist=True).&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"discover(min_score='auto'): calibration for corpus </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> mode "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2"> has a non-finite floor (</span><span class="si">{</span><span class="n">floor</span><span class="si">}</span><span class="s2">); ignoring it. Re-run "</span>
+            <span class="sa">f</span><span class="s2">"ir.eval.calibrate_min_score(..., persist=True)."</span><span class="p">,</span>
             <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -1037,16 +1038,16 @@
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_FETCH_K</span><span class="p">,</span>
-    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;hybrid&quot;</span><span class="p">,</span>
-    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Selector</span> <span class="o">=</span> <span class="s2">&quot;conservative&quot;</span><span class="p">,</span>
-    <span class="n">disclose_level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;metadata&quot;</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"hybrid"</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Selector</span> <span class="o">=</span> <span class="s2">"conservative"</span><span class="p">,</span>
+    <span class="n">disclose_level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"metadata"</span><span class="p">,</span>
     <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_MAX_K</span><span class="p">,</span>
     <span class="n">rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_REL_THRESHOLD</span><span class="p">,</span>
     <span class="n">gap_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DFLT_GAP_RATIO</span><span class="p">,</span>
     <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">merge</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">=</span> <span class="s2">&quot;rrf&quot;</span><span class="p">,</span>
+    <span class="n">merge</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">=</span> <span class="s2">"rrf"</span><span class="p">,</span>
     <span class="n">merge_weights</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">merge_rrf_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">loader</span><span class="p">:</span> <span class="n">BodyLoader</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1054,10 +1055,10 @@
     <span class="n">expand</span><span class="p">:</span> <span class="n">NeighborhoodPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscoveryResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find and commit to the capabilities for ``query`` — the one search tool.</span>
+<span class="w">    </span><span class="sd">"""Find and commit to the capabilities for ``query`` — the one search tool.</span>
 
 <span class="sd">    Retrieves ``k`` candidates, commits to a distractor-robust subset, and</span>
-<span class="sd">    (optionally) discloses each committed item&#39;s payload. This is the single</span>
+<span class="sd">    (optionally) discloses each committed item's payload. This is the single</span>
 <span class="sd">    agent-callable surface the capability-discovery research argues for: one</span>
 <span class="sd">    tool that returns *few, high-precision* answers rather than a long candidate</span>
 <span class="sd">    list the model must then filter under context rot.</span>
@@ -1071,55 +1072,55 @@
 <span class="sd">            per-source abstention floors gate before any merging, and the</span>
 <span class="sd">            survivors are rank-fused (see ``merge``). The caller names the</span>
 <span class="sd">            sources explicitly; ir never chooses the set (source planning is</span>
-<span class="sd">            the agent layer&#39;s job, ir_09 §3).</span>
+<span class="sd">            the agent layer's job, ir_09 §3).</span>
 <span class="sd">        query: the user intent.</span>
 <span class="sd">        k: candidate depth retrieved before selection. Federated: ``k``</span>
 <span class="sd">            candidates are retrieved *per source*, and the fused ranking is</span>
 <span class="sd">            also truncated to ``k`` before selection.</span>
-<span class="sd">        mode: ranking mode — ``&quot;hybrid&quot;`` (default; ``ir``&#39;s strongest overall),</span>
-<span class="sd">            ``&quot;dense&quot;``, or ``&quot;lexical&quot;``.</span>
+<span class="sd">        mode: ranking mode — ``"hybrid"`` (default; ``ir``'s strongest overall),</span>
+<span class="sd">            ``"dense"``, or ``"lexical"``.</span>
 <span class="sd">        strategy: selection strategy (see :func:`select`).</span>
-<span class="sd">        disclose_level: ``&quot;metadata&quot;`` (default; cheap, no body I/O), ``&quot;body&quot;``,</span>
-<span class="sd">            or ``&quot;bundled&quot;``.</span>
+<span class="sd">        disclose_level: ``"metadata"`` (default; cheap, no body I/O), ``"body"``,</span>
+<span class="sd">            or ``"bundled"``.</span>
 <span class="sd">        filter, surfaces: retrieval constraints (forwarded to</span>
 <span class="sd">            :func:`ir.retrieve.search`).</span>
 <span class="sd">        max_k, rel, gap_ratio, min_score: selection parameters (see</span>
-<span class="sd">            :func:`select`). ``min_score=&quot;auto&quot;`` loads the floor calibrated for</span>
+<span class="sd">            :func:`select`). ``min_score="auto"`` loads the floor calibrated for</span>
 <span class="sd">            this ``(corpus, mode)`` by :func:`ir.eval.calibrate_min_score` and</span>
 <span class="sd">            persisted on the corpus — the opt-in that turns on absolute</span>
 <span class="sd">            abstention; it falls back to no floor (with a warning) when no</span>
 <span class="sd">            calibration is stored or it is stale (a different embedder).</span>
 <span class="sd">            **Federated**: floors are per-(corpus, mode, embedder), so a single</span>
-<span class="sd">            number cannot apply across corpora — pass ``&quot;auto&quot;`` (each source&#39;s</span>
-<span class="sd">            own calibrated floor), a ``{name: floor_or_&quot;auto&quot;}`` mapping, or</span>
+<span class="sd">            number cannot apply across corpora — pass ``"auto"`` (each source's</span>
+<span class="sd">            own calibrated floor), a ``{name: floor_or_"auto"}`` mapping, or</span>
 <span class="sd">            ``None``; a bare float raises. Floors gate each source on its own</span>
 <span class="sd">            raw scores *before* fusion; the fused ranking is never floored</span>
 <span class="sd">            (rank-fused scores are ordinal — ir_07/ir_08).</span>
-<span class="sd">        merge: federated only — how the per-source rankings combine: ``&quot;rrf&quot;``</span>
+<span class="sd">        merge: federated only — how the per-source rankings combine: ``"rrf"``</span>
 <span class="sd">            (default; rank-based, scale-free — see</span>
-<span class="sd">            :func:`ir.retrieve.fuse_hits`), ``&quot;score&quot;`` (raw-score merge,</span>
+<span class="sd">            :func:`ir.retrieve.fuse_hits`), ``"score"`` (raw-score merge,</span>
 <span class="sd">            valid only when all corpora share an embedder — verified, raises</span>
 <span class="sd">            on mismatch), or a callable ``{name: hits} -&gt; hits``.</span>
 <span class="sd">        merge_weights: federated only — per-source trust weights for</span>
-<span class="sd">            ``merge=&quot;rrf&quot;`` (default 1.0 each).</span>
+<span class="sd">            ``merge="rrf"`` (default 1.0 each).</span>
 <span class="sd">        merge_rrf_k: federated only — the cross-source RRF rank constant</span>
 <span class="sd">            (default: :data:`~ir.retrieve.DFLT_RRF_K`; distinct from the</span>
 <span class="sd">            within-corpus hybrid ``rrf_k`` in ``search_kw``).</span>
 <span class="sd">        loader: optional body resolver for disclosure (see :func:`disclose`).</span>
 <span class="sd">        expand: a :data:`~ir.expand.NeighborhoodPolicy` — also stitch each</span>
-<span class="sd">            committed hit&#39;s neighborhood from its corpus&#39;s stored records into</span>
+<span class="sd">            committed hit's neighborhood from its corpus's stored records into</span>
 <span class="sd">            :attr:`Disclosure.passage` (retrieval-time context expansion, see</span>
 <span class="sd">            :mod:`ir.expand`). Works at any ``disclose_level``; the federated</span>
-<span class="sd">            form resolves each hit&#39;s corpus via its ``source``.</span>
+<span class="sd">            form resolves each hit's corpus via its ``source``.</span>
 <span class="sd">        **search_kw: any other :func:`ir.retrieve.search` keyword (``rrf_k``,</span>
 <span class="sd">            ``rerank``, ``bm25``, …).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        a :class:`DiscoveryResult` (``.to_dict()`` for JSON / qh). Federated</span>
-<span class="sd">        results add ``signals[&quot;per_source&quot;]`` (per-corpus ``n_retrieved`` /</span>
+<span class="sd">        results add ``signals["per_source"]`` (per-corpus ``n_retrieved`` /</span>
 <span class="sd">        ``top_score`` / ``floor`` / ``abstained``) and each disclosure carries</span>
 <span class="sd">        its ``source``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
         <span class="k">return</span> <span class="n">_discover_federated</span><span class="p">(</span>
             <span class="nb">list</span><span class="p">(</span><span class="n">corpus</span><span class="p">),</span>
@@ -1142,15 +1143,15 @@
             <span class="n">expand</span><span class="o">=</span><span class="n">expand</span><span class="p">,</span>
             <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">if</span> <span class="n">merge</span> <span class="o">!=</span> <span class="s2">&quot;rrf&quot;</span> <span class="ow">or</span> <span class="n">merge_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">merge_rrf_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">merge</span> <span class="o">!=</span> <span class="s2">"rrf"</span> <span class="ow">or</span> <span class="n">merge_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">merge_rrf_k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;merge / merge_weights / merge_rrf_k apply to the federated form — &quot;</span>
-            <span class="s2">&quot;pass a list of corpora, e.g. discover([&#39;skills&#39;, &#39;packages&#39;], ...).&quot;</span>
+            <span class="s2">"merge / merge_weights / merge_rrf_k apply to the federated form — "</span>
+            <span class="s2">"pass a list of corpora, e.g. discover(['skills', 'packages'], ...)."</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_score</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;a {name: floor} min_score mapping applies to the federated form — &quot;</span>
-            <span class="s2">&quot;pass a list of corpora, or a float/&#39;auto&#39; for a single corpus.&quot;</span>
+            <span class="s2">"a {name: floor} min_score mapping applies to the federated form — "</span>
+            <span class="s2">"pass a list of corpora, or a float/'auto' for a single corpus."</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
@@ -1158,10 +1159,10 @@
         <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_score</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">min_score</span> <span class="o">!=</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">min_score</span> <span class="o">!=</span> <span class="s2">"auto"</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;invalid min_score </span><span class="si">{</span><span class="n">min_score</span><span class="si">!r}</span><span class="s2">; expected a float, None, or the &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;sentinel &#39;auto&#39; (load the calibrated floor for this corpus/mode).&quot;</span>
+                <span class="sa">f</span><span class="s2">"invalid min_score </span><span class="si">{</span><span class="n">min_score</span><span class="si">!r}</span><span class="s2">; expected a float, None, or the "</span>
+                <span class="sa">f</span><span class="s2">"sentinel 'auto' (load the calibrated floor for this corpus/mode)."</span>
             <span class="p">)</span>
         <span class="n">min_score</span> <span class="o">=</span> <span class="n">_resolve_auto_min_score</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
 
@@ -1194,7 +1195,7 @@
     <span class="k">return</span> <span class="n">DiscoveryResult</span><span class="p">(</span>
         <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
         <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
-        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"custom"</span><span class="p">,</span>
         <span class="n">disclose_level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span>
         <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
         <span class="n">abstained</span><span class="o">=</span><span class="n">selection</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>
@@ -1206,31 +1207,31 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_federated_floors</span><span class="p">(</span>
-    <span class="n">resolved</span><span class="p">:</span> <span class="s2">&quot;list[tuple[str, Any]]&quot;</span><span class="p">,</span>
+    <span class="n">resolved</span><span class="p">:</span> <span class="s2">"list[tuple[str, Any]]"</span><span class="p">,</span>
     <span class="n">min_score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-source abstention floors for federated :func:`discover`.</span>
+<span class="w">    </span><span class="sd">"""Per-source abstention floors for federated :func:`discover`.</span>
 
-<span class="sd">    Floors are per-(corpus, mode, embedder) — ir_07&#39;s central finding — so a</span>
+<span class="sd">    Floors are per-(corpus, mode, embedder) — ir_07's central finding — so a</span>
 <span class="sd">    single number across corpora is the exact mis-scaled comparison the</span>
 <span class="sd">    calibration machinery exists to prevent: it is refused loudly, never</span>
 <span class="sd">    applied. Each accepted form resolves to ``{source_name: floor_or_None}``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">min_score</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_score</span><span class="p">,</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;a single numeric min_score cannot apply across corpora — abstention &quot;</span>
-            <span class="s2">&quot;floors are per-(corpus, mode, embedder) (ir_07). Pass &#39;auto&#39; (each &quot;</span>
-            <span class="s2">&quot;source&#39;s own calibrated floor), a {name: floor_or_&#39;auto&#39;} mapping, &quot;</span>
-            <span class="s2">&quot;or None.&quot;</span>
+            <span class="s2">"a single numeric min_score cannot apply across corpora — abstention "</span>
+            <span class="s2">"floors are per-(corpus, mode, embedder) (ir_07). Pass 'auto' (each "</span>
+            <span class="s2">"source's own calibrated floor), a {name: floor_or_'auto'} mapping, "</span>
+            <span class="s2">"or None."</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_score</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">min_score</span> <span class="o">!=</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">min_score</span> <span class="o">!=</span> <span class="s2">"auto"</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;invalid min_score </span><span class="si">{</span><span class="n">min_score</span><span class="si">!r}</span><span class="s2">; expected None, &#39;auto&#39;, or a &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">name: floor_or_&#39;auto&#39;</span><span class="se">}}</span><span class="s2"> mapping for federated discover.&quot;</span>
+                <span class="sa">f</span><span class="s2">"invalid min_score </span><span class="si">{</span><span class="n">min_score</span><span class="si">!r}</span><span class="s2">; expected None, 'auto', or a "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="se">{{</span><span class="s2">name: floor_or_'auto'</span><span class="se">}}</span><span class="s2"> mapping for federated discover."</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">_resolve_auto_min_score</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">resolved</span><span class="p">}</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_score</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
@@ -1238,74 +1239,74 @@
         <span class="n">unknown</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">min_score</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">by_name</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;min_score names corpora not in this discover call: </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">; &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;the call federates </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">by_name</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">"min_score names corpora not in this discover call: </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">; "</span>
+                <span class="sa">f</span><span class="s2">"the call federates </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">by_name</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
         <span class="n">floors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">min_score</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">floors</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">elif</span> <span class="n">spec</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">spec</span> <span class="o">==</span> <span class="s2">"auto"</span><span class="p">:</span>
                 <span class="n">floors</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_resolve_auto_min_score</span><span class="p">(</span><span class="n">by_name</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">mode</span><span class="p">)</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;invalid min_score for source </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="n">spec</span><span class="si">!r}</span><span class="s2">; expected &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;None, &#39;auto&#39;, or a number (each source&#39;s own calibrated &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;scale).&quot;</span>
+                    <span class="sa">f</span><span class="s2">"invalid min_score for source </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="n">spec</span><span class="si">!r}</span><span class="s2">; expected "</span>
+                    <span class="sa">f</span><span class="s2">"None, 'auto', or a number (each source's own calibrated "</span>
+                    <span class="sa">f</span><span class="s2">"scale)."</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">floors</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">floors</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;invalid min_score </span><span class="si">{</span><span class="n">min_score</span><span class="si">!r}</span><span class="s2">; expected None, &#39;auto&#39;, or a &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">name: floor_or_&#39;auto&#39;</span><span class="se">}}</span><span class="s2"> mapping for federated discover.&quot;</span>
+        <span class="sa">f</span><span class="s2">"invalid min_score </span><span class="si">{</span><span class="n">min_score</span><span class="si">!r}</span><span class="s2">; expected None, 'auto', or a "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="se">{{</span><span class="s2">name: floor_or_'auto'</span><span class="se">}}</span><span class="s2"> mapping for federated discover."</span>
     <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_merge_federated</span><span class="p">(</span>
-    <span class="n">surviving</span><span class="p">:</span> <span class="s2">&quot;dict[str, list[SearchHit]]&quot;</span><span class="p">,</span>
+    <span class="n">surviving</span><span class="p">:</span> <span class="s2">"dict[str, list[SearchHit]]"</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">merge</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">,</span>
     <span class="n">merge_weights</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">merge_rrf_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">corpora_by_name</span><span class="p">:</span> <span class="s2">&quot;dict[str, Any]&quot;</span><span class="p">,</span>
+    <span class="n">corpora_by_name</span><span class="p">:</span> <span class="s2">"dict[str, Any]"</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Combine the per-source rankings — only ranks cross the source boundary.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Combine the per-source rankings — only ranks cross the source boundary."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">DFLT_RRF_K</span><span class="p">,</span> <span class="n">fuse_hits</span>
 
     <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">merge</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">merge</span><span class="p">(</span><span class="n">surviving</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">merge</span> <span class="o">==</span> <span class="s2">&quot;rrf&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">merge</span> <span class="o">==</span> <span class="s2">"rrf"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">fuse_hits</span><span class="p">(</span>
             <span class="n">surviving</span><span class="p">,</span>
             <span class="n">rrf_k</span><span class="o">=</span><span class="n">DFLT_RRF_K</span> <span class="k">if</span> <span class="n">merge_rrf_k</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">merge_rrf_k</span><span class="p">,</span>
             <span class="n">weights</span><span class="o">=</span><span class="n">merge_weights</span><span class="p">,</span>
             <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">if</span> <span class="n">merge</span> <span class="o">==</span> <span class="s2">&quot;score&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">merge</span> <span class="o">==</span> <span class="s2">"score"</span><span class="p">:</span>
         <span class="c1"># A raw-score merge is the caller asserting one score scale across</span>
         <span class="c1"># sources; verify the assertion instead of trusting it (the same</span>
         <span class="c1"># detect-and-refuse posture as the stale-calibration check).</span>
         <span class="n">emb_ids</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpora_by_name</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="s2">&quot;embedder_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">corpora_by_name</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="s2">"embedder_id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">surviving</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">emb_ids</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;merge=&#39;score&#39; compares raw scores across corpora, which &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;requires one shared embedder; got </span><span class="si">{</span><span class="n">emb_ids</span><span class="si">}</span><span class="s2">. Use merge=&#39;rrf&#39; &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;(rank-based, scale-free) for heterogeneous embedders.&quot;</span>
+                <span class="sa">f</span><span class="s2">"merge='score' compares raw scores across corpora, which "</span>
+                <span class="sa">f</span><span class="s2">"requires one shared embedder; got </span><span class="si">{</span><span class="n">emb_ids</span><span class="si">}</span><span class="s2">. Use merge='rrf' "</span>
+                <span class="sa">f</span><span class="s2">"(rank-based, scale-free) for heterogeneous embedders."</span>
             <span class="p">)</span>
         <span class="n">merged</span> <span class="o">=</span> <span class="n">best_per_artifact</span><span class="p">([</span><span class="n">h</span> <span class="k">for</span> <span class="n">hits</span> <span class="ow">in</span> <span class="n">surviving</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">merged</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;unknown merge </span><span class="si">{</span><span class="n">merge</span><span class="si">!r}</span><span class="s2">; expected &#39;rrf&#39;, &#39;score&#39;, or a callable.&quot;</span>
+        <span class="sa">f</span><span class="s2">"unknown merge </span><span class="si">{</span><span class="n">merge</span><span class="si">!r}</span><span class="s2">; expected 'rrf', 'score', or a callable."</span>
     <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_discover_federated</span><span class="p">(</span>
-    <span class="n">corpora_list</span><span class="p">:</span> <span class="s2">&quot;list[Any]&quot;</span><span class="p">,</span>
+    <span class="n">corpora_list</span><span class="p">:</span> <span class="s2">"list[Any]"</span><span class="p">,</span>
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -1326,50 +1327,50 @@
     <span class="n">expand</span><span class="p">:</span> <span class="n">NeighborhoodPolicy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscoveryResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Single-shot federated discover: fan-out → gate → fuse → select → disclose.</span>
+<span class="w">    </span><span class="sd">"""Single-shot federated discover: fan-out → gate → fuse → select → disclose.</span>
 
 <span class="sd">    The federation of one corpus equals the single-corpus call (the fuse is a</span>
-<span class="sd">    passthrough); the caller&#39;s list order is the deterministic priority order</span>
+<span class="sd">    passthrough); the caller's list order is the deterministic priority order</span>
 <span class="sd">    for rank ties. All names resolve to open corpora *before* any retrieval, so</span>
 <span class="sd">    registry drift mid-call cannot yield a partial fan-out.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_corpus</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">corpora_list</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;federated discover needs at least one corpus name (ir never &quot;</span>
-            <span class="s2">&quot;chooses the source set — pass it explicitly).&quot;</span>
+            <span class="s2">"federated discover needs at least one corpus name (ir never "</span>
+            <span class="s2">"chooses the source set — pass it explicitly)."</span>
         <span class="p">)</span>
-    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;abs_threshold&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">"abs_threshold"</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;strategy=&#39;abs_threshold&#39; does not apply to federated discover: &quot;</span>
-            <span class="s2">&quot;fused scores are rank-derived (ordinal), so an absolute floor &quot;</span>
-            <span class="s2">&quot;post-fusion is meaningless. Absolute floors are per-source and &quot;</span>
-            <span class="s2">&quot;pre-fusion — pass min_score=&#39;auto&#39; or a {name: floor} mapping, &quot;</span>
-            <span class="s2">&quot;and use a relative post-fusion strategy (&#39;conservative&#39;, &quot;</span>
-            <span class="s2">&quot;&#39;top_k&#39;, &#39;rel_threshold&#39;, &#39;score_gap&#39;).&quot;</span>
+            <span class="s2">"strategy='abs_threshold' does not apply to federated discover: "</span>
+            <span class="s2">"fused scores are rank-derived (ordinal), so an absolute floor "</span>
+            <span class="s2">"post-fusion is meaningless. Absolute floors are per-source and "</span>
+            <span class="s2">"pre-fusion — pass min_score='auto' or a {name: floor} mapping, "</span>
+            <span class="s2">"and use a relative post-fusion strategy ('conservative', "</span>
+            <span class="s2">"'top_k', 'rel_threshold', 'score_gap')."</span>
         <span class="p">)</span>
     <span class="n">resolved</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">corpora_list</span><span class="p">:</span>
-        <span class="c1"># Validate the name BEFORE resolving: open_corpus(&#39;&#39;) would create</span>
-        <span class="c1"># and load a shared &#39;unnamed&#39; store on the way to the error.</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="n">entry</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># Validate the name BEFORE resolving: open_corpus('') would create</span>
+        <span class="c1"># and load a shared 'unnamed' store on the way to the error.</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">entry</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;cannot name corpus </span><span class="si">{</span><span class="n">entry</span><span class="si">!r}</span><span class="s2"> for federation; pass registered &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;names, or Corpus objects with a non-empty .name.&quot;</span>
+                <span class="sa">f</span><span class="s2">"cannot name corpus </span><span class="si">{</span><span class="n">entry</span><span class="si">!r}</span><span class="s2"> for federation; pass registered "</span>
+                <span class="sa">f</span><span class="s2">"names, or Corpus objects with a non-empty .name."</span>
             <span class="p">)</span>
         <span class="n">c</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">entry</span>
         <span class="n">resolved</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">c</span><span class="p">))</span>
     <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">resolved</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;duplicate corpus names in federated discover: </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"duplicate corpus names in federated discover: </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">merge_weights</span><span class="p">:</span>
         <span class="n">unknown</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">merge_weights</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;merge_weights names corpora not in this discover call: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">; the call federates </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">names</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">"merge_weights names corpora not in this discover call: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">; the call federates </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">names</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
 
     <span class="n">floors</span> <span class="o">=</span> <span class="n">_resolve_federated_floors</span><span class="p">(</span><span class="n">resolved</span><span class="p">,</span> <span class="n">min_score</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
@@ -1397,10 +1398,10 @@
         <span class="n">gated</span> <span class="o">=</span> <span class="n">floor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">top</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">top</span> <span class="o">&lt;</span> <span class="n">floor</span><span class="p">)</span>
         <span class="n">any_gated</span> <span class="o">=</span> <span class="n">any_gated</span> <span class="ow">or</span> <span class="n">gated</span>
         <span class="n">per_source</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;n_retrieved&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">),</span>
-            <span class="s2">&quot;top_score&quot;</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span>
-            <span class="s2">&quot;floor&quot;</span><span class="p">:</span> <span class="n">floor</span><span class="p">,</span>
-            <span class="s2">&quot;abstained&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">gated</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">hits</span><span class="p">),</span>
+            <span class="s2">"n_retrieved"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">),</span>
+            <span class="s2">"top_score"</span><span class="p">:</span> <span class="n">top</span><span class="p">,</span>
+            <span class="s2">"floor"</span><span class="p">:</span> <span class="n">floor</span><span class="p">,</span>
+            <span class="s2">"abstained"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">gated</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">hits</span><span class="p">),</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="n">hits</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">gated</span><span class="p">:</span>
             <span class="n">surviving</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">hits</span>
@@ -1425,37 +1426,37 @@
     <span class="p">)</span>
     <span class="n">reason</span> <span class="o">=</span> <span class="n">selection</span><span class="o">.</span><span class="n">reason</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">fused</span> <span class="ow">and</span> <span class="n">any_gated</span><span class="p">:</span>
-        <span class="c1"># Claim &quot;all below floor&quot; only when every source actually had a floor;</span>
+        <span class="c1"># Claim "all below floor" only when every source actually had a floor;</span>
         <span class="c1"># a mix of floor-gated and merely-empty sources is reported honestly.</span>
-        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;floor&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">per_source</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
-            <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;abstain:all_sources_below_floor&quot;</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">"floor"</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">per_source</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="s2">"abstain:all_sources_below_floor"</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">reason</span> <span class="o">=</span> <span class="s2">&quot;abstain:no_surviving_sources&quot;</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="s2">"abstain:no_surviving_sources"</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">disclose</span><span class="p">(</span>
         <span class="n">selection</span><span class="p">,</span>
         <span class="n">level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span>
         <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
         <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span>
         <span class="n">expand</span><span class="o">=</span><span class="n">expand</span><span class="p">,</span>
-        <span class="c1"># Resolve each hit&#39;s corpus by its source attribution — the fused</span>
+        <span class="c1"># Resolve each hit's corpus by its source attribution — the fused</span>
         <span class="c1"># selection mixes sources, and sibling lookups must hit the right one.</span>
         <span class="n">corpus</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">resolved</span><span class="p">)</span> <span class="k">if</span> <span class="n">expand</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">merge_name</span> <span class="o">=</span> <span class="n">merge</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">merge</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span>
+    <span class="n">merge_name</span> <span class="o">=</span> <span class="n">merge</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">merge</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"custom"</span>
     <span class="n">signals</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
         <span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">selection</span><span class="o">.</span><span class="n">signals</span><span class="p">),</span>
-        <span class="s2">&quot;merge&quot;</span><span class="p">:</span> <span class="n">merge_name</span><span class="p">,</span>
-        <span class="s2">&quot;sources&quot;</span><span class="p">:</span> <span class="n">names</span><span class="p">,</span>
-        <span class="s2">&quot;per_source&quot;</span><span class="p">:</span> <span class="n">per_source</span><span class="p">,</span>
+        <span class="s2">"merge"</span><span class="p">:</span> <span class="n">merge_name</span><span class="p">,</span>
+        <span class="s2">"sources"</span><span class="p">:</span> <span class="n">names</span><span class="p">,</span>
+        <span class="s2">"per_source"</span><span class="p">:</span> <span class="n">per_source</span><span class="p">,</span>
     <span class="p">}</span>
-    <span class="k">if</span> <span class="n">merge_name</span> <span class="o">==</span> <span class="s2">&quot;rrf&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">merge_name</span> <span class="o">==</span> <span class="s2">"rrf"</span><span class="p">:</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">DFLT_RRF_K</span>
 
-        <span class="n">signals</span><span class="p">[</span><span class="s2">&quot;merge_rrf_k&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_RRF_K</span> <span class="k">if</span> <span class="n">merge_rrf_k</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">merge_rrf_k</span>
+        <span class="n">signals</span><span class="p">[</span><span class="s2">"merge_rrf_k"</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_RRF_K</span> <span class="k">if</span> <span class="n">merge_rrf_k</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">merge_rrf_k</span>
     <span class="k">return</span> <span class="n">DiscoveryResult</span><span class="p">(</span>
         <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
         <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
-        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;custom&quot;</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"custom"</span><span class="p">,</span>
         <span class="n">disclose_level</span><span class="o">=</span><span class="n">disclose_level</span><span class="p">,</span>
         <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
         <span class="n">abstained</span><span class="o">=</span><span class="n">selection</span><span class="o">.</span><span class="n">abstained</span><span class="p">,</span>

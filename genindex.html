@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; ir 0.1.28 documentation</title>
+  <title>Index &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=34399df3"></script>
+      <script src="_static/documentation_options.js?v=904119ea"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="module_docs/ir/store.html">ir.store</a></li>
@@ -143,14 +144,16 @@
       </ul></li>
       <li><a href="module_docs/ir/eval_gen.html#ir.eval_gen.AbstentionGenerator">AbstentionGenerator (in module ir.eval_gen)</a>
 </li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.ScheduleSpec.args">args (ir.schedule.ScheduleSpec attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.Artifact">Artifact (class in ir)</a>
 
       <ul>
         <li><a href="module_docs/ir/base.html#ir.base.Artifact">(class in ir.base)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.Disclosure.artifact_id">artifact_id (ir.Disclosure attribute)</a>
 
       <ul>
@@ -173,6 +176,8 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.BACKENDS">BACKENDS (in module ir.schedule)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.balanced_accuracy">balanced_accuracy (ir.eval.MinScoreCalibration attribute)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.ComparisonReport.baseline">baseline (ir.eval.ComparisonReport attribute)</a>
@@ -241,6 +246,8 @@
         <li><a href="module_docs/ir/sources.html#ir.sources.CorpusSource.change_signal">(ir.sources.CorpusSource method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.ScheduleStatus.changed">changed (ir.schedule.ScheduleStatus property)</a>
+</li>
       <li><a href="module_docs/ir/graph.html#ir.graph.CHILD">CHILD (in module ir.graph)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.Chunked">Chunked (class in ir)</a>
@@ -261,16 +268,18 @@
         <li><a href="module_docs/ir/traverse.html#ir.traverse.collapsed_tree_policy">(in module ir.traverse)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.ScheduleSpec.command">command (ir.schedule.ScheduleSpec property)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.compare_indexings">compare_indexings() (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.ComparisonReport">ComparisonReport (class in ir.eval)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionReport.conditional_commit_rate">conditional_commit_rate (ir.eval.SelectionReport attribute)</a>
 </li>
       <li><a href="module_docs/ir/config.html#ir.config.config_dir">config_dir() (in module ir.config)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/sources.html#ir.sources.content_hash_signal">content_hash_signal() (in module ir.sources)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.corpora">corpora() (in module ir)</a>
@@ -321,6 +330,16 @@
         <li><a href="module_docs/ir/coverage.html#ir.coverage.CoverageReport">(class in ir.coverage)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.cron_expression">cron_expression() (in module ir.schedule)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.cron_line">cron_line() (in module ir.schedule)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.cron_marker">cron_marker() (in module ir.schedule)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.crontab_with_line">crontab_with_line() (in module ir.schedule)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.crontab_without_line">crontab_without_line() (in module ir.schedule)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -381,6 +400,8 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_DISTRACTOR_SIZES">DFLT_DISTRACTOR_SIZES (in module ir.eval)</a>
 </li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.DFLT_EVERY_MINUTES">DFLT_EVERY_MINUTES (in module ir.schedule)</a>
+</li>
       <li><a href="module_docs/ir/sources.html#ir.sources.DFLT_EXCLUDE_DIRS">DFLT_EXCLUDE_DIRS (in module ir.sources)</a>
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.DFLT_FETCH_K">DFLT_FETCH_K (in module ir.select)</a>
@@ -388,6 +409,8 @@
       <li><a href="module_docs/ir/select.html#ir.select.DFLT_GAP_RATIO">DFLT_GAP_RATIO (in module ir.select)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DFLT_K_VALUES">DFLT_K_VALUES (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.DFLT_LABEL">DFLT_LABEL (in module ir.schedule)</a>
 </li>
       <li><a href="module_docs/ir/traverse.html#ir.traverse.DFLT_LEAF_KINDS">DFLT_LEAF_KINDS (in module ir.traverse)</a>
 </li>
@@ -416,6 +439,8 @@
       <li><a href="module_docs/ir/traverse.html#ir.traverse.DFLT_SEED_K">DFLT_SEED_K (in module ir.traverse)</a>
 </li>
       <li><a href="module_docs/ir/sources.html#ir.sources.DFLT_SESSIONS_SINCE_DAYS">DFLT_SESSIONS_SINCE_DAYS (in module ir.sources)</a>
+</li>
+      <li><a href="module_docs/ir/maintenance.html#ir.maintenance.DFLT_STALE_LOCK_AFTER">DFLT_STALE_LOCK_AFTER (in module ir.maintenance)</a>
 </li>
       <li><a href="module_docs/ir/traverse.html#ir.traverse.DFLT_SUMMARY_KINDS">DFLT_SUMMARY_KINDS (in module ir.traverse)</a>
 </li>
@@ -485,12 +510,16 @@
 </li>
       <li><a href="module_docs/ir/config.html#ir.config.embeddings_cache_dir">embeddings_cache_dir() (in module ir.config)</a>
 </li>
-      <li><a href="module_docs/ir/cli.html#ir.cli.eval">eval() (in module ir.cli)</a>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.ensure">ensure() (in module ir.schedule)</a>
 </li>
-      <li><a href="module_docs/ir/cli.html#ir.cli.eval_gen">eval_gen() (in module ir.cli)</a>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.ScheduleSpec.env_dict">env_dict (ir.schedule.ScheduleSpec property)</a>
+</li>
+      <li><a href="module_docs/ir/cli.html#ir.cli.eval">eval() (in module ir.cli)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/cli.html#ir.cli.eval_gen">eval_gen() (in module ir.cli)</a>
+</li>
       <li><a href="module_docs/ir/cli.html#ir.cli.eval_select">eval_select() (in module ir.cli)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.evaluate_discovery">evaluate_discovery() (in module ir.eval)</a>
@@ -517,6 +546,8 @@
 </li>
       <li><a href="module_docs/ir/base.html#ir.base.FilterFields">FilterFields (in module ir.base)</a>
 </li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.format_every">format_every() (in module ir.schedule)</a>
+</li>
       <li><a href="module_docs/ir/formulate.html#ir.formulate.FORMULATION_PROMPT">FORMULATION_PROMPT (in module ir.formulate)</a>
 </li>
       <li><a href="module_docs/ir/formulate.html#ir.formulate.Formulator">Formulator (in module ir.formulate)</a>
@@ -541,14 +572,14 @@
         <li><a href="module_docs/ir/eval.html#ir.eval.PackageRelevanceCase.from_dict">(ir.eval.PackageRelevanceCase class method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.CorpusSource.from_files">from_files() (ir.CorpusSource class method)</a>
 
       <ul>
         <li><a href="module_docs/ir/sources.html#ir.sources.CorpusSource.from_files">(ir.sources.CorpusSource class method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.CorpusSource.from_mapping">from_mapping() (ir.CorpusSource class method)</a>
 
       <ul>
@@ -695,6 +726,10 @@
       </ul></li>
       <li><a href="module_docs/ir/cli.html#ir.cli.info">info() (in module ir.cli)</a>
 </li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.INHERITED_ENV_VARS">INHERITED_ENV_VARS (in module ir.schedule)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.install">install() (in module ir.schedule)</a>
+</li>
       <li>
     ir
 
@@ -817,6 +852,13 @@
 </li>
       </ul></li>
       <li>
+    ir.schedule
+
+      <ul>
+        <li><a href="module_docs/ir/schedule.html#module-ir.schedule">module</a>
+</li>
+      </ul></li>
+      <li>
     ir.select
 
       <ul>
@@ -911,16 +953,18 @@
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.LEVEL_GAINS">LEVEL_GAINS (in module ir.eval)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.level_histogram">level_histogram() (in module ir.eval)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.CorpusStore.link_items">link_items() (ir.CorpusStore method)</a>
 
       <ul>
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.link_items">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.LOAD_BEARING_ENV_VARS">LOAD_BEARING_ENV_VARS (in module ir.schedule)</a>
+</li>
       <li><a href="module_docs/ir/eval.html#ir.eval.load_calibration">load_calibration() (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.load_cases">load_cases() (in module ir.eval)</a>
@@ -933,6 +977,8 @@
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.local">(ir.store.CorpusStore class method)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/maintenance.html#ir.maintenance.lock_path">lock_path() (in module ir.maintenance)</a>
+</li>
       <li><a href="module_docs/ir/cli.html#ir.cli.ls">ls() (in module ir.cli)</a>
 </li>
   </ul></td>
@@ -957,6 +1003,8 @@
         <li><a href="module_docs/ir/maintenance.html#ir.maintenance.maintain_corpus">(in module ir.maintenance)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/maintenance.html#ir.maintenance.MaintenanceBusy">MaintenanceBusy</a>
+</li>
       <li><a href="module_docs/ir.html#ir.MaintenancePolicy">MaintenancePolicy (class in ir)</a>
 
       <ul>
@@ -1089,6 +1137,8 @@
 </li>
         <li><a href="module_docs/ir/retrieve.html#module-ir.retrieve">ir.retrieve</a>
 </li>
+        <li><a href="module_docs/ir/schedule.html#module-ir.schedule">ir.schedule</a>
+</li>
         <li><a href="module_docs/ir/select.html#module-ir.select">ir.select</a>
 </li>
         <li><a href="module_docs/ir/sources.html#module-ir.sources">ir.sources</a>
@@ -1188,6 +1238,8 @@
         <li><a href="module_docs/ir/expand.html#ir.expand.parent_policy">(in module ir.expand)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.parse_every">parse_every() (in module ir.schedule)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.Passage">Passage (class in ir)</a>
 
       <ul>
@@ -1200,6 +1252,12 @@
         <li><a href="module_docs/ir/select.html#ir.select.Disclosure.passage">(ir.select.Disclosure attribute)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.plist_bytes">plist_bytes() (in module ir.schedule)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.plist_dict">plist_dict() (in module ir.schedule)</a>
+</li>
       <li><a href="module_docs/ir/base.html#ir.base.SearchHit.pointer">pointer (ir.base.SearchHit property)</a>
 
       <ul>
@@ -1210,8 +1268,6 @@
         <li><a href="module_docs/ir/select.html#ir.select.Disclosure.pointer">(ir.select.Disclosure attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/base.html#ir.base.POINTER_KEYS">POINTER_KEYS (in module ir.base)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionSweep.points">points (ir.eval.SelectionSweep attribute)</a>
@@ -1306,11 +1362,15 @@
         <li><a href="module_docs/ir/policy.html#ir.policy.ReindexPolicy">(class in ir.policy)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/select.html#ir.select.rel_threshold">rel_threshold() (in module ir.select)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir/eval.html#ir.eval.RELEVANCE_LEVELS">RELEVANCE_LEVELS (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.remove">remove() (in module ir.schedule)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.render">render() (in module ir.schedule)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint.report">report (ir.eval.SelectionGridPoint attribute)</a>
 </li>
@@ -1324,6 +1384,8 @@
         <li><a href="module_docs/ir/coverage.html#ir.coverage.reports_coverage">(in module ir.coverage)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.resolve_backend">resolve_backend() (in module ir.schedule)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.resolve_policy">resolve_policy() (in module ir)</a>
 
       <ul>
@@ -1333,6 +1395,8 @@
       <li><a href="module_docs/ir/policy.html#ir.policy.resolve_storage">resolve_storage() (in module ir.policy)</a>
 </li>
       <li><a href="module_docs/ir/select.html#ir.select.ResourceStore">ResourceStore (in module ir.select)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.restart">restart() (in module ir.schedule)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryReport.retrieval">retrieval (ir.eval.DiscoveryReport attribute)</a>
 </li>
@@ -1367,6 +1431,14 @@
       <li><a href="module_docs/ir/eval.html#ir.eval.save_cases">save_cases() (in module ir.eval)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.save_package_cases">save_package_cases() (in module ir.eval)</a>
+</li>
+      <li><a href="module_docs/ir/cli.html#ir.cli.schedule">schedule() (in module ir.cli)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.ScheduleError">ScheduleError</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.ScheduleSpec">ScheduleSpec (class in ir.schedule)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.ScheduleStatus">ScheduleStatus (class in ir.schedule)</a>
 </li>
       <li><a href="module_docs/ir.html#ir.Disclosure.score">score (ir.Disclosure attribute)</a>
 
@@ -1456,14 +1528,14 @@
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.set_calibration">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.CorpusStore.set_config">set_config() (ir.CorpusStore method)</a>
 
       <ul>
         <li><a href="module_docs/ir/store.html#ir.store.CorpusStore.set_config">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="module_docs/ir.html#ir.CorpusStore.set_ledger_entry">set_ledger_entry() (ir.CorpusStore method)</a>
 
       <ul>
@@ -1494,6 +1566,8 @@
         <li><a href="module_docs/ir.html#ir.Selection.signals">(ir.Selection attribute)</a>
 </li>
       </ul></li>
+      <li><a href="module_docs/ir/maintenance.html#ir.maintenance.single_run">single_run() (in module ir.maintenance)</a>
+</li>
       <li><a href="module_docs/ir.html#ir.Skill">Skill (class in ir)</a>
 
       <ul>
@@ -1517,6 +1591,8 @@
       <li><a href="module_docs/ir/eval.html#ir.eval.DiscoveryCase.source_id">source_id (ir.eval.DiscoveryCase attribute)</a>
 </li>
       <li><a href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration.specificity">specificity (ir.eval.MinScoreCalibration attribute)</a>
+</li>
+      <li><a href="module_docs/ir/schedule.html#ir.schedule.status">status() (in module ir.schedule)</a>
 </li>
       <li><a href="module_docs/ir/policy.html#ir.policy.STORAGE_BACKENDS">STORAGE_BACKENDS (in module ir.policy)</a>
 </li>
@@ -1612,6 +1688,8 @@
         <li><a href="module_docs/ir/expand.html#ir.expand.Passage.to_dict">(ir.expand.Passage method)</a>
 </li>
         <li><a href="module_docs/ir.html#ir.Passage.to_dict">(ir.Passage method)</a>
+</li>
+        <li><a href="module_docs/ir/schedule.html#ir.schedule.ScheduleStatus.to_dict">(ir.schedule.ScheduleStatus method)</a>
 </li>
         <li><a href="module_docs/ir.html#ir.SearchHit.to_dict">(ir.SearchHit method)</a>
 </li>

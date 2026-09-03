@@ -1,0 +1,1271 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.schedule &mdash; ir 0.1.29 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/coverage.html">ir.coverage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/expand.html">ir.expand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/formulate.html">ir.formulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/graph.html">ir.graph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/strategy.html">ir.strategy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/synopsis.html">ir.synopsis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/tools.html">ir.tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/traverse.html">ir.traverse</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../ir.html">ir</a></li>
+      <li class="breadcrumb-item active">ir.schedule</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ir.schedule</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Install and operate the OS job that runs ``ir maintain`` — ``ir schedule`` (issue #75).</span>
+
+<span class="sd">``ir maintain`` is idempotent and cron-shaped, but something has to *call* it.</span>
+<span class="sd">This module manages that caller: it writes a **definition** (a launchd plist or a</span>
+<span class="sd">crontab line), hands it to the OS, and exits.</span>
+
+<span class="sd">**``ir`` still does not run a scheduler.** The boundary from issue #58 — "ir holds</span>
+<span class="sd">the declarative policy as data and exposes an idempotent ``ir maintain``; it does</span>
+<span class="sd">not run a scheduler" — is preserved exactly. There is no daemon here, no event</span>
+<span class="sd">loop, no in-process timer, and no orchestration import: launchd/cron remain the</span>
+<span class="sd">executor, and this module is the *installer* for the crontab snippet</span>
+<span class="sd">:mod:`ir.maintenance` already prescribes in its docstring. Turning that snippet</span>
+<span class="sd">into a command is packaging, not a change of architecture.</span>
+
+<span class="sd">The command is idempotent and tells you how to operate what it finds::</span>
+
+<span class="sd">    ir schedule                # ensure a schedule exists; report + menu if one does</span>
+<span class="sd">    ir schedule --status       # report only, never mutates</span>
+<span class="sd">    ir schedule --every 30m    # set/change the interval</span>
+<span class="sd">    ir schedule --restart      # reload the definition, re-pinning the interpreter</span>
+<span class="sd">    ir schedule --remove       # stop it and delete the definition</span>
+<span class="sd">    ir schedule --dry-run      # print what would be written</span>
+
+<span class="sd">**An existing definition is data, not a template to re-derive.** Only a *fresh*</span>
+<span class="sd">install snapshots the calling shell's environment. Every operation on a schedule</span>
+<span class="sd">that already exists (``--every``, ``--restart``) carries the stored environment</span>
+<span class="sd">forward untouched, because the alternative silently re-points a working job at a</span>
+<span class="sd">different corpus store the first time you operate it from a shell that happens to</span>
+<span class="sd">lack ``$PP`` — which is the exact failure this module exists to prevent. Only</span>
+<span class="sd">``--restart`` re-pins the interpreter, and only because repairing a dead</span>
+<span class="sd">interpreter is what it is for.</span>
+
+<span class="sd">Two seams, both one keyword argument:</span>
+
+<span class="sd">- ``backend`` — which OS scheduler holds the definition. Feature-detected</span>
+<span class="sd">  (``launchctl`` then ``crontab``), never hardcoded per-platform; ``systemd</span>
+<span class="sd">  --user`` timers are the documented next backend. A backend owns its own</span>
+<span class="sd">  definition format, its own preview, and whether "loaded" means anything for it,</span>
+<span class="sd">  so adding one touches :data:`BACKENDS` and nothing else.</span>
+<span class="sd">- :attr:`ScheduleSpec.args` — the command the job runs, defaulting to</span>
+<span class="sd">  ``-m ir maintain --all`` pinned to the installing interpreter. An orchestration</span>
+<span class="sd">  layer's own entry point (#58 / ADR #43) drops in here without touching backends.</span>
+
+<span class="sd">Everything else — the plist keys, the crontab line syntax, interval parsing,</span>
+<span class="sd">output formatting — is written directly, on purpose.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">plistlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shlex</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">replace</span> <span class="k">as</span> <span class="n">dc_replace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Sequence</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_dir</span>
+
+<span class="c1">#: Reverse-DNS job identifier. Also the launchd ``Label`` and the token that marks</span>
+<span class="c1">#: ir's line in the user crontab, so both backends find their own work and never</span>
+<span class="c1">#: touch anybody else's.</span>
+<span class="n">DFLT_LABEL</span> <span class="o">=</span> <span class="s2">"com.i2mint.ir.maintain"</span>
+
+<span class="c1">#: How often the job fires, in minutes. Hourly rather than the docstring</span>
+<span class="c1">#: example's 15 minutes: a ``source-change`` rebuild is a near-no-op only *after*</span>
+<span class="c1">#: it has walked the sources, and a large corpus (tens of thousands of records)</span>
+<span class="c1">#: makes that walk worth an hour's spacing. ``--every`` moves it either way.</span>
+<span class="n">DFLT_EVERY_MINUTES</span> <span class="o">=</span> <span class="mi">60</span>
+
+<span class="c1">#: Variables a job must inherit to see what the shell that installed it sees.</span>
+<span class="c1">#: launchd starts jobs with a near-empty environment and cron with a minimal one,</span>
+<span class="c1">#: so anything ir reads from the environment has to be carried into the</span>
+<span class="c1">#: definition or the job maintains a *different* (or empty) set of corpora.</span>
+<span class="c1">#:</span>
+<span class="c1">#: ``IR_*``/``XDG_*`` locate the stores (:mod:`ir.config`); ``PP`` and</span>
+<span class="c1">#: ``PTH_FILEPATH`` are read by :mod:`ir.sources` itself to find the package</span>
+<span class="c1">#: manifest and the projects root, and without them the ``packages`` and</span>
+<span class="c1">#: ``reports`` corpora fail outright — which is precisely how a scheduled job</span>
+<span class="c1">#: ends up "running fine" while two of three corpora go stale.</span>
+<span class="n">INHERITED_ENV_VARS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"IR_CONFIG_DIR"</span><span class="p">,</span>
+    <span class="s2">"IR_DATA_DIR"</span><span class="p">,</span>
+    <span class="s2">"IR_CACHE_DIR"</span><span class="p">,</span>
+    <span class="s2">"XDG_CONFIG_HOME"</span><span class="p">,</span>
+    <span class="s2">"XDG_DATA_HOME"</span><span class="p">,</span>
+    <span class="s2">"XDG_CACHE_HOME"</span><span class="p">,</span>
+    <span class="s2">"PP"</span><span class="p">,</span>
+    <span class="s2">"PTH_FILEPATH"</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1">#: Of those, the ones whose absence breaks a corpus outright rather than merely</span>
+<span class="c1">#: relocating it. :func:`status` reports a job that lacks one the current shell</span>
+<span class="c1">#: has, because that job is failing silently right now.</span>
+<span class="n">LOAD_BEARING_ENV_VARS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"PP"</span><span class="p">,</span> <span class="s2">"PTH_FILEPATH"</span><span class="p">)</span>
+
+<span class="c1">#: Minute intervals that map to a clean cron expression (divisors of 60), and</span>
+<span class="c1">#: hour intervals that do (divisors of 24). launchd accepts any interval; cron's</span>
+<span class="c1">#: ``*/n`` restarts each hour, so a non-divisor would fire unevenly.</span>
+<span class="n">_CRON_MINUTE_STEPS</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span> <span class="k">if</span> <span class="mi">60</span> <span class="o">%</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">_CRON_HOUR_STEPS</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">24</span><span class="p">)</span> <span class="k">if</span> <span class="mi">24</span> <span class="o">%</span> <span class="n">h</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">_UNITS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"m"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"h"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span> <span class="s2">"d"</span><span class="p">:</span> <span class="mi">1440</span><span class="p">}</span>
+
+<span class="c1">#: Exit status for "the tool itself is not here" (the shell convention). A missing</span>
+<span class="c1">#: binary has to look like a failed command rather than an exception: naming a</span>
+<span class="c1">#: backend is not the same as being on a machine that has it, and asking about one</span>
+<span class="c1">#: that is absent must report rather than crash.</span>
+<span class="n">_NO_SUCH_TOOL</span> <span class="o">=</span> <span class="mi">127</span>
+
+<span class="c1">#: How much of the job's log to read when reporting its last line. The log is</span>
+<span class="c1">#: append-only and unbounded; reading it whole to get one line would grow into a</span>
+<span class="c1">#: real cost on a machine that has been maintaining hourly for a year.</span>
+<span class="n">_LOG_TAIL_BYTES</span> <span class="o">=</span> <span class="mi">8192</span>
+
+
+<div class="viewcode-block" id="ScheduleError">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.ScheduleError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ScheduleError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A schedule could not be read, written, or expressed on this platform."""</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Data model (pure; no I/O beyond resolving default paths)</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_job_env</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The environment a scheduled job needs, as sorted ``(name, value)`` pairs."""</span>
+    <span class="n">env</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"HOME"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">())}</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"PATH"</span><span class="p">,</span> <span class="o">*</span><span class="n">INHERITED_ENV_VARS</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+            <span class="n">env</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+
+
+<div class="viewcode-block" id="ScheduleSpec">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.ScheduleSpec">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ScheduleSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What to run and how often — backend-independent.</span>
+
+<span class="sd">    ``python`` is pinned to an absolute interpreter path (by default the one</span>
+<span class="sd">    installing the schedule) because neither launchd nor cron inherits the shell's</span>
+<span class="sd">    ``PATH``-resolved ``ir``. Pinning is also what makes staleness *detectable*:</span>
+<span class="sd">    :func:`status` can check the recorded interpreter still exists.</span>
+<span class="sd">    """</span>
+
+    <span class="n">every_minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_EVERY_MINUTES</span>
+    <span class="n">python</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">)</span>
+    <span class="c1">#: ``-u`` matters: Python block-buffers stdout when it is not a tty, so</span>
+    <span class="c1">#: without it a scheduled run's log stays empty until the process exits —</span>
+    <span class="c1">#: exactly when you most want to watch a slow rebuild.</span>
+    <span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"-u"</span><span class="p">,</span> <span class="s2">"-m"</span><span class="p">,</span> <span class="s2">"ir"</span><span class="p">,</span> <span class="s2">"maintain"</span><span class="p">,</span> <span class="s2">"--all"</span><span class="p">)</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_LABEL</span>
+    <span class="n">log_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">()</span> <span class="o">/</span> <span class="s2">"maintain.log"</span><span class="p">))</span>
+    <span class="n">env</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">_job_env</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">every_minutes</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span><span class="s2">"every_minutes must be at least 1"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="p">:</span>
+            <span class="c1"># A newline in an environment value would inject arbitrary crontab</span>
+            <span class="c1"># lines; cron additionally turns an unescaped % into a newline.</span>
+            <span class="k">if</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="ow">in</span> <span class="n">value</span> <span class="ow">or</span> <span class="s2">"</span><span class="se">\r</span><span class="s2">"</span> <span class="ow">in</span> <span class="n">value</span> <span class="ow">or</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"environment variable </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> contains a newline and cannot "</span>
+                    <span class="s2">"be written into a schedule definition"</span>
+                <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">command</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The argv the scheduler executes."""</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">python</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">env_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The job environment as a plain dict."""</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ScheduleStatus">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.ScheduleStatus">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ScheduleStatus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What the scheduler holds for ir, and what just happened to it.</span>
+
+<span class="sd">    One return type for every operation: ``action`` says what the call did, so a</span>
+<span class="sd">    caller never has to pair a status with a separate "did it change?" flag.</span>
+<span class="sd">    """</span>
+
+    <span class="n">installed</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_LABEL</span>
+    <span class="n">action</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"reported"</span>
+    <span class="n">every_minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">definition</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">command</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">python</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">env</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">log_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">loaded</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">last_run</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">last_log_line</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">problems</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">detail</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">changed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether this call actually mutated the schedule."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"installed"</span><span class="p">,</span> <span class="s2">"updated"</span><span class="p">,</span> <span class="s2">"removed"</span><span class="p">,</span> <span class="s2">"restarted"</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ScheduleStatus.to_dict">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.ScheduleStatus.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready view (the shape a non-CLI surface would consume)."""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"installed"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">installed</span><span class="p">,</span>
+            <span class="s2">"backend"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">backend</span><span class="p">,</span>
+            <span class="s2">"label"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">action</span><span class="p">,</span>
+            <span class="s2">"every_minutes"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">every_minutes</span><span class="p">,</span>
+            <span class="s2">"definition"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">definition</span><span class="p">,</span>
+            <span class="s2">"command"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">,</span>
+            <span class="s2">"python"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">python</span><span class="p">,</span>
+            <span class="s2">"env"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="p">),</span>
+            <span class="s2">"log_path"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_path</span><span class="p">,</span>
+            <span class="s2">"loaded"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">loaded</span><span class="p">,</span>
+            <span class="s2">"last_run"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_run</span><span class="p">,</span>
+            <span class="s2">"last_log_line"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_log_line</span><span class="p">,</span>
+            <span class="s2">"problems"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problems</span><span class="p">),</span>
+            <span class="s2">"detail"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">detail</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Interval parsing and rendering (pure)</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<div class="viewcode-block" id="parse_every">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.parse_every">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_every</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Minutes from ``"30m"`` / ``"2h"`` / ``"1d"`` / ``"45"`` (``None`` passes through).</span>
+
+<span class="sd">    &gt;&gt;&gt; parse_every("30m"), parse_every("2h"), parse_every("1d"), parse_every(45)</span>
+<span class="sd">    (30, 120, 1440, 45)</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">minutes</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span><span class="s2">"empty interval; try 15m, 1h, or 1d"</span><span class="p">)</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="n">_UNITS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">number</span><span class="p">,</span> <span class="n">factor</span> <span class="o">=</span> <span class="p">(</span><span class="n">text</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">unit</span><span class="p">)</span> <span class="k">if</span> <span class="n">unit</span> <span class="k">else</span> <span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">minutes</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">number</span><span class="p">)</span> <span class="o">*</span> <span class="n">factor</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"cannot read interval </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">; expected e.g. 15m, 2h, 1d, or a "</span>
+                <span class="s2">"plain number of minutes"</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">if</span> <span class="n">minutes</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"interval must be at least 1 minute, got </span><span class="si">{</span><span class="n">minutes</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">minutes</span></div>
+
+
+
+<div class="viewcode-block" id="cron_expression">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.cron_expression">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cron_expression</span><span class="p">(</span><span class="n">minutes</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The five-field cron time spec for an every-*minutes* schedule.</span>
+
+<span class="sd">    cron restarts its ``*/n`` count each hour (and each day), so only intervals</span>
+<span class="sd">    that divide evenly fire evenly. Rejecting the rest with the valid values named</span>
+<span class="sd">    beats installing a job that quietly skips.</span>
+
+<span class="sd">    &gt;&gt;&gt; cron_expression(15), cron_expression(60), cron_expression(360)</span>
+<span class="sd">    ('*/15 * * * *', '0 * * * *', '0 */6 * * *')</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">minutes</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span><span class="s2">"interval must be at least 1 minute"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">minutes</span> <span class="o">&lt;</span> <span class="mi">60</span><span class="p">:</span>
+        <span class="k">if</span> <span class="mi">60</span> <span class="o">%</span> <span class="n">minutes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"cron cannot fire evenly every </span><span class="si">{</span><span class="n">minutes</span><span class="si">}</span><span class="s2"> minutes; use one of "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s1">m'</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">_CRON_MINUTE_STEPS</span><span class="p">)</span><span class="si">}</span><span class="s2"> "</span>
+                <span class="s2">"(or the launchd backend, which accepts any interval)"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"*/</span><span class="si">{</span><span class="n">minutes</span><span class="si">}</span><span class="s2"> * * * *"</span>
+    <span class="k">if</span> <span class="n">minutes</span> <span class="o">==</span> <span class="mi">60</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"0 * * * *"</span>
+    <span class="k">if</span> <span class="n">minutes</span> <span class="o">==</span> <span class="mi">1440</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"0 0 * * *"</span>
+    <span class="k">if</span> <span class="n">minutes</span> <span class="o">%</span> <span class="mi">60</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="p">(</span><span class="n">hours</span> <span class="o">:=</span> <span class="n">minutes</span> <span class="o">//</span> <span class="mi">60</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">24</span><span class="p">:</span>
+        <span class="k">if</span> <span class="mi">24</span> <span class="o">%</span> <span class="n">hours</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"cron cannot fire evenly every </span><span class="si">{</span><span class="n">hours</span><span class="si">}</span><span class="s2"> hours; use one of "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">h</span><span class="si">}</span><span class="s1">h'</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">_CRON_HOUR_STEPS</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"0 */</span><span class="si">{</span><span class="n">hours</span><span class="si">}</span><span class="s2"> * * *"</span>
+    <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"cron cannot express an every-</span><span class="si">{</span><span class="n">minutes</span><span class="si">}</span><span class="s2">-minute schedule; use a divisor of "</span>
+        <span class="s2">"an hour (e.g. 15m), a divisor of a day (e.g. 6h), or 1d"</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="format_every">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.format_every">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_every</span><span class="p">(</span><span class="n">minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Human rendering of an interval (``90`` -&gt; ``'1h30m'``)."""</span>
+    <span class="k">if</span> <span class="n">minutes</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">minutes</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"unknown"</span>
+    <span class="n">hours</span><span class="p">,</span> <span class="n">mins</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">minutes</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">hours</span> <span class="ow">and</span> <span class="n">mins</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">hours</span><span class="si">}</span><span class="s2">h</span><span class="si">{</span><span class="n">mins</span><span class="si">}</span><span class="s2">m"</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">hours</span><span class="si">}</span><span class="s2">h"</span> <span class="k">if</span> <span class="n">hours</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">mins</span><span class="si">}</span><span class="s2">m"</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># launchd definition rendering (pure)</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<div class="viewcode-block" id="plist_dict">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.plist_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plist_dict</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ScheduleSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The launchd job description for *spec*, as a plist-ready dict.</span>
+
+<span class="sd">    ``StartInterval`` (seconds) and ``EnvironmentVariables`` are what make the</span>
+<span class="sd">    interval and the job environment readable back out of an installed job, so</span>
+<span class="sd">    :func:`status` needs no separate bookkeeping file.</span>
+
+<span class="sd">    ``ProcessType`` is deliberately ``Standard`` rather than ``Background``:</span>
+<span class="sd">    launchd throttles a ``Background`` job's CPU and I/O to keep it from</span>
+<span class="sd">    disrupting the user, and a corpus rebuild is exactly the file-walking,</span>
+<span class="sd">    embedding-heavy work that throttling would stretch past its own interval.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"Label"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+        <span class="s2">"ProgramArguments"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">command</span><span class="p">),</span>
+        <span class="s2">"StartInterval"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">every_minutes</span> <span class="o">*</span> <span class="mi">60</span><span class="p">,</span>
+        <span class="s2">"RunAtLoad"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">"EnvironmentVariables"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">env_dict</span><span class="p">,</span>
+        <span class="s2">"StandardOutPath"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">log_path</span><span class="p">,</span>
+        <span class="s2">"StandardErrorPath"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">log_path</span><span class="p">,</span>
+        <span class="s2">"ProcessType"</span><span class="p">:</span> <span class="s2">"Standard"</span><span class="p">,</span>
+        <span class="c1"># launchd starts jobs in "/"; a relative path in a source resolver would</span>
+        <span class="c1"># then behave differently under the agent than in the shell.</span>
+        <span class="s2">"WorkingDirectory"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">env_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"HOME"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">())),</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="plist_bytes">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.plist_bytes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plist_bytes</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ScheduleSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""*spec* rendered as launchd plist XML."""</span>
+    <span class="k">return</span> <span class="n">plistlib</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">plist_dict</span><span class="p">(</span><span class="n">spec</span><span class="p">))</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># cron definition rendering and parsing (pure)</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<div class="viewcode-block" id="cron_marker">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.cron_marker">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cron_marker</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The trailing comment that identifies ir's crontab line."""</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"# </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">"</span></div>
+
+
+
+<div class="viewcode-block" id="cron_line">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.cron_line">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cron_line</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">ScheduleSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""ir's crontab entry for *spec* — deliberately **one self-contained line**.</span>
+
+<span class="sd">    An earlier design used a begin/end marker block with the environment on its</span>
+<span class="sd">    own ``NAME=value`` crontab lines. Both halves of that were wrong:</span>
+
+<span class="sd">    - a block has an *interior*, and anything that lands in it (a job the user</span>
+<span class="sd">      typed just above the end marker, or everything after a begin marker whose</span>
+<span class="sd">      end marker got lost) is deleted the next time ir rewrites its block;</span>
+<span class="sd">    - crontab-scope ``NAME=value`` lines apply to **every command after them in</span>
+<span class="sd">      the file**, so ir's ``HOME`` and ``PATH`` would silently attach themselves</span>
+<span class="sd">      to whatever job the user appends next — and detach again the next time ir</span>
+<span class="sd">      moved its block. A cron job whose environment depends on when you last ran</span>
+<span class="sd">      ``ir schedule`` is close to undiagnosable.</span>
+
+<span class="sd">    One line with an inline ``env`` prefix has no interior to corrupt and no</span>
+<span class="sd">    scope beyond itself. ``%`` is escaped because cron reads an unescaped one as</span>
+<span class="sd">    a newline that terminates the command.</span>
+<span class="sd">    """</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">_ENV_TOOL</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">env</span><span class="p">),</span> <span class="o">*</span><span class="n">spec</span><span class="o">.</span><span class="n">command</span><span class="p">]</span>
+    <span class="n">command</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">part</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">)</span>
+    <span class="n">redirect</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"&gt;&gt; </span><span class="si">{</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">log_path</span><span class="p">)</span><span class="si">}</span><span class="s2"> 2&gt;&amp;1"</span>
+    <span class="n">line</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cron_expression</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">every_minutes</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">command</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">redirect</span><span class="si">}</span><span class="s2"> "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cron_marker</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">label</span><span class="p">)</span><span class="si">}</span><span class="s2"> every=</span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">every_minutes</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"%"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"\%"</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_our_line</span><span class="p">(</span><span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether *line* is the crontab entry ir manages."""</span>
+    <span class="k">return</span> <span class="n">cron_marker</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="ow">in</span> <span class="n">line</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"#"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="crontab_without_line">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.crontab_without_line">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">crontab_without_line</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_LABEL</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""*text* with ir's line removed (unchanged if there is none).</span>
+
+<span class="sd">    Only lines ir itself wrote are dropped, identified by the trailing marker.</span>
+<span class="sd">    Nothing else in the file is read, moved, or rewritten.</span>
+<span class="sd">    """</span>
+    <span class="n">kept</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">_split_lines</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_our_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">label</span><span class="p">)]</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">kept</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">body</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span> <span class="k">if</span> <span class="n">body</span> <span class="k">else</span> <span class="s2">""</span></div>
+
+
+
+<div class="viewcode-block" id="crontab_with_line">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.crontab_with_line">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">crontab_with_line</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ScheduleSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""*text* with ir's line replaced by (or appended as) *spec*'s line."""</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="n">crontab_without_line</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">label</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="n">cron_line</span><span class="p">(</span><span class="n">spec</span><span class="p">))</span> <span class="k">if</span> <span class="n">p</span><span class="p">]</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_split_lines</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Split crontab *text* on real line terminators only.</span>
+
+<span class="sd">    ``str.splitlines`` also breaks on ``\\x0b``, ``\\x0c``, ``\\x1c`` and</span>
+<span class="sd">    ``U+2028``, none of which end a line in a crontab — a command containing one</span>
+<span class="sd">    would be silently rewritten as two entries.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\r\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\r</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_find_our_line</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""ir's crontab line, or ``None``."""</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">_split_lines</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">_is_our_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">line</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_cron_line</span><span class="p">(</span><span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Read interval, command, interpreter, env and log path back out of *line*."""</span>
+    <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="sa">r</span><span class="s2">"\%"</span><span class="p">,</span> <span class="s2">"%"</span><span class="p">)</span>
+    <span class="n">head</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="n">cron_marker</span><span class="p">(</span><span class="n">label</span><span class="p">))</span>
+    <span class="n">every</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">"every=(\d+)"</span><span class="p">,</span> <span class="n">tail</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+        <span class="n">every</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="ow">or</span> <span class="kc">None</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="n">head</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="n">command</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">env</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">python</span> <span class="o">=</span> <span class="n">log_path</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">command</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="c1"># An unbalanced quote (a hand-added trailing comment with an</span>
+            <span class="c1"># apostrophe, say) must degrade to "cannot read the details", never</span>
+            <span class="c1"># take the status report down with it.</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">seen_env_tool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">seen_env_tool</span><span class="p">:</span>
+                <span class="c1"># Tolerant of a hand-edited path to env (and of a .exe suffix, so</span>
+                <span class="c1"># a definition written elsewhere still reads back here).</span>
+                <span class="n">seen_env_tool</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">token</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"env"</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="s2">"="</span> <span class="ow">in</span> <span class="n">token</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">token</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"/"</span><span class="p">):</span>
+                <span class="n">name</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"="</span><span class="p">)</span>
+                <span class="n">env</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                <span class="k">continue</span>
+            <span class="n">python</span> <span class="o">=</span> <span class="n">token</span>
+            <span class="k">break</span>
+        <span class="k">if</span> <span class="s2">"&gt;&gt;"</span> <span class="ow">in</span> <span class="n">command</span><span class="p">:</span>
+            <span class="n">redirect</span> <span class="o">=</span> <span class="n">command</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"&gt;&gt;"</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"2&gt;&amp;1"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">log_path</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">redirect</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">redirect</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">log_path</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"every_minutes"</span><span class="p">:</span> <span class="n">every</span><span class="p">,</span>
+        <span class="s2">"command"</span><span class="p">:</span> <span class="n">command</span><span class="p">,</span>
+        <span class="s2">"python"</span><span class="p">:</span> <span class="n">python</span><span class="p">,</span>
+        <span class="s2">"env"</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">items</span><span class="p">())),</span>
+        <span class="s2">"log_path"</span><span class="p">:</span> <span class="n">log_path</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Log inspection and staleness checks (shared by both backends)</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_log_facts</span><span class="p">(</span><span class="n">log_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""``(last_run, last_log_line)`` from the tail of the job's log."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">log_path</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">log_path</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">stat</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">when</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="n">timespec</span><span class="o">=</span><span class="s2">"seconds"</span><span class="p">)</span>
+    <span class="n">last_line</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span> <span class="o">&gt;</span> <span class="n">_LOG_TAIL_BYTES</span><span class="p">:</span>
+                <span class="n">stream</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="o">-</span><span class="n">_LOG_TAIL_BYTES</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">SEEK_END</span><span class="p">)</span>
+            <span class="n">tail</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"replace"</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">tail</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">last_line</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">200</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">when</span><span class="p">,</span> <span class="n">last_line</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_interpreter_problems</span><span class="p">(</span><span class="n">python</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Staleness checks on the interpreter a job is pinned to.</span>
+
+<span class="sd">    A pinned interpreter that has been rebuilt or removed (a pyenv version bump,</span>
+<span class="sd">    a recreated venv) leaves a job that keeps firing and doing nothing, so this is</span>
+<span class="sd">    the check that turns a silent failure into a visible one.</span>
+
+<span class="sd">    The comparison is deliberately on the *unresolved* paths. Two virtualenvs</span>
+<span class="sd">    have different ``site-packages`` — and so possibly different installed</span>
+<span class="sd">    versions of ``ir`` — while ``Path.resolve()`` collapses both onto the same</span>
+<span class="sd">    base interpreter and reports no difference at all.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">python</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">python</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"the interpreter this job runs (</span><span class="si">{</span><span class="n">python</span><span class="si">}</span><span class="s2">) no longer exists — the job "</span>
+            <span class="s2">"fires and fails silently; fix with: ir schedule --restart"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">Path</span><span class="p">(</span><span class="n">python</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Path</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"this job runs </span><span class="si">{</span><span class="n">python</span><span class="si">}</span><span class="s2">, but you are running ir from "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="si">}</span><span class="s2"> — the job may be using a different installed "</span>
+            <span class="s2">"version of ir; re-pin with: ir schedule --restart"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_env_problems</span><span class="p">(</span><span class="n">env</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Flag a job whose environment is missing something this shell has.</span>
+
+<span class="sd">    A job installed from a shell without ``$PP`` fails on the ``packages`` and</span>
+<span class="sd">    ``reports`` corpora every time it fires, while exiting 0 and looking healthy.</span>
+<span class="sd">    """</span>
+    <span class="n">stored</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">name</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">LOAD_BEARING_ENV_VARS</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">stored</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">()</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"the job's environment has no </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">, which ir reads to "</span>
+        <span class="s2">"find your corpora — it will fail on the packages and reports corpora "</span>
+        <span class="s2">"while still exiting 0. Re-create it from this shell with: "</span>
+        <span class="s2">"ir schedule --remove &amp;&amp; ir schedule"</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Backends</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
+    <span class="n">argv</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">stdin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CompletedProcess</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Run *argv* capturing text output; never raises, not even if it is missing."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">argv</span><span class="p">),</span>
+            <span class="nb">input</span><span class="o">=</span><span class="n">stdin</span><span class="p">,</span>
+            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="ne">NotADirectoryError</span><span class="p">,</span> <span class="ne">PermissionError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CompletedProcess</span><span class="p">(</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">argv</span><span class="p">),</span> <span class="n">_NO_SUCH_TOOL</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="sa">b</span><span class="s2">""</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_text</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Decode captured process output, never raising on odd bytes.</span>
+
+<span class="sd">    A crontab with one latin-1 byte in a comment must not take ``ir schedule</span>
+<span class="sd">    --status`` down with a ``UnicodeDecodeError``.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">raw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">""</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">raw</span>
+    <span class="k">return</span> <span class="n">raw</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"replace"</span><span class="p">)</span>
+
+
+<span class="c1">#: The ``env`` binary used to carry a job's environment inline on a cron line.</span>
+<span class="c1">#: Hardcoded rather than looked up: cron is POSIX-only, ``/usr/bin/env`` is where</span>
+<span class="c1">#: it lives on every POSIX system, and cron runs jobs with a minimal ``PATH`` of</span>
+<span class="c1">#: its own anyway. A ``shutil.which`` here would make the definition depend on the</span>
+<span class="c1">#: machine that wrote it — and on Windows it finds Git-Bash's ``env.EXE``, which</span>
+<span class="c1">#: is not a thing any crontab should ever contain.</span>
+<span class="n">_ENV_TOOL</span> <span class="o">=</span> <span class="s2">"/usr/bin/env"</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_LaunchdBackend</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""macOS launchd — a per-user LaunchAgent plist under ``~/Library/LaunchAgents``."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"launchd"</span>
+    <span class="c1">#: launchd genuinely loads/unloads a job, so "loaded" is a fact worth showing.</span>
+    <span class="n">reports_loaded</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">"launchctl"</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span> <span class="s2">"getuid"</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_domain</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"gui/</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getuid</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">plist_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">"Library"</span> <span class="o">/</span> <span class="s2">"LaunchAgents"</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">.plist"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">preview</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ScheduleSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">plist_path</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">label</span><span class="p">)</span><span class="si">}</span><span class="s2">:</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">plist_bytes</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleStatus</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plist_path</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">ScheduleStatus</span><span class="p">(</span>
+                <span class="n">installed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+                <span class="n">definition</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+                <span class="n">detail</span><span class="o">=</span><span class="s2">"no LaunchAgent plist for ir"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">plistlib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># a hand-edited or truncated plist</span>
+            <span class="k">return</span> <span class="n">ScheduleStatus</span><span class="p">(</span>
+                <span class="n">installed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+                <span class="n">definition</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+                <span class="n">problems</span><span class="o">=</span><span class="p">(</span><span class="sa">f</span><span class="s2">"cannot read </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">,),</span>
+                <span class="n">detail</span><span class="o">=</span><span class="s2">"the plist exists but could not be parsed"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">argv</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">part</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ProgramArguments"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])]</span>
+        <span class="n">interval</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"StartInterval"</span><span class="p">)</span>
+        <span class="n">log_path</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"StandardOutPath"</span><span class="p">)</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">((</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"EnvironmentVariables"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+        <span class="n">last_run</span><span class="p">,</span> <span class="n">last_line</span> <span class="o">=</span> <span class="n">_log_facts</span><span class="p">(</span><span class="n">log_path</span><span class="p">)</span>
+        <span class="n">loaded</span><span class="p">,</span> <span class="n">last_exit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_launchctl_facts</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">problems</span> <span class="o">=</span> <span class="n">_interpreter_problems</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">argv</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span> <span class="o">+</span> <span class="n">_env_problems</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">last_exit</span><span class="p">:</span>
+            <span class="n">problems</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the last run exited </span><span class="si">{</span><span class="n">last_exit</span><span class="si">}</span><span class="s2"> — the job is firing but failing; "</span>
+                <span class="sa">f</span><span class="s2">"read </span><span class="si">{</span><span class="n">log_path</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'the log'</span><span class="si">}</span><span class="s2"> for the reason"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">loaded</span><span class="p">:</span>
+            <span class="n">problems</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="s2">"the plist exists but launchd has not loaded it — nothing is "</span>
+                <span class="s2">"running; fix with: ir schedule --restart"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">ScheduleStatus</span><span class="p">(</span>
+            <span class="n">installed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+            <span class="n">every_minutes</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">interval</span> <span class="o">//</span> <span class="mi">60</span><span class="p">)</span> <span class="k">if</span> <span class="n">interval</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">definition</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+            <span class="n">command</span><span class="o">=</span><span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">part</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">argv</span><span class="p">),</span>
+            <span class="n">python</span><span class="o">=</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">argv</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span>
+            <span class="n">log_path</span><span class="o">=</span><span class="n">log_path</span><span class="p">,</span>
+            <span class="n">loaded</span><span class="o">=</span><span class="n">loaded</span><span class="p">,</span>
+            <span class="n">last_run</span><span class="o">=</span><span class="n">last_run</span><span class="p">,</span>
+            <span class="n">last_log_line</span><span class="o">=</span><span class="n">last_line</span><span class="p">,</span>
+            <span class="n">problems</span><span class="o">=</span><span class="n">problems</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_launchctl_facts</span><span class="p">(</span><span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""``(loaded, last_exit_status)`` from ``launchctl list``.</span>
+
+<span class="sd">        The exit status is the cheapest health signal there is: a job that fires</span>
+<span class="sd">        on time and fails every time looks identical to a healthy one until you</span>
+<span class="sd">        read it.</span>
+<span class="sd">        """</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="n">_run</span><span class="p">([</span><span class="s2">"launchctl"</span><span class="p">,</span> <span class="s2">"list"</span><span class="p">,</span> <span class="n">label</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">done</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">'"LastExitStatus"\s*=\s*(-?\d+)'</span><span class="p">,</span> <span class="n">_text</span><span class="p">(</span><span class="n">done</span><span class="o">.</span><span class="n">stdout</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="k">if</span> <span class="n">match</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">install</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ScheduleSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plist_path</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">path</span><span class="o">.</span><span class="n">write_bytes</span><span class="p">(</span><span class="n">plist_bytes</span><span class="p">(</span><span class="n">spec</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_reload</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ScheduleError</span><span class="p">:</span>
+            <span class="c1"># Never leave a plist on disk that launchd refused: --status would</span>
+            <span class="c1"># then report a schedule that is installed and does nothing.</span>
+            <span class="n">path</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plist_path</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">_run</span><span class="p">([</span><span class="s2">"launchctl"</span><span class="p">,</span> <span class="s2">"bootout"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">"</span><span class="p">])</span>
+        <span class="n">path</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Boot the job out (if loaded) and back in, so edits take effect."""</span>
+        <span class="n">_run</span><span class="p">([</span><span class="s2">"launchctl"</span><span class="p">,</span> <span class="s2">"bootout"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">"</span><span class="p">])</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="n">_run</span><span class="p">([</span><span class="s2">"launchctl"</span><span class="p">,</span> <span class="s2">"bootstrap"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)])</span>
+        <span class="k">if</span> <span class="n">done</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Pre-bootstrap launchctl (and some managed Macs) still take load -w.</span>
+            <span class="n">legacy</span> <span class="o">=</span> <span class="n">_run</span><span class="p">([</span><span class="s2">"launchctl"</span><span class="p">,</span> <span class="s2">"load"</span><span class="p">,</span> <span class="s2">"-w"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)])</span>
+            <span class="k">if</span> <span class="n">legacy</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="p">(</span><span class="n">_text</span><span class="p">(</span><span class="n">done</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_text</span><span class="p">(</span><span class="n">done</span><span class="o">.</span><span class="n">stdout</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"launchctl could not load </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">message</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'unknown error'</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_CronBackend</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""POSIX cron — one marked, self-contained line in the invoking user's crontab."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"cron"</span>
+    <span class="c1">#: cron re-reads the crontab itself; there is no load step to report on.</span>
+    <span class="n">reports_loaded</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">"crontab"</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">preview</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ScheduleSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"appended to the user crontab:</span><span class="se">\n</span><span class="si">{</span><span class="n">cron_line</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="n">_run</span><span class="p">([</span><span class="s2">"crontab"</span><span class="p">,</span> <span class="s2">"-l"</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">done</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="n">_NO_SUCH_TOOL</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span>
+                <span class="s2">"the cron backend needs a `crontab` command and this machine has "</span>
+                <span class="s2">"none; run `ir schedule` without --backend to use whatever this "</span>
+                <span class="s2">"platform does provide"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">done</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># "no crontab for &lt;user&gt;" is a normal empty state, not a failure.</span>
+            <span class="n">stderr</span> <span class="o">=</span> <span class="n">_text</span><span class="p">(</span><span class="n">done</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">"no crontab"</span> <span class="ow">in</span> <span class="n">stderr</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="k">return</span> <span class="s2">""</span>
+            <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"could not read the crontab: </span><span class="si">{</span><span class="n">stderr</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_text</span><span class="p">(</span><span class="n">done</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="n">_run</span><span class="p">([</span><span class="s2">"crontab"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">],</span> <span class="n">stdin</span><span class="o">=</span><span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">done</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"could not write the crontab: </span><span class="si">{</span><span class="n">_text</span><span class="p">(</span><span class="n">done</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleStatus</span><span class="p">:</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">_find_our_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">label</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">line</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ScheduleStatus</span><span class="p">(</span>
+                <span class="n">installed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+                <span class="n">definition</span><span class="o">=</span><span class="s2">"the user crontab"</span><span class="p">,</span>
+                <span class="n">detail</span><span class="o">=</span><span class="s2">"no ir line in the crontab"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="n">_parse_cron_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+        <span class="n">last_run</span><span class="p">,</span> <span class="n">last_line</span> <span class="o">=</span> <span class="n">_log_facts</span><span class="p">(</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"log_path"</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">ScheduleStatus</span><span class="p">(</span>
+            <span class="n">installed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+            <span class="n">every_minutes</span><span class="o">=</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"every_minutes"</span><span class="p">],</span>
+            <span class="n">definition</span><span class="o">=</span><span class="s2">"the user crontab"</span><span class="p">,</span>
+            <span class="n">command</span><span class="o">=</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"command"</span><span class="p">],</span>
+            <span class="n">python</span><span class="o">=</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"python"</span><span class="p">],</span>
+            <span class="n">env</span><span class="o">=</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"env"</span><span class="p">],</span>
+            <span class="n">log_path</span><span class="o">=</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"log_path"</span><span class="p">],</span>
+            <span class="n">last_run</span><span class="o">=</span><span class="n">last_run</span><span class="p">,</span>
+            <span class="n">last_log_line</span><span class="o">=</span><span class="n">last_line</span><span class="p">,</span>
+            <span class="n">problems</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">_interpreter_problems</span><span class="p">(</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"python"</span><span class="p">])</span> <span class="o">+</span> <span class="n">_env_problems</span><span class="p">(</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"env"</span><span class="p">])</span>
+            <span class="p">),</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">"cron re-reads the crontab itself; there is nothing to load"</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">install</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ScheduleSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">crontab_with_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">spec</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">crontab_without_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">label</span><span class="p">))</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_UnsupportedBackend</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Neither launchd nor cron is present (Windows, or a stripped container)."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"unsupported"</span>
+    <span class="n">reports_loaded</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="n">_HOW</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"ir schedule needs a supported OS scheduler and this machine provides "</span>
+        <span class="s2">"none. On Windows, schedule it with Task Scheduler, e.g.</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s1">'    schtasks /create /tn "ir maintain" /sc hourly '</span>
+        <span class="s1">'/tr "</span><span class="se">\\</span><span class="s1">"&lt;python&gt;</span><span class="se">\\</span><span class="s1">" -u -m ir maintain --all"'</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">preview</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ScheduleSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_HOW</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleStatus</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ScheduleStatus</span><span class="p">(</span>
+            <span class="n">installed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_HOW</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">install</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ScheduleSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_HOW</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_HOW</span><span class="p">)</span>
+
+
+<span class="c1">#: Backends in preference order. launchd first on macOS because a LaunchAgent</span>
+<span class="c1">#: survives reboots and logs where the OS expects; cron is the POSIX fallback and</span>
+<span class="c1">#: also works on macOS if asked for by name.</span>
+<span class="c1">#:</span>
+<span class="c1">#: This tuple is the whole seam. A backend owns its definition format, its</span>
+<span class="c1">#: ``preview``, and its ``reports_loaded`` answer, so adding ``systemd --user``</span>
+<span class="c1">#: means adding a class here and nothing else — no branch in the renderer, the</span>
+<span class="c1">#: previewer, or the CLI.</span>
+<span class="n">BACKENDS</span> <span class="o">=</span> <span class="p">(</span><span class="n">_LaunchdBackend</span><span class="p">,</span> <span class="n">_CronBackend</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="resolve_backend">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.resolve_backend">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">require_available</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The backend named *backend*, or the first available one.</span>
+
+<span class="sd">    Naming one this machine cannot run is an error rather than a half-install:</span>
+<span class="sd">    ``--backend launchd`` on Linux would otherwise write a plist into a directory</span>
+<span class="sd">    nothing reads. Pass ``require_available=False`` to obtain a backend purely to</span>
+<span class="sd">    render its definition format.</span>
+
+<span class="sd">    &gt;&gt;&gt; resolve_backend("cron", require_available=False).name</span>
+<span class="sd">    'cron'</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">backend</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">BACKENDS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">candidate</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">backend</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">require_available</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">candidate</span><span class="o">.</span><span class="n">available</span><span class="p">():</span>
+                    <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">backend</span><span class="si">}</span><span class="s2"> backend is not available on this machine; "</span>
+                        <span class="s2">"run `ir schedule` without --backend to use whatever this "</span>
+                        <span class="s2">"platform does provide"</span>
+                    <span class="p">)</span>
+                <span class="k">return</span> <span class="n">candidate</span><span class="p">()</span>
+        <span class="n">known</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">BACKENDS</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown backend </span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">known</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">BACKENDS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">candidate</span><span class="o">.</span><span class="n">available</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">candidate</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_UnsupportedBackend</span><span class="p">()</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Operations (the public API; one return type for all of them)</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<div class="viewcode-block" id="status">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.status">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">status</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_LABEL</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleStatus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Report the current schedule without changing anything."""</span>
+    <span class="k">return</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">label</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_spec_for</span><span class="p">(</span>
+    <span class="n">current</span><span class="p">:</span> <span class="n">ScheduleStatus</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">python</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">inherit</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Build the spec to write.</span>
+
+<span class="sd">    When *inherit* is set and a schedule already exists, its stored environment</span>
+<span class="sd">    and interpreter are carried forward rather than re-derived from this process.</span>
+<span class="sd">    Re-deriving is how a job installed from a full shell silently loses ``$PP``</span>
+<span class="sd">    the first time it is operated from one without it.</span>
+<span class="sd">    """</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">}</span>
+    <span class="n">fields</span><span class="p">[</span><span class="s2">"every_minutes"</span><span class="p">]</span> <span class="o">=</span> <span class="n">minutes</span> <span class="ow">or</span> <span class="n">current</span><span class="o">.</span><span class="n">every_minutes</span> <span class="ow">or</span> <span class="n">DFLT_EVERY_MINUTES</span>
+    <span class="k">if</span> <span class="n">python</span><span class="p">:</span>
+        <span class="n">fields</span><span class="p">[</span><span class="s2">"python"</span><span class="p">]</span> <span class="o">=</span> <span class="n">python</span>
+    <span class="k">elif</span> <span class="n">inherit</span> <span class="ow">and</span> <span class="n">current</span><span class="o">.</span><span class="n">installed</span> <span class="ow">and</span> <span class="n">current</span><span class="o">.</span><span class="n">python</span><span class="p">:</span>
+        <span class="n">fields</span><span class="p">[</span><span class="s2">"python"</span><span class="p">]</span> <span class="o">=</span> <span class="n">current</span><span class="o">.</span><span class="n">python</span>
+    <span class="k">if</span> <span class="n">inherit</span> <span class="ow">and</span> <span class="n">current</span><span class="o">.</span><span class="n">installed</span> <span class="ow">and</span> <span class="n">current</span><span class="o">.</span><span class="n">env</span><span class="p">:</span>
+        <span class="n">fields</span><span class="p">[</span><span class="s2">"env"</span><span class="p">]</span> <span class="o">=</span> <span class="n">current</span><span class="o">.</span><span class="n">env</span>
+    <span class="k">if</span> <span class="n">inherit</span> <span class="ow">and</span> <span class="n">current</span><span class="o">.</span><span class="n">installed</span> <span class="ow">and</span> <span class="n">current</span><span class="o">.</span><span class="n">log_path</span><span class="p">:</span>
+        <span class="n">fields</span><span class="p">[</span><span class="s2">"log_path"</span><span class="p">]</span> <span class="o">=</span> <span class="n">current</span><span class="o">.</span><span class="n">log_path</span>
+    <span class="k">return</span> <span class="n">ScheduleSpec</span><span class="p">(</span><span class="o">**</span><span class="n">fields</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="install">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.install">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">install</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">every</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_LABEL</span><span class="p">,</span>
+    <span class="n">python</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">inherit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleStatus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Install (or overwrite) the schedule, and return the resulting status.</span>
+
+<span class="sd">    *inherit* carries an existing definition's environment, interpreter and log</span>
+<span class="sd">    path forward; pass ``False`` to re-snapshot them from this process.</span>
+<span class="sd">    """</span>
+    <span class="n">impl</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">require_available</span><span class="o">=</span><span class="ow">not</span> <span class="n">dry_run</span><span class="p">)</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">impl</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">dry_run</span> <span class="k">else</span> <span class="n">_safe_status</span><span class="p">(</span><span class="n">impl</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">_spec_for</span><span class="p">(</span>
+        <span class="n">current</span><span class="p">,</span>
+        <span class="n">minutes</span><span class="o">=</span><span class="n">parse_every</span><span class="p">(</span><span class="n">every</span><span class="p">),</span>
+        <span class="n">python</span><span class="o">=</span><span class="n">python</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+        <span class="n">inherit</span><span class="o">=</span><span class="n">inherit</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ScheduleStatus</span><span class="p">(</span>
+            <span class="n">installed</span><span class="o">=</span><span class="n">current</span><span class="o">.</span><span class="n">installed</span><span class="p">,</span>
+            <span class="n">backend</span><span class="o">=</span><span class="n">impl</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s2">"would-install"</span><span class="p">,</span>
+            <span class="n">every_minutes</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">every_minutes</span><span class="p">,</span>
+            <span class="n">definition</span><span class="o">=</span><span class="n">current</span><span class="o">.</span><span class="n">definition</span><span class="p">,</span>
+            <span class="n">command</span><span class="o">=</span><span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">part</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">command</span><span class="p">),</span>
+            <span class="n">python</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">python</span><span class="p">,</span>
+            <span class="n">env</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">env</span><span class="p">,</span>
+            <span class="n">log_path</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">log_path</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="n">impl</span><span class="o">.</span><span class="n">preview</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="n">impl</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="s2">"updated"</span> <span class="k">if</span> <span class="n">current</span><span class="o">.</span><span class="n">installed</span> <span class="k">else</span> <span class="s2">"installed"</span>
+    <span class="k">return</span> <span class="n">_replace_action</span><span class="p">(</span><span class="n">impl</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">label</span><span class="p">),</span> <span class="n">action</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_safe_status</span><span class="p">(</span><span class="n">impl</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleStatus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""*impl*'s status, or an empty one — used where a report must not fail."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">impl</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">ScheduleError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ScheduleStatus</span><span class="p">(</span><span class="n">installed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">impl</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="remove">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.remove">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_LABEL</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleStatus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Stop the schedule and delete its definition."""</span>
+    <span class="n">impl</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">impl</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">current</span><span class="o">.</span><span class="n">installed</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_replace_action</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="s2">"unchanged"</span><span class="p">)</span>
+    <span class="n">impl</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_replace_action</span><span class="p">(</span><span class="n">impl</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">label</span><span class="p">),</span> <span class="s2">"removed"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="restart">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.restart">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">restart</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_LABEL</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleStatus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Reload the existing definition, re-pinning it to the current interpreter.</span>
+
+<span class="sd">    This is the repair for a schedule left pointing at a rebuilt or deleted</span>
+<span class="sd">    interpreter. The stored environment is carried forward untouched — restarting</span>
+<span class="sd">    from a shell that lacks ``$PP`` must not quietly re-point a working job at a</span>
+<span class="sd">    different (or empty) set of corpora.</span>
+<span class="sd">    """</span>
+    <span class="n">impl</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">impl</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">current</span><span class="o">.</span><span class="n">installed</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ScheduleError</span><span class="p">(</span>
+            <span class="s2">"nothing to restart — no schedule is installed. Create one with: ir schedule"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_replace_action</span><span class="p">(</span>
+        <span class="n">install</span><span class="p">(</span>
+            <span class="n">every</span><span class="o">=</span><span class="n">current</span><span class="o">.</span><span class="n">every_minutes</span><span class="p">,</span>
+            <span class="n">backend</span><span class="o">=</span><span class="n">impl</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+            <span class="n">python</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="s2">"restarted"</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ensure">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.ensure">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ensure</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">every</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_LABEL</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleStatus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Make sure a schedule exists — the idempotent front door.</span>
+
+<span class="sd">    Installs when there is none. When one already exists it changes nothing</span>
+<span class="sd">    unless *every* differs, so running it twice is safe and running it out of</span>
+<span class="sd">    habit never silently reinstalls over a schedule you tuned.</span>
+<span class="sd">    """</span>
+    <span class="n">impl</span> <span class="o">=</span> <span class="n">resolve_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">impl</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+    <span class="n">minutes</span> <span class="o">=</span> <span class="n">parse_every</span><span class="p">(</span><span class="n">every</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">current</span><span class="o">.</span><span class="n">installed</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">install</span><span class="p">(</span><span class="n">every</span><span class="o">=</span><span class="n">minutes</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">impl</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">minutes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">minutes</span> <span class="o">!=</span> <span class="n">current</span><span class="o">.</span><span class="n">every_minutes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">install</span><span class="p">(</span><span class="n">every</span><span class="o">=</span><span class="n">minutes</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">impl</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_replace_action</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="s2">"unchanged"</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_replace_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">ScheduleStatus</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScheduleStatus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""*state* with its ``action`` set."""</span>
+    <span class="k">return</span> <span class="n">dc_replace</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">)</span>
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Human rendering (the CLI's formatter; kept here so the report has one home)</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+<span class="n">_ACTION_HEADLINES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"installed"</span><span class="p">:</span> <span class="s2">"Installed the ir maintenance schedule."</span><span class="p">,</span>
+    <span class="s2">"updated"</span><span class="p">:</span> <span class="s2">"Updated the ir maintenance schedule."</span><span class="p">,</span>
+    <span class="s2">"restarted"</span><span class="p">:</span> <span class="s2">"Reloaded the ir maintenance schedule."</span><span class="p">,</span>
+    <span class="s2">"removed"</span><span class="p">:</span> <span class="s2">"Removed the ir maintenance schedule."</span><span class="p">,</span>
+    <span class="s2">"unchanged"</span><span class="p">:</span> <span class="s2">"ir maintain is already scheduled."</span><span class="p">,</span>
+    <span class="s2">"reported"</span><span class="p">:</span> <span class="s2">"ir maintenance schedule:"</span><span class="p">,</span>
+    <span class="s2">"would-install"</span><span class="p">:</span> <span class="s2">"Dry run — nothing was written."</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">_MENU</span> <span class="o">=</span> <span class="s2">"""</span><span class="se">\</span>
+<span class="s2">To operate it:</span>
+<span class="s2">  ir schedule --status       show this without changing anything</span>
+<span class="s2">  ir schedule --every 30m    change the interval (rewrites and reloads)</span>
+<span class="s2">  ir schedule --restart      reload it (after upgrading ir or changing interpreter)</span>
+<span class="s2">  ir schedule --remove       stop it and delete the definition</span>
+<span class="s2">  ir maintain --all          run the work right now, in the foreground"""</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rows</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">ScheduleStatus</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">yield</span> <span class="s2">"backend"</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">backend</span>
+    <span class="k">yield</span> <span class="s2">"every"</span><span class="p">,</span> <span class="n">format_every</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">every_minutes</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="s2">"definition"</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">definition</span>
+    <span class="k">yield</span> <span class="s2">"runs"</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">command</span>
+    <span class="k">yield</span> <span class="s2">"log"</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">log_path</span>
+    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">loaded</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="s2">"loaded"</span><span class="p">,</span> <span class="s2">"yes"</span> <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">loaded</span> <span class="k">else</span> <span class="s2">"NO"</span>
+    <span class="k">yield</span> <span class="s2">"last run"</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">last_run</span> <span class="ow">or</span> <span class="s2">"never (no log yet)"</span>
+    <span class="k">yield</span> <span class="s2">"last log line"</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">last_log_line</span>
+
+
+<div class="viewcode-block" id="render">
+<a class="viewcode-back" href="../../module_docs/ir/schedule.html#ir.schedule.render">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">ScheduleStatus</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A human report of *state*, including how to operate what was found."""</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">_ACTION_HEADLINES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">action</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">action</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">state</span><span class="o">.</span><span class="n">installed</span> <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">action</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"reported"</span><span class="p">,</span> <span class="s2">"unchanged"</span><span class="p">):</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Nothing is scheduled to run `ir maintain`."</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">detail</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">""</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">detail</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">backend</span> <span class="o">!=</span> <span class="s2">"unsupported"</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">""</span><span class="p">,</span> <span class="s2">"Create one with:  ir schedule"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">_rows</span><span class="p">(</span><span class="n">state</span><span class="p">))</span>
+    <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">name</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="n">width</span><span class="p">)</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">_rows</span><span class="p">(</span><span class="n">state</span><span class="p">)</span> <span class="k">if</span> <span class="n">value</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">problems</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">""</span><span class="p">,</span> <span class="s2">"Problems:"</span><span class="p">]</span>
+        <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"  ! </span><span class="si">{</span><span class="n">problem</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">problem</span> <span class="ow">in</span> <span class="n">state</span><span class="o">.</span><span class="n">problems</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">detail</span> <span class="ow">and</span> <span class="n">state</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s2">"would-install"</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">""</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">detail</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">state</span><span class="o">.</span><span class="n">detail</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">""</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"note: </span><span class="si">{</span><span class="n">state</span><span class="o">.</span><span class="n">detail</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">state</span><span class="o">.</span><span class="n">action</span> <span class="o">!=</span> <span class="s2">"removed"</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">""</span><span class="p">,</span> <span class="n">_MENU</span><span class="p">]</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

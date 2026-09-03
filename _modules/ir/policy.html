@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.policy &mdash; ir 0.1.28 documentation</title>
+  <title>ir.policy &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,13 +99,13 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.policy</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Per-corpus policy — how a corpus is segmented/stored and what background work it gets.</span>
+<span></span><span class="sd">"""Per-corpus policy — how a corpus is segmented/stored and what background work it gets.</span>
 
-<span class="sd">This is the *declarative* half of ir&#39;s maintenance story (issue #58): a corpus&#39;s</span>
+<span class="sd">This is the *declarative* half of ir's maintenance story (issue #58): a corpus's</span>
 <span class="sd">policy lives as **data** in its registry entry, and ir resolves an effective</span>
 <span class="sd">policy by layering ``entry`` over per-``kind`` defaults over a global default.</span>
 <span class="sd">An idempotent :func:`ir.maintenance.maintain` reads the policy and does the due</span>
-<span class="sd">work; *scheduling* that work (cron / launchd, or an orchestration layer&#39;s budget</span>
+<span class="sd">work; *scheduling* that work (cron / launchd, or an orchestration layer's budget</span>
 <span class="sd">governor) stays **external** — ir never imports an orchestration layer, and there</span>
 <span class="sd">is no global ``Settings`` singleton (policy is per-corpus data, injected, not a</span>
 <span class="sd">process-wide mutable). The light path stays a one-liner: every field has a smart</span>
@@ -112,16 +113,16 @@
 
 <span class="sd">The three policy axes:</span>
 
-<span class="sd">- **reindex** — *when* to rebuild: ``&quot;source-change&quot;`` (default; rebuild is a</span>
-<span class="sd">  near-no-op when nothing changed, so it is always safe to run), ``&quot;interval&quot;``</span>
-<span class="sd">  (only when older than ``every_hours``), or ``&quot;manual&quot;`` (never automatic).</span>
+<span class="sd">- **reindex** — *when* to rebuild: ``"source-change"`` (default; rebuild is a</span>
+<span class="sd">  near-no-op when nothing changed, so it is always safe to run), ``"interval"``</span>
+<span class="sd">  (only when older than ``every_hours``), or ``"manual"`` (never automatic).</span>
 <span class="sd">- **synopsis** — *whether/when* to attach LLM synopses (the expensive,</span>
 <span class="sd">  off-by-default work): only the ``recent`` slice, only during ``downtime_hours``.</span>
 <span class="sd">  Synopsis is realized as a strategy wrapper (:func:`ir.with_synopsis`), so it is</span>
 <span class="sd">  incremental — only new/changed artifacts are synthesized.</span>
-<span class="sd">- **storage** — the persistence backend. Today only ``&quot;local&quot;`` (the file store);</span>
+<span class="sd">- **storage** — the persistence backend. Today only ``"local"`` (the file store);</span>
 <span class="sd">  a ``vd.Collection`` backend is the documented future seam (issue #28).</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -134,40 +135,40 @@
 <span class="c1"># --------------------------------------------------------------------------- #</span>
 
 <span class="c1">#: Accepted ``reindex.on`` triggers.</span>
-<span class="n">REINDEX_TRIGGERS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;source-change&quot;</span><span class="p">,</span> <span class="s2">&quot;interval&quot;</span><span class="p">,</span> <span class="s2">&quot;manual&quot;</span><span class="p">)</span>
+<span class="n">REINDEX_TRIGGERS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"source-change"</span><span class="p">,</span> <span class="s2">"interval"</span><span class="p">,</span> <span class="s2">"manual"</span><span class="p">)</span>
 
-<span class="c1">#: Storage backends ir can resolve today. ``&quot;vd&quot;`` (vd.Collection) is the</span>
+<span class="c1">#: Storage backends ir can resolve today. ``"vd"`` (vd.Collection) is the</span>
 <span class="c1">#: documented future backend, gated on issue #28.</span>
-<span class="n">STORAGE_BACKENDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;local&quot;</span><span class="p">,)</span>
+<span class="n">STORAGE_BACKENDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"local"</span><span class="p">,)</span>
 
 
 <div class="viewcode-block" id="ReindexPolicy">
 <a class="viewcode-back" href="../../module_docs/ir/policy.html#ir.ReindexPolicy">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ReindexPolicy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;When to (incrementally) rebuild a corpus.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""When to (incrementally) rebuild a corpus."""</span>
 
-    <span class="n">on</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;source-change&quot;</span>
-    <span class="n">every_hours</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># used only when ``on == &quot;interval&quot;``</span>
+    <span class="n">on</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"source-change"</span>
+    <span class="n">every_hours</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># used only when ``on == "interval"``</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">REINDEX_TRIGGERS</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;unknown reindex trigger </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="si">!r}</span><span class="s2">; expected </span><span class="si">{</span><span class="n">REINDEX_TRIGGERS</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"unknown reindex trigger </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="si">!r}</span><span class="s2">; expected </span><span class="si">{</span><span class="n">REINDEX_TRIGGERS</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ReindexPolicy&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ReindexPolicy"</span><span class="p">:</span>
         <span class="n">d</span> <span class="o">=</span> <span class="n">d</span> <span class="ow">or</span> <span class="p">{}</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-            <span class="n">on</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;on&quot;</span><span class="p">,</span> <span class="s2">&quot;source-change&quot;</span><span class="p">),</span>
-            <span class="n">every_hours</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;every_hours&quot;</span><span class="p">),</span>
+            <span class="n">on</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"on"</span><span class="p">,</span> <span class="s2">"source-change"</span><span class="p">),</span>
+            <span class="n">every_hours</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"every_hours"</span><span class="p">),</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="n">out</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;on&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">}</span>
+        <span class="n">out</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"on"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">on</span><span class="p">}</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">every_hours</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">out</span><span class="p">[</span><span class="s2">&quot;every_hours&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">every_hours</span>
+            <span class="n">out</span><span class="p">[</span><span class="s2">"every_hours"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">every_hours</span>
         <span class="k">return</span> <span class="n">out</span></div>
 
 
@@ -176,39 +177,39 @@
 <a class="viewcode-back" href="../../module_docs/ir/policy.html#ir.SynopsisPolicy">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SynopsisPolicy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether/when to attach (expensive, LLM-generated) synopses.</span>
+<span class="w">    </span><span class="sd">"""Whether/when to attach (expensive, LLM-generated) synopses.</span>
 
 <span class="sd">    ``downtime_hours`` is a ``[start, end)`` pair of local-clock hours</span>
 <span class="sd">    (wrapping past midnight is allowed, e.g. ``(22, 6)``); ``None`` means</span>
-<span class="sd">    &quot;any time&quot;. ``scope=&quot;recent&quot;`` limits synthesis to artifacts whose</span>
+<span class="sd">    "any time". ``scope="recent"`` limits synthesis to artifacts whose</span>
 <span class="sd">    timestamp is within ``window_days`` (corpora that expose a time signal);</span>
-<span class="sd">    ``scope=&quot;all&quot;`` synthesizes every artifact (bounded by incrementality).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    ``scope="all"`` synthesizes every artifact (bounded by incrementality).</span>
+<span class="sd">    """</span>
 
     <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="n">scope</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;recent&quot;</span>  <span class="c1"># &quot;recent&quot; | &quot;all&quot;</span>
+    <span class="n">scope</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"recent"</span>  <span class="c1"># "recent" | "all"</span>
     <span class="n">window_days</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span>
     <span class="n">downtime_hours</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SynopsisPolicy&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"SynopsisPolicy"</span><span class="p">:</span>
         <span class="n">d</span> <span class="o">=</span> <span class="n">d</span> <span class="ow">or</span> <span class="p">{}</span>
-        <span class="n">dh</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;downtime_hours&quot;</span><span class="p">)</span>
+        <span class="n">dh</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"downtime_hours"</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-            <span class="n">enabled</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;enabled&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
-            <span class="n">scope</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scope&quot;</span><span class="p">,</span> <span class="s2">&quot;recent&quot;</span><span class="p">),</span>
-            <span class="n">window_days</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;window_days&quot;</span><span class="p">,</span> <span class="mi">30</span><span class="p">)),</span>
+            <span class="n">enabled</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"enabled"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+            <span class="n">scope</span><span class="o">=</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"scope"</span><span class="p">,</span> <span class="s2">"recent"</span><span class="p">),</span>
+            <span class="n">window_days</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"window_days"</span><span class="p">,</span> <span class="mi">30</span><span class="p">)),</span>
             <span class="n">downtime_hours</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">dh</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">dh</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="k">if</span> <span class="n">dh</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="n">out</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span><span class="p">,</span>
-            <span class="s2">&quot;scope&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope</span><span class="p">,</span>
-            <span class="s2">&quot;window_days&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_days</span><span class="p">,</span>
+            <span class="s2">"enabled"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span><span class="p">,</span>
+            <span class="s2">"scope"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scope</span><span class="p">,</span>
+            <span class="s2">"window_days"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_days</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">downtime_hours</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">out</span><span class="p">[</span><span class="s2">&quot;downtime_hours&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">downtime_hours</span><span class="p">)</span>
+            <span class="n">out</span><span class="p">[</span><span class="s2">"downtime_hours"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">downtime_hours</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">out</span></div>
 
 
@@ -217,35 +218,35 @@
 <a class="viewcode-back" href="../../module_docs/ir/policy.html#ir.MaintenancePolicy">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MaintenancePolicy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The background-work policy for one corpus (reindex + synopsis).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""The background-work policy for one corpus (reindex + synopsis)."""</span>
 
     <span class="n">reindex</span><span class="p">:</span> <span class="n">ReindexPolicy</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">ReindexPolicy</span><span class="p">)</span>
     <span class="n">synopsis</span><span class="p">:</span> <span class="n">SynopsisPolicy</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">SynopsisPolicy</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MaintenancePolicy&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">d</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"MaintenancePolicy"</span><span class="p">:</span>
         <span class="n">d</span> <span class="o">=</span> <span class="n">d</span> <span class="ow">or</span> <span class="p">{}</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-            <span class="n">reindex</span><span class="o">=</span><span class="n">ReindexPolicy</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reindex&quot;</span><span class="p">)),</span>
-            <span class="n">synopsis</span><span class="o">=</span><span class="n">SynopsisPolicy</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;synopsis&quot;</span><span class="p">)),</span>
+            <span class="n">reindex</span><span class="o">=</span><span class="n">ReindexPolicy</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reindex"</span><span class="p">)),</span>
+            <span class="n">synopsis</span><span class="o">=</span><span class="n">SynopsisPolicy</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"synopsis"</span><span class="p">)),</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;reindex&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="s2">&quot;synopsis&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">synopsis</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"reindex"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="s2">"synopsis"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">synopsis</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()}</span>
 
 <div class="viewcode-block" id="MaintenancePolicy.merged">
 <a class="viewcode-back" href="../../module_docs/ir/policy.html#ir.MaintenancePolicy.merged">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">merged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">override</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MaintenancePolicy&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Layer an ``override`` dict on top of this policy (entry over defaults).&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">merged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">override</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"MaintenancePolicy"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Layer an ``override`` dict on top of this policy (entry over defaults)."""</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">override</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span>
         <span class="k">return</span> <span class="n">replace</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">reindex</span><span class="o">=</span><span class="n">ReindexPolicy</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span>
-                <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="o">**</span><span class="p">(</span><span class="n">override</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reindex&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})}</span>
+                <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="o">**</span><span class="p">(</span><span class="n">override</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reindex"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})}</span>
             <span class="p">),</span>
             <span class="n">synopsis</span><span class="o">=</span><span class="n">SynopsisPolicy</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span>
-                <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">synopsis</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="o">**</span><span class="p">(</span><span class="n">override</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;synopsis&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})}</span>
+                <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">synopsis</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="o">**</span><span class="p">(</span><span class="n">override</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"synopsis"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})}</span>
             <span class="p">),</span>
         <span class="p">)</span></div>
 </div>
@@ -253,7 +254,7 @@
 
 
 <span class="c1"># --------------------------------------------------------------------------- #</span>
-<span class="c1"># Smart defaults per kind — the &quot;rules that lead to defaults&quot; for new corpora</span>
+<span class="c1"># Smart defaults per kind — the "rules that lead to defaults" for new corpora</span>
 <span class="c1"># --------------------------------------------------------------------------- #</span>
 
 <span class="c1">#: The global fallback policy (any kind without a specific default).</span>
@@ -265,17 +266,17 @@
 <span class="c1">#: (sessions) rebuild on an interval and keep synopsis off by default, with a</span>
 <span class="c1">#: downtime window ready for when it is turned on. New kinds register here.</span>
 <span class="n">DEFAULTS_BY_KIND</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;skills&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;reindex&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;on&quot;</span><span class="p">:</span> <span class="s2">&quot;source-change&quot;</span><span class="p">}},</span>
-    <span class="s2">&quot;packages&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;reindex&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;on&quot;</span><span class="p">:</span> <span class="s2">&quot;source-change&quot;</span><span class="p">}},</span>
-    <span class="s2">&quot;reports&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;reindex&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;on&quot;</span><span class="p">:</span> <span class="s2">&quot;source-change&quot;</span><span class="p">}},</span>
-    <span class="s2">&quot;files&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;reindex&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;on&quot;</span><span class="p">:</span> <span class="s2">&quot;source-change&quot;</span><span class="p">}},</span>
-    <span class="s2">&quot;sessions&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;reindex&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;on&quot;</span><span class="p">:</span> <span class="s2">&quot;interval&quot;</span><span class="p">,</span> <span class="s2">&quot;every_hours&quot;</span><span class="p">:</span> <span class="mi">24</span><span class="p">},</span>
-        <span class="s2">&quot;synopsis&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s2">&quot;scope&quot;</span><span class="p">:</span> <span class="s2">&quot;recent&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;window_days&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
-            <span class="s2">&quot;downtime_hours&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
+    <span class="s2">"skills"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"reindex"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"on"</span><span class="p">:</span> <span class="s2">"source-change"</span><span class="p">}},</span>
+    <span class="s2">"packages"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"reindex"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"on"</span><span class="p">:</span> <span class="s2">"source-change"</span><span class="p">}},</span>
+    <span class="s2">"reports"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"reindex"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"on"</span><span class="p">:</span> <span class="s2">"source-change"</span><span class="p">}},</span>
+    <span class="s2">"files"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"reindex"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"on"</span><span class="p">:</span> <span class="s2">"source-change"</span><span class="p">}},</span>
+    <span class="s2">"sessions"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"reindex"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"on"</span><span class="p">:</span> <span class="s2">"interval"</span><span class="p">,</span> <span class="s2">"every_hours"</span><span class="p">:</span> <span class="mi">24</span><span class="p">},</span>
+        <span class="s2">"synopsis"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"enabled"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"scope"</span><span class="p">:</span> <span class="s2">"recent"</span><span class="p">,</span>
+            <span class="s2">"window_days"</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
+            <span class="s2">"downtime_hours"</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
         <span class="p">},</span>
     <span class="p">},</span>
 <span class="p">}</span>
@@ -284,7 +285,7 @@
 <div class="viewcode-block" id="default_policy_for_kind">
 <a class="viewcode-back" href="../../module_docs/ir/policy.html#ir.default_policy_for_kind">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">default_policy_for_kind</span><span class="p">(</span><span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MaintenancePolicy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The smart-default :class:`MaintenancePolicy` for a corpus ``kind``.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""The smart-default :class:`MaintenancePolicy` for a corpus ``kind``."""</span>
     <span class="k">return</span> <span class="n">GLOBAL_DEFAULT</span><span class="o">.</span><span class="n">merged</span><span class="p">(</span><span class="n">DEFAULTS_BY_KIND</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">))</span></div>
 
 
@@ -292,29 +293,29 @@
 <div class="viewcode-block" id="resolve_policy">
 <a class="viewcode-back" href="../../module_docs/ir/policy.html#ir.resolve_policy">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">resolve_policy</span><span class="p">(</span><span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MaintenancePolicy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The effective policy for a registry ``entry``: entry over kind over global.</span>
+<span class="w">    </span><span class="sd">"""The effective policy for a registry ``entry``: entry over kind over global.</span>
 
-<span class="sd">    A v1 entry (no ``maintenance`` key) resolves to its kind&#39;s smart default, so</span>
+<span class="sd">    A v1 entry (no ``maintenance`` key) resolves to its kind's smart default, so</span>
 <span class="sd">    existing corpora gain a sensible policy without a migration.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">entry</span> <span class="o">=</span> <span class="n">entry</span> <span class="ow">or</span> <span class="p">{}</span>
-    <span class="n">base</span> <span class="o">=</span> <span class="n">default_policy_for_kind</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kind&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">base</span><span class="o">.</span><span class="n">merged</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;maintenance&quot;</span><span class="p">))</span></div>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">default_policy_for_kind</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"kind"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">base</span><span class="o">.</span><span class="n">merged</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"maintenance"</span><span class="p">))</span></div>
 
 
 
 <div class="viewcode-block" id="resolve_storage">
 <a class="viewcode-back" href="../../module_docs/ir/policy.html#ir.resolve_storage">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">resolve_storage</span><span class="p">(</span><span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The effective storage spec for an ``entry`` (default ``{&quot;backend&quot;: &quot;local&quot;}``).&quot;&quot;&quot;</span>
-    <span class="n">storage</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">entry</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;storage&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span>
-    <span class="n">backend</span> <span class="o">=</span> <span class="n">storage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;backend&quot;</span><span class="p">,</span> <span class="s2">&quot;local&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""The effective storage spec for an ``entry`` (default ``{"backend": "local"}``)."""</span>
+    <span class="n">storage</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">entry</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"storage"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span>
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">storage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"backend"</span><span class="p">,</span> <span class="s2">"local"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">backend</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">STORAGE_BACKENDS</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;storage backend </span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> is not available yet (only &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">STORAGE_BACKENDS</span><span class="si">}</span><span class="s2">); a vd.Collection backend is tracked in issue #28.&quot;</span>
+            <span class="sa">f</span><span class="s2">"storage backend </span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> is not available yet (only "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">STORAGE_BACKENDS</span><span class="si">}</span><span class="s2">); a vd.Collection backend is tracked in issue #28."</span>
         <span class="p">)</span>
-    <span class="n">storage</span><span class="p">[</span><span class="s2">&quot;backend&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">backend</span>
+    <span class="n">storage</span><span class="p">[</span><span class="s2">"backend"</span><span class="p">]</span> <span class="o">=</span> <span class="n">backend</span>
     <span class="k">return</span> <span class="n">storage</span></div>
 
 
@@ -331,17 +332,17 @@
     <span class="n">last_maintained</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">now</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether a reindex is due under ``policy`` given the last-maintained time.</span>
+<span class="w">    </span><span class="sd">"""Whether a reindex is due under ``policy`` given the last-maintained time.</span>
 
 <span class="sd">    - ``source-change`` is always due (the build is incremental and a no-op when</span>
 <span class="sd">      nothing changed, so running it cannot do harm).</span>
 <span class="sd">    - ``interval`` is due when never maintained or older than ``every_hours``.</span>
 <span class="sd">    - ``manual`` is never automatically due.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">on</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">on</span>
-    <span class="k">if</span> <span class="n">on</span> <span class="o">==</span> <span class="s2">&quot;source-change&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">on</span> <span class="o">==</span> <span class="s2">"source-change"</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">if</span> <span class="n">on</span> <span class="o">==</span> <span class="s2">&quot;manual&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">on</span> <span class="o">==</span> <span class="s2">"manual"</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="c1"># interval</span>
     <span class="n">every</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">reindex</span><span class="o">.</span><span class="n">every_hours</span>
@@ -354,11 +355,11 @@
 <div class="viewcode-block" id="in_downtime">
 <a class="viewcode-back" href="../../module_docs/ir/policy.html#ir.in_downtime">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">in_downtime</span><span class="p">(</span><span class="n">policy</span><span class="p">:</span> <span class="n">MaintenancePolicy</span><span class="p">,</span> <span class="n">now</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether ``now`` falls inside the synopsis ``downtime_hours`` window.</span>
+<span class="w">    </span><span class="sd">"""Whether ``now`` falls inside the synopsis ``downtime_hours`` window.</span>
 
-<span class="sd">    ``None`` window means &quot;any time&quot;. A window whose start hour is greater than</span>
+<span class="sd">    ``None`` window means "any time". A window whose start hour is greater than</span>
 <span class="sd">    its end hour wraps past midnight (e.g. ``(22, 6)`` is 22:00–06:00).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">dh</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">synopsis</span><span class="o">.</span><span class="n">downtime_hours</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">dh</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>

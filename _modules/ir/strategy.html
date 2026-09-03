@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.strategy &mdash; ir 0.1.28 documentation</title>
+  <title>ir.strategy &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,7 +99,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.strategy</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Indexing strategies — the &quot;what do we index?&quot; seam.</span>
+<span></span><span class="sd">"""Indexing strategies — the "what do we index?" seam.</span>
 
 <span class="sd">An :class:`IndexingStrategy` decomposes one artifact into an</span>
 <span class="sd">:class:`~ir.base.IndexPlan`: the ``filter_fields`` (hard-filterable metadata,</span>
@@ -120,7 +121,7 @@
 
 <span class="sd">Every strategy is a plain callable-ish object with a ``decompose`` method, so</span>
 <span class="sd">custom strategies need only match the :class:`IndexingStrategy` protocol.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -145,7 +146,7 @@
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.IndexingStrategy">[docs]</a>
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">IndexingStrategy</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decompose one artifact into filter fields + embeddable surfaces.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Decompose one artifact into filter fields + embeddable surfaces."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">raw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -156,22 +157,22 @@
 <div class="viewcode-block" id="text_of">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.text_of">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">text_of</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">text_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Best-effort text extraction from a raw artifact payload.</span>
+<span class="w">    </span><span class="sd">"""Best-effort text extraction from a raw artifact payload.</span>
 
 <span class="sd">    The SSOT for turning an opaque ``raw`` (a ``str``, a ``Mapping`` with a</span>
 <span class="sd">    ``text`` field or a ``text_key``, or anything else) into embeddable text —</span>
 <span class="sd">    reused by the shipped strategies *and* by :func:`ir.synopsis.make_llm_synthesizer`</span>
 <span class="sd">    so an injected-free synopsis summarizes the same text a strategy would index.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">raw</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">text_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">text_key</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s2">&quot;text&quot;</span> <span class="ow">in</span> <span class="n">raw</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">text_key</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"text"</span> <span class="ow">in</span> <span class="n">raw</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
         <span class="c1"># join string-valued fields as a fallback</span>
-        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">raw</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">raw</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span>
     <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span></div>
 
 
@@ -182,7 +183,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_split</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">overlap</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Paragraph-packing chunker: greedily fill ~``chunk_size`` chunks.</span>
+<span class="w">    </span><span class="sd">"""Paragraph-packing chunker: greedily fill ~``chunk_size`` chunks.</span>
 
 <span class="sd">    Splits on blank lines, then packs whole paragraphs up to ``chunk_size``</span>
 <span class="sd">    (carrying an ``overlap`` tail between chunks). Paragraphs longer than</span>
@@ -190,25 +191,25 @@
 <span class="sd">    emitting one chunk per paragraph.</span>
 
 <span class="sd">    Never emits blank chunks: hard-splitting a paragraph that contains a long</span>
-<span class="sd">    whitespace run (no blank line, so the paragraph regex doesn&#39;t split it)</span>
+<span class="sd">    whitespace run (no blank line, so the paragraph regex doesn't split it)</span>
 <span class="sd">    can slice out whitespace-only pieces — those are skipped, so every chunk</span>
 <span class="sd">    is embeddable and per-chunk metadata (``chunk_index`` / ``n_chunks``)</span>
 <span class="sd">    counts only real chunks.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">chunk_size</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">text</span><span class="p">]</span>
 
-    <span class="n">paras</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\n\s*\n&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+    <span class="n">paras</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">"\n\s*\n"</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
     <span class="n">chunks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">cur</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">cur</span> <span class="o">=</span> <span class="s2">""</span>
     <span class="k">for</span> <span class="n">para</span> <span class="ow">in</span> <span class="n">paras</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">para</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">chunk_size</span><span class="p">:</span>  <span class="c1"># hard-split an oversized paragraph</span>
             <span class="k">if</span> <span class="n">cur</span><span class="p">:</span>
                 <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cur</span><span class="p">)</span>
-                <span class="n">cur</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">cur</span> <span class="o">=</span> <span class="s2">""</span>
             <span class="n">step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">chunk_size</span> <span class="o">-</span> <span class="n">overlap</span><span class="p">)</span>
             <span class="n">chunks</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
                 <span class="n">piece</span>
@@ -218,10 +219,10 @@
             <span class="k">continue</span>
         <span class="k">if</span> <span class="n">cur</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">cur</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">para</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">chunk_size</span><span class="p">:</span>
             <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cur</span><span class="p">)</span>
-            <span class="n">tail</span> <span class="o">=</span> <span class="n">cur</span><span class="p">[</span><span class="o">-</span><span class="n">overlap</span><span class="p">:]</span> <span class="k">if</span> <span class="n">overlap</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-            <span class="n">cur</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tail</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">para</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="n">tail</span> <span class="k">else</span> <span class="n">para</span>
+            <span class="n">tail</span> <span class="o">=</span> <span class="n">cur</span><span class="p">[</span><span class="o">-</span><span class="n">overlap</span><span class="p">:]</span> <span class="k">if</span> <span class="n">overlap</span> <span class="k">else</span> <span class="s2">""</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">tail</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">para</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="n">tail</span> <span class="k">else</span> <span class="n">para</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">cur</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cur</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">para</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="n">cur</span> <span class="k">else</span> <span class="n">para</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cur</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">para</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="n">cur</span> <span class="k">else</span> <span class="n">para</span>
     <span class="k">if</span> <span class="n">cur</span><span class="p">:</span>
         <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cur</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">chunks</span>
@@ -229,31 +230,31 @@
 
 <span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">_tokenizer_for</span><span class="p">(</span><span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A cached *fast* tokenizer for *model_name*, or ``None`` if unavailable.</span>
+<span class="w">    </span><span class="sd">"""A cached *fast* tokenizer for *model_name*, or ``None`` if unavailable.</span>
 
 <span class="sd">    Lazy (keeps ``import ir`` offline) and self-degrading: any import/load</span>
 <span class="sd">    failure — or a slow tokenizer that cannot report char offsets — returns</span>
 <span class="sd">    ``None`` so token-aware chunking falls back to char-based splitting, mirroring</span>
-<span class="sd">    the embedder&#39;s degrade-to-hashing discipline (:mod:`ir.embed`).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    the embedder's degrade-to-hashing discipline (:mod:`ir.embed`).</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="c1"># A bare sentence-transformers name (e.g. &quot;all-MiniLM-L6-v2&quot;) is a valid</span>
+    <span class="c1"># A bare sentence-transformers name (e.g. "all-MiniLM-L6-v2") is a valid</span>
     <span class="c1"># SentenceTransformer id but not a Hub repo id — AutoTokenizer needs the</span>
-    <span class="c1"># &quot;sentence-transformers/&quot; prefix. Try the name as given, then prefixed.</span>
+    <span class="c1"># "sentence-transformers/" prefix. Try the name as given, then prefixed.</span>
     <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span><span class="n">model_name</span><span class="p">]</span>
-    <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_name</span><span class="p">:</span>
-        <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sentence-transformers/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">"/"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_name</span><span class="p">:</span>
+        <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"sentence-transformers/</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">tok</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">candidate</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">continue</span>
         <span class="c1"># Offset mapping (used to cut the original text at token boundaries) needs</span>
-        <span class="c1"># a Rust &quot;fast&quot; tokenizer; a slow one would force a lossy id round-trip.</span>
-        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tok</span><span class="p">,</span> <span class="s2">&quot;is_fast&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># a Rust "fast" tokenizer; a slow one would force a lossy id round-trip.</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">tok</span><span class="p">,</span> <span class="s2">"is_fast"</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">tok</span>
     <span class="k">return</span> <span class="kc">None</span>
 
@@ -261,18 +262,18 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">_split_by_tokens</span><span class="p">(</span>
     <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">overlap_tokens</span><span class="p">:</span> <span class="nb">int</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Split *text* into windows of at most *max_tokens* tokens, text preserved.</span>
+<span class="w">    </span><span class="sd">"""Split *text* into windows of at most *max_tokens* tokens, text preserved.</span>
 
-<span class="sd">    Cuts the **original** string at token boundaries using the tokenizer&#39;s char</span>
+<span class="sd">    Cuts the **original** string at token boundaries using the tokenizer's char</span>
 <span class="sd">    offset-mapping — so each stored surface stays verbatim (for lexical search and</span>
 <span class="sd">    disclosure), never a lossy decode of token ids — with *overlap_tokens* of</span>
 <span class="sd">    overlap between consecutive windows.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
     <span class="n">enc</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">add_special_tokens</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">return_offsets_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">offsets</span> <span class="o">=</span> <span class="n">enc</span><span class="p">[</span><span class="s2">&quot;offset_mapping&quot;</span><span class="p">]</span>
+    <span class="n">offsets</span> <span class="o">=</span> <span class="n">enc</span><span class="p">[</span><span class="s2">"offset_mapping"</span><span class="p">]</span>
     <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">offsets</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="n">max_tokens</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">text</span><span class="p">]</span>
@@ -298,14 +299,14 @@
     <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">token_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Chunk *text* by tokens when *max_tokens* is set, else by characters.</span>
+<span class="w">    </span><span class="sd">"""Chunk *text* by tokens when *max_tokens* is set, else by characters.</span>
 
-<span class="sd">    Token mode bounds every chunk to the embedder&#39;s token budget, so no chunk is</span>
+<span class="sd">    Token mode bounds every chunk to the embedder's token budget, so no chunk is</span>
 <span class="sd">    silently truncated at embed time; the token overlap is derived from the char</span>
 <span class="sd">    ``overlap / chunk_size`` ratio. It degrades to char-based splitting (with a</span>
 <span class="sd">    warning) when the tokenizer for *token_model* cannot be loaded. Char mode</span>
 <span class="sd">    (``max_tokens=None``) is the historical behavior.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">max_tokens</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_split</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="n">overlap</span><span class="p">)</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.embed</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_MODEL</span>
@@ -314,10 +315,10 @@
     <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">_tokenizer_for</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">tokenizer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;token-aware chunking requested (max_tokens=</span><span class="si">{</span><span class="n">max_tokens</span><span class="si">}</span><span class="s2">) but no fast &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;tokenizer for </span><span class="si">{</span><span class="n">model</span><span class="si">!r}</span><span class="s2"> is available; falling back to char-based &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;chunking (chunks may exceed the embedder&#39;s token budget and be &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;truncated). Install `transformers` for token-aware chunking.&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"token-aware chunking requested (max_tokens=</span><span class="si">{</span><span class="n">max_tokens</span><span class="si">}</span><span class="s2">) but no fast "</span>
+            <span class="sa">f</span><span class="s2">"tokenizer for </span><span class="si">{</span><span class="n">model</span><span class="si">!r}</span><span class="s2"> is available; falling back to char-based "</span>
+            <span class="sa">f</span><span class="s2">"chunking (chunks may exceed the embedder's token budget and be "</span>
+            <span class="sa">f</span><span class="s2">"truncated). Install `transformers` for token-aware chunking."</span><span class="p">,</span>
             <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">_split</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">overlap</span><span class="o">=</span><span class="n">overlap</span><span class="p">)</span>
@@ -330,9 +331,9 @@
 <div class="viewcode-block" id="WholeText">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.WholeText">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">WholeText</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;One surface = the entire text. Sensible default for a naive corpus.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""One surface = the entire text. Sensible default for a naive corpus."""</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">text_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;document&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">text_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"document"</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">text_key</span> <span class="o">=</span> <span class="n">text_key</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">=</span> <span class="n">kind</span>
 
@@ -340,7 +341,7 @@
         <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
         <span class="n">text</span> <span class="o">=</span> <span class="n">_text_of</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_key</span><span class="p">)</span>
         <span class="n">surfaces</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="p">[</span><span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;document&quot;</span><span class="p">)]</span>
+            <span class="p">[</span><span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">"document"</span><span class="p">)]</span>
             <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
             <span class="k">else</span> <span class="p">[]</span>
         <span class="p">)</span>
@@ -351,16 +352,16 @@
 <div class="viewcode-block" id="Chunked">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.Chunked">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Chunked</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Split the artifact&#39;s text into overlapping chunk surfaces.</span>
+<span class="w">    </span><span class="sd">"""Split the artifact's text into overlapping chunk surfaces.</span>
 
 <span class="sd">    By default chunks are packed to ~``chunk_size`` **characters**. Set</span>
 <span class="sd">    ``max_tokens`` to chunk by **tokens** instead — each chunk is bounded to</span>
 <span class="sd">    ``max_tokens`` tokens of ``token_model`` (default: the default embedding</span>
-<span class="sd">    model), so no chunk overflows the embedder&#39;s sequence limit and is silently</span>
+<span class="sd">    model), so no chunk overflows the embedder's sequence limit and is silently</span>
 <span class="sd">    truncated. Token mode degrades to char mode with a warning if the tokenizer</span>
 <span class="sd">    is unavailable. The char ``chunk_size`` / ``overlap`` still set the overlap</span>
 <span class="sd">    *ratio* used in token mode.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -368,7 +369,7 @@
         <span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1200</span><span class="p">,</span>
         <span class="n">overlap</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span>
         <span class="n">text_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;chunk&quot;</span><span class="p">,</span>
+        <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"chunk"</span><span class="p">,</span>
         <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">token_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
@@ -394,8 +395,8 @@
                 <span class="n">artifact_id</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span>
                 <span class="n">chunk</span><span class="p">,</span>
-                <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;chunk&quot;</span><span class="p">,</span>
-                <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;chunk_index&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span> <span class="s2">&quot;n_chunks&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunks</span><span class="p">)},</span>
+                <span class="n">granularity</span><span class="o">=</span><span class="s2">"chunk"</span><span class="p">,</span>
+                <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"chunk_index"</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span> <span class="s2">"n_chunks"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunks</span><span class="p">)},</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span>
         <span class="p">]</span>
@@ -406,24 +407,24 @@
 <div class="viewcode-block" id="Skill">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.Skill">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Skill</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Capability strategy: embed ``name + description`` only.</span>
+<span class="w">    </span><span class="sd">"""Capability strategy: embed ``name + description`` only.</span>
 
 <span class="sd">    The body (SKILL.md) is loaded post-selection and is *not* indexed; name and</span>
 <span class="sd">    parent are filter fields.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexPlan</span><span class="p">:</span>
         <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
-        <span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)}</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">))</span>
-        <span class="n">description</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)}</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">))</span>
+        <span class="n">description</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
         <span class="n">filter_fields</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;parent&quot;</span><span class="p">),</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+            <span class="s2">"parent"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"parent"</span><span class="p">),</span>
             <span class="o">**</span><span class="n">meta</span><span class="p">,</span>
         <span class="p">}</span>
-        <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">description</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-        <span class="n">surfaces</span> <span class="o">=</span> <span class="p">[</span><span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;capability&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">)]</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">description</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">surfaces</span> <span class="o">=</span> <span class="p">[</span><span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">"capability"</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">"field"</span><span class="p">)]</span>
         <span class="k">return</span> <span class="n">IndexPlan</span><span class="p">(</span><span class="n">filter_fields</span><span class="o">=</span><span class="n">filter_fields</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">)</span></div>
 
 
@@ -432,16 +433,16 @@
 <span class="c1">#: :class:`IndexingStrategy` in a registry entry and reconstructing it (#58).</span>
 <span class="c1">#: New shipped strategies register here so a corpus can name its segmentation.</span>
 <span class="n">STRATEGY_REGISTRY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;WholeText&quot;</span><span class="p">:</span> <span class="n">WholeText</span><span class="p">,</span>
-    <span class="s2">&quot;Chunked&quot;</span><span class="p">:</span> <span class="n">Chunked</span><span class="p">,</span>
-    <span class="s2">&quot;Skill&quot;</span><span class="p">:</span> <span class="n">Skill</span><span class="p">,</span>
+    <span class="s2">"WholeText"</span><span class="p">:</span> <span class="n">WholeText</span><span class="p">,</span>
+    <span class="s2">"Chunked"</span><span class="p">:</span> <span class="n">Chunked</span><span class="p">,</span>
+    <span class="s2">"Skill"</span><span class="p">:</span> <span class="n">Skill</span><span class="p">,</span>
 <span class="p">}</span>
 
 
 <div class="viewcode-block" id="strategy_to_spec">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.strategy_to_spec">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">strategy_to_spec</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A ``{&quot;name&quot;, &quot;params&quot;}`` spec for a shipped, scalar-param strategy.</span>
+<span class="w">    </span><span class="sd">"""A ``{"name", "params"}`` spec for a shipped, scalar-param strategy.</span>
 
 <span class="sd">    Captures only scalar constructor parameters (the same identity surface</span>
 <span class="sd">    :func:`ir.index._strategy_id` stamps), so it round-trips the shipped</span>
@@ -449,70 +450,70 @@
 <span class="sd">    :func:`ir.with_synopsis` wrapper), is **not** captured here — those are set</span>
 <span class="sd">    programmatically at build time / by the maintenance layer, not persisted as a</span>
 <span class="sd">    segmentation spec.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">name</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span>
     <span class="p">}</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">params</span><span class="p">}</span></div>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"params"</span><span class="p">:</span> <span class="n">params</span><span class="p">}</span></div>
 
 
 
 <div class="viewcode-block" id="strategy_from_spec">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.strategy_from_spec">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">strategy_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;IndexingStrategy | None&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct a shipped strategy from a ``{&quot;name&quot;, &quot;params&quot;}`` spec.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">strategy_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"IndexingStrategy | None"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Reconstruct a shipped strategy from a ``{"name", "params"}`` spec.</span>
 
 <span class="sd">    ``None`` (no persisted strategy) returns ``None`` so the caller falls back to</span>
-<span class="sd">    the source preset&#39;s default strategy — the back-compatible behavior for v1</span>
+<span class="sd">    the source preset's default strategy — the back-compatible behavior for v1</span>
 <span class="sd">    registry entries.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">spec</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
     <span class="bp">cls</span> <span class="o">=</span> <span class="n">STRATEGY_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;unknown strategy </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">; known: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">STRATEGY_REGISTRY</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"unknown strategy </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">; known: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">STRATEGY_REGISTRY</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;params&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}))</span></div>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"params"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}))</span></div>
 
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_default_deps_text</span><span class="p">(</span><span class="n">deps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prefix-form serialization of bare dependency names for the ``deps`` surface.</span>
+<span class="w">    </span><span class="sd">"""Prefix-form serialization of bare dependency names for the ``deps`` surface.</span>
 
 <span class="sd">    Strips version specifiers / extras / markers (via :func:`ir.graph._dep_name`),</span>
 <span class="sd">    de-duplicates, preserves order, and drops empties — e.g.</span>
-<span class="sd">    ``[&quot;numpy&gt;=1&quot;, &quot;sentence-transformers&quot;, &quot;numpy&quot;]`` -&gt;</span>
-<span class="sd">    ``&quot;Depends on: numpy, sentence-transformers&quot;``. Returns ``&quot;&quot;`` when there are</span>
+<span class="sd">    ``["numpy&gt;=1", "sentence-transformers", "numpy"]`` -&gt;</span>
+<span class="sd">    ``"Depends on: numpy, sentence-transformers"``. Returns ``""`` when there are</span>
 <span class="sd">    no usable names (``decompose`` then drops the empty surface).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">_dep_name</span>
 
     <span class="n">names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">(</span><span class="n">_dep_name</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">deps</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span><span class="p">))</span>
-    <span class="k">return</span> <span class="s2">&quot;Depends on: &quot;</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="k">if</span> <span class="n">names</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">return</span> <span class="s2">"Depends on: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="k">if</span> <span class="n">names</span> <span class="k">else</span> <span class="s2">""</span>
 
 
 <div class="viewcode-block" id="Package">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.Package">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Package</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Package strategy: ``name + description`` surface plus README chunks.</span>
+<span class="w">    </span><span class="sd">"""Package strategy: ``name + description`` surface plus README chunks.</span>
 
 <span class="sd">    Filter fields capture ownership (ours vs third-party), name, deps. AI</span>
 <span class="sd">    synopsis / problem-class surfaces are a documented extension point.</span>
 
 <span class="sd">    With ``embed_deps=True``, ``decompose`` additionally emits one</span>
-<span class="sd">    ``Surface(kind=&quot;deps&quot;, granularity=&quot;field&quot;)`` whose text is a prefix-form</span>
+<span class="sd">    ``Surface(kind="deps", granularity="field")`` whose text is a prefix-form</span>
 <span class="sd">    serialization of the **bare** dependency names (``deps_template``, default</span>
 <span class="sd">    :func:`_default_deps_text`) — so a query for a domain matches a package by the</span>
 <span class="sd">    libraries it depends on (e.g. ``sentence-transformers`` -&gt; embeddings,</span>
 <span class="sd">    ``networkx`` -&gt; graphs), and the BM25 leg picks up exact dep-token matches. The</span>
 <span class="sd">    deps bag is kept **separate from prose** (its own surface) so a rare library</span>
 <span class="sd">    name is not diluted, and deps remain a filter field regardless. ``embed_deps``</span>
-<span class="sd">    defaults ``False`` (today&#39;s behavior); it folds into the strategy id, so</span>
+<span class="sd">    defaults ``False`` (today's behavior); it folds into the strategy id, so</span>
 <span class="sd">    toggling it re-decomposes incrementally. The deps surface is appended **last**,</span>
 <span class="sd">    leaving the ``description`` (position 0) and ``readme_chunk`` indices unchanged.</span>
 
@@ -526,8 +527,8 @@
 <span class="sd">    (:func:`ir.retrieve.records_for_artifact`). ``n_chunks`` is stamped on</span>
 <span class="sd">    readme chunks at decompose time, but corpora built before the stamp keep</span>
 <span class="sd">    records without it until the artifact re-indexes (content / embedder /</span>
-<span class="sd">    strategy change) — read it with ``metadata.get(&quot;n_chunks&quot;)``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    strategy change) — read it with ``metadata.get("n_chunks")``.</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -548,23 +549,23 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexPlan</span><span class="p">:</span>
         <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
-        <span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)}</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">))</span>
-        <span class="n">description</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-        <span class="n">readme</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;readme&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)}</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">))</span>
+        <span class="n">description</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">readme</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"readme"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
         <span class="n">filter_fields</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;owner&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;owner&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;has_readme&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">readme</span><span class="o">.</span><span class="n">strip</span><span class="p">()),</span>
-            <span class="s2">&quot;deps&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;deps&quot;</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[]),</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+            <span class="s2">"owner"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"owner"</span><span class="p">),</span>
+            <span class="s2">"has_readme"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">readme</span><span class="o">.</span><span class="n">strip</span><span class="p">()),</span>
+            <span class="s2">"deps"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"deps"</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[]),</span>
             <span class="o">**</span><span class="n">meta</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="n">surfaces</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">Surface</span><span class="p">(</span>
                 <span class="n">artifact_id</span><span class="p">,</span>
-                <span class="s2">&quot;description&quot;</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">description</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;: &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
-                <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">,</span>
+                <span class="s2">"description"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">description</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">": "</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                <span class="n">granularity</span><span class="o">=</span><span class="s2">"field"</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">]</span>
         <span class="n">chunks</span> <span class="o">=</span> <span class="n">_chunk_text</span><span class="p">(</span>
@@ -578,20 +579,20 @@
             <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="n">Surface</span><span class="p">(</span>
                     <span class="n">artifact_id</span><span class="p">,</span>
-                    <span class="s2">&quot;readme_chunk&quot;</span><span class="p">,</span>
+                    <span class="s2">"readme_chunk"</span><span class="p">,</span>
                     <span class="n">chunk</span><span class="p">,</span>
-                    <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;chunk&quot;</span><span class="p">,</span>
-                    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;chunk_index&quot;</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span> <span class="s2">&quot;n_chunks&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunks</span><span class="p">)},</span>
+                    <span class="n">granularity</span><span class="o">=</span><span class="s2">"chunk"</span><span class="p">,</span>
+                    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"chunk_index"</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span> <span class="s2">"n_chunks"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunks</span><span class="p">)},</span>
                 <span class="p">)</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed_deps</span><span class="p">:</span>
             <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deps_template</span> <span class="ow">or</span> <span class="n">_default_deps_text</span>
-            <span class="n">deps_text</span> <span class="o">=</span> <span class="n">template</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">filter_fields</span><span class="p">[</span><span class="s2">&quot;deps&quot;</span><span class="p">]))</span>
+            <span class="n">deps_text</span> <span class="o">=</span> <span class="n">template</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">filter_fields</span><span class="p">[</span><span class="s2">"deps"</span><span class="p">]))</span>
             <span class="k">if</span> <span class="n">deps_text</span> <span class="ow">and</span> <span class="n">deps_text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
                 <span class="c1"># Appended last: keeps the description (0) and readme_chunk indices</span>
                 <span class="c1"># stable, so the surface_index contract holds for existing corpora.</span>
                 <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;deps&quot;</span><span class="p">,</span> <span class="n">deps_text</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">)</span>
+                    <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">"deps"</span><span class="p">,</span> <span class="n">deps_text</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">"field"</span><span class="p">)</span>
                 <span class="p">)</span>
         <span class="c1"># Drop empty surfaces (e.g. no description and no README).</span>
         <span class="n">surfaces</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">surfaces</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
@@ -602,21 +603,21 @@
 <div class="viewcode-block" id="ClaudeTurn">
 <a class="viewcode-back" href="../../module_docs/ir/strategy.html#ir.ClaudeTurn">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ClaudeTurn</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Index a Claude Code session turn-pair: user prompt + assistant summary.</span>
+<span class="w">    </span><span class="sd">"""Index a Claude Code session turn-pair: user prompt + assistant summary.</span>
 
 <span class="sd">    Two surfaces by default — ``user_prompt`` (what the human asked) and</span>
-<span class="sd">    ``assistant_summary`` (the assistant&#39;s *final* end-of-turn text, the</span>
-<span class="sd">    highest-signal &quot;here&#39;s what I did&quot;; the deliberation before it is mostly</span>
-<span class="sd">    noise) — so a query can target either side via ``surfaces={&quot;user_prompt&quot;}`` /</span>
-<span class="sd">    ``{&quot;assistant_summary&quot;}``. With ``include_full=True`` a third</span>
-<span class="sd">    ``assistant_full`` surface (all the turn&#39;s assistant natural-language text)</span>
+<span class="sd">    ``assistant_summary`` (the assistant's *final* end-of-turn text, the</span>
+<span class="sd">    highest-signal "here's what I did"; the deliberation before it is mostly</span>
+<span class="sd">    noise) — so a query can target either side via ``surfaces={"user_prompt"}`` /</span>
+<span class="sd">    ``{"assistant_summary"}``. With ``include_full=True`` a third</span>
+<span class="sd">    ``assistant_full`` surface (all the turn's assistant natural-language text)</span>
 <span class="sd">    trades noise for recall — off by default. Session / project / time / model /</span>
 <span class="sd">    tool-use become hard-filter fields.</span>
 
 <span class="sd">    The raw artifact is a turn-pair record (see</span>
 <span class="sd">    :func:`priv.claude_transcripts.turn_pair_records`): a mapping with</span>
 <span class="sd">    ``user_prompt`` / ``assistant_summary`` / ``assistant_full`` plus metadata.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">include_full</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">include_full</span> <span class="o">=</span> <span class="n">include_full</span>
@@ -624,49 +625,49 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexPlan</span><span class="p">:</span>
         <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})</span>
         <span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_prompt&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-        <span class="n">summary</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;assistant_summary&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-        <span class="n">full</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;assistant_full&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-        <span class="n">title</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_title&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user_prompt"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"assistant_summary"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">full</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"assistant_full"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"session_title"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="n">filter_fields</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_id&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;project&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;cwd&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cwd&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;git_branch&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;git_branch&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;has_tool_use&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;has_tool_use&quot;</span><span class="p">)),</span>
-            <span class="s2">&quot;session_title&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_title&quot;</span><span class="p">),</span>
+            <span class="s2">"session_id"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"session_id"</span><span class="p">),</span>
+            <span class="s2">"project"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"project"</span><span class="p">),</span>
+            <span class="s2">"cwd"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cwd"</span><span class="p">),</span>
+            <span class="s2">"git_branch"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"git_branch"</span><span class="p">),</span>
+            <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">),</span>
+            <span class="s2">"model"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"model"</span><span class="p">),</span>
+            <span class="s2">"has_tool_use"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"has_tool_use"</span><span class="p">)),</span>
+            <span class="s2">"session_title"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"session_title"</span><span class="p">),</span>
             <span class="o">**</span><span class="n">meta</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="n">surfaces</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="c1"># A dedicated per-session title record indexes just the title (a cheap,</span>
-        <span class="c1"># searchable &quot;what was this session about&quot; surface).</span>
-        <span class="k">if</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;record_type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;session_title&quot;</span><span class="p">:</span>
+        <span class="c1"># searchable "what was this session about" surface).</span>
+        <span class="k">if</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"record_type"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"session_title"</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">title</span><span class="p">:</span>
                 <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;session_title&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">)</span>
+                    <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">"session_title"</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">"field"</span><span class="p">)</span>
                 <span class="p">)</span>
             <span class="k">return</span> <span class="n">IndexPlan</span><span class="p">(</span><span class="n">filter_fields</span><span class="o">=</span><span class="n">filter_fields</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">user</span><span class="p">:</span>
             <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;user_prompt&quot;</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">)</span>
+                <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">"user_prompt"</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">"field"</span><span class="p">)</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">summary</span><span class="p">:</span>
             <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;assistant_summary&quot;</span><span class="p">,</span> <span class="n">summary</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;field&quot;</span><span class="p">)</span>
+                <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">"assistant_summary"</span><span class="p">,</span> <span class="n">summary</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">"field"</span><span class="p">)</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_full</span> <span class="ow">and</span> <span class="n">full</span> <span class="ow">and</span> <span class="n">full</span> <span class="o">!=</span> <span class="n">summary</span><span class="p">:</span>
             <span class="n">surfaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">&quot;assistant_full&quot;</span><span class="p">,</span> <span class="n">full</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;document&quot;</span><span class="p">)</span>
+                <span class="n">Surface</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="s2">"assistant_full"</span><span class="p">,</span> <span class="n">full</span><span class="p">,</span> <span class="n">granularity</span><span class="o">=</span><span class="s2">"document"</span><span class="p">)</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">IndexPlan</span><span class="p">(</span><span class="n">filter_fields</span><span class="o">=</span><span class="n">filter_fields</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">)</span></div>
 
 
 
-<span class="c1"># Register the strategies defined after STRATEGY_REGISTRY&#39;s literal above.</span>
-<span class="n">STRATEGY_REGISTRY</span><span class="p">[</span><span class="s2">&quot;Package&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Package</span>
-<span class="n">STRATEGY_REGISTRY</span><span class="p">[</span><span class="s2">&quot;ClaudeTurn&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ClaudeTurn</span>
+<span class="c1"># Register the strategies defined after STRATEGY_REGISTRY's literal above.</span>
+<span class="n">STRATEGY_REGISTRY</span><span class="p">[</span><span class="s2">"Package"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Package</span>
+<span class="n">STRATEGY_REGISTRY</span><span class="p">[</span><span class="s2">"ClaudeTurn"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ClaudeTurn</span>
 </pre></div>
 
            </div>

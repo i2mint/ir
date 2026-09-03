@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.traverse &mdash; ir 0.1.28 documentation</title>
+  <title>ir.traverse &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,19 +99,19 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.traverse</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Query-time graph traversal — the ``traverse`` operator (report 12).</span>
+<span></span><span class="sd">"""Query-time graph traversal — the ``traverse`` operator (report 12).</span>
 
 <span class="sd">Recursive retrieval, summary-routing, RAPTOR collapsed-tree, PPR /</span>
 <span class="sd">spreading-activation, and beam walks are **one operator** — *score frontier →</span>
 <span class="sd">select → expand → test stop* — parameterized by a pluggable</span>
 <span class="sd">:class:`WalkPolicy`. The engineering substance is termination, split in two:</span>
 
-<span class="sd">- **safety** (&quot;*will* it stop?&quot;) — structural, and **enforced by the operator**:</span>
-<span class="sd">  a visited-set (keyed on the policy&#39;s node id), a depth cap, and a node</span>
+<span class="sd">- **safety** ("*will* it stop?") — structural, and **enforced by the operator**:</span>
+<span class="sd">  a visited-set (keyed on the policy's node id), a depth cap, and a node</span>
 <span class="sd">  budget live in :class:`WalkState` and are checked by :func:`traverse` itself,</span>
 <span class="sd">  so a buggy or adversarial policy *cannot* loop forever — the highest-leverage</span>
 <span class="sd">  robustness decision when the graph may contain directed cycles;</span>
-<span class="sd">- **sufficiency** (&quot;*should* it stop?&quot;) — injected and fallible: the policy&#39;s</span>
+<span class="sd">- **sufficiency** ("*should* it stop?") — injected and fallible: the policy's</span>
 <span class="sd">  ``stop`` (default: never — run to budget).</span>
 
 <span class="sd">The policy owns graph semantics; the operator owns the loop and the safety</span>
@@ -124,13 +125,13 @@
 <span class="sd">orders of magnitude more); :func:`traverse` is opt-in, and a policy earns</span>
 <span class="sd">promotion only by beating flat on the eval set. The shipped</span>
 <span class="sd">:func:`collapsed_tree_policy` is pure-vector (no LLM in the query loop): it</span>
-<span class="sd">routes a query that matches an artifact&#39;s *summary* surface down to that</span>
-<span class="sd">artifact&#39;s best *chunk*.</span>
+<span class="sd">routes a query that matches an artifact's *summary* surface down to that</span>
+<span class="sd">artifact's best *chunk*.</span>
 
 <span class="sd">Returned :class:`~ir.base.SearchHit`\\s carry additive, JSON-clean walk</span>
-<span class="sd">provenance — ``metadata[&quot;walk_depth&quot;]`` and ``metadata[&quot;seed&quot;]`` (the routing</span>
+<span class="sd">provenance — ``metadata["walk_depth"]`` and ``metadata["seed"]`` (the routing</span>
 <span class="sd">node) — and compose with :func:`ir.select` / :func:`ir.disclose` unchanged.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -144,9 +145,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">records_for_artifact</span>
 
 <span class="c1">#: Default summary/router surface kinds a collapsed-tree walk seeds on.</span>
-<span class="n">DFLT_SUMMARY_KINDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;synopsis&quot;</span><span class="p">,</span> <span class="s2">&quot;capability&quot;</span><span class="p">,</span> <span class="s2">&quot;document&quot;</span><span class="p">)</span>
+<span class="n">DFLT_SUMMARY_KINDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"description"</span><span class="p">,</span> <span class="s2">"synopsis"</span><span class="p">,</span> <span class="s2">"capability"</span><span class="p">,</span> <span class="s2">"document"</span><span class="p">)</span>
 <span class="c1">#: Default leaf surface kinds a collapsed-tree walk descends to (the results).</span>
-<span class="n">DFLT_LEAF_KINDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;chunk&quot;</span><span class="p">,</span> <span class="s2">&quot;readme_chunk&quot;</span><span class="p">)</span>
+<span class="n">DFLT_LEAF_KINDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"chunk"</span><span class="p">,</span> <span class="s2">"readme_chunk"</span><span class="p">)</span>
 <span class="c1">#: Default traversal bounds (operator-enforced safety).</span>
 <span class="n">DFLT_MAX_DEPTH</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">DFLT_NODE_BUDGET</span> <span class="o">=</span> <span class="mi">64</span>
@@ -158,14 +159,14 @@
 <a class="viewcode-back" href="../../module_docs/ir/traverse.html#ir.WalkState">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">WalkState</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The operator-owned state of one :func:`traverse` call — the safety home.</span>
+<span class="w">    </span><span class="sd">"""The operator-owned state of one :func:`traverse` call — the safety home.</span>
 
 <span class="sd">    ``visited`` (node ids already committed), ``budget``, and ``max_depth`` are</span>
 <span class="sd">    the structural safety primitives the operator enforces; ``results`` are the</span>
 <span class="sd">    emitted hits; ``cache`` is scratch space a policy may use (e.g. to embed the</span>
 <span class="sd">    query once). A policy reads this but the *operator* enforces the bounds —</span>
 <span class="sd">    a policy cannot opt out of termination.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span>
@@ -180,16 +181,16 @@
 <a class="viewcode-back" href="../../module_docs/ir/traverse.html#ir.WalkPolicy">[docs]</a>
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">WalkPolicy</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The pluggable strategy of a walk — graph semantics, not safety.</span>
+<span class="w">    </span><span class="sd">"""The pluggable strategy of a walk — graph semantics, not safety.</span>
 
 <span class="sd">    ``seed`` produces the initial frontier; ``score`` ranks a node against the</span>
 <span class="sd">    query; ``select`` chooses which scored frontier nodes to commit/expand this</span>
-<span class="sd">    step (beam/greedy — default: all, best-first); ``expand`` yields a node&#39;s</span>
+<span class="sd">    step (beam/greedy — default: all, best-first); ``expand`` yields a node's</span>
 <span class="sd">    neighbors; ``node_id`` is the hashable visited-set key; ``stop`` is the</span>
 <span class="sd">    injected sufficiency check; ``to_hit`` materializes a committed node as a</span>
 <span class="sd">    :class:`~ir.base.SearchHit` — or ``None`` for a *router-only* node (a</span>
 <span class="sd">    summary that routes but is not itself a result).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">:</span> <span class="o">...</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span> <span class="o">...</span>
@@ -199,12 +200,12 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_hit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SearchHit | None&quot;</span><span class="p">:</span> <span class="o">...</span></div>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"SearchHit | None"</span><span class="p">:</span> <span class="o">...</span></div>
 
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_finalize</span><span class="p">(</span><span class="n">results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">],</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Best-first, top-*k*. Visited-set dedup already guarantees one per node.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Best-first, top-*k*. Visited-set dedup already guarantees one per node."""</span>
     <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">h</span><span class="p">:</span> <span class="n">h</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)[:</span><span class="n">k</span><span class="p">]</span>
 
 
@@ -219,10 +220,10 @@
     <span class="n">node_budget</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_NODE_BUDGET</span><span class="p">,</span>
     <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Walk *store* from *query* under *policy*, returning the top-*k* hits.</span>
+<span class="w">    </span><span class="sd">"""Walk *store* from *query* under *policy*, returning the top-*k* hits.</span>
 
 <span class="sd">    The loop — *score the frontier → select → commit → expand* — is the</span>
-<span class="sd">    operator&#39;s; the **safety primitives are non-negotiable and enforced here**:</span>
+<span class="sd">    operator's; the **safety primitives are non-negotiable and enforced here**:</span>
 <span class="sd">    a node id is committed at most once (the visited-set), expansion stops at</span>
 <span class="sd">    ``max_depth``, and no more than ``node_budget`` nodes are ever committed.</span>
 <span class="sd">    A policy whose ``expand`` cycles forever and whose ``stop`` never fires</span>
@@ -240,8 +241,8 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        the committed hits, best-first, top-*k* — each a</span>
-<span class="sd">        :class:`~ir.base.SearchHit` with ``metadata[&quot;walk_depth&quot;]`` / ``[&quot;seed&quot;]``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        :class:`~ir.base.SearchHit` with ``metadata["walk_depth"]`` / ``["seed"]``.</span>
+<span class="sd">    """</span>
     <span class="n">state</span> <span class="o">=</span> <span class="n">WalkState</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="n">node_budget</span><span class="p">)</span>
     <span class="n">frontier</span> <span class="o">=</span> <span class="p">[(</span><span class="n">node</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">policy</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">store</span><span class="p">)]</span>
     <span class="k">while</span> <span class="n">frontier</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="o">.</span><span class="n">visited</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">node_budget</span><span class="p">:</span>
@@ -281,7 +282,7 @@
 
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">_WalkNode</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A traversal node: one surface record + the artifact that routed to it.</span>
+<span class="w">    </span><span class="sd">"""A traversal node: one surface record + the artifact that routed to it.</span>
 
 <span class="sd">    ``is_router`` is structural, not kind-based: a summary surface is a router</span>
 <span class="sd">    (suppressed from results, expands to its leaves) **only when its artifact</span>
@@ -289,7 +290,7 @@
 <span class="sd">    — a WholeText ``document``, a Skill ``capability`` — is *not* a router: it</span>
 <span class="sd">    is emitted directly, so a single-surface corpus degrades to flat-over-</span>
 <span class="sd">    summaries instead of silently returning nothing.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">record</span><span class="p">:</span> <span class="n">Record</span>
     <span class="n">seed</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -297,18 +298,18 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_cosine</span><span class="p">(</span><span class="n">query_vec</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">vec</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cosine of a unit *query_vec* against a raw record *vec*.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Cosine of a unit *query_vec* against a raw record *vec*."""</span>
     <span class="n">norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">vec</span><span class="p">))</span>
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">query_vec</span> <span class="o">@</span> <span class="p">(</span><span class="n">vec</span> <span class="o">/</span> <span class="n">norm</span><span class="p">))</span> <span class="k">if</span> <span class="n">norm</span> <span class="k">else</span> <span class="mf">0.0</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_CollapsedTreePolicy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Summary-routing: seed on summary surfaces, descend to leaf chunks.</span>
+<span class="w">    </span><span class="sd">"""Summary-routing: seed on summary surfaces, descend to leaf chunks.</span>
 
 <span class="sd">    The document-summary-index / RAPTOR collapsed-tree pattern, surface-grained</span>
-<span class="sd">    over ir&#39;s heterogeneous surfaces: a query that matches an artifact&#39;s</span>
+<span class="sd">    over ir's heterogeneous surfaces: a query that matches an artifact's</span>
 <span class="sd">    ``description`` / ``synopsis`` surface (the *router*, never itself a result)</span>
-<span class="sd">    surfaces that artifact&#39;s best leaf chunk (the *result*). Node id is the</span>
+<span class="sd">    surfaces that artifact's best leaf chunk (the *result*). Node id is the</span>
 <span class="sd">    record id, so within-artifact descent (summary and chunks share an</span>
 <span class="sd">    ``artifact_id``) is not blocked by the visited-set.</span>
 
@@ -319,7 +320,7 @@
 <span class="sd">    the walk degrades to flat-over-summaries rather than silently returning</span>
 <span class="sd">    nothing. (A pure-chunk corpus, with no summary surface to seed from at all,</span>
 <span class="sd">    is the wrong corpus for this policy — use :func:`ir.search`.)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">summary_kinds</span><span class="p">,</span> <span class="n">leaf_kinds</span><span class="p">,</span> <span class="n">seed_k</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">summary_kinds</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">summary_kinds</span><span class="p">)</span>
@@ -327,14 +328,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">seed_k</span> <span class="o">=</span> <span class="n">seed_k</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_query_vec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="n">qv</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;query_vec&quot;</span><span class="p">)</span>
+        <span class="n">qv</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"query_vec"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">qv</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">_embed_query</span>
 
-            <span class="n">embedder</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;embedder&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">embedder</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">"embedder"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="n">qv</span> <span class="o">=</span> <span class="n">_embed_query</span><span class="p">(</span><span class="n">embedder</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">query</span><span class="p">)</span>
-            <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">&quot;query_vec&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">qv</span>
-            <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">"query_vec"</span><span class="p">]</span> <span class="o">=</span> <span class="n">qv</span>
+            <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">"source"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">qv</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">_WalkNode</span><span class="p">]:</span>
@@ -368,9 +369,9 @@
         <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">scored</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_WalkNode</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">_WalkNode</span><span class="p">]:</span>
-        <span class="c1"># Only routers expand (to their artifact&#39;s leaves); a leaf — and a</span>
+        <span class="c1"># Only routers expand (to their artifact's leaves); a leaf — and a</span>
         <span class="c1"># leaf-less summary, emitted directly — is terminal, so a query that</span>
-        <span class="c1"># matches a leaf directly doesn&#39;t fan out.</span>
+        <span class="c1"># matches a leaf directly doesn't fan out.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_router</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[]</span>
         <span class="n">aid</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">record</span><span class="o">.</span><span class="n">artifact_id</span>
@@ -388,22 +389,22 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">to_hit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_WalkNode</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SearchHit | None&quot;</span><span class="p">:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"SearchHit | None"</span><span class="p">:</span>
         <span class="c1"># Routers route but are not results; a leaf-less summary is not a</span>
         <span class="c1"># router (no leaves to route to), so it is emitted.</span>
         <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">is_router</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">record</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;walk_depth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">depth</span>
+        <span class="n">meta</span><span class="p">[</span><span class="s2">"walk_depth"</span><span class="p">]</span> <span class="o">=</span> <span class="n">depth</span>
         <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;seed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">seed</span>
+            <span class="n">meta</span><span class="p">[</span><span class="s2">"seed"</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">seed</span>
         <span class="k">return</span> <span class="n">SearchHit</span><span class="p">(</span>
             <span class="n">artifact_id</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">record</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
             <span class="n">surface_kind</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">record</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
             <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">),</span>
             <span class="n">text</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">record</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
             <span class="n">metadata</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
-            <span class="n">source</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">),</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">),</span>
             <span class="n">surface_index</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">record</span><span class="o">.</span><span class="n">surface_index</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -416,10 +417,10 @@
     <span class="n">leaf_kinds</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_LEAF_KINDS</span><span class="p">,</span>
     <span class="n">seed_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_SEED_K</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WalkPolicy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The pure-vector summary-routing / collapsed-tree :class:`WalkPolicy`.</span>
+<span class="w">    </span><span class="sd">"""The pure-vector summary-routing / collapsed-tree :class:`WalkPolicy`.</span>
 
 <span class="sd">    Seeds on the top *seed_k* matches among ``summary_kinds`` surfaces and</span>
-<span class="sd">    descends to each routed artifact&#39;s ``leaf_kinds`` surfaces (the emitted</span>
+<span class="sd">    descends to each routed artifact's ``leaf_kinds`` surfaces (the emitted</span>
 <span class="sd">    results), scored by cosine to the query. No LLM in the loop. A summary</span>
 <span class="sd">    surface is a *router* (suppressed from results) only when its artifact has</span>
 <span class="sd">    leaf surfaces; on a single-surface corpus (WholeText ``document``, Skill</span>
@@ -432,7 +433,7 @@
 <span class="sd">    silently swallowed.</span>
 
 <span class="sd">    &gt;&gt;&gt; hits = traverse(q, corpus, policy=collapsed_tree_policy())   # doctest: +SKIP</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">_CollapsedTreePolicy</span><span class="p">(</span>
         <span class="n">summary_kinds</span><span class="o">=</span><span class="n">summary_kinds</span><span class="p">,</span> <span class="n">leaf_kinds</span><span class="o">=</span><span class="n">leaf_kinds</span><span class="p">,</span> <span class="n">seed_k</span><span class="o">=</span><span class="n">seed_k</span>
     <span class="p">)</span></div>

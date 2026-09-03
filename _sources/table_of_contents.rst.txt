@@ -19,6 +19,7 @@
    module_docs/ir/policy
    module_docs/ir/registry
    module_docs/ir/retrieve
+   module_docs/ir/schedule
    module_docs/ir/select
    module_docs/ir/sources
    module_docs/ir/store

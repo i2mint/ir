@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.graph &mdash; ir 0.1.28 documentation</title>
+  <title>ir.graph &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -84,6 +84,7 @@
 <li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
@@ -281,10 +282,10 @@ visited-set must use so the same id in two corpora stays two nodes.
 <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code> (implicitly in <em>source</em>, the graph it came from) or a
 <code class="docutils literal notranslate"><span class="pre">[source,</span> <span class="pre">artifact_id]</span></code> cross-corpus pair. This resolves either to the
 canonical tuple.</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">(</span><span class="s2">&quot;dol&quot;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;packages&quot;</span><span class="p">)</span>
-<span class="go">(&#39;packages&#39;, &#39;dol&#39;)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">([</span><span class="s2">&quot;skills&quot;</span><span class="p">,</span> <span class="s2">&quot;deploy&quot;</span><span class="p">],</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;packages&quot;</span><span class="p">)</span>
-<span class="go">(&#39;skills&#39;, &#39;deploy&#39;)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">(</span><span class="s2">"dol"</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"packages"</span><span class="p">)</span>
+<span class="go">('packages', 'dol')</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">canonical_node_id</span><span class="p">([</span><span class="s2">"skills"</span><span class="p">,</span> <span class="s2">"deploy"</span><span class="p">],</span> <span class="n">source</span><span class="o">=</span><span class="s2">"packages"</span><span class="p">)</span>
+<span class="go">('skills', 'deploy')</span>
 </pre></div>
 </div>
 </dd></dl>

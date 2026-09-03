@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.maintenance &mdash; ir 0.1.28 documentation</title>
+  <title>ir.maintenance &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,14 +63,19 @@
 <li class="toctree-l1"><a class="reference internal" href="graph.html">ir.graph</a></li>
 <li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.maintenance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.maintenance.DFLT_STALE_LOCK_AFTER"><code class="docutils literal notranslate"><span class="pre">DFLT_STALE_LOCK_AFTER</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.maintenance.MaintenanceBusy"><code class="docutils literal notranslate"><span class="pre">MaintenanceBusy</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.maintenance.MaintenanceResult"><code class="docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.maintenance.lock_path"><code class="docutils literal notranslate"><span class="pre">lock_path()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.maintenance.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.maintenance.maintain_corpus"><code class="docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.maintenance.single_run"><code class="docutils literal notranslate"><span class="pre">single_run()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
@@ -123,14 +128,39 @@ downtime window</strong>.</p></li>
 and records <code class="docutils literal notranslate"><span class="pre">last_maintained</span></code> so interval policies converge. ir runs the work;
 <em>scheduling</em> it is external — a cron / launchd entry calls <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span> <span class="pre">--all</span></code>
 every N minutes, and the downtime window lives in the policy (data), not in ir.</p>
-<blockquote>
-<div><p># crontab: try the queue every 15 minutes; ir decides what is actually due.
-<a href="#id1"><span class="problematic" id="id2">*</span></a>/15 * * * *  ir maintain –all &gt;&gt; ~/.cache/ir/maintain.log 2&gt;&amp;1</p>
-</div></blockquote>
+<p><a class="reference internal" href="schedule.html#module-ir.schedule" title="ir.schedule"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.schedule</span></code></a> installs that entry for you (<code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">schedule</span></code>) and reports on it;
+it writes a definition and exits, so the executor is still cron / launchd:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># what `ir schedule --every 15m` writes on a cron machine:</span>
+<span class="o">*/</span><span class="mi">15</span> <span class="o">*</span> <span class="o">*</span> <span class="o">*</span> <span class="o">*</span>  <span class="o">&lt;</span><span class="n">python</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">m</span> <span class="n">ir</span> <span class="n">maintain</span> <span class="o">--</span><span class="nb">all</span> <span class="o">&gt;&gt;</span> <span class="o">~/.</span><span class="n">cache</span><span class="o">/</span><span class="n">ir</span><span class="o">/</span><span class="n">maintain</span><span class="o">.</span><span class="n">log</span> <span class="mi">2</span><span class="o">&gt;&amp;</span><span class="mi">1</span>
+</pre></div>
+</div>
+<p>Because a scheduled run has nobody watching it, <a class="reference internal" href="#ir.maintenance.maintain" title="ir.maintenance.maintain"><code class="xref py py-func docutils literal notranslate"><span class="pre">maintain()</span></code></a> is fault-isolated
+per corpus: one corpus failing is recorded on its own result and the sweep carries
+on, rather than aborting and leaving the corpora after it silently unmaintained.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.maintenance.DFLT_STALE_LOCK_AFTER">
+<span class="sig-prename descclassname"><span class="pre">ir.maintenance.</span></span><span class="sig-name descname"><span class="pre">DFLT_STALE_LOCK_AFTER</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">datetime.timedelta(seconds=21600)</span></span><a class="headerlink" href="#ir.maintenance.DFLT_STALE_LOCK_AFTER" title="Link to this definition"></a></dt>
+<dd><p>A lock older than this is assumed to belong to a run that was killed rather
+than one still working. Generous, because a first full build of a large corpus
+legitimately takes a long time and reclaiming a <em>live</em> lock is the bad outcome.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ir.maintenance.MaintenanceBusy">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.maintenance.</span></span><span class="sig-name descname"><span class="pre">MaintenanceBusy</span></span><a class="reference internal" href="../../_modules/ir/maintenance.html#MaintenanceBusy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.maintenance.MaintenanceBusy" title="Link to this definition"></a></dt>
+<dd><p>Another maintenance run holds the lock.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="ir.maintenance.MaintenanceResult">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.maintenance.</span></span><span class="sig-name descname"><span class="pre">MaintenanceResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ran</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reindex</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">synopsis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">records</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/maintenance.html#MaintenanceResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.maintenance.MaintenanceResult" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.maintenance.</span></span><span class="sig-name descname"><span class="pre">MaintenanceResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ran</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reindex</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">synopsis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">records</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/maintenance.html#MaintenanceResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.maintenance.MaintenanceResult" title="Link to this definition"></a></dt>
 <dd><p>What <a class="reference internal" href="#ir.maintenance.maintain_corpus" title="ir.maintenance.maintain_corpus"><code class="xref py py-func docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a> did (or would do) for one corpus.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.maintenance.lock_path">
+<span class="sig-prename descclassname"><span class="pre">ir.maintenance.</span></span><span class="sig-name descname"><span class="pre">lock_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span></span></span><a class="reference internal" href="../../_modules/ir/maintenance.html#lock_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.maintenance.lock_path" title="Link to this definition"></a></dt>
+<dd><p>Where the single-run lock lives (regenerable, so the cache dir).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -139,6 +169,11 @@ every N minutes, and the downtime window lives in the policy (data), not in ir.<
 <dd><p>Run due background work for one corpus (<em>name</em>) or every registered one (<em>all</em>).</p>
 <p>With neither, defaults to all registered corpora. Returns one
 <a class="reference internal" href="#ir.maintenance.MaintenanceResult" title="ir.maintenance.MaintenanceResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a> per corpus considered.</p>
+<p><strong>A named corpus raises; a sweep records.</strong> Asking for one corpus by name is a
+direct request, and swallowing its error would turn a typo’d name into a
+result that reads as success to any caller written before <code class="docutils literal notranslate"><span class="pre">error</span></code> existed.
+A sweep is the unattended case, where the opposite is true: one corpus
+failing must not leave every corpus after it stale with nothing to say so.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -148,6 +183,21 @@ every N minutes, and the downtime window lives in the policy (data), not in ir.<
 <p>Reads the corpus’s resolved policy and its <code class="docutils literal notranslate"><span class="pre">last_maintained</span></code> time, decides
 whether a (synopsis-aware) reindex is due <em>and</em> permitted now, and — unless
 <code class="docutils literal notranslate"><span class="pre">dry_run</span></code> — runs the incremental build and records the run.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.maintenance.single_run">
+<span class="sig-prename descclassname"><span class="pre">ir.maintenance.</span></span><span class="sig-name descname"><span class="pre">single_run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stale_after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">timedelta</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/maintenance.html#single_run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.maintenance.single_run" title="Link to this definition"></a></dt>
+<dd><p>Hold the maintenance lock, or raise <a class="reference internal" href="#ir.maintenance.MaintenanceBusy" title="ir.maintenance.MaintenanceBusy"><code class="xref py py-class docutils literal notranslate"><span class="pre">MaintenanceBusy</span></code></a>.</p>
+<p>Two maintenance runs on one corpus store are not safe: the packed store
+rewrites <code class="docutils literal notranslate"><span class="pre">matrix</span></code>/<code class="docutils literal notranslate"><span class="pre">ids</span></code>/<code class="docutils literal notranslate"><span class="pre">metas</span></code> as separate files, so interleaved
+writers can leave a matrix whose rows no longer line up with its ids — an
+index that answers confidently and wrongly, with nothing raised. launchd
+already runs one instance per label, but that does not cover cron (which
+happily stacks runs) or the manual <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span> <span class="pre">--all</span></code> this tool’s own
+menu suggests while the agent may be mid-run.</p>
+<p>A lock whose owning process is gone, or which is older than <em>stale_after</em>, is
+reclaimed — a killed run must not wedge maintenance forever.</p>
 </dd></dl>
 
 </section>

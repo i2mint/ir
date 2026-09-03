@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.graph &mdash; ir 0.1.28 documentation</title>
+  <title>ir.graph &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../module_docs/ir/store.html">ir.store</a></li>
@@ -98,12 +99,12 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.graph</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;The semantic link graph — typed edges between artifacts (report 12).</span>
+<span></span><span class="sd">"""The semantic link graph — typed edges between artifacts (report 12).</span>
 
 <span class="sd">ir indexes artifacts that *refer to each other*: a package depends on other</span>
 <span class="sd">packages, a skill belongs to a parent, a chunk follows the previous one, a</span>
 <span class="sd">report cites another. This module models those references as **typed, directed</span>
-<span class="sd">edges** between nodes identified by ``(source, artifact_id)`` (ir&#39;s canonical</span>
+<span class="sd">edges** between nodes identified by ``(source, artifact_id)`` (ir's canonical</span>
 <span class="sd">node identity since 0.1.16), queryable at retrieval time — the substrate the</span>
 <span class="sd">traversal operator (``traverse``, follow-up) walks.</span>
 
@@ -111,9 +112,9 @@
 
 <span class="sd">- the :data:`GraphStore` **protocol** — a minimal ``__getitem__`` +</span>
 <span class="sd">  ``neighbors`` structural contract, so a traversal operator binds to *any*</span>
-<span class="sd">  conforming store, not only ir&#39;s;</span>
+<span class="sd">  conforming store, not only ir's;</span>
 <span class="sd">- :class:`CorpusGraph` — the corpus-backed implementation. Node payloads are</span>
-<span class="sd">  the artifact&#39;s stored records (via :func:`ir.retrieve.records_for_artifact`);</span>
+<span class="sd">  the artifact's stored records (via :func:`ir.retrieve.records_for_artifact`);</span>
 <span class="sd">  neighbors come from the ``links`` view on :class:`~ir.store.CorpusStore`.</span>
 
 <span class="sd">Edges are **regenerable derived state** (persisted in the ``links`` view, like</span>
@@ -124,15 +125,15 @@
 
 <span class="sd">Vocabulary (documented, **not** enforced): :data:`NEXT` / :data:`PREV` /</span>
 <span class="sd">:data:`PARENT` / :data:`CHILD` / :data:`REF`. ``NEXT`` / ``PREV`` are *not*</span>
-<span class="sd">materialized — they are derivable from the ledger&#39;s surface order (#44); the</span>
-<span class="sd">view stores only what isn&#39;t derivable.</span>
+<span class="sd">materialized — they are derivable from the ledger's surface order (#44); the</span>
+<span class="sd">view stores only what isn't derivable.</span>
 
 <span class="sd">**Naming guard** (ADR #43): this is the **semantic link graph** — directed,</span>
 <span class="sd">**possibly cyclic** (citations, cross-references), traversed at query time. It</span>
 <span class="sd">is *not* ``ef.artifact_graph``, which is an acyclic build-time</span>
 <span class="sd">derivation/lineage DAG. The id conventions are kept compatible so a later</span>
 <span class="sd">unification stays open, but the two are distinct substrates.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -146,28 +147,28 @@
 <span class="c1"># ---- edge vocabulary (documented, not enforced) --------------------------- #</span>
 
 <span class="c1">#: Next sibling surface in sequence (derivable from the ledger — not stored).</span>
-<span class="n">NEXT</span> <span class="o">=</span> <span class="s2">&quot;NEXT&quot;</span>
+<span class="n">NEXT</span> <span class="o">=</span> <span class="s2">"NEXT"</span>
 <span class="c1">#: Previous sibling surface in sequence (derivable from the ledger — not stored).</span>
-<span class="n">PREV</span> <span class="o">=</span> <span class="s2">&quot;PREV&quot;</span>
+<span class="n">PREV</span> <span class="o">=</span> <span class="s2">"PREV"</span>
 <span class="c1">#: Containment up: a child points at its parent (e.g. a skill → its package).</span>
-<span class="n">PARENT</span> <span class="o">=</span> <span class="s2">&quot;PARENT&quot;</span>
+<span class="n">PARENT</span> <span class="o">=</span> <span class="s2">"PARENT"</span>
 <span class="c1">#: Containment down: a parent points at a child.</span>
-<span class="n">CHILD</span> <span class="o">=</span> <span class="s2">&quot;CHILD&quot;</span>
+<span class="n">CHILD</span> <span class="o">=</span> <span class="s2">"CHILD"</span>
 <span class="c1">#: A generic reference / dependency / citation (e.g. a package → its deps).</span>
-<span class="n">REF</span> <span class="o">=</span> <span class="s2">&quot;REF&quot;</span>
+<span class="n">REF</span> <span class="o">=</span> <span class="s2">"REF"</span>
 
-<span class="c1">#: A node&#39;s identity: ``artifact_id`` within one corpus, or ``(source,</span>
+<span class="c1">#: A node's identity: ``artifact_id`` within one corpus, or ``(source,</span>
 <span class="c1">#: artifact_id)`` across corpora. The visited-set of a traversal keys on this.</span>
-<span class="n">NodeId</span> <span class="o">=</span> <span class="s2">&quot;str | tuple[str, str]&quot;</span>
+<span class="n">NodeId</span> <span class="o">=</span> <span class="s2">"str | tuple[str, str]"</span>
 
 
 <div class="viewcode-block" id="GraphStore">
 <a class="viewcode-back" href="../../module_docs/ir/graph.html#ir.GraphStore">[docs]</a>
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">GraphStore</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Structural contract a traversal operator binds to — node + neighbors.</span>
+<span class="w">    </span><span class="sd">"""Structural contract a traversal operator binds to — node + neighbors.</span>
 
-<span class="sd">    Deliberately minimal (two methods) so it is satisfied by ir&#39;s</span>
+<span class="sd">    Deliberately minimal (two methods) so it is satisfied by ir's</span>
 <span class="sd">    :class:`CorpusGraph` *and* by any external graph: ``__getitem__`` resolves</span>
 <span class="sd">    a node id to its scorable payload, ``neighbors`` lists adjacent node ids</span>
 <span class="sd">    (optionally of one edge type). Granularity-agnostic on purpose — an</span>
@@ -177,7 +178,7 @@
 <span class="sd">    check on attribute **names** only (not signatures) — enough to tell a</span>
 <span class="sd">    conforming adapter from an arbitrary object, but it cannot validate that</span>
 <span class="sd">    ``neighbors`` takes the right arguments; treat it as a smoke check.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_id</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span> <span class="o">...</span>
 
@@ -188,42 +189,42 @@
 <div class="viewcode-block" id="CorpusGraph">
 <a class="viewcode-back" href="../../module_docs/ir/graph.html#ir.CorpusGraph">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">CorpusGraph</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A :data:`GraphStore` over one corpus — artifact nodes, ``links`` edges.</span>
+<span class="w">    </span><span class="sd">"""A :data:`GraphStore` over one corpus — artifact nodes, ``links`` edges.</span>
 
-<span class="sd">    ``node_id`` is an ``artifact_id``. ``graph[aid]`` is the artifact&#39;s stored</span>
+<span class="sd">    ``node_id`` is an ``artifact_id``. ``graph[aid]`` is the artifact's stored</span>
 <span class="sd">    records (its scorable surfaces, in plan order); ``graph.neighbors(aid,</span>
-<span class="sd">    edge_type=...)`` reads the corpus store&#39;s ``links`` view. Single-corpus, so</span>
+<span class="sd">    edge_type=...)`` reads the corpus store's ``links`` view. Single-corpus, so</span>
 <span class="sd">    it resolves **intra-corpus** targets; cross-corpus ``[source, artifact_id]``</span>
 <span class="sd">    targets are returned by :meth:`neighbors` verbatim but ``__getitem__`` only</span>
 <span class="sd">    dereferences ids in *this* corpus (federated traversal is a follow-up).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">store_or_corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">,</span> <span class="s2">&quot;store&quot;</span><span class="p">,</span> <span class="n">store_or_corpus</span><span class="p">)</span>
-        <span class="c1">#: The corpus name, when known — the ``source`` half of this graph&#39;s</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">,</span> <span class="s2">"store"</span><span class="p">,</span> <span class="n">store_or_corpus</span><span class="p">)</span>
+        <span class="c1">#: The corpus name, when known — the ``source`` half of this graph's</span>
         <span class="c1">#: node identities (``None`` for a bare store).</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store_or_corpus</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Record</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The artifact&#39;s records, plan-ordered (``NoLedgerEntry`` if unknown).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""The artifact's records, plan-ordered (``NoLedgerEntry`` if unknown)."""</span>
         <span class="k">return</span> <span class="n">records_for_artifact</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">,</span> <span class="n">node_id</span><span class="p">)</span>
 
 <div class="viewcode-block" id="CorpusGraph.neighbors">
 <a class="viewcode-back" href="../../module_docs/ir/graph.html#ir.CorpusGraph.neighbors">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">neighbors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">edge_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Outgoing neighbor ids of *node_id*, optionally of one *edge_type*.</span>
+<span class="w">        </span><span class="sd">"""Outgoing neighbor ids of *node_id*, optionally of one *edge_type*.</span>
 
 <span class="sd">        Returns target ids in stored form (a bare ``artifact_id``, whose source</span>
-<span class="sd">        is *this* graph&#39;s :attr:`source`; or a ``[source, artifact_id]`` list</span>
+<span class="sd">        is *this* graph's :attr:`source`; or a ``[source, artifact_id]`` list</span>
 <span class="sd">        for a cross-corpus edge), de-duplicated with first-seen order</span>
 <span class="sd">        preserved. An artifact with no edges — or a store without a links view —</span>
 <span class="sd">        yields ``[]``. Pass a canonical ``(source, artifact_id)`` to</span>
-<span class="sd">        :func:`canonical_node_id` for a traversal&#39;s visited-set.</span>
+<span class="sd">        :func:`canonical_node_id` for a traversal's visited-set.</span>
 
 <span class="sd">        *node_id* is an intra-corpus ``artifact_id`` (a ``str``); a cross-corpus</span>
 <span class="sd">        target fetched from another graph is out of contract here (it has no</span>
 <span class="sd">        edges *in this corpus*).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_links</span><span class="p">(</span><span class="n">node_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">edge_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">targets</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">edges</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">edge_type</span><span class="p">,</span> <span class="p">[]))</span>
@@ -242,7 +243,7 @@
 <div class="viewcode-block" id="CorpusGraph.edge_types">
 <a class="viewcode-back" href="../../module_docs/ir/graph.html#ir.CorpusGraph.edge_types">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">edge_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The edge types present on *node_id* (``[]`` if none).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""The edge types present on *node_id* (``[]`` if none)."""</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_links</span><span class="p">(</span><span class="n">node_id</span><span class="p">))</span></div>
 </div>
 
@@ -251,20 +252,20 @@
 <div class="viewcode-block" id="canonical_node_id">
 <a class="viewcode-back" href="../../module_docs/ir/graph.html#ir.canonical_node_id">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">canonical_node_id</span><span class="p">(</span><span class="n">target</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Canonicalize a neighbor *target* to a ``(source, artifact_id)`` node id.</span>
+<span class="w">    </span><span class="sd">"""Canonicalize a neighbor *target* to a ``(source, artifact_id)`` node id.</span>
 
-<span class="sd">    The repo&#39;s node identity is ``(source, artifact_id)`` — the key a traversal</span>
+<span class="sd">    The repo's node identity is ``(source, artifact_id)`` — the key a traversal</span>
 <span class="sd">    visited-set must use so the same id in two corpora stays two nodes.</span>
 <span class="sd">    :meth:`CorpusGraph.neighbors` returns targets in stored form: a bare</span>
 <span class="sd">    ``artifact_id`` (implicitly in *source*, the graph it came from) or a</span>
 <span class="sd">    ``[source, artifact_id]`` cross-corpus pair. This resolves either to the</span>
 <span class="sd">    canonical tuple.</span>
 
-<span class="sd">    &gt;&gt;&gt; canonical_node_id(&quot;dol&quot;, source=&quot;packages&quot;)</span>
-<span class="sd">    (&#39;packages&#39;, &#39;dol&#39;)</span>
-<span class="sd">    &gt;&gt;&gt; canonical_node_id([&quot;skills&quot;, &quot;deploy&quot;], source=&quot;packages&quot;)</span>
-<span class="sd">    (&#39;skills&#39;, &#39;deploy&#39;)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    &gt;&gt;&gt; canonical_node_id("dol", source="packages")</span>
+<span class="sd">    ('packages', 'dol')</span>
+<span class="sd">    &gt;&gt;&gt; canonical_node_id(["skills", "deploy"], source="packages")</span>
+<span class="sd">    ('skills', 'deploy')</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">target</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">target</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span></div>
@@ -275,19 +276,19 @@
 
 <span class="c1">#: An edge extractor: ``(artifact_id, filter_fields) -&gt; {edge_type: [target]}``.</span>
 <span class="c1">#: An injectable build-time seam (like :data:`~ir.formulate.Formulator`) that</span>
-<span class="c1">#: turns an artifact&#39;s filter fields into outgoing edges. ``build(...,</span>
+<span class="c1">#: turns an artifact's filter fields into outgoing edges. ``build(...,</span>
 <span class="c1">#: edge_extractor=...)`` runs it; :func:`default_edge_extractor` is shipped.</span>
-<span class="n">EdgeExtractor</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="s2">&quot;Mapping[str, list]&quot;</span><span class="p">]</span>
+<span class="n">EdgeExtractor</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="s2">"Mapping[str, list]"</span><span class="p">]</span>
 
 <span class="c1">#: Split a PEP 508 dependency spec at the first version/extra/marker/url</span>
-<span class="c1">#: delimiter, leaving the bare distribution name (``&quot;numpy[fast]&gt;=1.2;</span>
-<span class="c1">#: python&gt;=&#39;3.9&#39;&quot;`` → ``&quot;numpy&quot;``; the direct-reference ``&quot;dol@git+https://…&quot;``</span>
-<span class="c1">#: → ``&quot;dol&quot;``). ``@`` is included so PEP 508 URL deps yield the bare name.</span>
-<span class="n">_DEP_DELIM</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[&lt;&gt;=!~;@\[\s(]&quot;</span><span class="p">)</span>
+<span class="c1">#: delimiter, leaving the bare distribution name (``"numpy[fast]&gt;=1.2;</span>
+<span class="c1">#: python&gt;='3.9'"`` → ``"numpy"``; the direct-reference ``"dol@git+https://…"``</span>
+<span class="c1">#: → ``"dol"``). ``@`` is included so PEP 508 URL deps yield the bare name.</span>
+<span class="n">_DEP_DELIM</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[&lt;&gt;=!~;@\[\s(]"</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_dep_name</span><span class="p">(</span><span class="n">dep</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The bare distribution name of a dependency spec (lower-cased, stripped).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""The bare distribution name of a dependency spec (lower-cased, stripped)."""</span>
     <span class="k">return</span> <span class="n">_DEP_DELIM</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">dep</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 
 
@@ -296,9 +297,9 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">default_edge_extractor</span><span class="p">(</span>
     <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">filter_fields</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Edges latent in the standard filter fields: ``deps`` → REF, ``parent`` → PARENT.</span>
+<span class="w">    </span><span class="sd">"""Edges latent in the standard filter fields: ``deps`` → REF, ``parent`` → PARENT.</span>
 
-<span class="sd">    - ``deps`` (Package) → :data:`REF` edges to each dependency&#39;s bare name</span>
+<span class="sd">    - ``deps`` (Package) → :data:`REF` edges to each dependency's bare name</span>
 <span class="sd">      (version specifiers / extras / markers stripped). Self-edges and blanks</span>
 <span class="sd">      are dropped.</span>
 <span class="sd">    - ``parent`` (Skill) → a single :data:`PARENT` edge.</span>
@@ -309,11 +310,11 @@
 <span class="sd">    traversal simply finds no node to expand).</span>
 
 <span class="sd">    Self-edges are dropped case-insensitively (``_dep_name`` lower-cases, so a</span>
-<span class="sd">    package ``&quot;AA&quot;`` depending on ``&quot;aa&quot;`` is recognized as a self-reference).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    package ``"AA"`` depending on ``"aa"`` is recognized as a self-reference).</span>
+<span class="sd">    """</span>
     <span class="n">edges</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">self_id</span> <span class="o">=</span> <span class="n">artifact_id</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="n">deps</span> <span class="o">=</span> <span class="n">filter_fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;deps&quot;</span><span class="p">)</span>
+    <span class="n">deps</span> <span class="o">=</span> <span class="n">filter_fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"deps"</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">deps</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
         <span class="n">refs</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">deps</span><span class="p">:</span>
@@ -322,7 +323,7 @@
                 <span class="n">refs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">refs</span><span class="p">:</span>
             <span class="n">edges</span><span class="p">[</span><span class="n">REF</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">refs</span><span class="p">))</span>  <span class="c1"># de-dup, keep order</span>
-    <span class="n">parent</span> <span class="o">=</span> <span class="n">filter_fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;parent&quot;</span><span class="p">)</span>
+    <span class="n">parent</span> <span class="o">=</span> <span class="n">filter_fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"parent"</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">parent</span> <span class="ow">and</span> <span class="n">parent</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="n">self_id</span><span class="p">:</span>
         <span class="n">edges</span><span class="p">[</span><span class="n">PARENT</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">parent</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">edges</span></div>

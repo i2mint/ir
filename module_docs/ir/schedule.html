@@ -1,0 +1,474 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ir.schedule &mdash; ir 0.1.29 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ir.select" href="select.html" />
+    <link rel="prev" title="ir.retrieve" href="retrieve.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ir
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../ir.html">ir</a></li>
+<li class="toctree-l1"><a class="reference internal" href="__main__.html">ir.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base.html">ir.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cli.html">ir.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="config.html">ir.config</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coverage.html">ir.coverage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embed.html">ir.embed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval.html">ir.eval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l1"><a class="reference internal" href="expand.html">ir.expand</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formulate.html">ir.formulate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="graph.html">ir.graph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">ir.index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ir.schedule</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.BACKENDS"><code class="docutils literal notranslate"><span class="pre">BACKENDS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.DFLT_EVERY_MINUTES"><code class="docutils literal notranslate"><span class="pre">DFLT_EVERY_MINUTES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.DFLT_LABEL"><code class="docutils literal notranslate"><span class="pre">DFLT_LABEL</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.INHERITED_ENV_VARS"><code class="docutils literal notranslate"><span class="pre">INHERITED_ENV_VARS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.LOAD_BEARING_ENV_VARS"><code class="docutils literal notranslate"><span class="pre">LOAD_BEARING_ENV_VARS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.ScheduleError"><code class="docutils literal notranslate"><span class="pre">ScheduleError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.ScheduleSpec"><code class="docutils literal notranslate"><span class="pre">ScheduleSpec</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.schedule.ScheduleSpec.args"><code class="docutils literal notranslate"><span class="pre">ScheduleSpec.args</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.schedule.ScheduleSpec.command"><code class="docutils literal notranslate"><span class="pre">ScheduleSpec.command</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.schedule.ScheduleSpec.env_dict"><code class="docutils literal notranslate"><span class="pre">ScheduleSpec.env_dict</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.ScheduleStatus"><code class="docutils literal notranslate"><span class="pre">ScheduleStatus</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ir.schedule.ScheduleStatus.changed"><code class="docutils literal notranslate"><span class="pre">ScheduleStatus.changed</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ir.schedule.ScheduleStatus.to_dict"><code class="docutils literal notranslate"><span class="pre">ScheduleStatus.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.cron_expression"><code class="docutils literal notranslate"><span class="pre">cron_expression()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.cron_line"><code class="docutils literal notranslate"><span class="pre">cron_line()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.cron_marker"><code class="docutils literal notranslate"><span class="pre">cron_marker()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.crontab_with_line"><code class="docutils literal notranslate"><span class="pre">crontab_with_line()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.crontab_without_line"><code class="docutils literal notranslate"><span class="pre">crontab_without_line()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.ensure"><code class="docutils literal notranslate"><span class="pre">ensure()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.format_every"><code class="docutils literal notranslate"><span class="pre">format_every()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.install"><code class="docutils literal notranslate"><span class="pre">install()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.parse_every"><code class="docutils literal notranslate"><span class="pre">parse_every()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.plist_bytes"><code class="docutils literal notranslate"><span class="pre">plist_bytes()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.plist_dict"><code class="docutils literal notranslate"><span class="pre">plist_dict()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.remove"><code class="docutils literal notranslate"><span class="pre">remove()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.render"><code class="docutils literal notranslate"><span class="pre">render()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.resolve_backend"><code class="docutils literal notranslate"><span class="pre">resolve_backend()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.restart"><code class="docutils literal notranslate"><span class="pre">restart()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.schedule.status"><code class="docutils literal notranslate"><span class="pre">status()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
+<li class="toctree-l1"><a class="reference internal" href="strategy.html">ir.strategy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="synopsis.html">ir.synopsis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">ir.tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="traverse.html">ir.traverse</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ir</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ir.schedule</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/ir/schedule.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ir.schedule">
+<span id="ir-schedule"></span><h1>ir.schedule<a class="headerlink" href="#module-ir.schedule" title="Link to this heading"></a></h1>
+<p>Install and operate the OS job that runs <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span></code> — <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">schedule</span></code> (issue #75).</p>
+<p><code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span></code> is idempotent and cron-shaped, but something has to <em>call</em> it.
+This module manages that caller: it writes a <strong>definition</strong> (a launchd plist or a
+crontab line), hands it to the OS, and exits.</p>
+<p><strong>``ir`` still does not run a scheduler.</strong> The boundary from issue #58 — “ir holds
+the declarative policy as data and exposes an idempotent <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span></code>; it does
+not run a scheduler” — is preserved exactly. There is no daemon here, no event
+loop, no in-process timer, and no orchestration import: launchd/cron remain the
+executor, and this module is the <em>installer</em> for the crontab snippet
+<a class="reference internal" href="maintenance.html#module-ir.maintenance" title="ir.maintenance"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.maintenance</span></code></a> already prescribes in its docstring. Turning that snippet
+into a command is packaging, not a change of architecture.</p>
+<p>The command is idempotent and tells you how to operate what it finds:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ir</span> <span class="n">schedule</span>                <span class="c1"># ensure a schedule exists; report + menu if one does</span>
+<span class="n">ir</span> <span class="n">schedule</span> <span class="o">--</span><span class="n">status</span>       <span class="c1"># report only, never mutates</span>
+<span class="n">ir</span> <span class="n">schedule</span> <span class="o">--</span><span class="n">every</span> <span class="mi">30</span><span class="n">m</span>    <span class="c1"># set/change the interval</span>
+<span class="n">ir</span> <span class="n">schedule</span> <span class="o">--</span><span class="n">restart</span>      <span class="c1"># reload the definition, re-pinning the interpreter</span>
+<span class="n">ir</span> <span class="n">schedule</span> <span class="o">--</span><span class="n">remove</span>       <span class="c1"># stop it and delete the definition</span>
+<span class="n">ir</span> <span class="n">schedule</span> <span class="o">--</span><span class="n">dry</span><span class="o">-</span><span class="n">run</span>      <span class="c1"># print what would be written</span>
+</pre></div>
+</div>
+<p><strong>An existing definition is data, not a template to re-derive.</strong> Only a <em>fresh</em>
+install snapshots the calling shell’s environment. Every operation on a schedule
+that already exists (<code class="docutils literal notranslate"><span class="pre">--every</span></code>, <code class="docutils literal notranslate"><span class="pre">--restart</span></code>) carries the stored environment
+forward untouched, because the alternative silently re-points a working job at a
+different corpus store the first time you operate it from a shell that happens to
+lack <code class="docutils literal notranslate"><span class="pre">$PP</span></code> — which is the exact failure this module exists to prevent. Only
+<code class="docutils literal notranslate"><span class="pre">--restart</span></code> re-pins the interpreter, and only because repairing a dead
+interpreter is what it is for.</p>
+<p>Two seams, both one keyword argument:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">backend</span></code> — which OS scheduler holds the definition. Feature-detected
+(<code class="docutils literal notranslate"><span class="pre">launchctl</span></code> then <code class="docutils literal notranslate"><span class="pre">crontab</span></code>), never hardcoded per-platform; <code class="docutils literal notranslate"><span class="pre">systemd</span>
+<span class="pre">--user</span></code> timers are the documented next backend. A backend owns its own
+definition format, its own preview, and whether “loaded” means anything for it,
+so adding one touches <a class="reference internal" href="#ir.schedule.BACKENDS" title="ir.schedule.BACKENDS"><code class="xref py py-data docutils literal notranslate"><span class="pre">BACKENDS</span></code></a> and nothing else.</p></li>
+<li><p><a class="reference internal" href="#ir.schedule.ScheduleSpec.args" title="ir.schedule.ScheduleSpec.args"><code class="xref py py-attr docutils literal notranslate"><span class="pre">ScheduleSpec.args</span></code></a> — the command the job runs, defaulting to
+<code class="docutils literal notranslate"><span class="pre">-m</span> <span class="pre">ir</span> <span class="pre">maintain</span> <span class="pre">--all</span></code> pinned to the installing interpreter. An orchestration
+layer’s own entry point (#58 / ADR #43) drops in here without touching backends.</p></li>
+</ul>
+<p>Everything else — the plist keys, the crontab line syntax, interval parsing,
+output formatting — is written directly, on purpose.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.schedule.BACKENDS">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">BACKENDS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(&lt;class</span> <span class="pre">'ir.schedule._LaunchdBackend'&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'ir.schedule._CronBackend'&gt;)</span></span><a class="headerlink" href="#ir.schedule.BACKENDS" title="Link to this definition"></a></dt>
+<dd><p>Backends in preference order. launchd first on macOS because a LaunchAgent
+survives reboots and logs where the OS expects; cron is the POSIX fallback and
+also works on macOS if asked for by name.</p>
+<p>This tuple is the whole seam. A backend owns its definition format, its
+<code class="docutils literal notranslate"><span class="pre">preview</span></code>, and its <code class="docutils literal notranslate"><span class="pre">reports_loaded</span></code> answer, so adding <code class="docutils literal notranslate"><span class="pre">systemd</span> <span class="pre">--user</span></code>
+means adding a class here and nothing else — no branch in the renderer, the
+previewer, or the CLI.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.schedule.DFLT_EVERY_MINUTES">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">DFLT_EVERY_MINUTES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">60</span></span><a class="headerlink" href="#ir.schedule.DFLT_EVERY_MINUTES" title="Link to this definition"></a></dt>
+<dd><p>How often the job fires, in minutes. Hourly rather than the docstring
+example’s 15 minutes: a <code class="docutils literal notranslate"><span class="pre">source-change</span></code> rebuild is a near-no-op only <em>after</em>
+it has walked the sources, and a large corpus (tens of thousands of records)
+makes that walk worth an hour’s spacing. <code class="docutils literal notranslate"><span class="pre">--every</span></code> moves it either way.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.schedule.DFLT_LABEL">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">DFLT_LABEL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'com.i2mint.ir.maintain'</span></span><a class="headerlink" href="#ir.schedule.DFLT_LABEL" title="Link to this definition"></a></dt>
+<dd><p>Reverse-DNS job identifier. Also the launchd <code class="docutils literal notranslate"><span class="pre">Label</span></code> and the token that marks
+ir’s line in the user crontab, so both backends find their own work and never
+touch anybody else’s.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.schedule.INHERITED_ENV_VARS">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">INHERITED_ENV_VARS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('IR_CONFIG_DIR',</span> <span class="pre">'IR_DATA_DIR',</span> <span class="pre">'IR_CACHE_DIR',</span> <span class="pre">'XDG_CONFIG_HOME',</span> <span class="pre">'XDG_DATA_HOME',</span> <span class="pre">'XDG_CACHE_HOME',</span> <span class="pre">'PP',</span> <span class="pre">'PTH_FILEPATH')</span></span><a class="headerlink" href="#ir.schedule.INHERITED_ENV_VARS" title="Link to this definition"></a></dt>
+<dd><p>Variables a job must inherit to see what the shell that installed it sees.
+launchd starts jobs with a near-empty environment and cron with a minimal one,
+so anything ir reads from the environment has to be carried into the
+definition or the job maintains a <em>different</em> (or empty) set of corpora.</p>
+<p><code class="docutils literal notranslate"><span class="pre">IR_*</span></code>/<code class="docutils literal notranslate"><span class="pre">XDG_*</span></code> locate the stores (<a class="reference internal" href="config.html#module-ir.config" title="ir.config"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.config</span></code></a>); <code class="docutils literal notranslate"><span class="pre">PP</span></code> and
+<code class="docutils literal notranslate"><span class="pre">PTH_FILEPATH</span></code> are read by <a class="reference internal" href="sources.html#module-ir.sources" title="ir.sources"><code class="xref py py-mod docutils literal notranslate"><span class="pre">ir.sources</span></code></a> itself to find the package
+manifest and the projects root, and without them the <code class="docutils literal notranslate"><span class="pre">packages</span></code> and
+<code class="docutils literal notranslate"><span class="pre">reports</span></code> corpora fail outright — which is precisely how a scheduled job
+ends up “running fine” while two of three corpora go stale.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.schedule.LOAD_BEARING_ENV_VARS">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">LOAD_BEARING_ENV_VARS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('PP',</span> <span class="pre">'PTH_FILEPATH')</span></span><a class="headerlink" href="#ir.schedule.LOAD_BEARING_ENV_VARS" title="Link to this definition"></a></dt>
+<dd><p>Of those, the ones whose absence breaks a corpus outright rather than merely
+relocating it. <a class="reference internal" href="#ir.schedule.status" title="ir.schedule.status"><code class="xref py py-func docutils literal notranslate"><span class="pre">status()</span></code></a> reports a job that lacks one the current shell
+has, because that job is failing silently right now.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="ir.schedule.ScheduleError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">ScheduleError</span></span><a class="reference internal" href="../../_modules/ir/schedule.html#ScheduleError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.ScheduleError" title="Link to this definition"></a></dt>
+<dd><p>A schedule could not be read, written, or expressed on this platform.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.schedule.ScheduleSpec">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">ScheduleSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">every_minutes:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">60,</span> <span class="pre">python:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">args:</span> <span class="pre">tuple[str,</span> <span class="pre">...]</span> <span class="pre">=</span> <span class="pre">('-u',</span> <span class="pre">'-m',</span> <span class="pre">'ir',</span> <span class="pre">'maintain',</span> <span class="pre">'--all'),</span> <span class="pre">label:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'com.i2mint.ir.maintain',</span> <span class="pre">log_path:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">env:</span> <span class="pre">tuple[tuple[str,</span> <span class="pre">str],</span> <span class="pre">...]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/schedule.html#ScheduleSpec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.ScheduleSpec" title="Link to this definition"></a></dt>
+<dd><p>What to run and how often — backend-independent.</p>
+<p><code class="docutils literal notranslate"><span class="pre">python</span></code> is pinned to an absolute interpreter path (by default the one
+installing the schedule) because neither launchd nor cron inherits the shell’s
+<code class="docutils literal notranslate"><span class="pre">PATH</span></code>-resolved <code class="docutils literal notranslate"><span class="pre">ir</span></code>. Pinning is also what makes staleness <em>detectable</em>:
+<a class="reference internal" href="#ir.schedule.status" title="ir.schedule.status"><code class="xref py py-func docutils literal notranslate"><span class="pre">status()</span></code></a> can check the recorded interpreter still exists.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.schedule.ScheduleSpec.args">
+<span class="sig-name descname"><span class="pre">args</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('-u',</span> <span class="pre">'-m',</span> <span class="pre">'ir',</span> <span class="pre">'maintain',</span> <span class="pre">'--all')</span></span><a class="headerlink" href="#ir.schedule.ScheduleSpec.args" title="Link to this definition"></a></dt>
+<dd><p>Python block-buffers stdout when it is not a tty, so
+without it a scheduled run’s log stays empty until the process exits —
+exactly when you most want to watch a slow rebuild.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">-u</span></code> matters</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ir.schedule.ScheduleSpec.command">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">command</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#ir.schedule.ScheduleSpec.command" title="Link to this definition"></a></dt>
+<dd><p>The argv the scheduler executes.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ir.schedule.ScheduleSpec.env_dict">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">env_dict</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#ir.schedule.ScheduleSpec.env_dict" title="Link to this definition"></a></dt>
+<dd><p>The job environment as a plain dict.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.schedule.ScheduleStatus">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">ScheduleStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">installed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'com.i2mint.ir.maintain'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'reported'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">every_minutes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">definition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">python</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loaded</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_log_line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">problems</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/schedule.html#ScheduleStatus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.ScheduleStatus" title="Link to this definition"></a></dt>
+<dd><p>What the scheduler holds for ir, and what just happened to it.</p>
+<p>One return type for every operation: <code class="docutils literal notranslate"><span class="pre">action</span></code> says what the call did, so a
+caller never has to pair a status with a separate “did it change?” flag.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="ir.schedule.ScheduleStatus.changed">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">changed</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></span><a class="headerlink" href="#ir.schedule.ScheduleStatus.changed" title="Link to this definition"></a></dt>
+<dd><p>Whether this call actually mutated the schedule.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.schedule.ScheduleStatus.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#ScheduleStatus.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.ScheduleStatus.to_dict" title="Link to this definition"></a></dt>
+<dd><p>JSON-ready view (the shape a non-CLI surface would consume).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.cron_expression">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">cron_expression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">minutes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#cron_expression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.cron_expression" title="Link to this definition"></a></dt>
+<dd><p>The five-field cron time spec for an every-<em>minutes</em> schedule.</p>
+<p>cron restarts its <code class="docutils literal notranslate"><span class="pre">*/n</span></code> count each hour (and each day), so only intervals
+that divide evenly fire evenly. Rejecting the rest with the valid values named
+beats installing a job that quietly skips.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cron_expression</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span> <span class="n">cron_expression</span><span class="p">(</span><span class="mi">60</span><span class="p">),</span> <span class="n">cron_expression</span><span class="p">(</span><span class="mi">360</span><span class="p">)</span>
+<span class="go">('*/15 * * * *', '0 * * * *', '0 */6 * * *')</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.cron_line">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">cron_line</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ir.schedule.ScheduleSpec" title="ir.schedule.ScheduleSpec"><span class="pre">ScheduleSpec</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#cron_line"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.cron_line" title="Link to this definition"></a></dt>
+<dd><p>ir’s crontab entry for <em>spec</em> — deliberately <strong>one self-contained line</strong>.</p>
+<p>An earlier design used a begin/end marker block with the environment on its
+own <code class="docutils literal notranslate"><span class="pre">NAME=value</span></code> crontab lines. Both halves of that were wrong:</p>
+<ul class="simple">
+<li><p>a block has an <em>interior</em>, and anything that lands in it (a job the user
+typed just above the end marker, or everything after a begin marker whose
+end marker got lost) is deleted the next time ir rewrites its block;</p></li>
+<li><p>crontab-scope <code class="docutils literal notranslate"><span class="pre">NAME=value</span></code> lines apply to <strong>every command after them in
+the file</strong>, so ir’s <code class="docutils literal notranslate"><span class="pre">HOME</span></code> and <code class="docutils literal notranslate"><span class="pre">PATH</span></code> would silently attach themselves
+to whatever job the user appends next — and detach again the next time ir
+moved its block. A cron job whose environment depends on when you last ran
+<code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">schedule</span></code> is close to undiagnosable.</p></li>
+</ul>
+<p>One line with an inline <code class="docutils literal notranslate"><span class="pre">env</span></code> prefix has no interior to corrupt and no
+scope beyond itself. <code class="docutils literal notranslate"><span class="pre">%</span></code> is escaped because cron reads an unescaped one as
+a newline that terminates the command.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.cron_marker">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">cron_marker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#cron_marker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.cron_marker" title="Link to this definition"></a></dt>
+<dd><p>The trailing comment that identifies ir’s crontab line.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.crontab_with_line">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">crontab_with_line</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ir.schedule.ScheduleSpec" title="ir.schedule.ScheduleSpec"><span class="pre">ScheduleSpec</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#crontab_with_line"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.crontab_with_line" title="Link to this definition"></a></dt>
+<dd><p><em>text</em> with ir’s line replaced by (or appended as) <em>spec</em>’s line.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.crontab_without_line">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">crontab_without_line</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'com.i2mint.ir.maintain'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#crontab_without_line"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.crontab_without_line" title="Link to this definition"></a></dt>
+<dd><p><em>text</em> with ir’s line removed (unchanged if there is none).</p>
+<p>Only lines ir itself wrote are dropped, identified by the trailing marker.
+Nothing else in the file is read, moved, or rewritten.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.ensure">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">ensure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">every</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'com.i2mint.ir.maintain'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.schedule.ScheduleStatus" title="ir.schedule.ScheduleStatus"><span class="pre">ScheduleStatus</span></a></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#ensure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.ensure" title="Link to this definition"></a></dt>
+<dd><p>Make sure a schedule exists — the idempotent front door.</p>
+<p>Installs when there is none. When one already exists it changes nothing
+unless <em>every</em> differs, so running it twice is safe and running it out of
+habit never silently reinstalls over a schedule you tuned.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.format_every">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">format_every</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">minutes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#format_every"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.format_every" title="Link to this definition"></a></dt>
+<dd><p>Human rendering of an interval (<code class="docutils literal notranslate"><span class="pre">90</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">'1h30m'</span></code>).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.install">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">install</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">every</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'com.i2mint.ir.maintain'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">python</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inherit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.schedule.ScheduleStatus" title="ir.schedule.ScheduleStatus"><span class="pre">ScheduleStatus</span></a></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.install" title="Link to this definition"></a></dt>
+<dd><p>Install (or overwrite) the schedule, and return the resulting status.</p>
+<p><em>inherit</em> carries an existing definition’s environment, interpreter and log
+path forward; pass <code class="docutils literal notranslate"><span class="pre">False</span></code> to re-snapshot them from this process.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.parse_every">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">parse_every</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#parse_every"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.parse_every" title="Link to this definition"></a></dt>
+<dd><p>Minutes from <code class="docutils literal notranslate"><span class="pre">&quot;30m&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;2h&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;1d&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;45&quot;</span></code> (<code class="docutils literal notranslate"><span class="pre">None</span></code> passes through).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_every</span><span class="p">(</span><span class="s2">"30m"</span><span class="p">),</span> <span class="n">parse_every</span><span class="p">(</span><span class="s2">"2h"</span><span class="p">),</span> <span class="n">parse_every</span><span class="p">(</span><span class="s2">"1d"</span><span class="p">),</span> <span class="n">parse_every</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span>
+<span class="go">(30, 120, 1440, 45)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.plist_bytes">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">plist_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ir.schedule.ScheduleSpec" title="ir.schedule.ScheduleSpec"><span class="pre">ScheduleSpec</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#plist_bytes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.plist_bytes" title="Link to this definition"></a></dt>
+<dd><p><em>spec</em> rendered as launchd plist XML.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.plist_dict">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">plist_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ir.schedule.ScheduleSpec" title="ir.schedule.ScheduleSpec"><span class="pre">ScheduleSpec</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#plist_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.plist_dict" title="Link to this definition"></a></dt>
+<dd><p>The launchd job description for <em>spec</em>, as a plist-ready dict.</p>
+<p><code class="docutils literal notranslate"><span class="pre">StartInterval</span></code> (seconds) and <code class="docutils literal notranslate"><span class="pre">EnvironmentVariables</span></code> are what make the
+interval and the job environment readable back out of an installed job, so
+<a class="reference internal" href="#ir.schedule.status" title="ir.schedule.status"><code class="xref py py-func docutils literal notranslate"><span class="pre">status()</span></code></a> needs no separate bookkeeping file.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ProcessType</span></code> is deliberately <code class="docutils literal notranslate"><span class="pre">Standard</span></code> rather than <code class="docutils literal notranslate"><span class="pre">Background</span></code>:
+launchd throttles a <code class="docutils literal notranslate"><span class="pre">Background</span></code> job’s CPU and I/O to keep it from
+disrupting the user, and a corpus rebuild is exactly the file-walking,
+embedding-heavy work that throttling would stretch past its own interval.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.remove">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'com.i2mint.ir.maintain'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.schedule.ScheduleStatus" title="ir.schedule.ScheduleStatus"><span class="pre">ScheduleStatus</span></a></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.remove" title="Link to this definition"></a></dt>
+<dd><p>Stop the schedule and delete its definition.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.render">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">render</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ir.schedule.ScheduleStatus" title="ir.schedule.ScheduleStatus"><span class="pre">ScheduleStatus</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#render"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.render" title="Link to this definition"></a></dt>
+<dd><p>A human report of <em>state</em>, including how to operate what was found.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.resolve_backend">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">resolve_backend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">require_available</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/schedule.html#resolve_backend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.resolve_backend" title="Link to this definition"></a></dt>
+<dd><p>The backend named <em>backend</em>, or the first available one.</p>
+<p>Naming one this machine cannot run is an error rather than a half-install:
+<code class="docutils literal notranslate"><span class="pre">--backend</span> <span class="pre">launchd</span></code> on Linux would otherwise write a plist into a directory
+nothing reads. Pass <code class="docutils literal notranslate"><span class="pre">require_available=False</span></code> to obtain a backend purely to
+render its definition format.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">resolve_backend</span><span class="p">(</span><span class="s2">"cron"</span><span class="p">,</span> <span class="n">require_available</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+<span class="go">'cron'</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.restart">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">restart</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'com.i2mint.ir.maintain'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.schedule.ScheduleStatus" title="ir.schedule.ScheduleStatus"><span class="pre">ScheduleStatus</span></a></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#restart"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.restart" title="Link to this definition"></a></dt>
+<dd><p>Reload the existing definition, re-pinning it to the current interpreter.</p>
+<p>This is the repair for a schedule left pointing at a rebuilt or deleted
+interpreter. The stored environment is carried forward untouched — restarting
+from a shell that lacks <code class="docutils literal notranslate"><span class="pre">$PP</span></code> must not quietly re-point a working job at a
+different (or empty) set of corpora.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.schedule.status">
+<span class="sig-prename descclassname"><span class="pre">ir.schedule.</span></span><span class="sig-name descname"><span class="pre">status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'com.i2mint.ir.maintain'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ir.schedule.ScheduleStatus" title="ir.schedule.ScheduleStatus"><span class="pre">ScheduleStatus</span></a></span></span><a class="reference internal" href="../../_modules/ir/schedule.html#status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.schedule.status" title="Link to this definition"></a></dt>
+<dd><p>Report the current schedule without changing anything.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="retrieve.html" class="btn btn-neutral float-left" title="ir.retrieve" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="select.html" class="btn btn-neutral float-right" title="ir.select" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

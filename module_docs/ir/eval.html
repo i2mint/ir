@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.eval &mdash; ir 0.1.28 documentation</title>
+  <title>ir.eval &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -211,6 +211,7 @@
 <li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
@@ -291,14 +292,14 @@ was absent is flagged in the report.)</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ir</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ir</span><span class="w"> </span><span class="kn">import</span> <span class="nb">eval</span> <span class="k">as</span> <span class="n">ev</span>
 
-<span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">ir</span><span class="o">.</span><span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_skills</span><span class="p">())</span>     <span class="c1"># or ir.open_corpus(&quot;skills&quot;)</span>
-<span class="n">cases</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">load_cases</span><span class="p">(</span><span class="s2">&quot;skills_eval.jsonl&quot;</span><span class="p">)</span>
-<span class="n">report</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">evaluate_discovery</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">)</span>
+<span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">ir</span><span class="o">.</span><span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_skills</span><span class="p">())</span>     <span class="c1"># or ir.open_corpus("skills")</span>
+<span class="n">cases</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">load_cases</span><span class="p">(</span><span class="s2">"skills_eval.jsonl"</span><span class="p">)</span>
+<span class="n">report</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">evaluate_discovery</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">report</span><span class="p">)</span>                                        <span class="c1"># NDCG@10 + taxonomy</span>
 
 <span class="c1"># Just the BEIR-shaped metrics (pure ef), e.g. to A/B dense vs hybrid:</span>
-<span class="n">ev</span><span class="o">.</span><span class="n">retrieval_report</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;dense&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">primary</span>    <span class="c1"># mean NDCG@10</span>
-<span class="n">ev</span><span class="o">.</span><span class="n">retrieval_report</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;hybrid&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">primary</span>
+<span class="n">ev</span><span class="o">.</span><span class="n">retrieval_report</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"dense"</span><span class="p">)</span><span class="o">.</span><span class="n">primary</span>    <span class="c1"># mean NDCG@10</span>
+<span class="n">ev</span><span class="o">.</span><span class="n">retrieval_report</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">)</span><span class="o">.</span><span class="n">primary</span>
 </pre></div>
 </div>
 </section>

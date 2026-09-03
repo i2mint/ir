@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.synopsis &mdash; ir 0.1.28 documentation</title>
+  <title>ir.synopsis &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../../_static/documentation_options.js?v=904119ea"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -66,6 +66,7 @@
 <li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="store.html">ir.store</a></li>
@@ -117,7 +118,7 @@ query time — and incremental, so only new / changed artifacts are re-synthesiz
 <p><a class="reference internal" href="#ir.synopsis.with_synopsis" title="ir.synopsis.with_synopsis"><code class="xref py py-func docutils literal notranslate"><span class="pre">with_synopsis()</span></code></a> wraps <em>any</em> <a class="reference internal" href="strategy.html#ir.strategy.IndexingStrategy" title="ir.strategy.IndexingStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a> and adds
 one synopsis surface per artifact:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">strat</span>  <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">with_synopsis</span><span class="p">(</span><span class="n">ir</span><span class="o">.</span><span class="n">Chunked</span><span class="p">(),</span> <span class="n">synthesize</span><span class="o">=</span><span class="n">my_summarizer</span><span class="p">)</span>
-<span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">ir</span><span class="o">.</span><span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_mapping</span><span class="p">(</span><span class="n">docs</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strat</span><span class="p">))</span>
+<span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">ir</span><span class="o">.</span><span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_mapping</span><span class="p">(</span><span class="n">docs</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"d"</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strat</span><span class="p">))</span>
 <span class="n">hits</span>   <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">corpus</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">ir</span><span class="o">.</span><span class="n">collapsed_tree_policy</span><span class="p">())</span>  <span class="c1"># routes via synopsis</span>
 </pre></div>
 </div>
@@ -215,7 +216,7 @@ own <code class="docutils literal notranslate"><span class="pre">synthesizer_id<
 <code class="docutils literal notranslate"><span class="pre">ir.CorpusSource.from_mapping(docs,</span> <span class="pre">name=...,</span> <span class="pre">strategy=with_synopsis(...))</span></code>.</p>
 </dd>
 </dl>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">strat</span> <span class="o">=</span> <span class="n">with_synopsis</span><span class="p">(</span><span class="n">Chunked</span><span class="p">(),</span> <span class="n">synthesize</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="s2">&quot;a summary&quot;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">strat</span> <span class="o">=</span> <span class="n">with_synopsis</span><span class="p">(</span><span class="n">Chunked</span><span class="p">(),</span> <span class="n">synthesize</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="s2">"a summary"</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>

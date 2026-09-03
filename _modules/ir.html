@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir &mdash; ir 0.1.28 documentation</title>
+  <title>ir &mdash; ir 0.1.29 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=34399df3"></script>
+      <script src="../_static/documentation_options.js?v=904119ea"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -63,6 +63,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/policy.html">ir.policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/registry.html">ir.registry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/schedule.html">ir.schedule</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/select.html">ir.select</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/sources.html">ir.sources</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../module_docs/ir/store.html">ir.store</a></li>
@@ -97,9 +98,9 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;``ir`` — an information-retrieval substrate for agentic systems.</span>
+<span></span><span class="sd">"""``ir`` — an information-retrieval substrate for agentic systems.</span>
 
-<span class="sd">One uniform &quot;find the relevant things in this corpus&quot; contract that scales from</span>
+<span class="sd">One uniform "find the relevant things in this corpus" contract that scales from</span>
 <span class="sd">an ad-hoc search over an ephemeral list to a maintained search engine. Retrieval</span>
 <span class="sd">is the core; selection/expansion/reranking/generation are layered on top.</span>
 
@@ -110,15 +111,15 @@
 <span class="sd">    # Define a corpus source (abstract strategy + parameters, smart defaults):</span>
 <span class="sd">    source = ir.CorpusSource.from_md_reports()          # project docs/ reports</span>
 <span class="sd">    corpus = ir.build(source)                            # index (incremental)</span>
-<span class="sd">    hits = ir.search(corpus, &quot;how do I deploy the app&quot;)  # ranked SearchHits</span>
+<span class="sd">    hits = ir.search(corpus, "how do I deploy the app")  # ranked SearchHits</span>
 
 <span class="sd">    # Light, dependency-free embedding for fast tests:</span>
-<span class="sd">    corpus = ir.build(source, embedder=&quot;light&quot;)</span>
+<span class="sd">    corpus = ir.build(source, embedder="light")</span>
 
 <span class="sd">A corpus source is defined by a ``scope`` (what is in the corpus), a</span>
 <span class="sd">``change_signal`` (what counts as stale), an ``indexing_strategy`` (how a raw</span>
 <span class="sd">item becomes filter fields + embeddable surfaces), and an ``embedder``. The</span>
-<span class="sd">default embedder is a decent *local* model (``all-MiniLM-L6-v2``); ``&quot;light&quot;``</span>
+<span class="sd">default embedder is a decent *local* model (``all-MiniLM-L6-v2``); ``"light"``</span>
 <span class="sd">selects a numpy-only hashing embedder. Data persists under XDG dirs through a</span>
 <span class="sd">``dol`` repository layer.</span>
 
@@ -132,7 +133,7 @@
 <span class="sd">``raglab`` imports ``ir``; ``ir`` never imports ``raglab``. To drive an agentic</span>
 <span class="sd">search from Claude Code instead of a coded agent, see the ``ir-search`` skill and</span>
 <span class="sd">the reviewing search subagent shipped under ``.claude/``.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -191,71 +192,71 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.traverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">WalkPolicy</span><span class="p">,</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">collapsed_tree_policy</span><span class="p">,</span> <span class="n">traverse</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;search_tool&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;make_search&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Artifact&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Surface&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Record&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;SearchHit&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;IndexPlan&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;IndexingStrategy&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;WholeText&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Chunked&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Skill&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Package&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;ClaudeTurn&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;with_synopsis&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;make_llm_synthesizer&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Synthesizer&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;CorpusSource&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;CorpusStore&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Corpus&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;build&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;open_corpus&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;reports_coverage&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;CoverageReport&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;search&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;as_retriever&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Retriever&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;retrievers&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;retriever_for&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;fuse_hits&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;records_for_artifact&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;GraphStore&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;CorpusGraph&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;EdgeExtractor&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;default_edge_extractor&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;canonical_node_id&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;traverse&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;WalkPolicy&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;WalkState&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;collapsed_tree_policy&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;expand&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Passage&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;NeighborhoodPolicy&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;sentence_window_policy&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;parent_policy&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;tag_source&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;make_llm_formulator&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Formulator&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;select&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;disclose&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;discover&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Selection&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Disclosure&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;DiscoveryResult&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;register&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;corpora&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;build_corpus&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;maintain&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;maintain_corpus&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;MaintenanceResult&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;MaintenancePolicy&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;ReindexPolicy&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;SynopsisPolicy&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;resolve_policy&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;default_policy_for_kind&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;policy_for&quot;</span><span class="p">,</span>
+    <span class="s2">"search_tool"</span><span class="p">,</span>
+    <span class="s2">"make_search"</span><span class="p">,</span>
+    <span class="s2">"Artifact"</span><span class="p">,</span>
+    <span class="s2">"Surface"</span><span class="p">,</span>
+    <span class="s2">"Record"</span><span class="p">,</span>
+    <span class="s2">"SearchHit"</span><span class="p">,</span>
+    <span class="s2">"IndexPlan"</span><span class="p">,</span>
+    <span class="s2">"IndexingStrategy"</span><span class="p">,</span>
+    <span class="s2">"WholeText"</span><span class="p">,</span>
+    <span class="s2">"Chunked"</span><span class="p">,</span>
+    <span class="s2">"Skill"</span><span class="p">,</span>
+    <span class="s2">"Package"</span><span class="p">,</span>
+    <span class="s2">"ClaudeTurn"</span><span class="p">,</span>
+    <span class="s2">"with_synopsis"</span><span class="p">,</span>
+    <span class="s2">"make_llm_synthesizer"</span><span class="p">,</span>
+    <span class="s2">"Synthesizer"</span><span class="p">,</span>
+    <span class="s2">"CorpusSource"</span><span class="p">,</span>
+    <span class="s2">"CorpusStore"</span><span class="p">,</span>
+    <span class="s2">"Corpus"</span><span class="p">,</span>
+    <span class="s2">"build"</span><span class="p">,</span>
+    <span class="s2">"open_corpus"</span><span class="p">,</span>
+    <span class="s2">"reports_coverage"</span><span class="p">,</span>
+    <span class="s2">"CoverageReport"</span><span class="p">,</span>
+    <span class="s2">"search"</span><span class="p">,</span>
+    <span class="s2">"as_retriever"</span><span class="p">,</span>
+    <span class="s2">"Retriever"</span><span class="p">,</span>
+    <span class="s2">"retrievers"</span><span class="p">,</span>
+    <span class="s2">"retriever_for"</span><span class="p">,</span>
+    <span class="s2">"fuse_hits"</span><span class="p">,</span>
+    <span class="s2">"records_for_artifact"</span><span class="p">,</span>
+    <span class="s2">"GraphStore"</span><span class="p">,</span>
+    <span class="s2">"CorpusGraph"</span><span class="p">,</span>
+    <span class="s2">"EdgeExtractor"</span><span class="p">,</span>
+    <span class="s2">"default_edge_extractor"</span><span class="p">,</span>
+    <span class="s2">"canonical_node_id"</span><span class="p">,</span>
+    <span class="s2">"traverse"</span><span class="p">,</span>
+    <span class="s2">"WalkPolicy"</span><span class="p">,</span>
+    <span class="s2">"WalkState"</span><span class="p">,</span>
+    <span class="s2">"collapsed_tree_policy"</span><span class="p">,</span>
+    <span class="s2">"expand"</span><span class="p">,</span>
+    <span class="s2">"Passage"</span><span class="p">,</span>
+    <span class="s2">"NeighborhoodPolicy"</span><span class="p">,</span>
+    <span class="s2">"sentence_window_policy"</span><span class="p">,</span>
+    <span class="s2">"parent_policy"</span><span class="p">,</span>
+    <span class="s2">"tag_source"</span><span class="p">,</span>
+    <span class="s2">"make_llm_formulator"</span><span class="p">,</span>
+    <span class="s2">"Formulator"</span><span class="p">,</span>
+    <span class="s2">"select"</span><span class="p">,</span>
+    <span class="s2">"disclose"</span><span class="p">,</span>
+    <span class="s2">"discover"</span><span class="p">,</span>
+    <span class="s2">"Selection"</span><span class="p">,</span>
+    <span class="s2">"Disclosure"</span><span class="p">,</span>
+    <span class="s2">"DiscoveryResult"</span><span class="p">,</span>
+    <span class="s2">"register"</span><span class="p">,</span>
+    <span class="s2">"corpora"</span><span class="p">,</span>
+    <span class="s2">"build_corpus"</span><span class="p">,</span>
+    <span class="s2">"maintain"</span><span class="p">,</span>
+    <span class="s2">"maintain_corpus"</span><span class="p">,</span>
+    <span class="s2">"MaintenanceResult"</span><span class="p">,</span>
+    <span class="s2">"MaintenancePolicy"</span><span class="p">,</span>
+    <span class="s2">"ReindexPolicy"</span><span class="p">,</span>
+    <span class="s2">"SynopsisPolicy"</span><span class="p">,</span>
+    <span class="s2">"resolve_policy"</span><span class="p">,</span>
+    <span class="s2">"default_policy_for_kind"</span><span class="p">,</span>
+    <span class="s2">"policy_for"</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">register</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">register</span>
@@ -265,12 +266,12 @@
 <div class="viewcode-block" id="build_corpus">
 <a class="viewcode-back" href="../module_docs/ir.html#ir.build_corpus">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">build_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build (or update) a registered/preset corpus by *name*; returns a :class:`~ir.index.Corpus`.</span>
+<span class="w">    </span><span class="sd">"""Build (or update) a registered/preset corpus by *name*; returns a :class:`~ir.index.Corpus`.</span>
 
 <span class="sd">    ``**kwargs`` are forwarded to :func:`ir.build` — notably ``store``,</span>
-<span class="sd">    ``embedder`` (e.g. ``&quot;light&quot;`` for the numpy-only hashing embedder),</span>
+<span class="sd">    ``embedder`` (e.g. ``"light"`` for the numpy-only hashing embedder),</span>
 <span class="sd">    ``full`` (prune artifacts no longer in the source), and ``batch_size``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">build</span><span class="p">(</span><span class="n">registry</span><span class="o">.</span><span class="n">source_for</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
@@ -278,15 +279,15 @@
 <div class="viewcode-block" id="search">
 <a class="viewcode-back" href="../module_docs/ir.html#ir.search">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search a :class:`~ir.index.Corpus` (or a corpus *name*, reopened lazily).</span>
+<span class="w">    </span><span class="sd">"""Search a :class:`~ir.index.Corpus` (or a corpus *name*, reopened lazily).</span>
 
 <span class="sd">    Thin facade over :func:`ir.retrieve.search`; ``**kwargs`` are forwarded to</span>
-<span class="sd">    it — the useful ones are ``k`` (how many hits), ``mode`` (``&quot;dense&quot;`` /</span>
-<span class="sd">    ``&quot;lexical&quot;`` / ``&quot;hybrid&quot;``), ``filter`` (a ``vd`` Mongo-style metadata</span>
+<span class="sd">    it — the useful ones are ``k`` (how many hits), ``mode`` (``"dense"`` /</span>
+<span class="sd">    ``"lexical"`` / ``"hybrid"``), ``filter`` (a ``vd`` Mongo-style metadata</span>
 <span class="sd">    filter), ``surfaces`` (restrict to surface kinds), and ``per_artifact``</span>
 <span class="sd">    (collapse to the best surface per artifact). See :func:`ir.retrieve.search`</span>
 <span class="sd">    for the full signature and defaults.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">_search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
