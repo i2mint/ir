@@ -112,27 +112,32 @@ from dataclasses import dataclass, field
 
 # ---- Core value types (immutable, plain data) -------------------------------
 
+
 @dataclass(frozen=True)
 class Query:
     text: str
     constraints: Mapping[str, Any] = field(default_factory=dict)
 
+
 @dataclass(frozen=True)
 class SubTask:
     goal: str
-    sources: tuple[str, ...]          # which registered sources to use
+    sources: tuple[str, ...]  # which registered sources to use
+
 
 @dataclass(frozen=True)
 class LowLevelQuery:
-    source: str                       # registry key
-    spec: Any                         # search terms | filters | SQL | API params
+    source: str  # registry key
+    spec: Any  # search terms | filters | SQL | API params
+
 
 @dataclass(frozen=True)
 class Result:
-    pointer: str                      # key into a resource store (URL, path, id)
-    snippet: str                      # extraction, not full payload
+    pointer: str  # key into a resource store (URL, path, id)
+    snippet: str  # extraction, not full payload
     score: float = 0.0
     meta: Mapping[str, Any] = field(default_factory=dict)
+
 
 @dataclass(frozen=True)
 class Judgement:
@@ -140,27 +145,38 @@ class Judgement:
     sufficient: bool
     refinement: SubTask | None = None  # if not sufficient, how to re-query
 
+
 # ---- Role interfaces (the open-closed strategy seams) -----------------------
 
+
 class Planner(Protocol):
-    def __call__(self, query: Query, sources: Mapping[str, "Retriever"]) -> list[SubTask]: ...
+    def __call__(
+        self, query: Query, sources: Mapping[str, "Retriever"]
+    ) -> list[SubTask]: ...
+
 
 class Formulator(Protocol):
     def __call__(self, task: SubTask, source: str) -> list[LowLevelQuery]: ...
 
+
 class Retriever(Protocol):
     def __call__(self, q: LowLevelQuery) -> Iterable[Result]: ...
+
 
 class Evaluator(Protocol):
     def __call__(self, task: SubTask, results: Sequence[Result]) -> Judgement: ...
 
+
 class Reranker(Protocol):
     def __call__(self, results: Sequence[Result]) -> Sequence[Result]: ...
+
 
 class Citer(Protocol):
     def __call__(self, results: Sequence[Result]) -> Sequence[Result]: ...
 
+
 # ---- Budget governor --------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class Budget:
@@ -168,11 +184,15 @@ class Budget:
     max_sources_per_task: int = 4
     max_results_per_task: int = 50
 
+
 # ---- Orchestrator: a fixed control loop, fully parametrized by roles --------
+
 
 @dataclass
 class SearchAgent:
-    sources: Mapping[str, Retriever]   # the user-parametrized source registry (a Mall/facade)
+    sources: Mapping[
+        str, Retriever
+    ]  # the user-parametrized source registry (a Mall/facade)
     planner: Planner
     formulator: Formulator
     evaluator: Evaluator
@@ -198,7 +218,7 @@ class SearchAgent:
             found = list(judged.relevant)
             if judged.sufficient or judged.refinement is None:
                 break
-            current = judged.refinement          # the back-edge: re-query
+            current = judged.refinement  # the back-edge: re-query
         return found
 ```
 

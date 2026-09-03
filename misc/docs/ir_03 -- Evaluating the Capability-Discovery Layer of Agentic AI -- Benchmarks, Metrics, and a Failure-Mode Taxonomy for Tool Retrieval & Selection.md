@@ -91,13 +91,15 @@ from dataclasses import dataclass
 from collections.abc import Sequence
 import math
 
+
 @dataclass(frozen=True)
 class DiscoveryCase:
     intent: str
     gold_tool: str
-    retrieved: Sequence[str]   # ranked list from the retriever
-    selected: str | None       # tool the agent actually chose (None = abstained)
-    gold_is_none: bool = False # True when the correct behavior is to abstain
+    retrieved: Sequence[str]  # ranked list from the retriever
+    selected: str | None  # tool the agent actually chose (None = abstained)
+    gold_is_none: bool = False  # True when the correct behavior is to abstain
+
 
 def recall_at_k(cases: Sequence[DiscoveryCase], k: int) -> float:
     """Fraction of cases whose gold tool appears in the top-k retrieved set."""
@@ -106,6 +108,7 @@ def recall_at_k(cases: Sequence[DiscoveryCase], k: int) -> float:
         return float("nan")
     hits = sum(c.gold_tool in c.retrieved[:k] for c in relevant)
     return hits / len(relevant)
+
 
 def ndcg_at_k(cases: Sequence[DiscoveryCase], k: int) -> float:
     """Binary-relevance NDCG@k; IDCG is 1.0 since there is one gold tool."""
@@ -116,21 +119,19 @@ def ndcg_at_k(cases: Sequence[DiscoveryCase], k: int) -> float:
     for c in relevant:
         topk = list(c.retrieved[:k])
         if c.gold_tool in topk:
-            rank = topk.index(c.gold_tool)           # 0-indexed
-            total += 1.0 / math.log2(rank + 2)        # DCG; IDCG == 1.0
+            rank = topk.index(c.gold_tool)  # 0-indexed
+            total += 1.0 / math.log2(rank + 2)  # DCG; IDCG == 1.0
     return total / len(relevant)
 
-def conditional_selection_accuracy(
-    cases: Sequence[DiscoveryCase], k: int
-) -> float:
+
+def conditional_selection_accuracy(cases: Sequence[DiscoveryCase], k: int) -> float:
     """P(correct selection | gold tool retrieved into top-k).
 
     Isolates selector quality from retriever quality: the 'searched,
     surfaced the right tool, still failed to pick it' failure mode.
     """
     eligible = [
-        c for c in cases
-        if not c.gold_is_none and c.gold_tool in c.retrieved[:k]
+        c for c in cases if not c.gold_is_none and c.gold_tool in c.retrieved[:k]
     ]
     if not eligible:
         return float("nan")
@@ -146,6 +147,7 @@ import random
 
 ToolName = str
 SelectFn = Callable[[str, Sequence[ToolName]], ToolName | None]
+
 
 def distractor_robustness_curve(
     intent: str,
@@ -167,11 +169,12 @@ def distractor_robustness_curve(
         n_distract = max(0, n - 1)
         hits = 0
         for _ in range(trials):
-            sample = rng.sample(list(distractor_pool),
-                                 min(n_distract, len(distractor_pool)))
+            sample = rng.sample(
+                list(distractor_pool), min(n_distract, len(distractor_pool))
+            )
             catalog = sample + [gold_tool]
             rng.shuffle(catalog)
-            hits += (select(intent, catalog) == gold_tool)
+            hits += select(intent, catalog) == gold_tool
         curve[n] = hits / trials
     return curve
 ```
@@ -183,6 +186,7 @@ Empirical anchors this curve should reproduce: a steep monotonic decline absent 
 ```python
 from typing import Any
 from deepdiff import DeepDiff
+
 
 def parameter_score(
     predicted_args: dict[str, Any],
@@ -199,19 +203,19 @@ def parameter_score(
     errors to missing keys vs wrong values vs extras.
     """
     diff = DeepDiff(
-        gold_args, predicted_args,
+        gold_args,
+        predicted_args,
         ignore_order=ignore_order,
         significant_digits=significant_digits,
     )
     missing = len(diff.get("dictionary_item_removed", []))
     extra = len(diff.get("dictionary_item_added", []))
-    changed = len(diff.get("values_changed", {})) + \
-              len(diff.get("type_changes", {}))
+    changed = len(diff.get("values_changed", {})) + len(diff.get("type_changes", {}))
     total_keys = max(len(gold_args), 1)
     return {
         "exact_match": 1.0 if not diff else 0.0,
         "missing_keys": missing,
-        "extra_keys": extra,            # signal for over-parameterization
+        "extra_keys": extra,  # signal for over-parameterization
         "changed_values": changed,
         "key_recall": 1.0 - missing / total_keys,
     }
@@ -223,11 +227,13 @@ def parameter_score(
 from inspect_ai.scorer import scorer, Score, Target, accuracy, stderr
 from inspect_ai.solver import TaskState
 
+
 @scorer(metrics=[accuracy(), stderr()])
 def conditional_selection_scorer(k: int = 5):
     """CORRECT only if the gold tool was retrieved AND chosen.
     Emits metadata so retrieval-miss vs selector-false-negative are
     distinguishable in Inspect View."""
+
     async def score(state: TaskState, target: Target) -> Score:
         gold = target.text
         retrieved = state.metadata.get("retrieved_tools", [])[:k]
@@ -240,9 +246,12 @@ def conditional_selection_scorer(k: int = 5):
             value, kind = "I", "selector_false_negative"
         else:
             value, kind = "C", "ok"
-        return Score(value=value, answer=str(selected),
-                     metadata={"failure_class": kind,
-                               "retrieved_ok": retrieved_ok})
+        return Score(
+            value=value,
+            answer=str(selected),
+            metadata={"failure_class": kind, "retrieved_ok": retrieved_ok},
+        )
+
     return score
 ```
 
@@ -287,11 +296,13 @@ Registry-driven generation sketch:
 from dataclasses import dataclass
 from collections.abc import Sequence
 
+
 @dataclass(frozen=True)
 class Command:
     name: str
     description: str
-    params: dict[str, str]   # name -> type
+    params: dict[str, str]  # name -> type
+
 
 def make_backtranslation_prompt(cmd: Command, n: int = 5) -> str:
     """Generate intents WITHOUT leaking the tool name (function masking)."""
@@ -303,15 +314,22 @@ def make_backtranslation_prompt(cmd: Command, n: int = 5) -> str:
         f"specificity, and implied (not explicit) parameter values."
     )
 
+
 def inject_distractors(
-    gold: Command, registry: Sequence[Command], k: int,
-    embed, namespace_of,
+    gold: Command,
+    registry: Sequence[Command],
+    k: int,
+    embed,
+    namespace_of,
 ) -> list[str]:
     """Hard-negative catalog: siblings + nearest-neighbors + random."""
-    siblings = [c.name for c in registry
-                if namespace_of(c) == namespace_of(gold) and c.name != gold.name]
+    siblings = [
+        c.name
+        for c in registry
+        if namespace_of(c) == namespace_of(gold) and c.name != gold.name
+    ]
     neighbors = embed.nearest(gold.description, exclude={gold.name}, k=k)
-    pool = list(dict.fromkeys(siblings + neighbors))[:k - 1]
+    pool = list(dict.fromkeys(siblings + neighbors))[: k - 1]
     return pool + [gold.name]
 ```
 

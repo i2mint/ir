@@ -125,7 +125,7 @@ identifier_below_dense` pins this behavior.)
 
 ```python
 # Recall-first hybrid (default): RRF lifts lexical-only matches best.
-ir.search(corpus, q, mode="hybrid")                       # fusion="rrf"
+ir.search(corpus, q, mode="hybrid")  # fusion="rrf"
 
 # Abstention-first hybrid: blend keeps the magnitude calibration needs.
 ev.calibrate_min_score(corpus, cases, mode="hybrid", fusion="blend", persist=True)

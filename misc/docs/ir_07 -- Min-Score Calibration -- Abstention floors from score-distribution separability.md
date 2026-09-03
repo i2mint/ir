@@ -191,9 +191,9 @@ import ir
 from ir import eval as ev
 
 corpus = ir.open_corpus("skills")
-cases = ev.load_cases("skills_eval.jsonl")        # gold-bearing + abstention
+cases = ev.load_cases("skills_eval.jsonl")  # gold-bearing + abstention
 calib = ev.calibrate_min_score(corpus, cases, mode="dense", persist=True)
-print(calib)                                       # floor, sens/spec/J, distributions
+print(calib)  # floor, sens/spec/J, distributions
 
 ir.discover(corpus, "bake a sourdough loaf", mode="dense", min_score="auto").abstained
 # True  — the calibrated floor catches the out-of-scope query

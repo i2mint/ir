@@ -35,14 +35,14 @@ is the central selection risk — fewer, better candidates beat more), and
 import ir
 
 # Define a corpus, build the index (incremental), then discover:
-source = ir.CorpusSource.from_skills()       # or from_packages(), from_md_reports(),
-                                              # from_claude_sessions(), from_files(...)
-corpus = ir.build(source)                     # embed + persist under XDG dirs
+source = ir.CorpusSource.from_skills()  # or from_packages(), from_md_reports(),
+# from_claude_sessions(), from_files(...)
+corpus = ir.build(source)  # embed + persist under XDG dirs
 result = ir.discover(corpus, "how do I deploy the app to the server")
 
 for item in result.results:
-    print(item.score, item.name)              # the committed few (or result.abstained)
-print(result.to_dict())                       # JSON-serializable (qh / HTTP ready)
+    print(item.score, item.name)  # the committed few (or result.abstained)
+print(result.to_dict())  # JSON-serializable (qh / HTTP ready)
 ```
 
 ## Install
@@ -92,8 +92,10 @@ Notes for the default (semantic) path:
 *federated* discovery across several corpora:
 
 ```python
-ir.discover(["skills", "packages"], "deploy the app")    # fan-out → fuse → select
-ir.discover(["skills", "packages"], q, min_score="auto") # gate each source on its own floor
+ir.discover(["skills", "packages"], "deploy the app")  # fan-out → fuse → select
+ir.discover(
+    ["skills", "packages"], q, min_score="auto"
+)  # gate each source on its own floor
 ```
 
 Each source is searched and gated on its **own** calibrated abstention floor
@@ -108,7 +110,7 @@ see [`raglab`](https://github.com/thorwhalen/raglab)).
 ### Retrieve
 
 ```python
-hits = ir.search(corpus, "deploy app", mode="hybrid")   # dense | lexical | hybrid (RRF)
+hits = ir.search(corpus, "deploy app", mode="hybrid")  # dense | lexical | hybrid (RRF)
 ```
 
 Dense is exact brute-force cosine; `lexical` is Okapi BM25; `hybrid` fuses both
@@ -126,7 +128,7 @@ on terse corpora, so RRF stays the default. Use `blend` when abstention matters
 ### Expand
 
 ```python
-passage = ir.expand(hit, corpus)                             # ±1 chunk window (default)
+passage = ir.expand(hit, corpus)  # ±1 chunk window (default)
 passage = ir.expand(hit, corpus, policy=ir.parent_policy())  # the whole artifact
 ```
 
@@ -139,7 +141,9 @@ injectable (`NeighborhoodPolicy`); `sentence_window_policy(k)` and
 
 ```python
 ir.disclose(sel, expand=ir.sentence_window_policy(2), corpus=corpus)
-ir.discover("skills", q, expand=ir.sentence_window_policy())  # passages on committed items
+ir.discover(
+    "skills", q, expand=ir.sentence_window_policy()
+)  # passages on committed items
 ```
 
 Each `Disclosure` then carries the stitched text as `.passage` (additive;
@@ -148,9 +152,11 @@ Each `Disclosure` then carries the stitched text as `.passage` (additive;
 ### Select
 
 ```python
-sel = ir.select(hits)                      # conservative default: stay within rel of top, cap at max_k
-sel = ir.select(hits, min_score=0.4)       # opt in to abstention ("nothing applies")
-sel = ir.select(hits, strategy="score_gap")  # elbow cut, or "top_k" / "rel_threshold" / a callable
+sel = ir.select(hits)  # conservative default: stay within rel of top, cap at max_k
+sel = ir.select(hits, min_score=0.4)  # opt in to abstention ("nothing applies")
+sel = ir.select(
+    hits, strategy="score_gap"
+)  # elbow cut, or "top_k" / "rel_threshold" / a callable
 ```
 
 The abstention floor is mode-specific (dense cosine, BM25, and RRF live on
@@ -158,8 +164,12 @@ different scales), so rather than guess `min_score`, **calibrate** it from a cas
 file and let `discover` load it:
 
 ```python
-ev.calibrate_min_score(corpus, cases, mode="dense", persist=True)  # learn + store the floor
-ir.discover(corpus, query, mode="dense", min_score="auto")         # abstain by the calibrated floor
+ev.calibrate_min_score(
+    corpus, cases, mode="dense", persist=True
+)  # learn + store the floor
+ir.discover(
+    corpus, query, mode="dense", min_score="auto"
+)  # abstain by the calibrated floor
 ```
 
 Calibration separates in-scope from out-of-scope query top-scores and picks the
@@ -197,9 +207,11 @@ parent. `ir` models those as a **semantic link graph**: a typed-edge `links`
 view on the store, populated at build time by an `EdgeExtractor`.
 
 ```python
-corpus = ir.build(source, edge_extractor=ir.default_edge_extractor)  # deps→REF, parent→PARENT
-graph  = ir.CorpusGraph(corpus)
-graph.neighbors("contaix", edge_type="REF")     # the package's dependencies
+corpus = ir.build(
+    source, edge_extractor=ir.default_edge_extractor
+)  # deps→REF, parent→PARENT
+graph = ir.CorpusGraph(corpus)
+graph.neighbors("contaix", edge_type="REF")  # the package's dependencies
 ```
 
 `ir.traverse` walks that structure at query time under a pluggable `WalkPolicy`
@@ -220,9 +232,13 @@ pattern: build-time cost, ≈free at query time), and that synopsis becomes the
 collapsed-tree router:
 
 ```python
-strat  = ir.with_synopsis(ir.Chunked(), synthesize=my_summarizer)  # or default (lazy aix)
+strat = ir.with_synopsis(
+    ir.Chunked(), synthesize=my_summarizer
+)  # or default (lazy aix)
 corpus = ir.build(ir.CorpusSource.from_mapping(docs, name="d", strategy=strat))
-hits   = ir.traverse(q, corpus, policy=ir.collapsed_tree_policy())  # routes via the synopsis
+hits = ir.traverse(
+    q, corpus, policy=ir.collapsed_tree_policy()
+)  # routes via the synopsis
 ```
 
 `synthesize` is injectable (a test double or your own summarizer); omitted, it is
@@ -247,11 +263,15 @@ derivation DAG).
 ```python
 from ir import eval as ev
 
-cases = ev.load_cases("skills_eval.jsonl")               # query + gold artifact_id(s)
-ev.evaluate_discovery(corpus, cases, mode="hybrid")      # recall@k / NDCG@k / MRR / MAP + failure taxonomy
-ev.evaluate_selection(corpus, cases, strategy="conservative")  # conditional commit rate + selection P/R/F1
-ev.sweep_selector(corpus, cases)                         # tune max_k × rel; .best() / .frontier() / .table()
-ev.distractor_robustness_curve(source.scope, probes)     # accuracy vs catalog size
+cases = ev.load_cases("skills_eval.jsonl")  # query + gold artifact_id(s)
+ev.evaluate_discovery(
+    corpus, cases, mode="hybrid"
+)  # recall@k / NDCG@k / MRR / MAP + failure taxonomy
+ev.evaluate_selection(
+    corpus, cases, strategy="conservative"
+)  # conditional commit rate + selection P/R/F1
+ev.sweep_selector(corpus, cases)  # tune max_k × rel; .best() / .frontier() / .table()
+ev.distractor_robustness_curve(source.scope, probes)  # accuracy vs catalog size
 ```
 
 `evaluate_selection`'s headline is the **conditional commit rate** — the
