@@ -17,8 +17,15 @@ and records ``last_maintained`` so interval policies converge. ir runs the work;
 *scheduling* it is external — a cron / launchd entry calls ``ir maintain --all``
 every N minutes, and the downtime window lives in the policy (data), not in ir.
 
-    # crontab: try the queue every 15 minutes; ir decides what is actually due.
-    */15 * * * *  ir maintain --all >> ~/.cache/ir/maintain.log 2>&1
+:mod:`ir.schedule` installs that entry for you (``ir schedule``) and reports on it;
+it writes a definition and exits, so the executor is still cron / launchd::
+
+    # what `ir schedule --every 15m` writes on a cron machine:
+    */15 * * * *  <python> -m ir maintain --all >> ~/.cache/ir/maintain.log 2>&1
+
+Because a scheduled run has nobody watching it, :func:`maintain` is fault-isolated
+per corpus: one corpus failing is recorded on its own result and the sweep carries
+on, rather than aborting and leaving the corpora after it silently unmaintained.
 """
 
 from __future__ import annotations
@@ -42,8 +49,11 @@ class MaintenanceResult:
     reindex: bool = False
     synopsis: bool = False
     records: int | None = None
+    error: str | None = None
 
     def __str__(self) -> str:
+        if self.error:
+            return f"{self.name}: FAILED ({self.error})"
         verb = "maintained" if self.ran else "skipped"
         bits = [
             b
@@ -137,4 +147,17 @@ def maintain(
         names = [name]
     else:
         names = list(registry.registered())
-    return [maintain_corpus(n, now=now, dry_run=dry_run) for n in names]
+    results = []
+    for n in names:
+        try:
+            results.append(maintain_corpus(n, now=now, dry_run=dry_run))
+        except Exception as exc:
+            # One corpus must not take the sweep down with it: an unattended run
+            # that aborts on the first failure leaves every corpus after it stale
+            # with nothing to say so. Record it and keep going.
+            results.append(
+                MaintenanceResult(
+                    n, False, f"error: {exc}", error=f"{type(exc).__name__}: {exc}"
+                )
+            )
+    return results

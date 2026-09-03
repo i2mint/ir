@@ -6,6 +6,12 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/);
 each section corresponds to a git version tag (which is also the release
 published to PyPI). Entries are commit subjects and PR titles, verbatim.
 
+## [Unreleased]
+
+### Added
+
+- `ir schedule` — install, inspect and operate the OS job that runs `ir maintain` (launchd on macOS, cron elsewhere) ([#75](https://github.com/i2mint/ir/issues/75))
+
 ## [0.1.25] - 2026-06-18
 
 - Add opt-in embedded deps surface to ir.strategy.Package ([#62](https://github.com/i2mint/ir/pull/62)) ([#69](https://github.com/i2mint/ir/pull/69))

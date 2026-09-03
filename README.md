@@ -275,6 +275,7 @@ ir ls                                    # list corpora + record counts
 ir coverage reports                      # disk-vs-index coverage (silent-gap detector)
 ir info skills                           # config, stats, policy, calibrated floors
 ir maintain --all                        # run due background work (idempotent; cron-friendly)
+ir schedule                              # install/inspect the OS job that runs it
 ir register notes files --root ~/notes --pattern '.*\.md$'  # register a custom corpus
 ir rm notes                              # unregister (keeps built data)
 ir eval-gen skills skills_eval.jsonl     # generate eval cases (needs oa/LLM)
@@ -283,6 +284,41 @@ ir eval-select skills skills_eval.jsonl  # score the selection stage
 ir sweep-select skills skills_eval.jsonl # tune the selector (max_k × rel) on your corpus
 ir calibrate-min-score skills skills_eval.jsonl --persist  # calibrate the abstention floor
 ```
+
+## Keeping an index fresh
+
+`ir maintain` does the work that a corpus's policy says is due — an incremental
+rebuild when reindex is due, LLM synopses inside their downtime window — and
+no-ops everything that is not. It is idempotent, so it is safe to run as often as
+you like.
+
+Something has to *call* it, though, and a corpus that nobody rebuilds keeps
+answering searches confidently from months-old content. `ir schedule` installs
+that caller — a launchd agent on macOS, a crontab block elsewhere — and then lets
+you operate it:
+
+```bash
+ir schedule                # ensure a schedule exists (creates one if there is none)
+ir schedule --status       # what is scheduled, when it last ran, and whether the OS loaded it
+ir schedule --every 30m    # change the interval (15m / 2h / 1d, or plain minutes)
+ir schedule --restart      # reload it after upgrading ir or switching interpreter
+ir schedule --remove       # stop it and delete the definition
+ir schedule --dry-run      # print the plist/crontab that would be written
+```
+
+Bare `ir schedule` is idempotent in the way that matters: it creates a schedule
+when there is none, and when one already exists it reports it and the commands
+above rather than silently reinstalling over an interval you tuned.
+
+The job is pinned to the absolute interpreter that installed it, because neither
+launchd nor cron resolves `ir` on your shell's `PATH`. `--status` checks that
+interpreter still exists and still matches the `ir` you are running — the failure
+this catches is a rebuilt pyenv version or a recreated venv leaving a job that
+fires on time and does nothing. `--restart` re-pins it.
+
+**`ir` still does not run a scheduler.** It writes a definition, hands it to the
+OS, and exits: no daemon, no in-process timer. launchd/cron remain the executor,
+exactly as `ir.policy` describes.
 
 ## Design
 

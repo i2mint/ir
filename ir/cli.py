@@ -10,6 +10,8 @@ Commands operate on **named** corpora from the registry (see
     ir ls                           # list corpora + record counts
     ir coverage reports             # disk-vs-index coverage (silent-gap detector)
     ir info packages                # config + stats for a corpus
+    ir maintain --all               # run due background work (idempotent)
+    ir schedule                     # install/inspect the OS job that runs it
     ir register notes files --root ~/notes --pattern '.*\\.md$'
     ir rm notes                     # unregister (keeps built data)
     ir eval-gen skills skills_eval.jsonl --k 5        # generate cases (needs aix/LLM)
@@ -236,7 +238,58 @@ def maintain(name=None, *, all=False, dry_run=False):
     results = _maintain(name=name, all=all, dry_run=dry_run)
     if not results:
         return "no corpora registered"
-    return "\n".join(str(r) for r in results)
+    out = "\n".join(str(r) for r in results)
+    failures = [r for r in results if r.error]
+    if failures:
+        # Exit non-zero so a scheduler records the failure (launchd's
+        # LastExitStatus, cron's mail): a sweep that half-fails and exits 0 is
+        # indistinguishable from a healthy one, which is how corpora go stale
+        # unnoticed. `ir schedule --status` reads that status back.
+        raise SystemExit(
+            f"{out}\n\n{len(failures)} of {len(results)} corpora failed to maintain."
+        )
+    return out
+
+
+def schedule(
+    *,
+    every=None,
+    status=False,
+    restart=False,
+    remove=False,
+    dry_run=False,
+    backend=None,
+):
+    """Install, inspect, and operate the OS job that runs ``ir maintain``.
+
+    Bare ``ir schedule`` is idempotent: it creates the schedule when there is
+    none, and when there already is one it reports it (interval, definition,
+    whether the OS has it loaded, last run) plus how to operate it, rather than
+    silently reinstalling over a schedule you tuned.
+
+    every: interval as 15m / 2h / 1d, or a plain number of minutes.
+    status: report only; never mutates.
+    restart: reload the definition and re-pin it to this interpreter.
+    remove: stop the schedule and delete its definition.
+    dry_run: print the definition that would be written, and write nothing.
+    backend: launchd | cron (default: whichever this machine provides).
+    """
+    from . import schedule as _schedule
+
+    try:
+        if status:
+            state = _schedule.status(backend=backend)
+        elif remove:
+            state = _schedule.remove(backend=backend)
+        elif restart:
+            state = _schedule.restart(backend=backend)
+        elif dry_run:
+            state = _schedule.install(every=every, backend=backend, dry_run=True)
+        else:
+            state = _schedule.ensure(every=every, backend=backend)
+    except _schedule.ScheduleError as error:
+        return f"ir schedule: {error}"
+    return _schedule.render(state)
 
 
 def rm(name):
@@ -446,6 +499,7 @@ COMMANDS = [
     coverage,
     info,
     maintain,
+    schedule,
     rm,
     eval,
     eval_gen,
