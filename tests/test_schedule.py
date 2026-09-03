@@ -268,7 +268,7 @@ def test_install_keeps_the_existing_interval_when_none_is_given(fake_crontab):
 # ----- reporting ----------------------------------------------------------- #
 
 
-def test_render_absent_schedule_says_how_to_create_one():
+def test_render_absent_schedule_says_how_to_create_one(fake_crontab):
     text = schedule.render(schedule.status(backend="cron"))
     assert "Nothing is scheduled" in text
     assert "ir schedule" in text
@@ -371,3 +371,16 @@ def test_maintain_cli_exits_nonzero_when_a_corpus_fails(monkeypatch):
     message = str(excinfo.value)
     assert "1 of 2 corpora failed" in message
     assert "FAILED" in message  # the per-corpus detail travels with the failure
+
+
+def test_naming_a_backend_this_machine_lacks_reports_instead_of_crashing(monkeypatch):
+    # Asking the cron backend on a machine with no `crontab` binary must not
+    # surface a bare FileNotFoundError from subprocess -- naming a backend is not
+    # the same as being on a machine that has it.
+    def no_such_tool(*args, **kwargs):
+        raise FileNotFoundError(2, "No such file or directory")
+
+    monkeypatch.setattr(schedule.subprocess, "run", no_such_tool)
+    with pytest.raises(ScheduleError) as excinfo:
+        schedule.status(backend="cron")
+    assert "crontab" in str(excinfo.value)

@@ -438,18 +438,30 @@ def _interpreter_problems(python: str | None) -> tuple[str, ...]:
 # --------------------------------------------------------------------------- #
 
 
+#: Exit status for "the tool itself is not here" (the shell convention). A missing
+#: binary has to look like a failed command rather than an exception: naming a
+#: backend is not the same as being on a machine that has it, and asking about one
+#: that is absent must report rather than crash.
+_NO_SUCH_TOOL = 127
+
+
 def _run(
     argv: Sequence[str], *, stdin: str | None = None
 ) -> subprocess.CompletedProcess:
-    """Run *argv* capturing text output; never raises on a non-zero exit."""
-    return subprocess.run(
-        list(argv),
-        input=stdin,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=False,
-    )
+    """Run *argv* capturing text output; never raises, not even if it is missing."""
+    try:
+        return subprocess.run(
+            list(argv),
+            input=stdin,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+    except (FileNotFoundError, NotADirectoryError, PermissionError) as exc:
+        return subprocess.CompletedProcess(
+            list(argv), _NO_SUCH_TOOL, stdout="", stderr=f"{argv[0]}: {exc.strerror}"
+        )
 
 
 class _LaunchdBackend:
@@ -577,6 +589,12 @@ class _CronBackend:
 
     def read(self) -> str:
         done = _run(["crontab", "-l"])
+        if done.returncode == _NO_SUCH_TOOL:
+            raise ScheduleError(
+                "the cron backend needs a `crontab` command and this machine has "
+                "none; run `ir schedule` without --backend to use whatever this "
+                "platform does provide"
+            )
         if done.returncode != 0:
             # "no crontab for <user>" is a normal empty state, not a failure.
             if "no crontab" in (done.stderr or "").lower():
