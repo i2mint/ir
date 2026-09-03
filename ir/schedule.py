@@ -2,7 +2,7 @@
 
 ``ir maintain`` is idempotent and cron-shaped, but something has to *call* it.
 This module manages that caller: it writes a **definition** (a launchd plist or a
-crontab block), hands it to the OS, and exits.
+crontab line), hands it to the OS, and exits.
 
 **``ir`` still does not run a scheduler.** The boundary from issue #58 — "ir holds
 the declarative policy as data and exposes an idempotent ``ir maintain``; it does
@@ -17,20 +17,31 @@ The command is idempotent and tells you how to operate what it finds::
     ir schedule                # ensure a schedule exists; report + menu if one does
     ir schedule --status       # report only, never mutates
     ir schedule --every 30m    # set/change the interval
-    ir schedule --restart      # reload the definition (after upgrading ir)
+    ir schedule --restart      # reload the definition, re-pinning the interpreter
     ir schedule --remove       # stop it and delete the definition
     ir schedule --dry-run      # print what would be written
+
+**An existing definition is data, not a template to re-derive.** Only a *fresh*
+install snapshots the calling shell's environment. Every operation on a schedule
+that already exists (``--every``, ``--restart``) carries the stored environment
+forward untouched, because the alternative silently re-points a working job at a
+different corpus store the first time you operate it from a shell that happens to
+lack ``$PP`` — which is the exact failure this module exists to prevent. Only
+``--restart`` re-pins the interpreter, and only because repairing a dead
+interpreter is what it is for.
 
 Two seams, both one keyword argument:
 
 - ``backend`` — which OS scheduler holds the definition. Feature-detected
   (``launchctl`` then ``crontab``), never hardcoded per-platform; ``systemd
-  --user`` timers are the documented next backend.
+  --user`` timers are the documented next backend. A backend owns its own
+  definition format, its own preview, and whether "loaded" means anything for it,
+  so adding one touches :data:`BACKENDS` and nothing else.
 - :attr:`ScheduleSpec.args` — the command the job runs, defaulting to
   ``-m ir maintain --all`` pinned to the installing interpreter. An orchestration
   layer's own entry point (#58 / ADR #43) drops in here without touching backends.
 
-Everything else — the plist keys, the crontab marker syntax, interval parsing,
+Everything else — the plist keys, the crontab line syntax, interval parsing,
 output formatting — is written directly, on purpose.
 """
 
@@ -43,16 +54,16 @@ import shlex
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as dc_replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 from .config import cache_dir
 
-#: Reverse-DNS job identifier. Also the launchd ``Label`` and the token that
-#: delimits ir's block in the user crontab, so both backends find their own work
-#: and never touch anybody else's.
+#: Reverse-DNS job identifier. Also the launchd ``Label`` and the token that marks
+#: ir's line in the user crontab, so both backends find their own work and never
+#: touch anybody else's.
 DFLT_LABEL = "com.i2mint.ir.maintain"
 
 #: How often the job fires, in minutes. Hourly rather than the docstring
@@ -82,6 +93,11 @@ INHERITED_ENV_VARS = (
     "PTH_FILEPATH",
 )
 
+#: Of those, the ones whose absence breaks a corpus outright rather than merely
+#: relocating it. :func:`status` reports a job that lacks one the current shell
+#: has, because that job is failing silently right now.
+LOAD_BEARING_ENV_VARS = ("PP", "PTH_FILEPATH")
+
 #: Minute intervals that map to a clean cron expression (divisors of 60), and
 #: hour intervals that do (divisors of 24). launchd accepts any interval; cron's
 #: ``*/n`` restarts each hour, so a non-divisor would fire unevenly.
@@ -89,6 +105,17 @@ _CRON_MINUTE_STEPS = tuple(m for m in range(1, 60) if 60 % m == 0)
 _CRON_HOUR_STEPS = tuple(h for h in range(1, 24) if 24 % h == 0)
 
 _UNITS = {"m": 1, "h": 60, "d": 1440}
+
+#: Exit status for "the tool itself is not here" (the shell convention). A missing
+#: binary has to look like a failed command rather than an exception: naming a
+#: backend is not the same as being on a machine that has it, and asking about one
+#: that is absent must report rather than crash.
+_NO_SUCH_TOOL = 127
+
+#: How much of the job's log to read when reporting its last line. The log is
+#: append-only and unbounded; reading it whole to get one line would grow into a
+#: real cost on a machine that has been maintaining hourly for a year.
+_LOG_TAIL_BYTES = 8192
 
 
 class ScheduleError(Exception):
@@ -133,6 +160,14 @@ class ScheduleSpec:
     def __post_init__(self):
         if self.every_minutes < 1:
             raise ScheduleError("every_minutes must be at least 1")
+        for name, value in self.env:
+            # A newline in an environment value would inject arbitrary crontab
+            # lines; cron additionally turns an unescaped % into a newline.
+            if "\n" in value or "\r" in value or "\n" in name:
+                raise ScheduleError(
+                    f"environment variable {name!r} contains a newline and cannot "
+                    "be written into a schedule definition"
+                )
 
     @property
     def command(self) -> list[str]:
@@ -143,11 +178,6 @@ class ScheduleSpec:
     def env_dict(self) -> dict[str, str]:
         """The job environment as a plain dict."""
         return dict(self.env)
-
-    def shell_line(self) -> str:
-        """The command as one shell line, appending to the log (for crontab)."""
-        cmd = " ".join(shlex.quote(part) for part in self.command)
-        return f"{cmd} >> {shlex.quote(self.log_path)} 2>&1"
 
 
 @dataclass(frozen=True)
@@ -165,6 +195,8 @@ class ScheduleStatus:
     every_minutes: int | None = None
     definition: str | None = None
     command: str | None = None
+    python: str | None = None
+    env: tuple[tuple[str, str], ...] = ()
     log_path: str | None = None
     loaded: bool | None = None
     last_run: str | None = None
@@ -187,6 +219,8 @@ class ScheduleStatus:
             "every_minutes": self.every_minutes,
             "definition": self.definition,
             "command": self.command,
+            "python": self.python,
+            "env": dict(self.env),
             "log_path": self.log_path,
             "loaded": self.loaded,
             "last_run": self.last_run,
@@ -268,7 +302,7 @@ def cron_expression(minutes: int) -> str:
 
 def format_every(minutes: int | None) -> str:
     """Human rendering of an interval (``90`` -> ``'1h30m'``)."""
-    if minutes is None:
+    if minutes is None or minutes < 1:
         return "unknown"
     hours, mins = divmod(minutes, 60)
     if hours and mins:
@@ -277,15 +311,21 @@ def format_every(minutes: int | None) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# Definition rendering (pure — the two backends' file formats)
+# launchd definition rendering (pure)
 # --------------------------------------------------------------------------- #
 
 
 def plist_dict(spec: ScheduleSpec) -> dict[str, Any]:
     """The launchd job description for *spec*, as a plist-ready dict.
 
-    ``StartInterval`` (seconds) is what makes the interval readable back out of
-    an installed job, so :func:`status` needs no separate bookkeeping file.
+    ``StartInterval`` (seconds) and ``EnvironmentVariables`` are what make the
+    interval and the job environment readable back out of an installed job, so
+    :func:`status` needs no separate bookkeeping file.
+
+    ``ProcessType`` is deliberately ``Standard`` rather than ``Background``:
+    launchd throttles a ``Background`` job's CPU and I/O to keep it from
+    disrupting the user, and a corpus rebuild is exactly the file-walking,
+    embedding-heavy work that throttling would stretch past its own interval.
     """
     return {
         "Label": spec.label,
@@ -295,7 +335,10 @@ def plist_dict(spec: ScheduleSpec) -> dict[str, Any]:
         "EnvironmentVariables": spec.env_dict,
         "StandardOutPath": spec.log_path,
         "StandardErrorPath": spec.log_path,
-        "ProcessType": "Background",
+        "ProcessType": "Standard",
+        # launchd starts jobs in "/"; a relative path in a source resolver would
+        # then behave differently under the agent than in the shell.
+        "WorkingDirectory": spec.env_dict.get("HOME", str(Path.home())),
     }
 
 
@@ -304,93 +347,139 @@ def plist_bytes(spec: ScheduleSpec) -> bytes:
     return plistlib.dumps(plist_dict(spec))
 
 
-def cron_markers(label: str) -> tuple[str, str]:
-    """The ``(begin, end)`` comment lines delimiting ir's crontab block."""
-    return (f"# >>> {label} >>>", f"# <<< {label} <<<")
+# --------------------------------------------------------------------------- #
+# cron definition rendering and parsing (pure)
+# --------------------------------------------------------------------------- #
 
 
-def cron_block(spec: ScheduleSpec) -> str:
-    """ir's crontab block for *spec*, markers included.
+def cron_marker(label: str) -> str:
+    """The trailing comment that identifies ir's crontab line."""
+    return f"# {label}"
 
-    The interval is written into the begin marker as ``every=<minutes>`` so it
-    reads back exactly, rather than being re-derived from the cron expression
-    (``0 * * * *`` and ``*/60 * * * *`` mean the same thing but do not spell it).
+
+def cron_line(spec: ScheduleSpec) -> str:
+    """ir's crontab entry for *spec* — deliberately **one self-contained line**.
+
+    An earlier design used a begin/end marker block with the environment on its
+    own ``NAME=value`` crontab lines. Both halves of that were wrong:
+
+    - a block has an *interior*, and anything that lands in it (a job the user
+      typed just above the end marker, or everything after a begin marker whose
+      end marker got lost) is deleted the next time ir rewrites its block;
+    - crontab-scope ``NAME=value`` lines apply to **every command after them in
+      the file**, so ir's ``HOME`` and ``PATH`` would silently attach themselves
+      to whatever job the user appends next — and detach again the next time ir
+      moved its block. A cron job whose environment depends on when you last ran
+      ``ir schedule`` is close to undiagnosable.
+
+    One line with an inline ``env`` prefix has no interior to corrupt and no
+    scope beyond itself. ``%`` is escaped because cron reads an unescaped one as
+    a newline that terminates the command.
     """
-    begin, end = cron_markers(spec.label)
-    lines = [
-        f"{begin} every={spec.every_minutes} (managed by `ir schedule`; edit with it, not by hand)"
-    ]
-    lines += [f"{name}={value}" for name, value in spec.env]
-    lines.append(f"{cron_expression(spec.every_minutes)} {spec.shell_line()}")
-    lines.append(end)
-    return "\n".join(lines)
+    parts = [_ENV_TOOL, *(f"{name}={value}" for name, value in spec.env), *spec.command]
+    command = " ".join(shlex.quote(part) for part in parts)
+    redirect = f">> {shlex.quote(spec.log_path)} 2>&1"
+    line = (
+        f"{cron_expression(spec.every_minutes)} {command} {redirect} "
+        f"{cron_marker(spec.label)} every={spec.every_minutes}"
+    )
+    return line.replace("%", r"\%")
 
 
-def _split_crontab(text: str, label: str) -> tuple[list[str], list[str]]:
-    """Split crontab *text* into ``(other_lines, ir_block_lines)``."""
-    begin, end = cron_markers(label)
-    other: list[str] = []
-    block: list[str] = []
-    inside = False
-    for line in text.splitlines():
-        if line.startswith(begin):
-            inside = True
-            block.append(line)
-        elif inside:
-            block.append(line)
-            if line.strip() == end:
-                inside = False
-        else:
-            other.append(line)
-    return other, block
+def _is_our_line(line: str, label: str) -> bool:
+    """Whether *line* is the crontab entry ir manages."""
+    return cron_marker(label) in line and not line.lstrip().startswith("#")
 
 
-def crontab_without_block(text: str, label: str = DFLT_LABEL) -> str:
-    """*text* with ir's block removed (unchanged if there is none)."""
-    other, _ = _split_crontab(text, label)
-    body = "\n".join(other).strip("\n")
+def crontab_without_line(text: str, label: str = DFLT_LABEL) -> str:
+    """*text* with ir's line removed (unchanged if there is none).
+
+    Only lines ir itself wrote are dropped, identified by the trailing marker.
+    Nothing else in the file is read, moved, or rewritten.
+    """
+    kept = [line for line in _split_lines(text) if not _is_our_line(line, label)]
+    body = "\n".join(kept).strip("\n")
     return f"{body}\n" if body else ""
 
 
-def crontab_with_block(text: str, spec: ScheduleSpec) -> str:
-    """*text* with ir's block replaced by (or appended as) *spec*'s block."""
-    body = crontab_without_block(text, spec.label).rstrip("\n")
-    parts = [p for p in (body, cron_block(spec)) if p]
+def crontab_with_line(text: str, spec: ScheduleSpec) -> str:
+    """*text* with ir's line replaced by (or appended as) *spec*'s line."""
+    body = crontab_without_line(text, spec.label).rstrip("\n")
+    parts = [p for p in (body, cron_line(spec)) if p]
     return "\n".join(parts) + "\n"
 
 
-def _every_from_cron_block(block: Sequence[str], label: str) -> int | None:
-    """Read ``every=<minutes>`` back out of a crontab block's begin marker."""
-    begin, _ = cron_markers(label)
-    for line in block:
-        if line.startswith(begin):
-            for token in line.split():
-                if token.startswith("every="):
-                    try:
-                        return int(token.partition("=")[2])
-                    except ValueError:
-                        return None
+def _split_lines(text: str) -> list[str]:
+    """Split crontab *text* on real line terminators only.
+
+    ``str.splitlines`` also breaks on ``\\x0b``, ``\\x0c``, ``\\x1c`` and
+    ``U+2028``, none of which end a line in a crontab — a command containing one
+    would be silently rewritten as two entries.
+    """
+    return text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+
+
+def _find_our_line(text: str, label: str) -> str | None:
+    """ir's crontab line, or ``None``."""
+    for line in _split_lines(text):
+        if _is_our_line(line, label):
+            return line
     return None
 
 
-def _command_from_cron_block(block: Sequence[str]) -> str | None:
-    """The command half of the block's schedule line (fields 6 onward)."""
-    for line in block:
-        if line.startswith("#") or "=" in line.split(" ")[0] or not line.strip():
-            continue
-        fields = line.split(None, 5)
-        if len(fields) == 6:
-            return fields[5]
-    return None
+def _parse_cron_line(line: str, label: str) -> dict[str, Any]:
+    """Read interval, command, interpreter, env and log path back out of *line*."""
+    line = line.replace(r"\%", "%")
+    head, _, tail = line.rpartition(cron_marker(label))
+    every = None
+    match = re.search(r"every=(\d+)", tail)
+    if match:
+        every = int(match.group(1)) or None
+    fields = head.strip().split(None, 5)
+    command = fields[5].strip() if len(fields) == 6 else None
+    env: dict[str, str] = {}
+    python = log_path = None
+    if command:
+        try:
+            tokens = shlex.split(command)
+        except ValueError:
+            # An unbalanced quote (a hand-added trailing comment with an
+            # apostrophe, say) must degrade to "cannot read the details", never
+            # take the status report down with it.
+            tokens = []
+        seen_env_tool = False
+        for token in tokens:
+            if not seen_env_tool:
+                seen_env_tool = Path(token).name == "env"
+                continue
+            if "=" in token and not token.startswith("/"):
+                name, _, value = token.partition("=")
+                env[name] = value
+                continue
+            python = token
+            break
+        if ">>" in command:
+            redirect = command.partition(">>")[2].replace("2>&1", "").strip()
+            try:
+                log_path = shlex.split(redirect)[0] if redirect else None
+            except ValueError:
+                log_path = None
+    return {
+        "every_minutes": every,
+        "command": command,
+        "python": python,
+        "env": tuple(sorted(env.items())),
+        "log_path": log_path,
+    }
 
 
 # --------------------------------------------------------------------------- #
-# Log inspection (shared by both backends)
+# Log inspection and staleness checks (shared by both backends)
 # --------------------------------------------------------------------------- #
 
 
 def _log_facts(log_path: str | None) -> tuple[str | None, str | None]:
-    """``(last_run, last_log_line)`` from the job's log, or ``(None, None)``."""
+    """``(last_run, last_log_line)`` from the tail of the job's log."""
     if not log_path:
         return None, None
     path = Path(log_path)
@@ -401,8 +490,11 @@ def _log_facts(log_path: str | None) -> tuple[str | None, str | None]:
     when = datetime.fromtimestamp(stat.st_mtime).isoformat(timespec="seconds")
     last_line = None
     try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-        lines = [line for line in text.splitlines() if line.strip()]
+        with path.open("rb") as stream:
+            if stat.st_size > _LOG_TAIL_BYTES:
+                stream.seek(-_LOG_TAIL_BYTES, os.SEEK_END)
+            tail = stream.read().decode("utf-8", errors="replace")
+        lines = [line for line in tail.splitlines() if line.strip()]
         if lines:
             last_line = lines[-1][:200]
     except OSError:
@@ -416,6 +508,11 @@ def _interpreter_problems(python: str | None) -> tuple[str, ...]:
     A pinned interpreter that has been rebuilt or removed (a pyenv version bump,
     a recreated venv) leaves a job that keeps firing and doing nothing, so this is
     the check that turns a silent failure into a visible one.
+
+    The comparison is deliberately on the *unresolved* paths. Two virtualenvs
+    have different ``site-packages`` — and so possibly different installed
+    versions of ``ir`` — while ``Path.resolve()`` collapses both onto the same
+    base interpreter and reports no difference at all.
     """
     if not python:
         return ()
@@ -424,25 +521,40 @@ def _interpreter_problems(python: str | None) -> tuple[str, ...]:
             f"the interpreter this job runs ({python}) no longer exists — the job "
             "fires and fails silently; fix with: ir schedule --restart",
         )
-    if Path(python).resolve() != Path(sys.executable).resolve():
+    if Path(python) != Path(sys.executable):
         return (
             f"this job runs {python}, but you are running ir from "
-            f"{sys.executable} — they may see different corpora; "
-            "re-pin with: ir schedule --restart",
+            f"{sys.executable} — the job may be using a different installed "
+            "version of ir; re-pin with: ir schedule --restart",
         )
     return ()
+
+
+def _env_problems(env: Sequence[tuple[str, str]]) -> tuple[str, ...]:
+    """Flag a job whose environment is missing something this shell has.
+
+    A job installed from a shell without ``$PP`` fails on the ``packages`` and
+    ``reports`` corpora every time it fires, while exiting 0 and looking healthy.
+    """
+    stored = dict(env)
+    missing = [
+        name
+        for name in LOAD_BEARING_ENV_VARS
+        if os.environ.get(name) and not stored.get(name)
+    ]
+    if not missing:
+        return ()
+    return (
+        f"the job's environment has no {', '.join(missing)}, which ir reads to "
+        "find your corpora — it will fail on the packages and reports corpora "
+        "while still exiting 0. Re-create it from this shell with: "
+        "ir schedule --remove && ir schedule",
+    )
 
 
 # --------------------------------------------------------------------------- #
 # Backends
 # --------------------------------------------------------------------------- #
-
-
-#: Exit status for "the tool itself is not here" (the shell convention). A missing
-#: binary has to look like a failed command rather than an exception: naming a
-#: backend is not the same as being on a machine that has it, and asking about one
-#: that is absent must report rather than crash.
-_NO_SUCH_TOOL = 127
 
 
 def _run(
@@ -454,20 +566,37 @@ def _run(
             list(argv),
             input=stdin,
             capture_output=True,
-            text=True,
-            encoding="utf-8",
             check=False,
         )
-    except (FileNotFoundError, NotADirectoryError, PermissionError) as exc:
+    except (FileNotFoundError, NotADirectoryError, PermissionError, OSError) as exc:
         return subprocess.CompletedProcess(
-            list(argv), _NO_SUCH_TOOL, stdout="", stderr=f"{argv[0]}: {exc.strerror}"
+            list(argv), _NO_SUCH_TOOL, stdout=b"", stderr=str(exc).encode()
         )
+
+
+def _text(raw: bytes | str | None) -> str:
+    """Decode captured process output, never raising on odd bytes.
+
+    A crontab with one latin-1 byte in a comment must not take ``ir schedule
+    --status`` down with a ``UnicodeDecodeError``.
+    """
+    if raw is None:
+        return ""
+    if isinstance(raw, str):
+        return raw
+    return raw.decode("utf-8", errors="replace")
+
+
+#: The ``env`` binary used to carry a job's environment inline on a cron line.
+_ENV_TOOL = shutil.which("env") or "/usr/bin/env"
 
 
 class _LaunchdBackend:
     """macOS launchd — a per-user LaunchAgent plist under ``~/Library/LaunchAgents``."""
 
     name = "launchd"
+    #: launchd genuinely loads/unloads a job, so "loaded" is a fact worth showing.
+    reports_loaded = True
 
     @staticmethod
     def available() -> bool:
@@ -479,6 +608,12 @@ class _LaunchdBackend:
 
     def plist_path(self, label: str) -> Path:
         return Path.home() / "Library" / "LaunchAgents" / f"{label}.plist"
+
+    def preview(self, spec: ScheduleSpec) -> str:
+        return (
+            f"{self.plist_path(spec.label)}:\n"
+            f"{plist_bytes(spec).decode('utf-8').strip()}"
+        )
 
     def status(self, label: str) -> ScheduleStatus:
         path = self.plist_path(label)
@@ -502,12 +637,13 @@ class _LaunchdBackend:
                 problems=(f"cannot read {path}: {exc}",),
                 detail="the plist exists but could not be parsed",
             )
-        argv = list(data.get("ProgramArguments") or [])
+        argv = [str(part) for part in (data.get("ProgramArguments") or [])]
         interval = data.get("StartInterval")
         log_path = data.get("StandardOutPath")
+        env = tuple(sorted((data.get("EnvironmentVariables") or {}).items()))
         last_run, last_line = _log_facts(log_path)
         loaded, last_exit = self._launchctl_facts(label)
-        problems = _interpreter_problems(argv[0] if argv else None)
+        problems = _interpreter_problems(argv[0] if argv else None) + _env_problems(env)
         if last_exit:
             problems += (
                 f"the last run exited {last_exit} — the job is firing but failing; "
@@ -525,6 +661,8 @@ class _LaunchdBackend:
             every_minutes=int(interval // 60) if interval else None,
             definition=str(path),
             command=" ".join(shlex.quote(part) for part in argv),
+            python=argv[0] if argv else None,
+            env=env,
             log_path=log_path,
             loaded=loaded,
             last_run=last_run,
@@ -543,26 +681,25 @@ class _LaunchdBackend:
         done = _run(["launchctl", "list", label])
         if done.returncode != 0:
             return False, None
-        match = re.search(r'"LastExitStatus"\s*=\s*(-?\d+)', done.stdout or "")
+        match = re.search(r'"LastExitStatus"\s*=\s*(-?\d+)', _text(done.stdout))
         return True, int(match.group(1)) if match else None
 
     def install(self, spec: ScheduleSpec) -> None:
         path = self.plist_path(spec.label)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(plist_bytes(spec))
-        self._reload(spec.label, path)
+        try:
+            self._reload(spec.label, path)
+        except ScheduleError:
+            # Never leave a plist on disk that launchd refused: --status would
+            # then report a schedule that is installed and does nothing.
+            path.unlink(missing_ok=True)
+            raise
 
     def remove(self, label: str) -> None:
         path = self.plist_path(label)
         _run(["launchctl", "bootout", f"{self._domain}/{label}"])
-        if path.exists():
-            path.unlink()
-
-    def restart(self, label: str) -> None:
-        path = self.plist_path(label)
-        if not path.exists():
-            raise ScheduleError(f"no schedule to restart ({path} does not exist)")
-        self._reload(label, path)
+        path.unlink(missing_ok=True)
 
     def _reload(self, label: str, path: Path) -> None:
         """Boot the job out (if loaded) and back in, so edits take effect."""
@@ -572,20 +709,25 @@ class _LaunchdBackend:
             # Pre-bootstrap launchctl (and some managed Macs) still take load -w.
             legacy = _run(["launchctl", "load", "-w", str(path)])
             if legacy.returncode != 0:
-                message = (done.stderr or done.stdout or "").strip()
+                message = (_text(done.stderr) or _text(done.stdout)).strip()
                 raise ScheduleError(
                     f"launchctl could not load {path}: {message or 'unknown error'}"
                 )
 
 
 class _CronBackend:
-    """POSIX cron — a marker-delimited block in the invoking user's crontab."""
+    """POSIX cron — one marked, self-contained line in the invoking user's crontab."""
 
     name = "cron"
+    #: cron re-reads the crontab itself; there is no load step to report on.
+    reports_loaded = False
 
     @staticmethod
     def available() -> bool:
         return bool(shutil.which("crontab"))
+
+    def preview(self, spec: ScheduleSpec) -> str:
+        return f"appended to the user crontab:\n{cron_line(spec)}"
 
     def read(self) -> str:
         done = _run(["crontab", "-l"])
@@ -597,91 +739,79 @@ class _CronBackend:
             )
         if done.returncode != 0:
             # "no crontab for <user>" is a normal empty state, not a failure.
-            if "no crontab" in (done.stderr or "").lower():
+            stderr = _text(done.stderr)
+            if "no crontab" in stderr.lower():
                 return ""
-            raise ScheduleError(
-                f"could not read the crontab: {(done.stderr or '').strip()}"
-            )
-        return done.stdout
+            raise ScheduleError(f"could not read the crontab: {stderr.strip()}")
+        return _text(done.stdout)
 
     def write(self, text: str) -> None:
-        done = _run(["crontab", "-"], stdin=text)
+        done = _run(["crontab", "-"], stdin=text.encode("utf-8"))
         if done.returncode != 0:
             raise ScheduleError(
-                f"could not write the crontab: {(done.stderr or '').strip()}"
+                f"could not write the crontab: {_text(done.stderr).strip()}"
             )
 
     def status(self, label: str) -> ScheduleStatus:
-        _, block = _split_crontab(self.read(), label)
-        if not block:
+        line = _find_our_line(self.read(), label)
+        if line is None:
             return ScheduleStatus(
                 installed=False,
                 backend=self.name,
                 label=label,
                 definition="the user crontab",
-                detail="no ir block in the crontab",
+                detail="no ir line in the crontab",
             )
-        command = _command_from_cron_block(block)
-        log_path = None
-        argv0 = None
-        if command:
-            parts = shlex.split(command.split(">>")[0])
-            argv0 = parts[0] if parts else None
-            _, _, redirect = command.partition(">>")
-            redirect = redirect.replace("2>&1", "").strip()
-            log_path = shlex.split(redirect)[0] if redirect else None
-        last_run, last_line = _log_facts(log_path)
+        parsed = _parse_cron_line(line, label)
+        last_run, last_line = _log_facts(parsed["log_path"])
         return ScheduleStatus(
             installed=True,
             backend=self.name,
             label=label,
-            every_minutes=_every_from_cron_block(block, label),
+            every_minutes=parsed["every_minutes"],
             definition="the user crontab",
-            command=command,
-            log_path=log_path,
-            loaded=True,
+            command=parsed["command"],
+            python=parsed["python"],
+            env=parsed["env"],
+            log_path=parsed["log_path"],
             last_run=last_run,
             last_log_line=last_line,
-            problems=_interpreter_problems(argv0),
+            problems=(
+                _interpreter_problems(parsed["python"]) + _env_problems(parsed["env"])
+            ),
             detail="cron re-reads the crontab itself; there is nothing to load",
         )
 
     def install(self, spec: ScheduleSpec) -> None:
-        self.write(crontab_with_block(self.read(), spec))
+        self.write(crontab_with_line(self.read(), spec))
 
     def remove(self, label: str) -> None:
-        self.write(crontab_without_block(self.read(), label))
-
-    def restart(self, label: str) -> None:
-        text = self.read()
-        _, block = _split_crontab(text, label)
-        if not block:
-            raise ScheduleError("no schedule to restart (no ir block in the crontab)")
-        self.write(text)  # rewriting is what makes cron re-read it immediately
+        self.write(crontab_without_line(self.read(), label))
 
 
 class _UnsupportedBackend:
     """Neither launchd nor cron is present (Windows, or a stripped container)."""
 
     name = "unsupported"
+    reports_loaded = False
 
     @staticmethod
     def available() -> bool:
         return True
 
     _HOW = (
-        "ir schedule needs launchd (macOS) or cron (POSIX); neither is available "
-        "here. On Windows, schedule it with Task Scheduler, e.g.\n"
+        "ir schedule needs a supported OS scheduler and this machine provides "
+        "none. On Windows, schedule it with Task Scheduler, e.g.\n"
         '    schtasks /create /tn "ir maintain" /sc hourly '
-        '/tr "\\"<python>\\" -m ir maintain --all"'
+        '/tr "\\"<python>\\" -u -m ir maintain --all"'
     )
+
+    def preview(self, spec: ScheduleSpec) -> str:
+        return self._HOW
 
     def status(self, label: str) -> ScheduleStatus:
         return ScheduleStatus(
-            installed=False,
-            backend=self.name,
-            label=label,
-            detail=self._HOW,
+            installed=False, backend=self.name, label=label, detail=self._HOW
         )
 
     def install(self, spec: ScheduleSpec) -> None:
@@ -690,25 +820,38 @@ class _UnsupportedBackend:
     def remove(self, label: str) -> None:
         raise ScheduleError(self._HOW)
 
-    def restart(self, label: str) -> None:
-        raise ScheduleError(self._HOW)
-
 
 #: Backends in preference order. launchd first on macOS because a LaunchAgent
 #: survives reboots and logs where the OS expects; cron is the POSIX fallback and
 #: also works on macOS if asked for by name.
+#:
+#: This tuple is the whole seam. A backend owns its definition format, its
+#: ``preview``, and its ``reports_loaded`` answer, so adding ``systemd --user``
+#: means adding a class here and nothing else — no branch in the renderer, the
+#: previewer, or the CLI.
 BACKENDS = (_LaunchdBackend, _CronBackend)
 
 
-def resolve_backend(backend: str | None = None):
+def resolve_backend(backend: str | None = None, *, require_available: bool = True):
     """The backend named *backend*, or the first available one.
 
-    >>> resolve_backend("cron").name
+    Naming one this machine cannot run is an error rather than a half-install:
+    ``--backend launchd`` on Linux would otherwise write a plist into a directory
+    nothing reads. Pass ``require_available=False`` to obtain a backend purely to
+    render its definition format.
+
+    >>> resolve_backend("cron", require_available=False).name
     'cron'
     """
     if backend is not None:
         for candidate in BACKENDS:
             if candidate.name == backend:
+                if require_available and not candidate.available():
+                    raise ScheduleError(
+                        f"the {backend} backend is not available on this machine; "
+                        "run `ir schedule` without --backend to use whatever this "
+                        "platform does provide"
+                    )
                 return candidate()
         known = ", ".join(candidate.name for candidate in BACKENDS)
         raise ScheduleError(f"unknown backend {backend!r}; expected one of {known}")
@@ -728,24 +871,56 @@ def status(*, backend: str | None = None, label: str = DFLT_LABEL) -> ScheduleSt
     return resolve_backend(backend).status(label)
 
 
+def _spec_for(
+    current: ScheduleStatus,
+    *,
+    minutes: int | None,
+    python: str | None,
+    label: str,
+    inherit: bool,
+) -> ScheduleSpec:
+    """Build the spec to write.
+
+    When *inherit* is set and a schedule already exists, its stored environment
+    and interpreter are carried forward rather than re-derived from this process.
+    Re-deriving is how a job installed from a full shell silently loses ``$PP``
+    the first time it is operated from one without it.
+    """
+    fields: dict[str, Any] = {"label": label}
+    fields["every_minutes"] = minutes or current.every_minutes or DFLT_EVERY_MINUTES
+    if python:
+        fields["python"] = python
+    elif inherit and current.installed and current.python:
+        fields["python"] = current.python
+    if inherit and current.installed and current.env:
+        fields["env"] = current.env
+    if inherit and current.installed and current.log_path:
+        fields["log_path"] = current.log_path
+    return ScheduleSpec(**fields)
+
+
 def install(
     *,
     every: str | int | None = None,
     backend: str | None = None,
     label: str = DFLT_LABEL,
     python: str | None = None,
+    inherit: bool = True,
     dry_run: bool = False,
 ) -> ScheduleStatus:
-    """Install (or overwrite) the schedule, and return the resulting status."""
-    impl = resolve_backend(backend)
-    current = impl.status(label)
-    minutes = parse_every(every)
-    if minutes is None:
-        minutes = current.every_minutes or DFLT_EVERY_MINUTES
-    spec = ScheduleSpec(
-        every_minutes=minutes,
+    """Install (or overwrite) the schedule, and return the resulting status.
+
+    *inherit* carries an existing definition's environment, interpreter and log
+    path forward; pass ``False`` to re-snapshot them from this process.
+    """
+    impl = resolve_backend(backend, require_available=not dry_run)
+    current = impl.status(label) if not dry_run else _safe_status(impl, label)
+    spec = _spec_for(
+        current,
+        minutes=parse_every(every),
+        python=python,
         label=label,
-        **({"python": python} if python else {}),
+        inherit=inherit,
     )
     if dry_run:
         return ScheduleStatus(
@@ -753,16 +928,25 @@ def install(
             backend=impl.name,
             label=label,
             action="would-install",
-            every_minutes=minutes,
+            every_minutes=spec.every_minutes,
             definition=current.definition,
             command=" ".join(shlex.quote(part) for part in spec.command),
+            python=spec.python,
+            env=spec.env,
             log_path=spec.log_path,
-            detail=preview(spec, backend=impl.name),
+            detail=impl.preview(spec),
         )
     impl.install(spec)
-    after = impl.status(label)
     action = "updated" if current.installed else "installed"
-    return _replace_action(after, action)
+    return _replace_action(impl.status(label), action)
+
+
+def _safe_status(impl, label: str) -> ScheduleStatus:
+    """*impl*'s status, or an empty one — used where a report must not fail."""
+    try:
+        return impl.status(label)
+    except ScheduleError:
+        return ScheduleStatus(installed=False, backend=impl.name, label=label)
 
 
 def remove(*, backend: str | None = None, label: str = DFLT_LABEL) -> ScheduleStatus:
@@ -776,10 +960,12 @@ def remove(*, backend: str | None = None, label: str = DFLT_LABEL) -> ScheduleSt
 
 
 def restart(*, backend: str | None = None, label: str = DFLT_LABEL) -> ScheduleStatus:
-    """Reload the existing definition (after upgrading ir or moving interpreter).
+    """Reload the existing definition, re-pinning it to the current interpreter.
 
-    Re-pins the job to the interpreter running this call, which is what repairs a
-    schedule left pointing at a rebuilt or deleted interpreter.
+    This is the repair for a schedule left pointing at a rebuilt or deleted
+    interpreter. The stored environment is carried forward untouched — restarting
+    from a shell that lacks ``$PP`` must not quietly re-point a working job at a
+    different (or empty) set of corpora.
     """
     impl = resolve_backend(backend)
     current = impl.status(label)
@@ -788,7 +974,12 @@ def restart(*, backend: str | None = None, label: str = DFLT_LABEL) -> ScheduleS
             "nothing to restart — no schedule is installed. Create one with: ir schedule"
         )
     return _replace_action(
-        install(every=current.every_minutes, backend=impl.name, label=label),
+        install(
+            every=current.every_minutes,
+            backend=impl.name,
+            label=label,
+            python=sys.executable,
+        ),
         "restarted",
     )
 
@@ -815,23 +1006,8 @@ def ensure(
     return _replace_action(current, "unchanged")
 
 
-def preview(spec: ScheduleSpec, *, backend: str | None = None) -> str:
-    """The definition text *spec* would write, for ``--dry-run``."""
-    impl = resolve_backend(backend)
-    if impl.name == "launchd":
-        return (
-            f"{impl.plist_path(spec.label)}:\n"
-            f"{plist_bytes(spec).decode('utf-8').strip()}"
-        )
-    if impl.name == "cron":
-        return f"appended to the user crontab:\n{cron_block(spec)}"
-    return _UnsupportedBackend._HOW
-
-
 def _replace_action(state: ScheduleStatus, action: str) -> ScheduleStatus:
-    """*state* with its ``action`` set (dataclasses.replace, kept local and typed)."""
-    from dataclasses import replace as dc_replace
-
+    """*state* with its ``action`` set."""
     return dc_replace(state, action=action)
 
 
@@ -864,7 +1040,7 @@ def _rows(state: ScheduleStatus) -> Iterable[tuple[str, Any]]:
     yield "definition", state.definition
     yield "runs", state.command
     yield "log", state.log_path
-    if state.backend == "launchd" and state.loaded is not None:
+    if state.loaded is not None:
         yield "loaded", "yes" if state.loaded else "NO"
     yield "last run", state.last_run or "never (no log yet)"
     yield "last log line", state.last_log_line

@@ -311,10 +311,23 @@ when there is none, and when one already exists it reports it and the commands
 above rather than silently reinstalling over an interval you tuned.
 
 The job is pinned to the absolute interpreter that installed it, because neither
-launchd nor cron resolves `ir` on your shell's `PATH`. `--status` checks that
-interpreter still exists and still matches the `ir` you are running — the failure
-this catches is a rebuilt pyenv version or a recreated venv leaving a job that
-fires on time and does nothing. `--restart` re-pins it.
+launchd nor cron resolves `ir` on your shell's `PATH`, and it carries the
+environment ir reads (`$PP`, `$PTH_FILEPATH`, `IR_*`, `XDG_*`) — launchd starts
+jobs with a near-empty environment, and without those the `packages` and
+`reports` corpora fail every time the job fires while it still exits 0.
+
+**An existing definition is data, not a template.** Only a fresh install
+snapshots your shell; `--every` and `--restart` carry the stored environment
+forward untouched, so operating a working schedule from a shell that happens to
+lack `$PP` never silently re-points it at a different corpus store. To
+re-snapshot deliberately: `ir schedule --remove && ir schedule`.
+
+`--status` is the health check. It reports the last run and the last log line,
+and flags three failures that otherwise look like success: an interpreter that no
+longer exists (a rebuilt pyenv version or recreated venv leaves a job that fires
+on time and does nothing), a job whose environment is missing something your
+shell has, and a non-zero exit status from the last run. `--restart` re-pins the
+interpreter.
 
 **`ir` still does not run a scheduler.** It writes a definition, hands it to the
 OS, and exits: no daemon, no in-process timer. launchd/cron remain the executor,

@@ -233,20 +233,32 @@ def maintain(name=None, *, all=False, dry_run=False):
     corpus. Idempotent and safe to schedule (cron/launchd): it no-ops what is not
     due. --dry-run reports what would run without doing it.
     """
-    from .maintenance import maintain as _maintain
+    from .maintenance import MaintenanceBusy, maintain as _maintain, single_run
 
-    results = _maintain(name=name, all=all, dry_run=dry_run)
+    try:
+        if dry_run:
+            results = _maintain(name=name, all=all, dry_run=True)
+        else:
+            # Overlapping runs can interleave writes to one corpus store; the
+            # scheduled job and a manual run both arrive through here.
+            with single_run():
+                results = _maintain(name=name, all=all)
+    except MaintenanceBusy as busy:
+        return f"skipped: {busy}"
     if not results:
         return "no corpora registered"
     out = "\n".join(str(r) for r in results)
     failures = [r for r in results if r.error]
     if failures:
-        # Exit non-zero so a scheduler records the failure (launchd's
-        # LastExitStatus, cron's mail): a sweep that half-fails and exits 0 is
+        # The report goes to stdout even when the run failed -- `ir maintain --all
+        # > report.txt` must not lose the corpora that succeeded just because one
+        # did not. Only the summary rides SystemExit, whose job here is the
+        # non-zero exit code: a sweep that half-fails and exits 0 is
         # indistinguishable from a healthy one, which is how corpora go stale
-        # unnoticed. `ir schedule --status` reads that status back.
+        # unnoticed. `ir schedule --status` reads that exit code back.
+        print(out)
         raise SystemExit(
-            f"{out}\n\n{len(failures)} of {len(results)} corpora failed to maintain."
+            f"{len(failures)} of {len(results)} corpora failed to maintain."
         )
     return out
 
@@ -267,6 +279,10 @@ def schedule(
     whether the OS has it loaded, last run) plus how to operate it, rather than
     silently reinstalling over a schedule you tuned.
 
+    An existing definition's environment is carried forward by every operation,
+    so operating a working schedule from a shell that happens to lack $PP never
+    silently re-points it at a different corpus store.
+
     every: interval as 15m / 2h / 1d, or a plain number of minutes.
     status: report only; never mutates.
     restart: reload the definition and re-pin it to this interpreter.
@@ -275,6 +291,23 @@ def schedule(
     backend: launchd | cron (default: whichever this machine provides).
     """
     from . import schedule as _schedule
+
+    # Mutually exclusive: silently letting one flag win would make
+    # `--restart --every 15m` report success while ignoring the interval.
+    chosen = [
+        flag
+        for flag, on in (
+            ("--status", status),
+            ("--restart", restart),
+            ("--remove", remove),
+            ("--dry-run", dry_run),
+        )
+        if on
+    ]
+    if len(chosen) > 1:
+        return f"ir schedule: {' and '.join(chosen)} cannot be combined"
+    if every is not None and (restart or remove or status):
+        return f"ir schedule: --every cannot be combined with {chosen[0]}"
 
     try:
         if status:
@@ -288,6 +321,11 @@ def schedule(
         else:
             state = _schedule.ensure(every=every, backend=backend)
     except _schedule.ScheduleError as error:
+        return f"ir schedule: {error}"
+    except OSError as error:
+        # The whole point of this command is to report on the machine's
+        # scheduler; an unreadable definition or a vanished directory has to read
+        # as a message, not a traceback.
         return f"ir schedule: {error}"
     return _schedule.render(state)
 
