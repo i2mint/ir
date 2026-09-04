@@ -40,7 +40,7 @@ dependencies = [
     "dol",
     "ef",
     "vd",
-    "argh",
+    "cw>=0.1.1,<0.2",
 ]
 
 [project.scripts]
