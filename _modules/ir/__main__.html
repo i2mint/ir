@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.__main__ &mdash; ir 0.1.29 documentation</title>
+  <title>ir.__main__ &mdash; ir 0.1.30 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=904119ea"></script>
+      <script src="../../_static/documentation_options.js?v=73657eb8"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -99,48 +99,45 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ir.__main__</h1><div class="highlight"><pre>
-<span></span><span class="sd">"""``python -m ir`` / ``ir`` CLI entry point (argh dispatch)."""</span>
+<span></span><span class="sd">"""``python -m ir`` / ``ir`` CLI entry point (cw dispatch)."""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cw</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">.cli</span><span class="w"> </span><span class="kn">import</span> <span class="n">COMMANDS</span>
+
+<span class="c1">#: ir's grammar takes ordinary parameters positionally (``ir build NAME``,</span>
+<span class="c1">#: ``ir search NAME QUERY``) and exposes keyword-only parameters as options.</span>
+<span class="c1">#: That is ``BY_NAME_IF_KWONLY``, and it is load-bearing rather than decorative:</span>
+<span class="c1">#: under cw's ARGH default (``BY_NAME_IF_HAS_DEFAULT``) the two commands with a</span>
+<span class="c1">#: defaulted *positional* parameter change grammar -- ``ir maintain [name]``</span>
+<span class="c1">#: becomes ``ir maintain --name NAME`` and ``ir coverage [name]`` likewise.</span>
+<span class="c1">#: ``tests/test_cli_surface.py`` pins that difference so this line cannot be</span>
+<span class="c1">#: dropped silently.</span>
+<span class="n">CONVENTION</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">cw</span><span class="o">.</span><span class="n">ARGH</span><span class="p">,</span> <span class="n">naming</span><span class="o">=</span><span class="n">cw</span><span class="o">.</span><span class="n">BY_NAME_IF_KWONLY</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="mk_parser">
+<a class="viewcode-back" href="../../module_docs/ir/__main__.html#ir.__main__.mk_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mk_parser</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Build ir's argument parser (a plain :class:`argparse.ArgumentParser`)."""</span>
+    <span class="k">return</span> <span class="n">cw</span><span class="o">.</span><span class="n">mk_parser</span><span class="p">(</span><span class="n">COMMANDS</span><span class="p">,</span> <span class="n">convention</span><span class="o">=</span><span class="n">CONVENTION</span><span class="p">)</span></div>
+
 
 
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../../module_docs/ir/__main__.html#ir.__main__.main">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">"""Dispatch the ``ir`` command-line interface."""</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">argh</span>
-
-    <span class="n">parser</span> <span class="o">=</span> <span class="n">argh</span><span class="o">.</span><span class="n">ArghParser</span><span class="p">()</span>
-    <span class="c1"># argh &gt;= 0.30 requires an explicit name-mapping policy as soon as a command</span>
-    <span class="c1"># has an *optional positional* (e.g. ``maintain(name=None, ...)``).</span>
-    <span class="c1"># ``BY_NAME_IF_KWONLY`` keeps positional params positional and maps</span>
-    <span class="c1"># keyword-only params to options — exactly ir's existing command convention,</span>
-    <span class="c1"># so it changes nothing for the other commands. Fall back gracefully on</span>
-    <span class="c1"># older argh that lacks the policy.</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">policy</span> <span class="o">=</span> <span class="n">argh</span><span class="o">.</span><span class="n">NameMappingPolicy</span><span class="o">.</span><span class="n">BY_NAME_IF_KWONLY</span>
-    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span><span class="w"> </span><span class="nn">argh.assembling</span><span class="w"> </span><span class="kn">import</span> <span class="n">NameMappingPolicy</span>
-
-            <span class="n">policy</span> <span class="o">=</span> <span class="n">NameMappingPolicy</span><span class="o">.</span><span class="n">BY_NAME_IF_KWONLY</span>
-        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-            <span class="n">policy</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">policy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">argh</span><span class="o">.</span><span class="n">add_commands</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">COMMANDS</span><span class="p">,</span> <span class="n">name_mapping_policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">argh</span><span class="o">.</span><span class="n">add_commands</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">COMMANDS</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>  <span class="c1"># very old argh without the kwarg</span>
-        <span class="n">argh</span><span class="o">.</span><span class="n">add_commands</span><span class="p">(</span><span class="n">parser</span><span class="p">,</span> <span class="n">COMMANDS</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">dispatch</span><span class="p">()</span></div>
+<span class="w">    </span><span class="sd">"""Dispatch the ``ir`` command-line interface; return the exit code."""</span>
+    <span class="k">return</span> <span class="n">cw</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">mk_parser</span><span class="p">())</span></div>
 
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">main</span><span class="p">()</span>
+    <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </pre></div>
 
            </div>

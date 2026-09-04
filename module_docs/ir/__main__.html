@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.__main__ &mdash; ir 0.1.29 documentation</title>
+  <title>ir.__main__ &mdash; ir 0.1.30 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=904119ea"></script>
+      <script src="../../_static/documentation_options.js?v=73657eb8"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -51,7 +51,9 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../ir.html">ir</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.__main__</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.__main__.CONVENTION"><code class="docutils literal notranslate"><span class="pre">CONVENTION</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.__main__.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ir.__main__.mk_parser"><code class="docutils literal notranslate"><span class="pre">mk_parser()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="base.html">ir.base</a></li>
@@ -105,11 +107,30 @@
              
   <section id="module-ir.__main__">
 <span id="ir-main"></span><h1>ir.__main__<a class="headerlink" href="#module-ir.__main__" title="Link to this heading"></a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">ir</span></code> / <code class="docutils literal notranslate"><span class="pre">ir</span></code> CLI entry point (argh dispatch).</p>
+<p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">ir</span></code> / <code class="docutils literal notranslate"><span class="pre">ir</span></code> CLI entry point (cw dispatch).</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.__main__.CONVENTION">
+<span class="sig-prename descclassname"><span class="pre">ir.__main__.</span></span><span class="sig-name descname"><span class="pre">CONVENTION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">Convention(naming='by_name_if_kwonly',</span> <span class="pre">short_flags=True,</span> <span class="pre">hyphenate_commands=True,</span> <span class="pre">hyphenate_groups=False,</span> <span class="pre">default_in_help=True,</span> <span class="pre">hints_when_declared=False,</span> <span class="pre">resolve_hints=False,</span> <span class="pre">decode=&lt;function</span> <span class="pre">argh_decode&gt;,</span> <span class="pre">egress=&lt;function</span> <span class="pre">argh_egress&gt;)</span></span><a class="headerlink" href="#ir.__main__.CONVENTION" title="Link to this definition"></a></dt>
+<dd><p>ir’s grammar takes ordinary parameters positionally (<code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">build</span> <span class="pre">NAME</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">search</span> <span class="pre">NAME</span> <span class="pre">QUERY</span></code>) and exposes keyword-only parameters as options.
+That is <code class="docutils literal notranslate"><span class="pre">BY_NAME_IF_KWONLY</span></code>, and it is load-bearing rather than decorative:
+under cw’s ARGH default (<code class="docutils literal notranslate"><span class="pre">BY_NAME_IF_HAS_DEFAULT</span></code>) the two commands with a
+defaulted <em>positional</em> parameter change grammar – <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span> <span class="pre">[name]</span></code>
+becomes <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span> <span class="pre">--name</span> <span class="pre">NAME</span></code> and <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">coverage</span> <span class="pre">[name]</span></code> likewise.
+<code class="docutils literal notranslate"><span class="pre">tests/test_cli_surface.py</span></code> pins that difference so this line cannot be
+dropped silently.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.__main__.main">
 <span class="sig-prename descclassname"><span class="pre">ir.__main__.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/__main__.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.__main__.main" title="Link to this definition"></a></dt>
-<dd><p>Dispatch the <code class="docutils literal notranslate"><span class="pre">ir</span></code> command-line interface.</p>
+<dd><p>Dispatch the <code class="docutils literal notranslate"><span class="pre">ir</span></code> command-line interface; return the exit code.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.__main__.mk_parser">
+<span class="sig-prename descclassname"><span class="pre">ir.__main__.</span></span><span class="sig-name descname"><span class="pre">mk_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ir/__main__.html#mk_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.__main__.mk_parser" title="Link to this definition"></a></dt>
+<dd><p>Build ir’s argument parser (a plain <code class="xref py py-class docutils literal notranslate"><span class="pre">argparse.ArgumentParser</span></code>).</p>
 </dd></dl>
 
 </section>
