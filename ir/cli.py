@@ -1,4 +1,4 @@
-"""Command-line surface for ``ir`` (argh-dispatched).
+"""Command-line surface for ``ir`` (dispatched by cw).
 
 Commands operate on **named** corpora from the registry (see
 :mod:`ir.registry`)::

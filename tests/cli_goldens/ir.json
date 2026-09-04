@@ -1,0 +1,251 @@
+{
+ "recorded_from": "argh 0.31.3 with NameMappingPolicy.BY_NAME_IF_KWONLY, before the cw migration",
+ "note": "rc and the normalised usage line only. Full --help bodies and argparse error text are deliberately NOT pinned: CPython rewrites both between versions (3.12 changed 'invalid choice' quoting and the option column) and this repo's CI spans 3.10, 3.12 and Windows. The empty-diff proof over full stdout/stderr was done at migration time on 3.12 and is recorded in the PR.",
+ "cases": [
+  {
+   "argv": [],
+   "rc": 0,
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+  },
+  {
+   "argv": [
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+  },
+  {
+   "argv": [
+    "-h"
+   ],
+   "rc": 0,
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+  },
+  {
+   "argv": [
+    "ls",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG ls [-h]"
+  },
+  {
+   "argv": [
+    "register",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG register [-h] [--root ROOT] [-p PATTERN] [--embedder EMBEDDER] [--reindex-on REINDEX_ON] [--every-hours EVERY_HOURS] [-s] name kind"
+  },
+  {
+   "argv": [
+    "build",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG build [-h] [-e EMBEDDER] [-f] name"
+  },
+  {
+   "argv": [
+    "search",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG search [-h] [-k K] [-m MODE] [-f FUSION] name query"
+  },
+  {
+   "argv": [
+    "discover",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [-f FUSION] name query"
+  },
+  {
+   "argv": [
+    "coverage",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG coverage [-h] [name]"
+  },
+  {
+   "argv": [
+    "info",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG info [-h] name"
+  },
+  {
+   "argv": [
+    "maintain",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG maintain [-h] [-a] [-d] [name]"
+  },
+  {
+   "argv": [
+    "schedule",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG schedule [-h] [-e EVERY] [-s] [--restart] [--remove] [-d] [-b BACKEND]"
+  },
+  {
+   "argv": [
+    "rm",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG rm [-h] name"
+  },
+  {
+   "argv": [
+    "eval",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG eval [-h] [-m MODE] [-k K] name cases"
+  },
+  {
+   "argv": [
+    "eval-gen",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG eval-gen [-h] [-k K] [-a ABSTENTION_FRAC] [-m MAX_ARTIFACTS] name out"
+  },
+  {
+   "argv": [
+    "eval-select",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG eval-select [-h] [-s STRATEGY] [--mode MODE] [-k K] [--max-k MAX_K] [-r REL] [--min-score MIN_SCORE] name cases"
+  },
+  {
+   "argv": [
+    "sweep-select",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG sweep-select [-h] [-s STRATEGY] [-m MODE] [-k K] [-o OBJECTIVE] name cases"
+  },
+  {
+   "argv": [
+    "calibrate-min-score",
+    "--help"
+   ],
+   "rc": 0,
+   "usage": "PROG calibrate-min-score [-h] [-m MODE] [-k K] [-s SENSITIVITY_WEIGHT] [-p] [-f FUSION] name cases"
+  },
+  {
+   "argv": [
+    "no-such-command"
+   ],
+   "rc": 2,
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+  },
+  {
+   "argv": [
+    "build"
+   ],
+   "rc": 2,
+   "usage": "PROG build [-h] [-e EMBEDDER] [-f] name"
+  },
+  {
+   "argv": [
+    "build",
+    "--no-such-flag"
+   ],
+   "rc": 2,
+   "usage": "PROG build [-h] [-e EMBEDDER] [-f] name"
+  },
+  {
+   "argv": [
+    "maintain",
+    "--name",
+    "x"
+   ],
+   "rc": 2,
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+  },
+  {
+   "argv": [
+    "maintain",
+    "a",
+    "b"
+   ],
+   "rc": 2,
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+  },
+  {
+   "argv": [
+    "register",
+    "onlyname"
+   ],
+   "rc": 2,
+   "usage": "PROG register [-h] [--root ROOT] [-p PATTERN] [--embedder EMBEDDER] [--reindex-on REINDEX_ON] [--every-hours EVERY_HOURS] [-s] name kind"
+  },
+  {
+   "argv": [
+    "search",
+    "onlyname"
+   ],
+   "rc": 2,
+   "usage": "PROG search [-h] [-k K] [-m MODE] [-f FUSION] name query"
+  },
+  {
+   "argv": [
+    "schedule",
+    "positional-not-allowed"
+   ],
+   "rc": 2,
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+  },
+  {
+   "argv": [
+    "eval-gen"
+   ],
+   "rc": 2,
+   "usage": "PROG eval-gen [-h] [-k K] [-a ABSTENTION_FRAC] [-m MAX_ARTIFACTS] name out"
+  },
+  {
+   "argv": [
+    "ls",
+    "extra"
+   ],
+   "rc": 2,
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+  },
+  {
+   "argv": [
+    "coverage",
+    "a",
+    "b"
+   ],
+   "rc": 2,
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+  },
+  {
+   "argv": [
+    "discover",
+    "n",
+    "q",
+    "--k"
+   ],
+   "rc": 2,
+   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [-f FUSION] name query"
+  },
+  {
+   "argv": [
+    "calibrate-min-score",
+    "--sensitivity-weight"
+   ],
+   "rc": 2,
+   "usage": "PROG calibrate-min-score [-h] [-m MODE] [-k K] [-s SENSITIVITY_WEIGHT] [-p] [-f FUSION] name cases"
+  }
+ ]
+}
