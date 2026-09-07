@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.registry &mdash; ir 0.1.30 documentation</title>
+  <title>ir.registry &mdash; ir 0.1.31 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -14,7 +14,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=73657eb8"></script>
+      <script src="../../_static/documentation_options.js?v=d71dfaa1"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -114,6 +114,9 @@
 <span class="sd">- ``sessions`` → :meth:`CorpusSource.from_claude_sessions`</span>
 <span class="sd">- ``files``    → :meth:`CorpusSource.from_files` (needs ``root``; optional</span>
 <span class="sd">  ``pattern``)</span>
+<span class="sd">- ``records``  → :meth:`CorpusSource.from_records` (needs ``fetcher``, a</span>
+<span class="sd">  ``"module:attr"`` reference; optional ``metadata_keys`` / ``id_key`` /</span>
+<span class="sd">  ``text_key``) — the seam for a corpus whose records another package owns</span>
 
 <span class="sd">Unregistered preset names (``skills``/``packages``/``reports``/``sessions``) are</span>
 <span class="sd">auto-registered with defaults on first use, so ``ir build skills`` just works.</span>
@@ -129,6 +132,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusSource</span>
 
 <span class="n">PRESETS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"skills"</span><span class="p">,</span> <span class="s2">"packages"</span><span class="p">,</span> <span class="s2">"reports"</span><span class="p">,</span> <span class="s2">"sessions"</span><span class="p">)</span>
+
+<span class="c1">#: Kinds that need parameters, so they are never auto-registered from a bare name.</span>
+<span class="n">PARAMETRIC_KINDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"files"</span><span class="p">,</span> <span class="s2">"records"</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_load</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
@@ -169,9 +175,9 @@
 
 <span class="sd">    Entries written by older ``ir`` (none of these keys) keep working unchanged.</span>
 <span class="sd">    """</span>
-    <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PRESETS</span> <span class="ow">and</span> <span class="n">kind</span> <span class="o">!=</span> <span class="s2">"files"</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PRESETS</span> <span class="ow">and</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PARAMETRIC_KINDS</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"Unknown corpus kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">; use one of </span><span class="si">{</span><span class="n">PRESETS</span><span class="si">}</span><span class="s2"> or 'files'."</span>
+            <span class="sa">f</span><span class="s2">"Unknown corpus kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">; use one of </span><span class="si">{</span><span class="n">PRESETS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">PARAMETRIC_KINDS</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">MaintenancePolicy</span><span class="p">,</span> <span class="n">resolve_storage</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">IndexingStrategy</span><span class="p">,</span> <span class="n">strategy_to_spec</span>
@@ -257,6 +263,10 @@
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"sessions"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_claude_sessions</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"records"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"files"</span><span class="p">:</span>

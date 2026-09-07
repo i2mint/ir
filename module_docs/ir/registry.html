@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ir.registry &mdash; ir 0.1.30 documentation</title>
+  <title>ir.registry &mdash; ir 0.1.31 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -15,7 +15,7 @@
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=73657eb8"></script>
+      <script src="../../_static/documentation_options.js?v=d71dfaa1"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
@@ -65,6 +65,7 @@
 <li class="toctree-l1"><a class="reference internal" href="maintenance.html">ir.maintenance</a></li>
 <li class="toctree-l1"><a class="reference internal" href="policy.html">ir.policy</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ir.registry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ir.registry.PARAMETRIC_KINDS"><code class="docutils literal notranslate"><span class="pre">PARAMETRIC_KINDS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.get"><code class="docutils literal notranslate"><span class="pre">get()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.policy_for"><code class="docutils literal notranslate"><span class="pre">policy_for()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ir.registry.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
@@ -126,9 +127,18 @@ under the config dir (<code class="docutils literal notranslate"><span class="pr
 <li><p><code class="docutils literal notranslate"><span class="pre">sessions</span></code> → <code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusSource.from_claude_sessions()</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">files</span></code>    → <code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusSource.from_files()</span></code> (needs <code class="docutils literal notranslate"><span class="pre">root</span></code>; optional
 <code class="docutils literal notranslate"><span class="pre">pattern</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">records</span></code>  → <code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusSource.from_records()</span></code> (needs <code class="docutils literal notranslate"><span class="pre">fetcher</span></code>, a
+<code class="docutils literal notranslate"><span class="pre">&quot;module:attr&quot;</span></code> reference; optional <code class="docutils literal notranslate"><span class="pre">metadata_keys</span></code> / <code class="docutils literal notranslate"><span class="pre">id_key</span></code> /
+<code class="docutils literal notranslate"><span class="pre">text_key</span></code>) — the seam for a corpus whose records another package owns</p></li>
 </ul>
 <p>Unregistered preset names (<code class="docutils literal notranslate"><span class="pre">skills</span></code>/<code class="docutils literal notranslate"><span class="pre">packages</span></code>/<code class="docutils literal notranslate"><span class="pre">reports</span></code>/<code class="docutils literal notranslate"><span class="pre">sessions</span></code>) are
 auto-registered with defaults on first use, so <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">build</span> <span class="pre">skills</span></code> just works.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.registry.PARAMETRIC_KINDS">
+<span class="sig-prename descclassname"><span class="pre">ir.registry.</span></span><span class="sig-name descname"><span class="pre">PARAMETRIC_KINDS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('files',</span> <span class="pre">'records')</span></span><a class="headerlink" href="#ir.registry.PARAMETRIC_KINDS" title="Link to this definition"></a></dt>
+<dd><p>Kinds that need parameters, so they are never auto-registered from a bare name.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.registry.get">
 <span class="sig-prename descclassname"><span class="pre">ir.registry.</span></span><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/ir/registry.html#get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ir.registry.get" title="Link to this definition"></a></dt>
