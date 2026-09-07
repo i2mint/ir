@@ -13,6 +13,9 @@ Presets map to :class:`~ir.sources.CorpusSource` constructors:
 - ``sessions`` → :meth:`CorpusSource.from_claude_sessions`
 - ``files``    → :meth:`CorpusSource.from_files` (needs ``root``; optional
   ``pattern``)
+- ``records``  → :meth:`CorpusSource.from_records` (needs ``fetcher``, a
+  ``"module:attr"`` reference; optional ``metadata_keys`` / ``id_key`` /
+  ``text_key``) — the seam for a corpus whose records another package owns
 
 Unregistered preset names (``skills``/``packages``/``reports``/``sessions``) are
 auto-registered with defaults on first use, so ``ir build skills`` just works.
@@ -28,6 +31,9 @@ from .config import registry_path
 from .sources import CorpusSource
 
 PRESETS = ("skills", "packages", "reports", "sessions")
+
+#: Kinds that need parameters, so they are never auto-registered from a bare name.
+PARAMETRIC_KINDS = ("files", "records")
 
 
 def _load() -> dict[str, Any]:
@@ -66,9 +72,9 @@ def register(
 
     Entries written by older ``ir`` (none of these keys) keep working unchanged.
     """
-    if kind not in PRESETS and kind != "files":
+    if kind not in PRESETS and kind not in PARAMETRIC_KINDS:
         raise ValueError(
-            f"Unknown corpus kind {kind!r}; use one of {PRESETS} or 'files'."
+            f"Unknown corpus kind {kind!r}; use one of {PRESETS + PARAMETRIC_KINDS}."
         )
     from .policy import MaintenancePolicy, resolve_storage
     from .strategy import IndexingStrategy, strategy_to_spec
@@ -142,6 +148,10 @@ def source_from_entry(name: str, entry: dict) -> CorpusSource:
         )
     if kind == "sessions":
         return CorpusSource.from_claude_sessions(
+            name=name, embedder=embedder, strategy=strategy, **params
+        )
+    if kind == "records":
+        return CorpusSource.from_records(
             name=name, embedder=embedder, strategy=strategy, **params
         )
     if kind == "files":

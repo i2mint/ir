@@ -36,7 +36,8 @@ import ir
 
 # Define a corpus, build the index (incremental), then discover:
 source = ir.CorpusSource.from_skills()  # or from_packages(), from_md_reports(),
-# from_claude_sessions(), from_files(...)
+# from_claude_sessions(), from_files(...),
+# from_records(fetcher="mypkg.recall:records")  # records another package owns
 corpus = ir.build(source)  # embed + persist under XDG dirs
 result = ir.discover(corpus, "how do I deploy the app to the server")
 
