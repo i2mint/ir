@@ -13,7 +13,7 @@ independent of how it is indexed or stored:
 
 Smart-default constructors cover the common ways to define a source:
 :meth:`from_mapping`, :meth:`from_files`, :meth:`from_md_reports`,
-:meth:`from_skills`, :meth:`from_packages`.
+:meth:`from_skills`, :meth:`from_packages`, :meth:`from_records`.
 """
 
 from __future__ import annotations
@@ -70,6 +70,52 @@ def content_hash_signal(artifact_id: str, raw: Any) -> str:
     return ef.content_hash(raw)
 
 
+def resolve_fetcher(fetcher: Any) -> Callable[[], list]:
+    """Resolve a fetcher spec to a zero-argument callable returning records.
+
+    A callable passes through; a **string** is an import reference —
+    ``"package.module:attribute"`` (preferred) or ``"package.module.attribute"``
+    — imported and returned. The string form is what makes a fetcher-backed
+    corpus *persistable*: a registry entry is JSON, so a corpus whose records
+    come from another package (``ir.register("mine", "records",
+    fetcher="mypkg.recall:turn_records")``) can only survive a rebuild if the
+    seam accepts a name rather than an object.
+
+    >>> resolve_fetcher(lambda: [])()
+    []
+    >>> resolve_fetcher("ir.sources:DFLT_EXCLUDE_DIRS") is DFLT_EXCLUDE_DIRS
+    True
+    """
+    if callable(fetcher):
+        return fetcher
+    if not isinstance(fetcher, str) or not fetcher.strip():
+        raise TypeError(
+            f"fetcher must be a callable or a 'module:attr' string, got {fetcher!r}"
+        )
+    import importlib
+
+    ref = fetcher.strip()
+    module_name, _, attr = ref.partition(":")
+    if not attr:  # dotted form: the last segment is the attribute
+        module_name, _, attr = ref.rpartition(".")
+    if not module_name or not attr:
+        raise ValueError(
+            f"fetcher reference {fetcher!r} is not of the form 'module:attr'."
+        )
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError as e:
+        raise ImportError(
+            f"fetcher reference {fetcher!r}: cannot import {module_name!r} ({e})."
+        ) from e
+    try:
+        return getattr(module, attr)
+    except AttributeError as e:
+        raise AttributeError(
+            f"fetcher reference {fetcher!r}: {module_name!r} has no {attr!r}."
+        ) from e
+
+
 @dataclass
 class CorpusSource:
     """A corpus definition: scope + change signal + strategy + embedder."""
@@ -101,6 +147,64 @@ class CorpusSource:
             name=name,
             scope=mapping,
             indexing_strategy=strategy or WholeText(),
+            **kwargs,
+        )
+
+    @classmethod
+    def from_records(
+        cls,
+        *,
+        name: str,
+        fetcher: Any,
+        strategy: IndexingStrategy | None = None,
+        metadata_keys: Iterable[str] | None = None,
+        id_key: str = "id",
+        text_key: str = "text",
+        **kwargs,
+    ) -> "CorpusSource":
+        """Records produced by a **named callable** as a corpus.
+
+        The generic, *persistable* counterpart of :meth:`from_mapping`: where
+        ``from_mapping`` takes an in-process object (so a registry entry cannot
+        name it), this takes a ``fetcher`` — a callable **or** a
+        ``"module:attr"`` import reference (see :func:`resolve_fetcher`) — so a
+        corpus owned by another package round-trips through
+        ``~/.config/ir/corpora.json`` and rebuilds in a fresh process.
+
+        Each record is a mapping; its ``id_key`` is the artifact id (falling back
+        to ``<name>_<i>`` so no record is silently dropped). ``metadata_keys``
+        names the record fields lifted into the strategy's **filter fields** —
+        the JSON-friendly stand-in for a ``metadata_of`` callable, which no
+        registry entry could carry. The default strategy chunks ``text_key``.
+
+        >>> src = CorpusSource.from_records(
+        ...     name="notes",
+        ...     fetcher=lambda: [{"id": "a", "text": "hi", "project": "p"}],
+        ...     metadata_keys=["project"],
+        ... )
+        >>> src.scope["a"]["text"], src.metadata_of("a", src.scope["a"])
+        ('hi', {'project': 'p'})
+        """
+        records = list(resolve_fetcher(fetcher)())
+        keys = tuple(metadata_keys or ())
+        scope: dict[str, Any] = {}
+        for i, record in enumerate(records):
+            key = (record.get(id_key) if isinstance(record, Mapping) else None) or (
+                f"{name}_{i}"
+            )
+            scope[str(key)] = record
+
+        def metadata_of(aid, raw):
+            if not keys or not isinstance(raw, Mapping):
+                return {}
+            return {k: raw[k] for k in keys if k in raw}
+
+        return cls(
+            name=name,
+            scope=scope,
+            indexing_strategy=strategy
+            or Chunked(text_key=text_key, max_tokens=DFLT_CHUNK_MAX_TOKENS),
+            metadata_of=metadata_of,
             **kwargs,
         )
 
@@ -200,18 +304,19 @@ class CorpusSource:
         *,
         name: str = "skills",
         filter: Any = None,
-        fetcher: Callable[[], list] | None = None,
+        fetcher: Callable[[], list] | str | None = None,
         strategy: IndexingStrategy | None = None,
         **kwargs,
     ) -> "CorpusSource":
         """The agent-skills corpus, via ``priv.skills_index``.
 
         ``fetcher`` overrides the source of skill records (each a mapping with
-        ``name``/``description``/``parent``) — inject a test double to avoid the
-        ``priv`` dependency.
+        ``name``/``description``/``parent``) — a callable (inject a test double
+        to avoid the ``priv`` dependency) or a ``"module:attr"`` reference
+        (:func:`resolve_fetcher`), which is the form a registry entry can carry.
         """
         if fetcher is not None:
-            records = list(fetcher())
+            records = list(resolve_fetcher(fetcher)())
         else:
             from priv.skills_index import skills_index as _skills_index
 
@@ -250,7 +355,7 @@ class CorpusSource:
         include_session_title: bool = True,
         max_sessions: int | None = None,
         root: str | Path | None = None,
-        fetcher: Callable[[], list] | None = None,
+        fetcher: Callable[[], list] | str | None = None,
         strategy: IndexingStrategy | None = None,
         **kwargs,
     ) -> "CorpusSource":
@@ -268,12 +373,14 @@ class CorpusSource:
         substring or list) and ``max_sessions``.
 
         ``fetcher`` overrides the record source (each a mapping with
-        ``user_prompt`` / ``assistant_summary`` / ... ) — inject a test double to
-        avoid the ``priv`` dependency. Otherwise records come from
-        :func:`priv.claude_transcripts.turn_pair_records`.
+        ``user_prompt`` / ``assistant_summary`` / ... ) — a callable (inject a
+        test double to avoid the ``priv`` dependency) or a ``"module:attr"``
+        reference (:func:`resolve_fetcher`), the form a registry entry can carry,
+        so another package can own the transcripts this corpus indexes. Otherwise
+        records come from :func:`priv.claude_transcripts.turn_pair_records`.
         """
         if fetcher is not None:
-            records = list(fetcher())
+            records = list(resolve_fetcher(fetcher)())
         else:
             from priv.claude_transcripts import turn_pair_records
 

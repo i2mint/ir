@@ -157,6 +157,9 @@ DEFAULTS_BY_KIND: dict[str, dict] = {
     "packages": {"reindex": {"on": "source-change"}},
     "reports": {"reindex": {"on": "source-change"}},
     "files": {"reindex": {"on": "source-change"}},
+    # A fetcher-backed corpus has no filesystem to watch — its records live in
+    # another package's store — so time is the only honest staleness signal.
+    "records": {"reindex": {"on": "interval", "every_hours": 24}},
     "sessions": {
         "reindex": {"on": "interval", "every_hours": 24},
         "synopsis": {
