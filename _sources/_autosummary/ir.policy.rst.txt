@@ -1,0 +1,33 @@
+ir.policy
+=========
+
+.. automodule:: ir.policy
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      REINDEX_TRIGGERS
+      STORAGE_BACKENDS
+      GLOBAL_DEFAULT
+      DEFAULTS_BY_KIND
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      default_policy_for_kind
+      in_downtime
+      is_reindex_due
+      resolve_policy
+      resolve_storage
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MaintenancePolicy
+      ReindexPolicy
+      SynopsisPolicy
+   

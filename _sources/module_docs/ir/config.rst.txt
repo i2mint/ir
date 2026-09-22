@@ -1,4 +1,0 @@
-ir.config
-=========
-.. automodule:: ir.config
-   :members:

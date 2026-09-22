@@ -1,0 +1,102 @@
+﻿ir
+==
+
+.. automodule:: ir
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      search_tool
+      make_search
+      with_synopsis
+      make_llm_synthesizer
+      build
+      open_corpus
+      reports_coverage
+      search
+      as_retriever
+      retrievers
+      retriever_for
+      fuse_hits
+      records_for_artifact
+      default_edge_extractor
+      canonical_node_id
+      traverse
+      collapsed_tree_policy
+      expand
+      sentence_window_policy
+      parent_policy
+      tag_source
+      make_llm_formulator
+      select
+      disclose
+      discover
+      register
+      corpora
+      build_corpus
+      maintain
+      maintain_corpus
+      resolve_policy
+      default_policy_for_kind
+      policy_for
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Artifact
+      Surface
+      Record
+      SearchHit
+      IndexPlan
+      IndexingStrategy
+      WholeText
+      Chunked
+      Skill
+      Package
+      ClaudeTurn
+      CorpusSource
+      CorpusStore
+      Corpus
+      CoverageReport
+      GraphStore
+      CorpusGraph
+      WalkPolicy
+      WalkState
+      Passage
+      Selection
+      Disclosure
+      DiscoveryResult
+      MaintenanceResult
+      MaintenancePolicy
+      ReindexPolicy
+      SynopsisPolicy
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   base
+   cli
+   config
+   coverage
+   embed
+   eval
+   eval_gen
+   formulate
+   graph
+   index
+   maintenance
+   policy
+   registry
+   retrieve
+   schedule
+   sources
+   store
+   strategy
+   synopsis
+   tools

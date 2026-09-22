@@ -1,4 +1,0 @@
-ir.select
-=========
-.. automodule:: ir.select
-   :members:

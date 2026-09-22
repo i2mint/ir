@@ -1,4 +1,0 @@
-ir.synopsis
-===========
-.. automodule:: ir.synopsis
-   :members:

@@ -1,4 +1,0 @@
-ir.retrieve
-===========
-.. automodule:: ir.retrieve
-   :members:

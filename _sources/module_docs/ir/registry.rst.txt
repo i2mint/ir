@@ -1,4 +1,0 @@
-ir.registry
-===========
-.. automodule:: ir.registry
-   :members:

@@ -1,0 +1,50 @@
+ir.schedule
+===========
+
+.. automodule:: ir.schedule
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_LABEL
+      DFLT_EVERY_MINUTES
+      INHERITED_ENV_VARS
+      LOAD_BEARING_ENV_VARS
+      BACKENDS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      cron_expression
+      cron_line
+      cron_marker
+      crontab_with_line
+      crontab_without_line
+      ensure
+      format_every
+      install
+      parse_every
+      plist_bytes
+      plist_dict
+      remove
+      render
+      resolve_backend
+      restart
+      status
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ScheduleSpec
+      ScheduleStatus
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      ScheduleError
+   

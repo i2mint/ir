@@ -1,0 +1,33 @@
+ir.maintenance
+==============
+
+.. automodule:: ir.maintenance
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_STALE_LOCK_AFTER
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      lock_path
+      maintain
+      maintain_corpus
+      single_run
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MaintenanceResult
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      MaintenanceBusy
+   

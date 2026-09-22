@@ -1,0 +1,29 @@
+ir.sources
+==========
+
+.. automodule:: ir.sources
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_EXCLUDE_DIRS
+      DFLT_SESSIONS_SINCE_DAYS
+      REPORT_DOC_GLOBS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      content_hash_signal
+      iter_report_doc_folders
+      report_exclude_reason
+      resolve_fetcher
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CorpusSource
+   

@@ -1,0 +1,32 @@
+ir.strategy
+===========
+
+.. automodule:: ir.strategy
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_CHUNK_MAX_TOKENS
+      STRATEGY_REGISTRY
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      strategy_from_spec
+      strategy_to_spec
+      text_of
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Chunked
+      ClaudeTurn
+      IndexingStrategy
+      Package
+      Skill
+      WholeText
+   

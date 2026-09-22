@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "built_at": "2026-09-22T12:55:47Z",
+  "package": {
+    "name": "ir",
+    "version": "0.1.32",
+    "display_name": "ir",
+    "source": "pyproject.toml"
+  },
+  "git": {
+    "available": true,
+    "commit": "ebd617d6298a15cd1cd7d5815abc16a2ffd89a4c",
+    "short_commit": "ebd617d",
+    "branch": "master",
+    "tags": [],
+    "dirty": false,
+    "remote_url": "https://github.com/i2mint/ir",
+    "commit_url": "https://github.com/i2mint/ir/commit/ebd617d6298a15cd1cd7d5815abc16a2ffd89a4c",
+    "error": null
+  },
+  "ci": {
+    "provider": "github",
+    "repository": "i2mint/ir",
+    "sha": "ebd617d6298a15cd1cd7d5815abc16a2ffd89a4c",
+    "sha_in_history": true,
+    "ref": "refs/heads/master",
+    "ref_name": "master",
+    "run_id": "35729976549",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/35729976549",
+    "server_url": "https://github.com"
+  },
+  "tools": {
+    "epythet": "0.2.12",
+    "sphinx": "9.1.0",
+    "docutils": "0.22.4",
+    "python": "3.12.14"
+  },
+  "config": {
+    "theme": "auto",
+    "html_theme": "sphinxawesome_theme",
+    "accent": "#006e4b",
+    "mode": "auto",
+    "api_generator": "autosummary",
+    "ignore": [
+      "tests/",
+      "scrap/",
+      "examples/"
+    ],
+    "agent_outputs": true,
+    "aggregates": [
+      "md"
+    ],
+    "ai_artifacts": true,
+    "provenance": true,
+    "docs_dir": "docsrc"
+  },
+  "site": {
+    "modules_documented": 21,
+    "objects_documented": 459
+  },
+  "pypi": {
+    "checked": true,
+    "latest": "0.1.32",
+    "relation": "same",
+    "error": null
+  },
+  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout ebd617d6298a15cd1cd7d5815abc16a2ffd89a4c\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "warnings": [],
+  "alignment": {
+    "aligned": true,
+    "notes": []
+  }
+}

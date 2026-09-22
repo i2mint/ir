@@ -1,4 +1,0 @@
-ir.formulate
-============
-.. automodule:: ir.formulate
-   :members:

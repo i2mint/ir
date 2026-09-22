@@ -1,4 +1,0 @@
-ir.__main__
-===========
-.. automodule:: ir.__main__
-   :members:

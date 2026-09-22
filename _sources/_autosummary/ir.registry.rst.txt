@@ -1,0 +1,26 @@
+ir.registry
+===========
+
+.. automodule:: ir.registry
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      PARAMETRIC_KINDS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get
+      policy_for
+      register
+      registered
+      retriever_for
+      retrievers
+      source_for
+      source_from_entry
+      unregister
+   

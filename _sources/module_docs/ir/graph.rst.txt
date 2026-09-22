@@ -1,4 +1,0 @@
-ir.graph
-========
-.. automodule:: ir.graph
-   :members:

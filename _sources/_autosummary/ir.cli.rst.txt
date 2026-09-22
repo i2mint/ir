@@ -1,0 +1,26 @@
+ir.cli
+======
+
+.. automodule:: ir.cli
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build
+      calibrate_min_score
+      coverage
+      discover
+      eval
+      eval_gen
+      eval_select
+      info
+      ls
+      maintain
+      register
+      rm
+      schedule
+      search
+      sweep_select
+   

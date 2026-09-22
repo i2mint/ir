@@ -1,0 +1,20 @@
+ir.formulate
+============
+
+.. automodule:: ir.formulate
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      Formulator
+      FORMULATION_PROMPT
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      identity_formulator
+      make_llm_formulator
+   

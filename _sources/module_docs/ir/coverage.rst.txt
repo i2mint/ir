@@ -1,4 +1,0 @@
-ir.coverage
-===========
-.. automodule:: ir.coverage
-   :members:

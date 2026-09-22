@@ -1,0 +1,13 @@
+ir.tools
+========
+
+.. automodule:: ir.tools
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      search
+      make_search
+   

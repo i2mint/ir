@@ -1,0 +1,32 @@
+ir.base
+=======
+
+.. automodule:: ir.base
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      FilterFields
+      POINTER_KEYS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      best_per_artifact
+      ledger_key
+      storage_key
+      tag_source
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Artifact
+      IndexPlan
+      Record
+      SearchHit
+      Surface
+   

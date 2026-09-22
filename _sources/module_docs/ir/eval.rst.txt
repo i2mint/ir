@@ -1,4 +1,0 @@
-ir.eval
-=======
-.. automodule:: ir.eval
-   :members:

@@ -1,4 +1,0 @@
-ir.cli
-======
-.. automodule:: ir.cli
-   :members:

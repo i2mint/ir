@@ -1,0 +1,32 @@
+ir.graph
+========
+
+.. automodule:: ir.graph
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      NEXT
+      PREV
+      PARENT
+      CHILD
+      REF
+      NodeId
+      EdgeExtractor
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      canonical_node_id
+      default_edge_extractor
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CorpusGraph
+      GraphStore
+   

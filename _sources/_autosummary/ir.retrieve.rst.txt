@@ -1,0 +1,33 @@
+ir.retrieve
+===========
+
+.. automodule:: ir.retrieve
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      MODES
+      FUSIONS
+      DFLT_RRF_K
+      DFLT_BLEND_ALPHA
+      DFLT_BM25_SAT_K
+      Identity
+      Retriever
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      as_retriever
+      fuse_hits
+      records_for_artifact
+      search
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      NoLedgerEntry
+   

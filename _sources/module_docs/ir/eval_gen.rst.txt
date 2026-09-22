@@ -1,4 +1,0 @@
-ir.eval_gen
-===========
-.. automodule:: ir.eval_gen
-   :members:

@@ -1,0 +1,19 @@
+ir.index
+========
+
+.. automodule:: ir.index
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build
+      open_corpus
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Corpus
+   

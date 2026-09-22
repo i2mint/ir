@@ -1,0 +1,30 @@
+ir.eval\_gen
+============
+
+.. automodule:: ir.eval_gen
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_QUERIES_PER_ARTIFACT
+      DFLT_ABSTENTION_FRAC
+      DFLT_MIN_DESCRIPTION_CHARS
+      NAME_PLACEHOLDER
+      DFLT_ABSTENTION_THEME
+      QueryGenerator
+      AbstentionGenerator
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_eval_set
+      corpus_signature
+      generate_abstention_cases
+      generate_cases
+      make_default_abstention_generator
+      make_default_query_generator
+      mask_name
+   

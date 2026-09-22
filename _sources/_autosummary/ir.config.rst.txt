@@ -1,0 +1,18 @@
+ir.config
+=========
+
+.. automodule:: ir.config
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      cache_dir
+      config_dir
+      corpus_dir
+      data_dir
+      embeddings_cache_dir
+      registry_path
+      safe_name
+   

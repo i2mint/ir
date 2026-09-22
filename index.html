@@ -1,533 +1,517 @@
-
-
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+
+<html :class="{ 'dark' : darkMode === true }" data-content_root="./" lang="en" x-data="{ darkMode: $persist(window.matchMedia('(prefers-color-scheme: dark)').matches), activeSection: ''}">
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>
+    (function () {
+      // Set initial color scheme
+      if ((localStorage.getItem("_x_darkMode") === "true") || (window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+        document.documentElement.classList.add("dark");
+      }
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to ir’s documentation! &mdash; ir 0.1.31 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
-      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
-
-  
-      <script src="_static/jquery.js?v=5d32c60e"></script>
-      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=d71dfaa1"></script>
-      <script src="_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
-      <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
-      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
-      <script src="_static/copybutton.js?v=f281be69"></script>
-    <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="ir" href="module_docs/ir.html" /> 
-</head>
-
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
-
-          
-          
-          <a href="#" class="icon icon-home">
-            ir
-          </a>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir.html">ir</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/__main__.html">ir.__main__</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/base.html">ir.base</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/cli.html">ir.cli</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/config.html">ir.config</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/coverage.html">ir.coverage</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/embed.html">ir.embed</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval.html">ir.eval</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval_gen.html">ir.eval_gen</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/expand.html">ir.expand</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/formulate.html">ir.formulate</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/graph.html">ir.graph</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/maintenance.html">ir.maintenance</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/policy.html">ir.policy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/schedule.html">ir.schedule</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/select.html">ir.select</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/store.html">ir.store</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/strategy.html">ir.strategy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/synopsis.html">ir.synopsis</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/tools.html">ir.tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/traverse.html">ir.traverse</a></li>
-</ul>
-
-        </div>
-      </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">ir</a>
-      </nav>
-
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Welcome to ir’s documentation!</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
-</div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
-  <section id="welcome-to-ir-s-documentation">
-<h1>Welcome to ir’s documentation!<a class="headerlink" href="#welcome-to-ir-s-documentation" title="Link to this heading"></a></h1>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir.html">ir</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Artifact"><code class="docutils literal notranslate"><span class="pre">Artifact</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Chunked"><code class="docutils literal notranslate"><span class="pre">Chunked</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.ClaudeTurn"><code class="docutils literal notranslate"><span class="pre">ClaudeTurn</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Corpus"><code class="docutils literal notranslate"><span class="pre">Corpus</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.CorpusGraph"><code class="docutils literal notranslate"><span class="pre">CorpusGraph</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.CorpusSource"><code class="docutils literal notranslate"><span class="pre">CorpusSource</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.CorpusStore"><code class="docutils literal notranslate"><span class="pre">CorpusStore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.CoverageReport"><code class="docutils literal notranslate"><span class="pre">CoverageReport</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Disclosure"><code class="docutils literal notranslate"><span class="pre">Disclosure</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.DiscoveryResult"><code class="docutils literal notranslate"><span class="pre">DiscoveryResult</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.GraphStore"><code class="docutils literal notranslate"><span class="pre">GraphStore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.IndexPlan"><code class="docutils literal notranslate"><span class="pre">IndexPlan</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.IndexingStrategy"><code class="docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.MaintenancePolicy"><code class="docutils literal notranslate"><span class="pre">MaintenancePolicy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.MaintenanceResult"><code class="docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Package"><code class="docutils literal notranslate"><span class="pre">Package</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Passage"><code class="docutils literal notranslate"><span class="pre">Passage</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Record"><code class="docutils literal notranslate"><span class="pre">Record</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.ReindexPolicy"><code class="docutils literal notranslate"><span class="pre">ReindexPolicy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.SearchHit"><code class="docutils literal notranslate"><span class="pre">SearchHit</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Selection"><code class="docutils literal notranslate"><span class="pre">Selection</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.SynopsisPolicy"><code class="docutils literal notranslate"><span class="pre">SynopsisPolicy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.WalkPolicy"><code class="docutils literal notranslate"><span class="pre">WalkPolicy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.WalkState"><code class="docutils literal notranslate"><span class="pre">WalkState</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.as_retriever"><code class="docutils literal notranslate"><span class="pre">as_retriever()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.build_corpus"><code class="docutils literal notranslate"><span class="pre">build_corpus()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.canonical_node_id"><code class="docutils literal notranslate"><span class="pre">canonical_node_id()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.collapsed_tree_policy"><code class="docutils literal notranslate"><span class="pre">collapsed_tree_policy()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.corpora"><code class="docutils literal notranslate"><span class="pre">corpora()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.default_edge_extractor"><code class="docutils literal notranslate"><span class="pre">default_edge_extractor()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.default_policy_for_kind"><code class="docutils literal notranslate"><span class="pre">default_policy_for_kind()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.disclose"><code class="docutils literal notranslate"><span class="pre">disclose()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.expand"><code class="docutils literal notranslate"><span class="pre">expand()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.maintain_corpus"><code class="docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.make_llm_formulator"><code class="docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.make_llm_synthesizer"><code class="docutils literal notranslate"><span class="pre">make_llm_synthesizer()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.make_search"><code class="docutils literal notranslate"><span class="pre">make_search()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.parent_policy"><code class="docutils literal notranslate"><span class="pre">parent_policy()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.policy_for"><code class="docutils literal notranslate"><span class="pre">policy_for()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.records_for_artifact"><code class="docutils literal notranslate"><span class="pre">records_for_artifact()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.reports_coverage"><code class="docutils literal notranslate"><span class="pre">reports_coverage()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.resolve_policy"><code class="docutils literal notranslate"><span class="pre">resolve_policy()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.retriever_for"><code class="docutils literal notranslate"><span class="pre">retriever_for()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.retrievers"><code class="docutils literal notranslate"><span class="pre">retrievers()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.search_tool"><code class="docutils literal notranslate"><span class="pre">search_tool()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.select"><code class="docutils literal notranslate"><span class="pre">select()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.sentence_window_policy"><code class="docutils literal notranslate"><span class="pre">sentence_window_policy()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.tag_source"><code class="docutils literal notranslate"><span class="pre">tag_source()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.traverse"><code class="docutils literal notranslate"><span class="pre">traverse()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir.html#ir.with_synopsis"><code class="docutils literal notranslate"><span class="pre">with_synopsis()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/__main__.html">ir.__main__</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/__main__.html#ir.__main__.CONVENTION"><code class="docutils literal notranslate"><span class="pre">CONVENTION</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/__main__.html#ir.__main__.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/__main__.html#ir.__main__.mk_parser"><code class="docutils literal notranslate"><span class="pre">mk_parser()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/base.html">ir.base</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.Artifact"><code class="docutils literal notranslate"><span class="pre">Artifact</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.FilterFields"><code class="docutils literal notranslate"><span class="pre">FilterFields</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.IndexPlan"><code class="docutils literal notranslate"><span class="pre">IndexPlan</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.POINTER_KEYS"><code class="docutils literal notranslate"><span class="pre">POINTER_KEYS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.Record"><code class="docutils literal notranslate"><span class="pre">Record</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.SearchHit"><code class="docutils literal notranslate"><span class="pre">SearchHit</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.best_per_artifact"><code class="docutils literal notranslate"><span class="pre">best_per_artifact()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.ledger_key"><code class="docutils literal notranslate"><span class="pre">ledger_key()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.storage_key"><code class="docutils literal notranslate"><span class="pre">storage_key()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/base.html#ir.base.tag_source"><code class="docutils literal notranslate"><span class="pre">tag_source()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/cli.html">ir.cli</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.calibrate_min_score"><code class="docutils literal notranslate"><span class="pre">calibrate_min_score()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.coverage"><code class="docutils literal notranslate"><span class="pre">coverage()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.eval"><code class="docutils literal notranslate"><span class="pre">eval()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.eval_gen"><code class="docutils literal notranslate"><span class="pre">eval_gen()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.eval_select"><code class="docutils literal notranslate"><span class="pre">eval_select()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.info"><code class="docutils literal notranslate"><span class="pre">info()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.ls"><code class="docutils literal notranslate"><span class="pre">ls()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.rm"><code class="docutils literal notranslate"><span class="pre">rm()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.schedule"><code class="docutils literal notranslate"><span class="pre">schedule()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/cli.html#ir.cli.sweep_select"><code class="docutils literal notranslate"><span class="pre">sweep_select()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/config.html">ir.config</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/config.html#ir.config.cache_dir"><code class="docutils literal notranslate"><span class="pre">cache_dir()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/config.html#ir.config.config_dir"><code class="docutils literal notranslate"><span class="pre">config_dir()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/config.html#ir.config.corpus_dir"><code class="docutils literal notranslate"><span class="pre">corpus_dir()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/config.html#ir.config.data_dir"><code class="docutils literal notranslate"><span class="pre">data_dir()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/config.html#ir.config.embeddings_cache_dir"><code class="docutils literal notranslate"><span class="pre">embeddings_cache_dir()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/config.html#ir.config.registry_path"><code class="docutils literal notranslate"><span class="pre">registry_path()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/config.html#ir.config.safe_name"><code class="docutils literal notranslate"><span class="pre">safe_name()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/coverage.html">ir.coverage</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/coverage.html#ir.coverage.CoverageReport"><code class="docutils literal notranslate"><span class="pre">CoverageReport</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/coverage.html#ir.coverage.reports_coverage"><code class="docutils literal notranslate"><span class="pre">reports_coverage()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/embed.html">ir.embed</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/embed.html#ir.embed.make_embedder"><code class="docutils literal notranslate"><span class="pre">make_embedder()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval.html">ir.eval</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#design-stance-retrieval-centric-reuse-ef">Design stance (retrieval-centric, reuse <code class="docutils literal notranslate"><span class="pre">ef</span></code>)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.ComparisonReport"><code class="docutils literal notranslate"><span class="pre">ComparisonReport</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_CALIB_SENSITIVITY_WEIGHT"><code class="docutils literal notranslate"><span class="pre">DFLT_CALIB_SENSITIVITY_WEIGHT</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_CURVE_MODE"><code class="docutils literal notranslate"><span class="pre">DFLT_CURVE_MODE</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_DISTRACTOR_SIZES"><code class="docutils literal notranslate"><span class="pre">DFLT_DISTRACTOR_SIZES</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_K_VALUES"><code class="docutils literal notranslate"><span class="pre">DFLT_K_VALUES</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_METRICS"><code class="docutils literal notranslate"><span class="pre">DFLT_METRICS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_MODE"><code class="docutils literal notranslate"><span class="pre">DFLT_MODE</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_MAX_K"><code class="docutils literal notranslate"><span class="pre">DFLT_SWEEP_MAX_K</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_MIN_SCORE"><code class="docutils literal notranslate"><span class="pre">DFLT_SWEEP_MIN_SCORE</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_OBJECTIVE"><code class="docutils literal notranslate"><span class="pre">DFLT_SWEEP_OBJECTIVE</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DFLT_SWEEP_REL"><code class="docutils literal notranslate"><span class="pre">DFLT_SWEEP_REL</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DiscoveryCase"><code class="docutils literal notranslate"><span class="pre">DiscoveryCase</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.DiscoveryReport"><code class="docutils literal notranslate"><span class="pre">DiscoveryReport</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.LEVEL_GAINS"><code class="docutils literal notranslate"><span class="pre">LEVEL_GAINS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.MinScoreCalibration"><code class="docutils literal notranslate"><span class="pre">MinScoreCalibration</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.NamedSetReport"><code class="docutils literal notranslate"><span class="pre">NamedSetReport</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.NamedSets"><code class="docutils literal notranslate"><span class="pre">NamedSets</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.PackageRelevanceCase"><code class="docutils literal notranslate"><span class="pre">PackageRelevanceCase</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.RELEVANCE_LEVELS"><code class="docutils literal notranslate"><span class="pre">RELEVANCE_LEVELS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SWEEP_METRICS"><code class="docutils literal notranslate"><span class="pre">SWEEP_METRICS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SelectionGridPoint"><code class="docutils literal notranslate"><span class="pre">SelectionGridPoint</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SelectionReport"><code class="docutils literal notranslate"><span class="pre">SelectionReport</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.SelectionSweep"><code class="docutils literal notranslate"><span class="pre">SelectionSweep</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.as_doc_retriever"><code class="docutils literal notranslate"><span class="pre">as_doc_retriever()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.calibrate_min_score"><code class="docutils literal notranslate"><span class="pre">calibrate_min_score()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.compare_indexings"><code class="docutils literal notranslate"><span class="pre">compare_indexings()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.corpus_artifact_ids"><code class="docutils literal notranslate"><span class="pre">corpus_artifact_ids()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.derive_named_sets"><code class="docutils literal notranslate"><span class="pre">derive_named_sets()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.distractor_curve_from_cases"><code class="docutils literal notranslate"><span class="pre">distractor_curve_from_cases()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.distractor_robustness_curve"><code class="docutils literal notranslate"><span class="pre">distractor_robustness_curve()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.evaluate_discovery"><code class="docutils literal notranslate"><span class="pre">evaluate_discovery()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.evaluate_named_sets"><code class="docutils literal notranslate"><span class="pre">evaluate_named_sets()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.evaluate_selection"><code class="docutils literal notranslate"><span class="pre">evaluate_selection()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.fp_rate_on_distractors"><code class="docutils literal notranslate"><span class="pre">fp_rate_on_distractors()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.level_histogram"><code class="docutils literal notranslate"><span class="pre">level_histogram()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.load_calibration"><code class="docutils literal notranslate"><span class="pre">load_calibration()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.load_cases"><code class="docutils literal notranslate"><span class="pre">load_cases()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.load_package_cases"><code class="docutils literal notranslate"><span class="pre">load_package_cases()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.read_package_meta"><code class="docutils literal notranslate"><span class="pre">read_package_meta()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.recall_on_hard_positives"><code class="docutils literal notranslate"><span class="pre">recall_on_hard_positives()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.retrieval_report"><code class="docutils literal notranslate"><span class="pre">retrieval_report()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.save_cases"><code class="docutils literal notranslate"><span class="pre">save_cases()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.save_package_cases"><code class="docutils literal notranslate"><span class="pre">save_package_cases()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.sweep_selector"><code class="docutils literal notranslate"><span class="pre">sweep_selector()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.to_graded_qrels"><code class="docutils literal notranslate"><span class="pre">to_graded_qrels()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.to_qrels"><code class="docutils literal notranslate"><span class="pre">to_qrels()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval.html#ir.eval.validate_cases"><code class="docutils literal notranslate"><span class="pre">validate_cases()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/eval_gen.html">ir.eval_gen</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.AbstentionGenerator"><code class="docutils literal notranslate"><span class="pre">AbstentionGenerator</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_ABSTENTION_FRAC"><code class="docutils literal notranslate"><span class="pre">DFLT_ABSTENTION_FRAC</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_ABSTENTION_THEME"><code class="docutils literal notranslate"><span class="pre">DFLT_ABSTENTION_THEME</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_MIN_DESCRIPTION_CHARS"><code class="docutils literal notranslate"><span class="pre">DFLT_MIN_DESCRIPTION_CHARS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.DFLT_QUERIES_PER_ARTIFACT"><code class="docutils literal notranslate"><span class="pre">DFLT_QUERIES_PER_ARTIFACT</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.NAME_PLACEHOLDER"><code class="docutils literal notranslate"><span class="pre">NAME_PLACEHOLDER</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.QueryGenerator"><code class="docutils literal notranslate"><span class="pre">QueryGenerator</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.build_eval_set"><code class="docutils literal notranslate"><span class="pre">build_eval_set()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.corpus_signature"><code class="docutils literal notranslate"><span class="pre">corpus_signature()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.generate_abstention_cases"><code class="docutils literal notranslate"><span class="pre">generate_abstention_cases()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.generate_cases"><code class="docutils literal notranslate"><span class="pre">generate_cases()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.make_default_abstention_generator"><code class="docutils literal notranslate"><span class="pre">make_default_abstention_generator()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.make_default_query_generator"><code class="docutils literal notranslate"><span class="pre">make_default_query_generator()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/eval_gen.html#ir.eval_gen.mask_name"><code class="docutils literal notranslate"><span class="pre">mask_name()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/expand.html">ir.expand</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/expand.html#ir.expand.DFLT_MIN_STITCH_OVERLAP"><code class="docutils literal notranslate"><span class="pre">DFLT_MIN_STITCH_OVERLAP</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/expand.html#ir.expand.DFLT_WINDOW"><code class="docutils literal notranslate"><span class="pre">DFLT_WINDOW</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/expand.html#ir.expand.NeighborhoodPolicy"><code class="docutils literal notranslate"><span class="pre">NeighborhoodPolicy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/expand.html#ir.expand.Passage"><code class="docutils literal notranslate"><span class="pre">Passage</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/expand.html#ir.expand.SeedNotFound"><code class="docutils literal notranslate"><span class="pre">SeedNotFound</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/expand.html#ir.expand.expand"><code class="docutils literal notranslate"><span class="pre">expand()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/expand.html#ir.expand.parent_policy"><code class="docutils literal notranslate"><span class="pre">parent_policy()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/expand.html#ir.expand.sentence_window_policy"><code class="docutils literal notranslate"><span class="pre">sentence_window_policy()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/formulate.html">ir.formulate</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/formulate.html#ir.formulate.FORMULATION_PROMPT"><code class="docutils literal notranslate"><span class="pre">FORMULATION_PROMPT</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/formulate.html#ir.formulate.Formulator"><code class="docutils literal notranslate"><span class="pre">Formulator</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/formulate.html#ir.formulate.identity_formulator"><code class="docutils literal notranslate"><span class="pre">identity_formulator()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/formulate.html#ir.formulate.make_llm_formulator"><code class="docutils literal notranslate"><span class="pre">make_llm_formulator()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/graph.html">ir.graph</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.CHILD"><code class="docutils literal notranslate"><span class="pre">CHILD</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.CorpusGraph"><code class="docutils literal notranslate"><span class="pre">CorpusGraph</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.EdgeExtractor"><code class="docutils literal notranslate"><span class="pre">EdgeExtractor</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.GraphStore"><code class="docutils literal notranslate"><span class="pre">GraphStore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.NEXT"><code class="docutils literal notranslate"><span class="pre">NEXT</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.NodeId"><code class="docutils literal notranslate"><span class="pre">NodeId</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.PARENT"><code class="docutils literal notranslate"><span class="pre">PARENT</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.PREV"><code class="docutils literal notranslate"><span class="pre">PREV</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.REF"><code class="docutils literal notranslate"><span class="pre">REF</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.canonical_node_id"><code class="docutils literal notranslate"><span class="pre">canonical_node_id()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/graph.html#ir.graph.default_edge_extractor"><code class="docutils literal notranslate"><span class="pre">default_edge_extractor()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/index.html">ir.index</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/index.html#ir.index.Corpus"><code class="docutils literal notranslate"><span class="pre">Corpus</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/index.html#ir.index.build"><code class="docutils literal notranslate"><span class="pre">build()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/index.html#ir.index.open_corpus"><code class="docutils literal notranslate"><span class="pre">open_corpus()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/maintenance.html">ir.maintenance</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.DFLT_STALE_LOCK_AFTER"><code class="docutils literal notranslate"><span class="pre">DFLT_STALE_LOCK_AFTER</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.MaintenanceBusy"><code class="docutils literal notranslate"><span class="pre">MaintenanceBusy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.MaintenanceResult"><code class="docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.lock_path"><code class="docutils literal notranslate"><span class="pre">lock_path()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.maintain_corpus"><code class="docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/maintenance.html#ir.maintenance.single_run"><code class="docutils literal notranslate"><span class="pre">single_run()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/policy.html">ir.policy</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.DEFAULTS_BY_KIND"><code class="docutils literal notranslate"><span class="pre">DEFAULTS_BY_KIND</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.GLOBAL_DEFAULT"><code class="docutils literal notranslate"><span class="pre">GLOBAL_DEFAULT</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.MaintenancePolicy"><code class="docutils literal notranslate"><span class="pre">MaintenancePolicy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.REINDEX_TRIGGERS"><code class="docutils literal notranslate"><span class="pre">REINDEX_TRIGGERS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.ReindexPolicy"><code class="docutils literal notranslate"><span class="pre">ReindexPolicy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.STORAGE_BACKENDS"><code class="docutils literal notranslate"><span class="pre">STORAGE_BACKENDS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.SynopsisPolicy"><code class="docutils literal notranslate"><span class="pre">SynopsisPolicy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.default_policy_for_kind"><code class="docutils literal notranslate"><span class="pre">default_policy_for_kind()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.in_downtime"><code class="docutils literal notranslate"><span class="pre">in_downtime()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.is_reindex_due"><code class="docutils literal notranslate"><span class="pre">is_reindex_due()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.resolve_policy"><code class="docutils literal notranslate"><span class="pre">resolve_policy()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/policy.html#ir.policy.resolve_storage"><code class="docutils literal notranslate"><span class="pre">resolve_storage()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/registry.html">ir.registry</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.PARAMETRIC_KINDS"><code class="docutils literal notranslate"><span class="pre">PARAMETRIC_KINDS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.get"><code class="docutils literal notranslate"><span class="pre">get()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.policy_for"><code class="docutils literal notranslate"><span class="pre">policy_for()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.register"><code class="docutils literal notranslate"><span class="pre">register()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.registered"><code class="docutils literal notranslate"><span class="pre">registered()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.retriever_for"><code class="docutils literal notranslate"><span class="pre">retriever_for()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.retrievers"><code class="docutils literal notranslate"><span class="pre">retrievers()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.source_for"><code class="docutils literal notranslate"><span class="pre">source_for()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.source_from_entry"><code class="docutils literal notranslate"><span class="pre">source_from_entry()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/registry.html#ir.registry.unregister"><code class="docutils literal notranslate"><span class="pre">unregister()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/retrieve.html">ir.retrieve</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_BLEND_ALPHA"><code class="docutils literal notranslate"><span class="pre">DFLT_BLEND_ALPHA</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_BM25_SAT_K"><code class="docutils literal notranslate"><span class="pre">DFLT_BM25_SAT_K</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.DFLT_RRF_K"><code class="docutils literal notranslate"><span class="pre">DFLT_RRF_K</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.FUSIONS"><code class="docutils literal notranslate"><span class="pre">FUSIONS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.Identity"><code class="docutils literal notranslate"><span class="pre">Identity</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.MODES"><code class="docutils literal notranslate"><span class="pre">MODES</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.NoLedgerEntry"><code class="docutils literal notranslate"><span class="pre">NoLedgerEntry</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.Retriever"><code class="docutils literal notranslate"><span class="pre">Retriever</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.as_retriever"><code class="docutils literal notranslate"><span class="pre">as_retriever()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.records_for_artifact"><code class="docutils literal notranslate"><span class="pre">records_for_artifact()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/retrieve.html#ir.retrieve.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/schedule.html">ir.schedule</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.BACKENDS"><code class="docutils literal notranslate"><span class="pre">BACKENDS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.DFLT_EVERY_MINUTES"><code class="docutils literal notranslate"><span class="pre">DFLT_EVERY_MINUTES</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.DFLT_LABEL"><code class="docutils literal notranslate"><span class="pre">DFLT_LABEL</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.INHERITED_ENV_VARS"><code class="docutils literal notranslate"><span class="pre">INHERITED_ENV_VARS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.LOAD_BEARING_ENV_VARS"><code class="docutils literal notranslate"><span class="pre">LOAD_BEARING_ENV_VARS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.ScheduleError"><code class="docutils literal notranslate"><span class="pre">ScheduleError</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.ScheduleSpec"><code class="docutils literal notranslate"><span class="pre">ScheduleSpec</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.ScheduleStatus"><code class="docutils literal notranslate"><span class="pre">ScheduleStatus</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.cron_expression"><code class="docutils literal notranslate"><span class="pre">cron_expression()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.cron_line"><code class="docutils literal notranslate"><span class="pre">cron_line()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.cron_marker"><code class="docutils literal notranslate"><span class="pre">cron_marker()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.crontab_with_line"><code class="docutils literal notranslate"><span class="pre">crontab_with_line()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.crontab_without_line"><code class="docutils literal notranslate"><span class="pre">crontab_without_line()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.ensure"><code class="docutils literal notranslate"><span class="pre">ensure()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.format_every"><code class="docutils literal notranslate"><span class="pre">format_every()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.install"><code class="docutils literal notranslate"><span class="pre">install()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.parse_every"><code class="docutils literal notranslate"><span class="pre">parse_every()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.plist_bytes"><code class="docutils literal notranslate"><span class="pre">plist_bytes()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.plist_dict"><code class="docutils literal notranslate"><span class="pre">plist_dict()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.remove"><code class="docutils literal notranslate"><span class="pre">remove()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.render"><code class="docutils literal notranslate"><span class="pre">render()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.resolve_backend"><code class="docutils literal notranslate"><span class="pre">resolve_backend()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.restart"><code class="docutils literal notranslate"><span class="pre">restart()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/schedule.html#ir.schedule.status"><code class="docutils literal notranslate"><span class="pre">status()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/select.html">ir.select</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.BodyLoader"><code class="docutils literal notranslate"><span class="pre">BodyLoader</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DFLT_FETCH_K"><code class="docutils literal notranslate"><span class="pre">DFLT_FETCH_K</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DFLT_GAP_RATIO"><code class="docutils literal notranslate"><span class="pre">DFLT_GAP_RATIO</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DFLT_MAX_BODY_CHARS"><code class="docutils literal notranslate"><span class="pre">DFLT_MAX_BODY_CHARS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DFLT_MAX_K"><code class="docutils literal notranslate"><span class="pre">DFLT_MAX_K</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DFLT_REL_THRESHOLD"><code class="docutils literal notranslate"><span class="pre">DFLT_REL_THRESHOLD</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DISCLOSURE_LEVELS"><code class="docutils literal notranslate"><span class="pre">DISCLOSURE_LEVELS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.Disclosure"><code class="docutils literal notranslate"><span class="pre">Disclosure</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.DiscoveryResult"><code class="docutils literal notranslate"><span class="pre">DiscoveryResult</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.ResourceStore"><code class="docutils literal notranslate"><span class="pre">ResourceStore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.Selection"><code class="docutils literal notranslate"><span class="pre">Selection</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.Selector"><code class="docutils literal notranslate"><span class="pre">Selector</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.abs_threshold"><code class="docutils literal notranslate"><span class="pre">abs_threshold()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.disclose"><code class="docutils literal notranslate"><span class="pre">disclose()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.discover"><code class="docutils literal notranslate"><span class="pre">discover()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.make_llm_selector"><code class="docutils literal notranslate"><span class="pre">make_llm_selector()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.rel_threshold"><code class="docutils literal notranslate"><span class="pre">rel_threshold()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.score_gap"><code class="docutils literal notranslate"><span class="pre">score_gap()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.select"><code class="docutils literal notranslate"><span class="pre">select()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/select.html#ir.select.top_k"><code class="docutils literal notranslate"><span class="pre">top_k()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/sources.html">ir.sources</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.CorpusSource"><code class="docutils literal notranslate"><span class="pre">CorpusSource</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.DFLT_EXCLUDE_DIRS"><code class="docutils literal notranslate"><span class="pre">DFLT_EXCLUDE_DIRS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.DFLT_SESSIONS_SINCE_DAYS"><code class="docutils literal notranslate"><span class="pre">DFLT_SESSIONS_SINCE_DAYS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.REPORT_DOC_GLOBS"><code class="docutils literal notranslate"><span class="pre">REPORT_DOC_GLOBS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.content_hash_signal"><code class="docutils literal notranslate"><span class="pre">content_hash_signal()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.iter_report_doc_folders"><code class="docutils literal notranslate"><span class="pre">iter_report_doc_folders()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.report_exclude_reason"><code class="docutils literal notranslate"><span class="pre">report_exclude_reason()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/sources.html#ir.sources.resolve_fetcher"><code class="docutils literal notranslate"><span class="pre">resolve_fetcher()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/store.html">ir.store</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/store.html#ir.store.CorpusStore"><code class="docutils literal notranslate"><span class="pre">CorpusStore</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/strategy.html">ir.strategy</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.Chunked"><code class="docutils literal notranslate"><span class="pre">Chunked</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.ClaudeTurn"><code class="docutils literal notranslate"><span class="pre">ClaudeTurn</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.DFLT_CHUNK_MAX_TOKENS"><code class="docutils literal notranslate"><span class="pre">DFLT_CHUNK_MAX_TOKENS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.IndexingStrategy"><code class="docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.Package"><code class="docutils literal notranslate"><span class="pre">Package</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.STRATEGY_REGISTRY"><code class="docutils literal notranslate"><span class="pre">STRATEGY_REGISTRY</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.strategy_from_spec"><code class="docutils literal notranslate"><span class="pre">strategy_from_spec()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.strategy_to_spec"><code class="docutils literal notranslate"><span class="pre">strategy_to_spec()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/strategy.html#ir.strategy.text_of"><code class="docutils literal notranslate"><span class="pre">text_of()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/synopsis.html">ir.synopsis</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/synopsis.html#ir.synopsis.SYNOPSIS_KIND"><code class="docutils literal notranslate"><span class="pre">SYNOPSIS_KIND</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/synopsis.html#ir.synopsis.SYNOPSIS_PROMPT"><code class="docutils literal notranslate"><span class="pre">SYNOPSIS_PROMPT</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/synopsis.html#ir.synopsis.Synthesizer"><code class="docutils literal notranslate"><span class="pre">Synthesizer</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/synopsis.html#ir.synopsis.make_llm_synthesizer"><code class="docutils literal notranslate"><span class="pre">make_llm_synthesizer()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/synopsis.html#ir.synopsis.with_synopsis"><code class="docutils literal notranslate"><span class="pre">with_synopsis()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/tools.html">ir.tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/tools.html#ir.tools.make_search"><code class="docutils literal notranslate"><span class="pre">make_search()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/tools.html#ir.tools.search"><code class="docutils literal notranslate"><span class="pre">search()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/ir/traverse.html">ir.traverse</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/traverse.html#ir.traverse.DFLT_LEAF_KINDS"><code class="docutils literal notranslate"><span class="pre">DFLT_LEAF_KINDS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/traverse.html#ir.traverse.DFLT_MAX_DEPTH"><code class="docutils literal notranslate"><span class="pre">DFLT_MAX_DEPTH</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/traverse.html#ir.traverse.DFLT_SEED_K"><code class="docutils literal notranslate"><span class="pre">DFLT_SEED_K</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/traverse.html#ir.traverse.DFLT_SUMMARY_KINDS"><code class="docutils literal notranslate"><span class="pre">DFLT_SUMMARY_KINDS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/traverse.html#ir.traverse.WalkPolicy"><code class="docutils literal notranslate"><span class="pre">WalkPolicy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/traverse.html#ir.traverse.WalkState"><code class="docutils literal notranslate"><span class="pre">WalkState</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/traverse.html#ir.traverse.collapsed_tree_policy"><code class="docutils literal notranslate"><span class="pre">collapsed_tree_policy()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/ir/traverse.html#ir.traverse.traverse"><code class="docutils literal notranslate"><span class="pre">traverse()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</div>
-</section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
-<p>Release: 0.1.31</p>
-<p>Last change: Sep 07, 2026</p>
-</section>
-
-
-           </div>
-          </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="module_docs/ir.html" class="btn btn-neutral float-right" title="ir" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p></p>
-  </div>
-
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
-
-</footer>
-        </div>
-      </div>
-    </section>
-  </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
+      // Watch for media preference changes
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
+        localStorage.setItem("_x_darkMode", event.matches);
+        document.documentElement.classList.toggle("dark", event.matches);
       });
-  </script> 
+    })();
+  </script>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta charset="utf-8"/>
+<meta content="#ffffff" media="(prefers-color-scheme: light)" name="theme-color"/>
+<meta content="#030711" media="(prefers-color-scheme: dark)" name="theme-color"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<link href="index.html.md" rel="alternate" type="text/markdown"/>
+<link href="llms.txt" rel="describedby" type="text/markdown"/>
+<link href="index.html.md" rel="alternate" type="text/markdown"/>
+<link href="llms.txt" rel="describedby"/>
+<title>ir</title>
+<meta content="ir" property="og:title"/>
+<meta content="ir" name="twitter:title"/>
+<link href="_static/pygments.css?v=d75fae25" rel="stylesheet" type="text/css"/>
+<link href="_static/theme.css?v=d6d7c91b" rel="stylesheet" type="text/css"/>
+<link href="_static/copybutton.css?v=76b2166b" rel="stylesheet" type="text/css"/>
+<link href="_static/epythet.css?v=3c662399" rel="stylesheet" type="text/css"/>
+<link href="search.html" rel="search" title="Search"/>
+<link href="genindex.html" rel="index" title="Index"/>
+<link href="api.html" rel="next" title="API reference"/>
+</head>
+<body :class="{ 'overflow-hidden': showSidebar }" class="min-h-screen font-sans antialiased bg-background text-foreground" x-data="{ showSidebar: false, showScrollTop: false }">
+<div @click.self="showSidebar = false" class="fixed inset-0 z-50 overflow-hidden bg-background/80 backdrop-blur-sm md:hidden" x-cloak="" x-show="showSidebar"></div><div class="relative flex flex-col min-h-screen" id="page"><a class="absolute top-0 left-0 z-[100] block bg-background p-4 text-xl transition -translate-x-full opacity-0 focus:translate-x-0 focus:opacity-100" href="#content">
+      Skip to content
+    </a><header class="sticky top-0 z-40 w-full border-b shadow-xs border-border bg-background/90 backdrop-blur"><div class="container flex items-center h-14">
+<div class="hidden mr-4 md:flex">
+<a class="flex items-center mr-6" href="#"><span class="hidden font-bold sm:inline-block text-clip whitespace-nowrap">ir</span>
+</a><nav class="flex items-center gap-6 text-sm font-medium">
+<a class="transition-colors hover:text-foreground/80 text-foreground/60" href="https://github.com/i2mint/ir" rel="noopener nofollow">GitHub</a>
+</nav></div><button @click="showSidebar = true" class="inline-flex items-center justify-center h-10 px-0 py-2 mr-2 text-base font-medium transition-colors rounded-md hover:text-accent-foreground hover:bg-transparent md:hidden" type="button">
+<svg aria-hidden="true" fill="currentColor" height="24" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
+<path d="M152.587 825.087q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440Zm0-203.587q-19.152 0-32.326-13.174T107.087 576q0-19.152 13.174-32.326t32.326-13.174h320q19.152 0 32.326 13.174T518.087 576q0 19.152-13.174 32.326T472.587 621.5h-320Zm0-203.587q-19.152 0-32.326-13.174t-13.174-32.326q0-19.152 13.174-32.326t32.326-13.174h440q19.152 0 32.326 13.174t13.174 32.326q0 19.152-13.174 32.326t-32.326 13.174h-440ZM708.913 576l112.174 112.174q12.674 12.674 12.674 31.826t-12.674 31.826Q808.413 764.5 789.261 764.5t-31.826-12.674l-144-144Q600 594.391 600 576t13.435-31.826l144-144q12.674-12.674 31.826-12.674t31.826 12.674q12.674 12.674 12.674 31.826t-12.674 31.826L708.913 576Z"></path>
+</svg>
+<span class="sr-only">Toggle navigation menu</span>
+</button>
+<div class="flex items-center justify-between flex-1 gap-2 sm:gap-4 md:justify-end">
+<div class="flex-1 w-full md:w-auto md:flex-none"><form @keydown.k.window.meta="$refs.search.focus()" action="search.html" class="relative flex items-center group" id="searchbox" method="get">
+<input aria-label="Search the docs" class="inline-flex items-center font-medium transition-colors bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input hover:bg-accent focus:bg-accent hover:text-accent-foreground focus:text-accent-foreground hover:placeholder-accent-foreground py-2 px-4 relative h-9 w-full justify-start rounded-[0.5rem] text-sm text-muted-foreground sm:pr-12 md:w-40 lg:w-64" id="search-input" name="q" placeholder="Search ..." type="search" x-ref="search"/>
+<kbd class="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none text-muted-foreground items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex group-hover:bg-accent group-hover:text-accent-foreground">
+<span class="text-xs">⌘</span>
+    K
+  </kbd>
+</form>
+</div>
+<nav class="flex items-center gap-1">
+<button @click="darkMode = !darkMode" class="relative inline-flex items-center justify-center px-0 text-sm font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground h-9 w-9" title="Toggle color scheme" type="button">
+<svg class="absolute transition-all scale-100 rotate-0 dark:-rotate-90 dark:scale-0" fill="currentColor" height="16" viewbox="0 96 960 960" width="16" xmlns="http://www.w3.org/2000/svg">
+<path d="M480 685q45.456 0 77.228-31.772Q589 621.456 589 576q0-45.456-31.772-77.228Q525.456 467 480 467q-45.456 0-77.228 31.772Q371 530.544 371 576q0 45.456 31.772 77.228Q434.544 685 480 685Zm0 91q-83 0-141.5-58.5T280 576q0-83 58.5-141.5T480 376q83 0 141.5 58.5T680 576q0 83-58.5 141.5T480 776ZM80 621.5q-19.152 0-32.326-13.174T34.5 576q0-19.152 13.174-32.326T80 530.5h80q19.152 0 32.326 13.174T205.5 576q0 19.152-13.174 32.326T160 621.5H80Zm720 0q-19.152 0-32.326-13.174T754.5 576q0-19.152 13.174-32.326T800 530.5h80q19.152 0 32.326 13.174T925.5 576q0 19.152-13.174 32.326T880 621.5h-80Zm-320-320q-19.152 0-32.326-13.174T434.5 256v-80q0-19.152 13.174-32.326T480 130.5q19.152 0 32.326 13.174T525.5 176v80q0 19.152-13.174 32.326T480 301.5Zm0 720q-19.152 0-32.326-13.17Q434.5 995.152 434.5 976v-80q0-19.152 13.174-32.326T480 850.5q19.152 0 32.326 13.174T525.5 896v80q0 19.152-13.174 32.33-13.174 13.17-32.326 13.17ZM222.174 382.065l-43-42Q165.5 327.391 166 308.239t13.174-33.065q13.435-13.674 32.587-13.674t32.065 13.674l42.239 43q12.674 13.435 12.555 31.706-.12 18.272-12.555 31.946-12.674 13.674-31.445 13.413-18.772-.261-32.446-13.174Zm494 494.761-42.239-43q-12.674-13.435-12.674-32.087t12.674-31.565Q686.609 756.5 705.38 757q18.772.5 32.446 13.174l43 41.761Q794.5 824.609 794 843.761t-13.174 33.065Q767.391 890.5 748.239 890.5t-32.065-13.674Zm-42-494.761Q660.5 369.391 661 350.62q.5-18.772 13.174-32.446l41.761-43Q728.609 261.5 747.761 262t33.065 13.174q13.674 13.435 13.674 32.587t-13.674 32.065l-43 42.239q-13.435 12.674-31.706 12.555-18.272-.12-31.946-12.555Zm-495 494.761Q165.5 863.391 165.5 844.239t13.674-32.065l43-42.239q13.435-12.674 32.087-12.674t31.565 12.674Q299.5 782.609 299 801.38q-.5 18.772-13.174 32.446l-41.761 43Q231.391 890.5 212.239 890t-33.065-13.174ZM480 576Z"></path>
+</svg>
+<svg class="absolute transition-all scale-0 rotate-90 dark:rotate-0 dark:scale-100" fill="currentColor" height="16" viewbox="0 96 960 960" width="16" xmlns="http://www.w3.org/2000/svg">
+<path d="M480 936q-151 0-255.5-104.5T120 576q0-138 90-239.5T440 218q25-3 39 18t-1 44q-17 26-25.5 55t-8.5 61q0 90 63 153t153 63q31 0 61.5-9t54.5-25q21-14 43-1.5t19 39.5q-14 138-117.5 229T480 936Zm0-80q88 0 158-48.5T740 681q-20 5-40 8t-40 3q-123 0-209.5-86.5T364 396q0-20 3-40t8-40q-78 32-126.5 102T200 576q0 116 82 198t198 82Zm-10-270Z"></path>
+</svg>
+</button>
+</nav>
+</div>
+</div>
+</header>
+<div class="flex-1"><div class="container md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"><aside :aria-hidden="!showSidebar" :class="{ 'translate-x-0': showSidebar }" class="fixed inset-y-0 left-0 md:top-14 z-50 md:z-30 bg-background md:bg-transparent transition-all duration-100 -translate-x-full md:translate-x-0 ml-0 p-6 md:p-0 md:-ml-2 md:h-[calc(100vh-3.5rem)] w-5/6 md:w-full overflow-y-auto border-r border-border md:sticky" id="left-sidebar">
+<a class="justify-start text-sm md:!hidden bg-background" href="#"><span class="font-bold text-clip whitespace-nowrap">ir</span>
+</a>
+<div class="relative overflow-hidden md:overflow-auto my-4 md:my-0">
+<div class="overflow-y-auto h-full w-full relative pr-6"><nav class="flex md:hidden flex-col font-medium mt-4">
+<a href="https://github.com/i2mint/ir" rel="nofollow noopener">GitHub</a>
+</nav><nav class="table w-full min-w-full my-6 lg:my-8">
+<ul>
+<li class="toctree-l1" x-data="{ expanded: $el.classList.contains('current') ? true : false }"><a :class="{ 'expanded' : expanded }" @click="expanded = !expanded" class="reference internal expandable" href="api.html">API reference<button @click.prevent.stop="expanded = !expanded" type="button" x-cloak=""><span class="sr-only"></span><svg fill="currentColor" height="18px" stroke="none" viewbox="0 0 24 24" width="18px" xmlns="http://www.w3.org/2000/svg"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path></svg></button></a><ul x-cloak="" x-show="expanded">
+<li class="toctree-l2" x-data="{ expanded: $el.classList.contains('current') ? true : false }"><a :class="{ 'expanded' : expanded }" @click="expanded = !expanded" class="reference internal expandable" href="_autosummary/ir.html">ir<button @click.prevent.stop="expanded = !expanded" type="button" x-cloak=""><span class="sr-only"></span><svg fill="currentColor" height="18px" stroke="none" viewbox="0 0 24 24" width="18px" xmlns="http://www.w3.org/2000/svg"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path></svg></button></a><ul x-cloak="" x-show="expanded">
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.base.html">ir.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.cli.html">ir.cli</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.config.html">ir.config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.coverage.html">ir.coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.embed.html">ir.embed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.eval.html">ir.eval</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.eval_gen.html">ir.eval_gen</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.formulate.html">ir.formulate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.graph.html">ir.graph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.index.html">ir.index</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.policy.html">ir.policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.registry.html">ir.registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.retrieve.html">ir.retrieve</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.schedule.html">ir.schedule</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.sources.html">ir.sources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.store.html">ir.store</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.strategy.html">ir.strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.synopsis.html">ir.synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.tools.html">ir.tools</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ai-agents.html">For AI agents</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<button @click="showSidebar = false" class="absolute md:hidden right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100" type="button">
+<svg class="h-4 w-4" fill="currentColor" height="24" stroke="none" viewbox="0 96 960 960" width="24" xmlns="http://www.w3.org/2000/svg">
+<path d="M480 632 284 828q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536 576l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480 632Z"></path>
+</svg>
+</button>
+</aside>
+<main class="relative py-6 lg:gap-10 lg:py-8 xl:grid xl:grid-cols-[1fr_300px]">
+<div class="w-full min-w-0 mx-auto">
+<div id="content" role="main">
 
+<section id="ir">
+<h1>ir<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir">¶</a></h1>
+<p><strong>An information-retrieval substrate for agentic systems</strong> — one uniform
+“find the relevant things in this corpus” contract that scales from an ad-hoc
+search over an ephemeral list to a maintained capability-discovery engine.</p>
+<p>Give an agent <em>one</em> search tool, not fifty tool schemas. <code class="docutils literal notranslate"><span class="pre">ir</span></code> retrieves
+candidates, <strong>commits to a small high-precision subset</strong> (the distractor problem
+is the central selection risk — fewer, better candidates beat more), and
+<strong>discloses</strong> each committed item’s payload only when asked.</p>
+<blockquote>
+<div><p class="rubric" id="looking-for-a-search-agent">Looking for a search <em>agent</em>?</p>
+<p><strong><code class="docutils literal notranslate"><span class="pre">ir</span></code> is a retrieval <em>substrate</em>, not a search agent — it has no agent of its
+own.</strong> <code class="docutils literal notranslate"><span class="pre">ir.discover</span></code> is a deterministic, single-shot <code class="docutils literal notranslate"><span class="pre">retrieve</span> <span class="pre">→</span> <span class="pre">select</span> <span class="pre">→</span> <span class="pre">disclose</span></code> pipeline: it embeds your query <em>verbatim</em> (no LLM query rewriting)
+and commits via a score rule (no LLM reviewing the results). There is no
+planner and no <em>back-edge</em> (evaluate → reformulate → search again) — and that
+back-edge is precisely what makes a system an agent.</p>
+<p>If you want the <strong>agent</strong> — a planner, an LLM formulator that rewrites queries,
+and the evaluator→reformulate loop over one or more <code class="docutils literal notranslate"><span class="pre">ir</span></code> corpora — reach for
+<strong><a class="reference external" href="https://github.com/thorwhalen/raglab" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">raglab</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></strong>, which is <strong>built on top of
+<code class="docutils literal notranslate"><span class="pre">ir</span></code></strong> (<code class="docutils literal notranslate"><span class="pre">raglab</span></code> imports <code class="docutils literal notranslate"><span class="pre">ir</span></code>; <code class="docutils literal notranslate"><span class="pre">ir</span></code> never imports <code class="docutils literal notranslate"><span class="pre">raglab</span></code>, so it stays
+installable-light and offline-by-default).</p>
+<p>Prefer to drive it from <strong>Claude Code</strong> instead of a coded agent? <code class="docutils literal notranslate"><span class="pre">ir</span></code> ships a
+reviewing <strong>search subagent</strong> and an <code class="docutils literal notranslate"><span class="pre">ir-search</span></code> <strong>skill</strong> under
+<a class="reference internal" href="#.claude/"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">.claude/</span></code></span></a> — a lightweight “raglab-in-instructions” that formulates
+queries, <em>reads and judges</em> candidates against your real intent, filters, and
+reformulates, all on your Claude subscription (see
+<a class="reference internal" href="#misc/docs/ir_10%20--%20LLM%20Routing%20--%20Running%20Agentic%20Search%20on%20a%20Claude%20Subscription%20instead%20of%20pay-as-you-go.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">ir_10</span></code></span></a>).</p>
+</div></blockquote>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="kn">import</span><span class="w"> </span><span class="nn">ir</span>
+</span><span id="line-2">
+</span><span id="line-3"><span class="c1"># Define a corpus, build the index (incremental), then discover:</span>
+</span><span id="line-4"><span class="n">source</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_skills</span><span class="p">()</span>  <span class="c1"># or from_packages(), from_md_reports(),</span>
+</span><span id="line-5"><span class="c1"># from_claude_sessions(), from_files(...),</span>
+</span><span id="line-6"><span class="c1"># from_records(fetcher="mypkg.recall:records")  # records another package owns</span>
+</span><span id="line-7"><span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>  <span class="c1"># embed + persist under XDG dirs</span>
+</span><span id="line-8"><span class="n">result</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">discover</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">"how do I deploy the app to the server"</span><span class="p">)</span>
+</span><span id="line-9">
+</span><span id="line-10"><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">results</span><span class="p">:</span>
+</span><span id="line-11">    <span class="nb">print</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># the committed few (or result.abstained)</span>
+</span><span id="line-12"><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>  <span class="c1"># JSON-serializable (qh / HTTP ready)</span>
+</span></code></pre></div>
+</div>
+<section id="install">
+<h2>Install<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#install" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#install'">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">pip<span class="w"> </span>install<span class="w"> </span>ir
+</span></code></pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ir</span></code> is <strong>light by default</strong> — <code class="docutils literal notranslate"><span class="pre">numpy</span></code> + <a class="reference external" href="https://github.com/i2mint/dol" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">dol</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>
+for storage, plus <a class="reference external" href="https://github.com/thorwhalen/ef" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">ef</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a> /
+<a class="reference external" href="https://github.com/i2mint/vd" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">vd</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a> for embedding and lexical/hybrid retrieval.
+Python ≥ 3.10.</p>
+<p>Notes for the default (semantic) path:</p>
+<ul class="simple">
+<li><p>The default embedder is <code class="docutils literal notranslate"><span class="pre">all-MiniLM-L6-v2</span></code> (384-dim, via
+<code class="docutils literal notranslate"><span class="pre">sentence-transformers</span></code>), <strong>downloaded on first build</strong> (needs network) and
+cached under <code class="docutils literal notranslate"><span class="pre">~/.cache/ir</span></code>. For a fast, offline, dependency-light run — tests,
+CI, quick experiments — pass <code class="docutils literal notranslate"><span class="pre">embedder="light"</span></code> (a numpy-only hashing
+embedder): <code class="docutils literal notranslate"><span class="pre">ir.build(source,</span> <span class="pre">embedder="light")</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ir</span></code> sets <code class="docutils literal notranslate"><span class="pre">USE_TF=0</span></code> on import so <code class="docutils literal notranslate"><span class="pre">transformers</span></code> does not pull in TensorFlow
+(which crashes on some numpy ABIs); import <code class="docutils literal notranslate"><span class="pre">ir</span></code> before anything that imports
+<code class="docutils literal notranslate"><span class="pre">transformers</span></code>.</p></li>
+<li><p>Case generation (<code class="docutils literal notranslate"><span class="pre">ir.eval_gen</span></code>) and the optional LLM selector need an LLM via
+<a class="reference external" href="https://github.com/thorwhalen/aix" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">aix</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a> — install the extra,
+<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">"ir[llm]"</span></code>. Scoring and evaluation themselves stay offline. The
+LLM is an <em>injected callable</em> at every seam, so it can run on a Claude
+subscription instead of a metered key — see
+<a class="reference internal" href="#misc/docs/ir_10%20--%20LLM%20Routing%20--%20Running%20Agentic%20Search%20on%20a%20Claude%20Subscription%20instead%20of%20pay-as-you-go.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">ir_10</span></code></span></a>
+(MCP sampling for connectors / the Agent SDK for Claude Code).</p></li>
+</ul>
+</section>
+<section id="the-pipeline">
+<h2>The pipeline<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#the-pipeline" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#the-pipeline'">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ir</span></code> is a six-stage pipeline, each stage a small, swappable seam:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Stage</p></th>
+<th class="head"><p>Entry point</p></th>
+<th class="head"><p>What it does</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>source</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CorpusSource</span></code></p></td>
+<td><p>what is in the corpus + what counts as stale</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>index</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ir.build</span></code></p></td>
+<td><p>decompose artifacts into embeddable <em>surfaces</em>, embed, persist (incremental, idempotent)</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>retrieve</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ir.search</span></code></p></td>
+<td><p>hard metadata filter + <code class="docutils literal notranslate"><span class="pre">dense</span></code> / <code class="docutils literal notranslate"><span class="pre">lexical</span></code> / <code class="docutils literal notranslate"><span class="pre">hybrid</span></code> ranking</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>expand</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ir.expand</span></code></p></td>
+<td><p>stitch a hit’s stored neighborhood (sentence window / whole artifact) into the passage downstream reads — opt-in</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>select</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ir.select</span></code></p></td>
+<td><p>commit to a distractor-robust subset, or abstain</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>disclose</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ir.disclose</span></code></p></td>
+<td><p>load the heavy payload (SKILL.md body, package pointer, file text) for committed items — append-only</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">ir.discover</span></code> chains retrieve → select → disclose into the single agent-callable
+(and <code class="docutils literal notranslate"><span class="pre">qh</span></code>-exposable) tool. Pass a <strong>list</strong> of corpus names for single-shot
+<em>federated</em> discovery across several corpora:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">ir</span><span class="o">.</span><span class="n">discover</span><span class="p">([</span><span class="s2">"skills"</span><span class="p">,</span> <span class="s2">"packages"</span><span class="p">],</span> <span class="s2">"deploy the app"</span><span class="p">)</span>  <span class="c1"># fan-out → fuse → select</span>
+</span><span id="line-2"><span class="n">ir</span><span class="o">.</span><span class="n">discover</span><span class="p">(</span>
+</span><span id="line-3">    <span class="p">[</span><span class="s2">"skills"</span><span class="p">,</span> <span class="s2">"packages"</span><span class="p">],</span> <span class="n">q</span><span class="p">,</span> <span class="n">min_score</span><span class="o">=</span><span class="s2">"auto"</span>
+</span><span id="line-4"><span class="p">)</span>  <span class="c1"># gate each source on its own floor</span>
+</span></code></pre></div>
+</div>
+<p>Each source is searched and gated on its <strong>own</strong> calibrated abstention floor
+<em>before</em> any merging; the survivors then rank-fuse (weighted RRF via
+<code class="docutils literal notranslate"><span class="pre">ir.fuse_hits</span></code>) — raw scores never cross a source boundary, because scores from
+different corpora / embedders / modes live on incommensurable scales. Every hit
+carries its corpus name as <code class="docutils literal notranslate"><span class="pre">hit.source</span></code>, so same-id artifacts from different
+corpora stay distinct, attributable results. The caller names the sources;
+<code class="docutils literal notranslate"><span class="pre">ir</span></code> never chooses the set (source planning belongs to the agent layer —
+see <a class="reference external" href="https://github.com/thorwhalen/raglab" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">raglab</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>).</p>
+<section id="retrieve">
+<h3>Retrieve<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#retrieve" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#retrieve'">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">hits</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">"deploy app"</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">)</span>  <span class="c1"># dense | lexical | hybrid (RRF)</span>
+</span></code></pre></div>
+</div>
+<p>Dense is exact brute-force cosine; <code class="docutils literal notranslate"><span class="pre">lexical</span></code> is Okapi BM25; <code class="docutils literal notranslate"><span class="pre">hybrid</span></code> fuses both
+by Reciprocal Rank Fusion (the strongest default for short, identifier-heavy
+capability text). Lexical/hybrid reuse <a class="reference external" href="https://github.com/i2mint/vd" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">vd</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>;
+dense needs only numpy.</p>
+<p>Hybrid has a second fusion, <code class="docutils literal notranslate"><span class="pre">fusion="blend"</span></code> — a magnitude-preserving score
+blend instead of rank-RRF. RRF discards score magnitude, which is exactly what
+abstention calibration needs, so <code class="docutils literal notranslate"><span class="pre">blend</span></code> separates in-scope from out-of-scope
+queries far better (and even beats dense); the tradeoff is lower lexical recall
+on terse corpora, so RRF stays the default. Use <code class="docutils literal notranslate"><span class="pre">blend</span></code> when abstention matters
+— see <a class="reference internal" href="#misc/docs/ir_08%20--%20Magnitude-Preserving%20Hybrid%20Fusion%20--%20Trading%20rank-RRF%20for%20abstention%20separability.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">ir_08</span></code></span></a>.</p>
+</section>
+<section id="expand">
+<h3>Expand<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#expand" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#expand'">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">passage</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">hit</span><span class="p">,</span> <span class="n">corpus</span><span class="p">)</span>  <span class="c1"># ±1 chunk window (default)</span>
+</span><span id="line-2"><span class="n">passage</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">hit</span><span class="p">,</span> <span class="n">corpus</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">ir</span><span class="o">.</span><span class="n">parent_policy</span><span class="p">())</span>  <span class="c1"># the whole artifact</span>
+</span></code></pre></div>
+</div>
+<p>The matched chunk is rarely the unit you want to read, and the whole document
+is usually too much. <code class="docutils literal notranslate"><span class="pre">ir.expand</span></code> stitches a hit’s <em>stored sibling segments</em>
+into a mid-granularity <code class="docutils literal notranslate"><span class="pre">Passage</span></code> (retrieve → expand → rerank), with chunker
+overlap deduped and the hit’s identity and score untouched. Policies are
+injectable (<code class="docutils literal notranslate"><span class="pre">NeighborhoodPolicy</span></code>); <code class="docutils literal notranslate"><span class="pre">sentence_window_policy(k)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">parent_policy()</span></code> ship. It also works through the disclosure seam:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">ir</span><span class="o">.</span><span class="n">disclose</span><span class="p">(</span><span class="n">sel</span><span class="p">,</span> <span class="n">expand</span><span class="o">=</span><span class="n">ir</span><span class="o">.</span><span class="n">sentence_window_policy</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">corpus</span><span class="o">=</span><span class="n">corpus</span><span class="p">)</span>
+</span><span id="line-2"><span class="n">ir</span><span class="o">.</span><span class="n">discover</span><span class="p">(</span>
+</span><span id="line-3">    <span class="s2">"skills"</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">expand</span><span class="o">=</span><span class="n">ir</span><span class="o">.</span><span class="n">sentence_window_policy</span><span class="p">()</span>
+</span><span id="line-4"><span class="p">)</span>  <span class="c1"># passages on committed items</span>
+</span></code></pre></div>
+</div>
+<p>Each <code class="docutils literal notranslate"><span class="pre">Disclosure</span></code> then carries the stitched text as <code class="docutils literal notranslate"><span class="pre">.passage</span></code> (additive;
+<code class="docutils literal notranslate"><span class="pre">summary</span></code> stays the matched surface, <code class="docutils literal notranslate"><span class="pre">body</span></code> stays the pointer’s payload).</p>
+</section>
+<section id="select">
+<h3>Select<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#select" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#select'">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">sel</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>  <span class="c1"># conservative default: stay within rel of top, cap at max_k</span>
+</span><span id="line-2"><span class="n">sel</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">hits</span><span class="p">,</span> <span class="n">min_score</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>  <span class="c1"># opt in to abstention ("nothing applies")</span>
+</span><span id="line-3"><span class="n">sel</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
+</span><span id="line-4">    <span class="n">hits</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="s2">"score_gap"</span>
+</span><span id="line-5"><span class="p">)</span>  <span class="c1"># elbow cut, or "top_k" / "rel_threshold" / a callable</span>
+</span></code></pre></div>
+</div>
+<p>The abstention floor is mode-specific (dense cosine, BM25, and RRF live on
+different scales), so rather than guess <code class="docutils literal notranslate"><span class="pre">min_score</span></code>, <strong>calibrate</strong> it from a case
+file and let <code class="docutils literal notranslate"><span class="pre">discover</span></code> load it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">ev</span><span class="o">.</span><span class="n">calibrate_min_score</span><span class="p">(</span>
+</span><span id="line-2">    <span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"dense"</span><span class="p">,</span> <span class="n">persist</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="line-3"><span class="p">)</span>  <span class="c1"># learn + store the floor</span>
+</span><span id="line-4"><span class="n">ir</span><span class="o">.</span><span class="n">discover</span><span class="p">(</span>
+</span><span id="line-5">    <span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"dense"</span><span class="p">,</span> <span class="n">min_score</span><span class="o">=</span><span class="s2">"auto"</span>
+</span><span id="line-6"><span class="p">)</span>  <span class="c1"># abstain by the calibrated floor</span>
+</span></code></pre></div>
+</div>
+<p>Calibration separates in-scope from out-of-scope query top-scores and picks the
+floor that best splits them — see
+<a class="reference internal" href="#misc/docs/ir_07%20--%20Min-Score%20Calibration%20--%20Abstention%20floors%20from%20score-distribution%20separability.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">ir_07</span></code></span></a>;
+it works best on <code class="docutils literal notranslate"><span class="pre">dense</span></code> / <code class="docutils literal notranslate"><span class="pre">lexical</span></code> (hybrid’s RRF scores barely separate).
+<code class="docutils literal notranslate"><span class="pre">min_score</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code> (never abstain), so abstention stays fully opt-in.</p>
+<p>The conservative defaults (<code class="docutils literal notranslate"><span class="pre">max_k=3</span></code>, <code class="docutils literal notranslate"><span class="pre">rel=0.9</span></code>) are tuned, not guessed — see
+<a class="reference internal" href="#misc/docs/ir_06%20--%20Selector%20Tuning%20--%20Picking%20conservative-selector%20defaults%20from%20the%20data.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">ir_06</span></code></span></a>;
+re-tune for your own corpus with <code class="docutils literal notranslate"><span class="pre">ev.sweep_selector</span></code> / <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">sweep-select</span></code>.</p>
+<p>Selection is <em>relative</em> (ratios to the top score), so one selector works across
+<code class="docutils literal notranslate"><span class="pre">dense</span></code> / <code class="docutils literal notranslate"><span class="pre">hybrid</span></code> / <code class="docutils literal notranslate"><span class="pre">lexical</span></code> whose absolute scales differ by orders of
+magnitude. The result carries auditable <code class="docutils literal notranslate"><span class="pre">signals</span></code> and a <code class="docutils literal notranslate"><span class="pre">reason</span></code> — no opaque
+“confidence” float. An optional LLM selector (<code class="docutils literal notranslate"><span class="pre">make_llm_selector</span></code>, lazy on
+<a class="reference external" href="https://github.com/thorwhalen/aix" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">aix</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>, injectable for tests) falls back to the
+heuristic on any failure.</p>
+</section>
+<section id="disclose">
+<h3>Disclose<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#disclose" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#disclose'">¶</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">payloads</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">disclose</span><span class="p">(</span><span class="n">sel</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"body"</span><span class="p">)</span>  <span class="c1"># "metadata" (no I/O) | "body" | "bundled"</span>
+</span></code></pre></div>
+</div>
+<p>Disclosure is a <em>pure</em> read that follows the pointer already stored on each hit
+(<code class="docutils literal notranslate"><span class="pre">skill_path</span></code> / <code class="docutils literal notranslate"><span class="pre">path</span></code>); it never mutates the ranked hits and tolerates a stale
+pointer. Keeping the agent’s context append-only (to protect the prompt cache)
+is then the caller’s discipline — <code class="docutils literal notranslate"><span class="pre">ir</span></code> hands back additive payloads.</p>
+</section>
+<section id="graph-traverse-opt-in">
+<h3>Graph &amp; traverse (opt-in)<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#graph-traverse-opt-in" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#graph-traverse-opt-in'">¶</a></h3>
+<p>Artifacts refer to each other — a package depends on packages, a skill has a
+parent. <code class="docutils literal notranslate"><span class="pre">ir</span></code> models those as a <strong>semantic link graph</strong>: a typed-edge <code class="docutils literal notranslate"><span class="pre">links</span></code>
+view on the store, populated at build time by an <code class="docutils literal notranslate"><span class="pre">EdgeExtractor</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span>
+</span><span id="line-2">    <span class="n">source</span><span class="p">,</span> <span class="n">edge_extractor</span><span class="o">=</span><span class="n">ir</span><span class="o">.</span><span class="n">default_edge_extractor</span>
+</span><span id="line-3"><span class="p">)</span>  <span class="c1"># deps→REF, parent→PARENT</span>
+</span><span id="line-4"><span class="n">graph</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">CorpusGraph</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+</span><span id="line-5"><span class="n">graph</span><span class="o">.</span><span class="n">neighbors</span><span class="p">(</span><span class="s2">"contaix"</span><span class="p">,</span> <span class="n">edge_type</span><span class="o">=</span><span class="s2">"REF"</span><span class="p">)</span>  <span class="c1"># the package's dependencies</span>
+</span></code></pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ir.traverse</span></code> walks that structure at query time under a pluggable <code class="docutils literal notranslate"><span class="pre">WalkPolicy</span></code>
+(<em>score frontier → select → expand → stop</em>). <strong>Safety is the operator’s</strong>: a
+visited-set, depth cap, and node budget live in <code class="docutils literal notranslate"><span class="pre">traverse</span></code> itself, so even a
+cyclic graph and a never-stopping policy terminate. The shipped
+<code class="docutils literal notranslate"><span class="pre">collapsed_tree_policy</span></code> is pure-vector — it routes a query that matches an
+artifact’s <em>summary</em> down to that artifact’s best <em>chunk</em>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">hits</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">corpus</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">ir</span><span class="o">.</span><span class="n">collapsed_tree_policy</span><span class="p">())</span>
+</span></code></pre></div>
+</div>
+<p>The <em>summary</em> a query routes on can be an artifact’s own short field — or an
+<strong>LLM-authored synopsis</strong>. <code class="docutils literal notranslate"><span class="pre">ir.with_synopsis</span></code> wraps any indexing strategy to add
+one <code class="docutils literal notranslate"><span class="pre">synopsis</span></code> surface per artifact at build time (the document-summary-index
+pattern: build-time cost, ≈free at query time), and that synopsis becomes the
+collapsed-tree router:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">strat</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">with_synopsis</span><span class="p">(</span>
+</span><span id="line-2">    <span class="n">ir</span><span class="o">.</span><span class="n">Chunked</span><span class="p">(),</span> <span class="n">synthesize</span><span class="o">=</span><span class="n">my_summarizer</span>
+</span><span id="line-3"><span class="p">)</span>  <span class="c1"># or default (lazy aix)</span>
+</span><span id="line-4"><span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">ir</span><span class="o">.</span><span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_mapping</span><span class="p">(</span><span class="n">docs</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"d"</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strat</span><span class="p">))</span>
+</span><span id="line-5"><span class="n">hits</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">traverse</span><span class="p">(</span>
+</span><span id="line-6">    <span class="n">q</span><span class="p">,</span> <span class="n">corpus</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">ir</span><span class="o">.</span><span class="n">collapsed_tree_policy</span><span class="p">()</span>
+</span><span id="line-7"><span class="p">)</span>  <span class="c1"># routes via the synopsis</span>
+</span></code></pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">synthesize</span></code> is injectable (a test double or your own summarizer); omitted, it is
+built lazily on <a class="reference external" href="https://github.com/thorwhalen/aix" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">aix</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a> so <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">ir</span></code> stays
+offline. Synopses are derived state with a stamped synthesizer identity, so a
+prompt/model change re-synthesizes only the affected artifacts on the next
+incremental <code class="docutils literal notranslate"><span class="pre">build</span></code> — no silent staleness.</p>
+<p><strong>Flat top-k stays the default</strong> — <code class="docutils literal notranslate"><span class="pre">traverse</span></code> is opt-in, and a policy earns its
+keep only by beating flat+rerank on your eval set (a strong flat retriever wins
+simple lookup; graph methods cost far more). Results are ordinary <code class="docutils literal notranslate"><span class="pre">SearchHit</span></code>s
+with additive <code class="docutils literal notranslate"><span class="pre">metadata["walk_depth"]</span></code> / <code class="docutils literal notranslate"><span class="pre">["seed"]</span></code> provenance, so <code class="docutils literal notranslate"><span class="pre">select</span></code> /
+<code class="docutils literal notranslate"><span class="pre">disclose</span></code> compose unchanged. This is the <strong>semantic link graph</strong> (cyclic,
+query-time) — distinct from <code class="docutils literal notranslate"><span class="pre">ef.artifact_graph</span></code> (the acyclic build-time
+derivation DAG).</p>
+</section>
+</section>
+<section id="evaluation">
+<h2>Evaluation<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#evaluation" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#evaluation'">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ir.eval</span></code> scores discovery quality offline (reusing
+<a class="reference external" href="https://github.com/thorwhalen/ef" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">ef</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>’s retrieval metrics):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="kn">from</span><span class="w"> </span><span class="nn">ir</span><span class="w"> </span><span class="kn">import</span> <span class="nb">eval</span> <span class="k">as</span> <span class="n">ev</span>
+</span><span id="line-2">
+</span><span id="line-3"><span class="n">cases</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">load_cases</span><span class="p">(</span><span class="s2">"skills_eval.jsonl"</span><span class="p">)</span>  <span class="c1"># query + gold artifact_id(s)</span>
+</span><span id="line-4"><span class="n">ev</span><span class="o">.</span><span class="n">evaluate_discovery</span><span class="p">(</span>
+</span><span id="line-5">    <span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span>
+</span><span id="line-6"><span class="p">)</span>  <span class="c1"># recall@k / NDCG@k / MRR / MAP + failure taxonomy</span>
+</span><span id="line-7"><span class="n">ev</span><span class="o">.</span><span class="n">evaluate_selection</span><span class="p">(</span>
+</span><span id="line-8">    <span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="s2">"conservative"</span>
+</span><span id="line-9"><span class="p">)</span>  <span class="c1"># conditional commit rate + selection P/R/F1</span>
+</span><span id="line-10"><span class="n">ev</span><span class="o">.</span><span class="n">sweep_selector</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">cases</span><span class="p">)</span>  <span class="c1"># tune max_k × rel; .best() / .frontier() / .table()</span>
+</span><span id="line-11"><span class="n">ev</span><span class="o">.</span><span class="n">distractor_robustness_curve</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">scope</span><span class="p">,</span> <span class="n">probes</span><span class="p">)</span>  <span class="c1"># accuracy vs catalog size</span>
+</span></code></pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">evaluate_selection</span></code>’s headline is the <strong>conditional commit rate</strong> — the
+selection decision <em>isolated</em> from retrieval (did the selector keep the gold,
+<em>given</em> retrieval surfaced it?). <code class="docutils literal notranslate"><span class="pre">sweep_selector</span></code> scores a whole <code class="docutils literal notranslate"><span class="pre">max_k</span> <span class="pre">×</span> <span class="pre">rel</span></code>
+grid against the cases off <strong>one</strong> retrieval pass, so the selector defaults can
+be read off the data (<code class="docutils literal notranslate"><span class="pre">.best()</span></code>) rather than guessed. Generate cases by
+back-translation with <code class="docutils literal notranslate"><span class="pre">ir.eval_gen</span></code> (needs an LLM; scoring stays offline).</p>
+</section>
+<section id="cli">
+<h2>CLI<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#cli" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#cli'">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">ir<span class="w"> </span>build<span class="w"> </span>skills<span class="w">                          </span><span class="c1"># build/update a preset corpus</span>
+</span><span id="line-2">ir<span class="w"> </span>search<span class="w"> </span>skills<span class="w"> </span><span class="s2">"deploy the app"</span><span class="w">        </span><span class="c1"># rank candidates (retrieval only)</span>
+</span><span id="line-3">ir<span class="w"> </span>discover<span class="w"> </span>skills<span class="w"> </span><span class="s2">"deploy the app"</span><span class="w">      </span><span class="c1"># retrieve -&gt; select</span>
+</span><span id="line-4">ir<span class="w"> </span>discover<span class="w"> </span>skills<span class="w"> </span><span class="s2">"deploy the app"</span><span class="w"> </span>--disclose<span class="w">       </span><span class="c1"># + load bodies</span>
+</span><span id="line-5">ir<span class="w"> </span>discover<span class="w"> </span>skills<span class="w"> </span><span class="s2">"deploy the app"</span><span class="w"> </span>--min-score<span class="w"> </span>auto<span class="w"> </span><span class="c1"># + calibrated abstention</span>
+</span><span id="line-6">ir<span class="w"> </span>build<span class="w"> </span>sessions<span class="w">                        </span><span class="c1"># index recent Claude Code sessions (turn pairs)</span>
+</span><span id="line-7">ir<span class="w"> </span>search<span class="w"> </span>sessions<span class="w"> </span><span class="s2">"numpy abi error"</span><span class="w"> </span>--mode<span class="w"> </span>lexical<span class="w">   </span><span class="c1"># find past sessions</span>
+</span><span id="line-8">ir<span class="w"> </span>ls<span class="w">                                    </span><span class="c1"># list corpora + record counts</span>
+</span><span id="line-9">ir<span class="w"> </span>coverage<span class="w"> </span>reports<span class="w">                      </span><span class="c1"># disk-vs-index coverage (silent-gap detector)</span>
+</span><span id="line-10">ir<span class="w"> </span>info<span class="w"> </span>skills<span class="w">                           </span><span class="c1"># config, stats, policy, calibrated floors</span>
+</span><span id="line-11">ir<span class="w"> </span>maintain<span class="w"> </span>--all<span class="w">                        </span><span class="c1"># run due background work (idempotent; cron-friendly)</span>
+</span><span id="line-12">ir<span class="w"> </span>schedule<span class="w">                              </span><span class="c1"># install/inspect the OS job that runs it</span>
+</span><span id="line-13">ir<span class="w"> </span>register<span class="w"> </span>notes<span class="w"> </span>files<span class="w"> </span>--root<span class="w"> </span>~/notes<span class="w"> </span>--pattern<span class="w"> </span><span class="s1">'.*\.md$'</span><span class="w">  </span><span class="c1"># register a custom corpus</span>
+</span><span id="line-14">ir<span class="w"> </span>rm<span class="w"> </span>notes<span class="w">                              </span><span class="c1"># unregister (keeps built data)</span>
+</span><span id="line-15">ir<span class="w"> </span>eval-gen<span class="w"> </span>skills<span class="w"> </span>skills_eval.jsonl<span class="w">     </span><span class="c1"># generate eval cases (needs oa/LLM)</span>
+</span><span id="line-16">ir<span class="w"> </span><span class="nb">eval</span><span class="w"> </span>skills<span class="w"> </span>skills_eval.jsonl<span class="w">         </span><span class="c1"># score retrieval on a case file</span>
+</span><span id="line-17">ir<span class="w"> </span>eval-select<span class="w"> </span>skills<span class="w"> </span>skills_eval.jsonl<span class="w">  </span><span class="c1"># score the selection stage</span>
+</span><span id="line-18">ir<span class="w"> </span>sweep-select<span class="w"> </span>skills<span class="w"> </span>skills_eval.jsonl<span class="w"> </span><span class="c1"># tune the selector (max_k × rel) on your corpus</span>
+</span><span id="line-19">ir<span class="w"> </span>calibrate-min-score<span class="w"> </span>skills<span class="w"> </span>skills_eval.jsonl<span class="w"> </span>--persist<span class="w">  </span><span class="c1"># calibrate the abstention floor</span>
+</span></code></pre></div>
+</div>
+</section>
+<section id="keeping-an-index-fresh">
+<h2>Keeping an index fresh<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#keeping-an-index-fresh" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#keeping-an-index-fresh'">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span></code> does the work that a corpus’s policy says is due — an incremental
+rebuild when reindex is due, LLM synopses inside their downtime window — and
+no-ops everything that is not. It is idempotent, so it is safe to run as often as
+you like.</p>
+<p>Something has to <em>call</em> it, though, and a corpus that nobody rebuilds keeps
+answering searches confidently from months-old content. <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">schedule</span></code> installs
+that caller — a launchd agent on macOS, a crontab block elsewhere — and then lets
+you operate it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">ir<span class="w"> </span>schedule<span class="w">                </span><span class="c1"># ensure a schedule exists (creates one if there is none)</span>
+</span><span id="line-2">ir<span class="w"> </span>schedule<span class="w"> </span>--status<span class="w">       </span><span class="c1"># what is scheduled, when it last ran, and whether the OS loaded it</span>
+</span><span id="line-3">ir<span class="w"> </span>schedule<span class="w"> </span>--every<span class="w"> </span>30m<span class="w">    </span><span class="c1"># change the interval (15m / 2h / 1d, or plain minutes)</span>
+</span><span id="line-4">ir<span class="w"> </span>schedule<span class="w"> </span>--restart<span class="w">      </span><span class="c1"># reload it after upgrading ir or switching interpreter</span>
+</span><span id="line-5">ir<span class="w"> </span>schedule<span class="w"> </span>--remove<span class="w">       </span><span class="c1"># stop it and delete the definition</span>
+</span><span id="line-6">ir<span class="w"> </span>schedule<span class="w"> </span>--dry-run<span class="w">      </span><span class="c1"># print the plist/crontab that would be written</span>
+</span></code></pre></div>
+</div>
+<p>Bare <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">schedule</span></code> is idempotent in the way that matters: it creates a schedule
+when there is none, and when one already exists it reports it and the commands
+above rather than silently reinstalling over an interval you tuned.</p>
+<p>The job is pinned to the absolute interpreter that installed it, because neither
+launchd nor cron resolves <code class="docutils literal notranslate"><span class="pre">ir</span></code> on your shell’s <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, and it carries the
+environment ir reads (<code class="docutils literal notranslate"><span class="pre">$PP</span></code>, <code class="docutils literal notranslate"><span class="pre">$PTH_FILEPATH</span></code>, <code class="docutils literal notranslate"><span class="pre">IR_*</span></code>, <code class="docutils literal notranslate"><span class="pre">XDG_*</span></code>) — launchd starts
+jobs with a near-empty environment, and without those the <code class="docutils literal notranslate"><span class="pre">packages</span></code> and
+<code class="docutils literal notranslate"><span class="pre">reports</span></code> corpora fail every time the job fires while it still exits 0.</p>
+<p><strong>An existing definition is data, not a template.</strong> Only a fresh install
+snapshots your shell; <code class="docutils literal notranslate"><span class="pre">--every</span></code> and <code class="docutils literal notranslate"><span class="pre">--restart</span></code> carry the stored environment
+forward untouched, so operating a working schedule from a shell that happens to
+lack <code class="docutils literal notranslate"><span class="pre">$PP</span></code> never silently re-points it at a different corpus store. To
+re-snapshot deliberately: <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">schedule</span> <span class="pre">--remove</span> <span class="pre">&amp;&amp;</span> <span class="pre">ir</span> <span class="pre">schedule</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">--status</span></code> is the health check. It reports the last run and the last log line,
+and flags three failures that otherwise look like success: an interpreter that no
+longer exists (a rebuilt pyenv version or recreated venv leaves a job that fires
+on time and does nothing), a job whose environment is missing something your
+shell has, and a non-zero exit status from the last run. <code class="docutils literal notranslate"><span class="pre">--restart</span></code> re-pins the
+interpreter.</p>
+<p><strong><code class="docutils literal notranslate"><span class="pre">ir</span></code> still does not run a scheduler.</strong> It writes a definition, hands it to the
+OS, and exits: no daemon, no in-process timer. launchd/cron remain the executor,
+exactly as <code class="docutils literal notranslate"><span class="pre">ir.policy</span></code> describes.</p>
+</section>
+<section id="design">
+<h2>Design<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#design" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#design'">¶</a></h2>
+<p>The design is grounded in a set of capability-discovery research reports and
+eval-run findings under <code class="docutils literal notranslate"><span class="pre">misc/docs/</span></code> (<code class="docutils literal notranslate"><span class="pre">ir_01</span></code>–<code class="docutils literal notranslate"><span class="pre">ir_08</span></code>): the single-search-tool
+pattern, indexing &amp; embedding strategy, evaluation, the <code class="docutils literal notranslate"><span class="pre">ef</span></code> + <code class="docutils literal notranslate"><span class="pre">vd</span></code> reuse
+analysis, the dense-vs-lexical-vs-hybrid eval, selector tuning, abstention-floor
+calibration, and magnitude-preserving fusion. <code class="docutils literal notranslate"><span class="pre">ir</span></code> is light by default (numpy /
+<code class="docutils literal notranslate"><span class="pre">dol</span></code>) and reuses the ecosystem (<code class="docutils literal notranslate"><span class="pre">ef</span></code>, <code class="docutils literal notranslate"><span class="pre">vd</span></code>, <code class="docutils literal notranslate"><span class="pre">oa</span></code>) only where it composes cleanly.</p>
+<p class="epythet-aggregates">This documentation as a single file: <a href="ir.md">ir.md</a> (Markdown, for agents).</p>
+
+</section>
+</section>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-09-22 12:55 UTC from <a href="https://github.com/i2mint/ir/commit/ebd617d6298a15cd1cd7d5815abc16a2ffd89a4c">ebd617d</a> (master) · ir 0.1.32 · <a href="about-this-build.html">about this build</a></p>
+</div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
+<div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
+<ul>
+<li><a :data-current="activeSection === '#install'" class="reference internal" href="#install">Install</a></li>
+<li><a :data-current="activeSection === '#the-pipeline'" class="reference internal" href="#the-pipeline">The pipeline</a><ul>
+<li><a :data-current="activeSection === '#retrieve'" class="reference internal" href="#retrieve">Retrieve</a></li>
+<li><a :data-current="activeSection === '#expand'" class="reference internal" href="#expand">Expand</a></li>
+<li><a :data-current="activeSection === '#select'" class="reference internal" href="#select">Select</a></li>
+<li><a :data-current="activeSection === '#disclose'" class="reference internal" href="#disclose">Disclose</a></li>
+<li><a :data-current="activeSection === '#graph-traverse-opt-in'" class="reference internal" href="#graph-traverse-opt-in">Graph &amp; traverse (opt-in)</a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#evaluation'" class="reference internal" href="#evaluation">Evaluation</a></li>
+<li><a :data-current="activeSection === '#cli'" class="reference internal" href="#cli">CLI</a></li>
+<li><a :data-current="activeSection === '#keeping-an-index-fresh'" class="reference internal" href="#keeping-an-index-fresh">Keeping an index fresh</a></li>
+<li><a :data-current="activeSection === '#design'" class="reference internal" href="#design">Design</a></li>
+</ul>
+</div>
+</aside>
+</main>
+</div>
+</div><footer class="py-6 border-t border-border md:py-0">
+<div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
+<div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
+<p class="text-sm leading-loose text-center text-muted-foreground md:text-left"></p>
+</div>
+</div>
+</footer>
+</div>
+<script src="_static/documentation_options.js?v=e0e570cb"></script>
+<script src="_static/doctools.js?v=fd6eb6e6"></script>
+<script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+<script src="_static/clipboard.min.js?v=a7894cd8"></script>
+<script src="_static/copybutton.js?v=fd10adb8"></script>
+<script defer="defer" src="_static/theme.js?v=5db23cf8"></script>
 </body>
 </html>

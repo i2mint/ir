@@ -1,0 +1,32 @@
+# ir
+
+> An information-retrieval substrate for agentic systems
+
+
+## Pages in this subsection
+
+- [ir](ir.html.md): &#96;ir&#96; — an information-retrieval substrate for agentic systems.
+- [ir.base](ir.base.html.md): Core data model for &#96;ir&#96;.
+- [ir.cli](ir.cli.html.md): Command-line surface for &#96;ir&#96; (dispatched by cw).
+- [ir.config](ir.config.html.md): Filesystem locations and process-wide defaults for &#96;ir&#96;.
+- [ir.coverage](ir.coverage.html.md): Corpus-coverage diagnostic — what’s on disk vs. what’s actually indexed.
+- [ir.embed](ir.embed.html.md): Embedder resolution for &#96;ir&#96; — a decent local default, a light fallback.
+- [ir.eval](ir.eval.html.md): Capability-discovery evaluation — measuring how well a corpus is &#42;found&#42;.
+- [ir.eval_gen](ir.eval_gen.html.md): LLM-backed generation of evaluation cases for &#96;ir.eval&#96;.
+- [ir.formulate](ir.formulate.html.md): Query formulation — the Formulator seam (ir_09 §3).
+- [ir.graph](ir.graph.html.md): The semantic link graph — typed edges between artifacts (report 12).
+- [ir.index](ir.index.html.md): The indexing pipeline and incremental maintenance.
+- [ir.maintenance](ir.maintenance.html.md): Idempotent background-work runner — &#96;ir maintain&#96; (issue #58).
+- [ir.policy](ir.policy.html.md): Per-corpus policy — how a corpus is segmented/stored and what background work it gets.
+- [ir.registry](ir.registry.html.md): Named-corpus registry — persistent, reusable corpus definitions.
+- [ir.retrieve](ir.retrieve.html.md): Retrieval — hard metadata filtering + dense / lexical / hybrid ranking.
+- [ir.schedule](ir.schedule.html.md): Install and operate the OS job that runs &#96;ir maintain&#96; — &#96;ir schedule&#96; (issue #75).
+- [ir.sources](ir.sources.html.md): Defining a corpus source — an abstract strategy plus parameters.
+- [ir.store](ir.store.html.md): Persistence for &#96;ir&#96; — the repository layer over &#96;dol&#96; key-value views.
+- [ir.strategy](ir.strategy.html.md): Indexing strategies — the “what do we index?” seam.
+- [ir.synopsis](ir.synopsis.html.md): Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).
+- [ir.tools](ir.tools.html.md): Agent-callable tool surface over &#96;ir&#96; — plain functions returning JSON-ready
+
+## Optional
+
+- [Top-level llms.txt](../llms.txt): Complete documentation index.

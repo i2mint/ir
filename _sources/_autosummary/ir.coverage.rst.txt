@@ -1,0 +1,18 @@
+ir.coverage
+===========
+
+.. automodule:: ir.coverage
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      reports_coverage
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CoverageReport
+   

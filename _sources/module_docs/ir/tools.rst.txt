@@ -1,4 +1,0 @@
-ir.tools
-========
-.. automodule:: ir.tools
-   :members:

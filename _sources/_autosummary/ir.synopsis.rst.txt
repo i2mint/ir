@@ -1,0 +1,21 @@
+ir.synopsis
+===========
+
+.. automodule:: ir.synopsis
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      Synthesizer
+      SYNOPSIS_KIND
+      SYNOPSIS_PROMPT
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      make_llm_synthesizer
+      with_synopsis
+   

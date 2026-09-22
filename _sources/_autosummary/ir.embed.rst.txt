@@ -1,0 +1,12 @@
+ir.embed
+========
+
+.. automodule:: ir.embed
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      make_embedder
+   

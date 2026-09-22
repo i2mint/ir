@@ -1,0 +1,68 @@
+ir.eval
+=======
+
+.. automodule:: ir.eval
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_K_VALUES
+      DFLT_METRICS
+      DFLT_MODE
+      DFLT_DISTRACTOR_SIZES
+      DFLT_CURVE_MODE
+      DFLT_SWEEP_MAX_K
+      DFLT_SWEEP_REL
+      DFLT_SWEEP_MIN_SCORE
+      DFLT_SWEEP_OBJECTIVE
+      SWEEP_METRICS
+      DFLT_CALIB_SENSITIVITY_WEIGHT
+      RELEVANCE_LEVELS
+      LEVEL_GAINS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      as_doc_retriever
+      calibrate_min_score
+      compare_indexings
+      corpus_artifact_ids
+      derive_named_sets
+      distractor_curve_from_cases
+      distractor_robustness_curve
+      evaluate_discovery
+      evaluate_named_sets
+      evaluate_selection
+      fp_rate_on_distractors
+      level_histogram
+      load_calibration
+      load_cases
+      load_package_cases
+      read_package_meta
+      recall_on_hard_positives
+      retrieval_report
+      save_cases
+      save_package_cases
+      sweep_selector
+      to_graded_qrels
+      to_qrels
+      validate_cases
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ComparisonReport
+      DiscoveryCase
+      DiscoveryReport
+      MinScoreCalibration
+      NamedSetReport
+      NamedSets
+      PackageRelevanceCase
+      SelectionGridPoint
+      SelectionReport
+      SelectionSweep
+   

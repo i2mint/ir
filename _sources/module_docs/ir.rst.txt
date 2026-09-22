@@ -1,4 +1,0 @@
-ir
-==
-.. automodule:: ir
-   :members:
