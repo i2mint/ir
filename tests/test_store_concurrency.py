@@ -11,6 +11,7 @@ published as the packed set.
 
 import json
 import logging
+import os
 import subprocess
 import sys
 import textwrap
@@ -135,6 +136,13 @@ def test_absolute_key_is_written_inside_the_root(tmp_path):
     victim.write_text("# my source file")
     root = tmp_path / "store"
     store = _json_store(root)
+    if os.name == "nt":
+        # ``store\\C:\\...`` is not a valid Windows path: the write fails loudly
+        # (as it did before atomic writes) rather than landing on the victim.
+        with pytest.raises(OSError):
+            store[str(victim)] = {"cites": ["x"]}
+        assert victim.read_text() == "# my source file"
+        return
     store[str(victim)] = {"cites": ["x"]}
     assert victim.read_text() == "# my source file"
     assert store[str(victim)] == {"cites": ["x"]}
