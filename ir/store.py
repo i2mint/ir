@@ -47,6 +47,34 @@ from .base import Record
 _PACKED_FORMAT = 1
 
 
+def _write_durably(path: Path, write) -> None:
+    """Create ``path``, let ``write(f)`` fill it, then flush and fsync it."""
+    with open(path, "wb") as f:
+        write(f)
+        f.flush()
+        os.fsync(f.fileno())
+
+
+def _fsync_dir(path: Path) -> None:
+    """Fsync a directory so a rename in it is durable (no-op where unsupported).
+
+    POSIX needs this for ``os.replace`` to survive a power loss; Windows cannot
+    open a directory this way (and NTFS journals the rename), so it is skipped.
+    """
+    if os.name == "nt":
+        return
+    try:
+        fd = os.open(path, os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(fd)
+    except OSError:
+        pass
+    finally:
+        os.close(fd)
+
+
 def _packed_content_sig(ids_json: bytes, metas_json: bytes) -> str:
     """Signature binding a packed matrix to the exact ids/metas written with it.
 
@@ -456,6 +484,12 @@ class CorpusStore:
         """Load ``(ids, mmap_matrix, metas)`` from the packed cache, or ``None``."""
         if self._packed_dir is None:
             return None
+        if self._packed_stale:
+            # This process wrote records since it last published a matrix. A
+            # packed set on disk now is either absent (we cleared it) or was
+            # published by another process that may have built before our
+            # writes, so it cannot be trusted to include them: rebuild.
+            return None
         sig_path = self._packed_paths()["sig"]
         if not sig_path.exists():
             return None
@@ -474,7 +508,9 @@ class CorpusStore:
             metas_json = paths["metas"].read_bytes()
             ids = json.loads(ids_json)
             metas = json.loads(metas_json)
-        except (OSError, ValueError):
+        except (OSError, ValueError, EOFError):
+            # EOFError: np.load of an empty/truncated ``.npy`` (e.g. a crash
+            # before the data reached disk). Any unreadable set is a miss.
             return None
         if len(ids) != mat.shape[0] or len(metas) != len(ids):
             return None
@@ -501,7 +537,10 @@ class CorpusStore:
         crash mid-write leaves the previous sig (or none) in charge, and two
         concurrent writers can never leave one writer's matrix beside the
         other's ids: a reader follows ``sig.json`` to exactly one writer's
-        complete set. Older generations are swept after publishing.
+        complete set. Older generations are swept after publishing. Every data
+        file is fsynced before the sig that names it is published (and the
+        directory after), so a power loss cannot leave a durable ``sig.json``
+        pointing at data blocks that never reached the disk.
         """
         if self._packed_dir is None:
             return
@@ -515,23 +554,22 @@ class CorpusStore:
             arr = np.asarray(mat, dtype=np.float32)
             ids_json = json.dumps(ids).encode("utf-8")
             metas_json = json.dumps(metas).encode("utf-8")
-            np.save(paths["matrix"], arr)
-            paths["ids"].write_bytes(ids_json)
-            paths["metas"].write_bytes(metas_json)
+            _write_durably(paths["matrix"], lambda f: np.save(f, arr))
+            _write_durably(paths["ids"], lambda f: f.write(ids_json))
+            _write_durably(paths["metas"], lambda f: f.write(metas_json))
+            sig_json = json.dumps(
+                {
+                    "format": _PACKED_FORMAT,
+                    "count": len(ids),
+                    "generation": generation,
+                    "content_sig": _packed_content_sig(ids_json, metas_json),
+                    "shape": list(arr.shape),
+                }
+            ).encode("utf-8")
             sig_tmp = self._packed_dir / f"sig-{generation}.tmp"
-            sig_tmp.write_text(
-                json.dumps(
-                    {
-                        "format": _PACKED_FORMAT,
-                        "count": len(ids),
-                        "generation": generation,
-                        "content_sig": _packed_content_sig(ids_json, metas_json),
-                        "shape": list(arr.shape),
-                    }
-                ),
-                encoding="utf-8",
-            )
+            _write_durably(sig_tmp, lambda f: f.write(sig_json))
             os.replace(sig_tmp, paths["sig"])
+            _fsync_dir(self._packed_dir)
             self._packed_stale = False
         except OSError:
             # A read cache that can't be written is non-fatal: fall back to the
