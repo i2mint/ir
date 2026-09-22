@@ -7,6 +7,7 @@ and serving ``metas()`` without touching vectors (for lexical-only ranking).
 """
 
 import json
+import os
 
 import numpy as np
 
@@ -264,3 +265,63 @@ def test_republishing_sweeps_older_generations(tmp_path):
 
     store.put_record(_rec("r2"))  # a write clears the cache entirely
     assert list((root / "matrix").iterdir()) == []
+
+
+def test_writer_sees_its_own_write_despite_another_process_publishing(tmp_path):
+    """A packed set published by another process must not hide our own writes.
+
+    Writer P1 clears the cache on its first write (and then skips the clear on
+    later writes, which is what keeps bulk builds cheap). If reader P2 publishes
+    a matrix in between, P1's next write leaves that set on disk, and P1 then
+    loaded it -- missing the record it had just written.
+    """
+    p1, _root = _file_store(tmp_path)
+    p1.put_record(_rec("r1", vec=(1.0, 0.0, 0.0)))
+    p2, _ = _file_store(tmp_path)
+    assert p2.matrix()[0] == ["r1"]  # P2 builds and publishes {r1}
+    p1.put_record(_rec("r2", vec=(0.0, 1.0, 0.0)))
+    assert sorted(p1.matrix()[0]) == ["r1", "r2"]
+    assert sorted(p1.metas()[0]) == ["r1", "r2"]
+    # ...and P1's rebuild republished, so a fresh reader now sees both too.
+    p3, _ = _file_store(tmp_path)
+    assert sorted(p3.matrix()[0]) == ["r1", "r2"]
+
+
+def test_empty_or_truncated_packed_matrix_is_a_miss_not_an_error(tmp_path):
+    """A sig naming a zero-length/truncated ``.npy`` (crash before the data hit
+    disk) must rebuild, not raise ``EOFError`` from every ``matrix()`` call."""
+    store, root = _file_store(tmp_path)
+    store.put_record(_rec("r1", vec=(3.0, 0.0, 0.0)))
+    store.put_record(_rec("r2", vec=(0.0, 4.0, 0.0)))
+    store.matrix()
+    matrix_file = _packed_file(root, "matrix")
+    full = matrix_file.read_bytes()
+    for corrupt in (b"", full[:20], full[:-4]):
+        matrix_file.write_bytes(corrupt)
+        store2, _ = _file_store(tmp_path)
+        store2._save_packed = lambda result: None  # keep the corrupt set on disk
+        ids2, mat2, _metas2 = store2.matrix()
+        assert sorted(ids2) == ["r1", "r2"]
+        assert np.asarray(mat2).shape == (2, 3)
+
+
+def test_packed_files_are_fsynced_before_sig_is_published(tmp_path, monkeypatch):
+    """Each data file is fsynced before ``sig.json`` names it."""
+    import ir.store as ir_store
+
+    store, root = _file_store(tmp_path)
+    store.put_record(_rec("r1"))
+    events = []
+    real_fsync, real_replace = os.fsync, os.replace
+    monkeypatch.setattr(
+        ir_store.os, "fsync", lambda fd: (events.append("fsync"), real_fsync(fd))
+    )
+    monkeypatch.setattr(
+        ir_store.os,
+        "replace",
+        lambda a, b: (events.append("replace"), real_replace(a, b)),
+    )
+    store.matrix()
+    assert "replace" in events
+    assert events.index("replace") >= 4  # matrix, ids, metas, sig tmp first
+    assert _packed_file(root, "matrix").exists()
