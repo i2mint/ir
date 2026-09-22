@@ -29,6 +29,7 @@ Brute-force search reads vectors into a single normalized matrix
 from __future__ import annotations
 
 import copy
+import hashlib
 import io
 import json
 import os
@@ -43,6 +44,32 @@ from .base import Record
 #: Bump when the on-disk packed-matrix layout changes so a stale cache from an
 #: older ``ir`` is treated as invalid (rebuilt) rather than mis-read.
 _PACKED_FORMAT = 1
+
+
+def _packed_content_sig(ids_json: bytes, metas_json: bytes) -> str:
+    """Signature binding a packed matrix to the exact ids/metas written with it.
+
+    Hashes the bytes of ``ids.json`` and ``metas.json`` (length-prefixed, so the
+    boundary between them is unambiguous). ``sig.json`` is written last and
+    carries this digest, so a ``sig``/``matrix`` pair from one writer cannot
+    validate another writer's ids/metas: the four packed files are written
+    independently, and a same-length mixture of two concurrent rebuilds passes
+    every length check while row *i* no longer belongs to ``ids[i]``.
+
+    >>> _packed_content_sig(b'["a"]', b"[{}]") == _packed_content_sig(
+    ...     b'["a"]', b"[{}]"
+    ... )
+    True
+    >>> _packed_content_sig(b'["a"]', b"[{}]") == _packed_content_sig(
+    ...     b'["b"]', b"[{}]"
+    ... )
+    False
+    """
+    digest = hashlib.sha256()
+    digest.update(len(ids_json).to_bytes(8, "big"))
+    digest.update(ids_json)
+    digest.update(metas_json)
+    return digest.hexdigest()
 
 
 def _ndarray_store(rootdir) -> MutableMapping[str, np.ndarray]:
@@ -387,11 +414,26 @@ class CorpusStore:
             if sig.get("format") != _PACKED_FORMAT:
                 return None
             mat = np.load(paths["matrix"], mmap_mode="r")
-            ids = json.loads(paths["ids"].read_text(encoding="utf-8"))
-            metas = json.loads(paths["metas"].read_text(encoding="utf-8"))
+            ids_json = paths["ids"].read_bytes()
+            metas_json = paths["metas"].read_bytes()
+            ids = json.loads(ids_json)
+            metas = json.loads(metas_json)
         except (OSError, ValueError):
             return None
         if len(ids) != mat.shape[0] or len(metas) != len(ids):
+            return None
+        # A cache written before ``sig.json`` carried these fields has neither;
+        # keep accepting it on the length checks alone rather than invalidating
+        # every existing cache. When they are present they must agree, or the
+        # set mixes two writers' files and reads as a miss (rebuild) instead of
+        # serving rows under the wrong ids.
+        content_sig = sig.get("content_sig")
+        if content_sig is not None and content_sig != _packed_content_sig(
+            ids_json, metas_json
+        ):
+            return None
+        shape = sig.get("shape")
+        if shape is not None and list(mat.shape) != list(shape):
             return None
         return (ids, mat, metas)
 
@@ -399,7 +441,11 @@ class CorpusStore:
         """Persist a freshly built matrix to the packed cache (best-effort).
 
         Skips empty corpora. Writes ``sig.json`` last so a crash mid-write
-        leaves the cache marked invalid (no sig) rather than torn.
+        leaves the cache marked invalid (no sig) rather than torn. The sig also
+        carries a :func:`_packed_content_sig` digest of the ids/metas bytes and
+        the matrix shape, which is what lets :meth:`_load_packed` notice the
+        case a write order cannot defend against: a *second* writer replacing
+        some of the four files while this set is on disk.
         """
         if self._packed_dir is None:
             return
@@ -409,11 +455,21 @@ class CorpusStore:
         try:
             self._packed_dir.mkdir(parents=True, exist_ok=True)
             paths = self._packed_paths()
-            np.save(paths["matrix"], np.asarray(mat, dtype=np.float32))
-            paths["ids"].write_text(json.dumps(ids), encoding="utf-8")
-            paths["metas"].write_text(json.dumps(metas), encoding="utf-8")
+            arr = np.asarray(mat, dtype=np.float32)
+            ids_json = json.dumps(ids).encode("utf-8")
+            metas_json = json.dumps(metas).encode("utf-8")
+            np.save(paths["matrix"], arr)
+            paths["ids"].write_bytes(ids_json)
+            paths["metas"].write_bytes(metas_json)
             paths["sig"].write_text(
-                json.dumps({"format": _PACKED_FORMAT, "count": len(ids)}),
+                json.dumps(
+                    {
+                        "format": _PACKED_FORMAT,
+                        "count": len(ids),
+                        "content_sig": _packed_content_sig(ids_json, metas_json),
+                        "shape": list(arr.shape),
+                    }
+                ),
                 encoding="utf-8",
             )
             self._packed_stale = False
