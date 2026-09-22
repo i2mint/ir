@@ -78,7 +78,7 @@ def test_record_with_meta_but_no_vector_is_left_out_not_published(tmp_path, capl
     assert ids == ["r1"] and mat.shape == (1, 3) and len(metas) == 1
     assert "r2" in caplog.text
     assert not (root / "matrix" / "sig.json").exists()  # partial set not published
-    assert reader._matrix_cache is None  # nor cached: the next call reads again
+    assert _file_store(root).matrix()[0] == ["r1"]  # a fresh process reads again
 
     store.put_record(_rec("r2", vec=(0.0, 1.0, 0.0)))  # the writer finishes
     ids, _mat, _metas = _file_store(root).matrix()
@@ -129,6 +129,25 @@ def test_writes_leave_no_temp_files_and_temp_files_are_not_keys(tmp_path):
     assert list(store.meta) == ["r1"]
 
 
+def test_absolute_key_is_written_inside_the_root(tmp_path):
+    """An artifact id can be an absolute path: it must never replace the root."""
+    victim = tmp_path / "victim.md"
+    victim.write_text("# my source file")
+    root = tmp_path / "store"
+    store = _json_store(root)
+    store[str(victim)] = {"cites": ["x"]}
+    assert victim.read_text() == "# my source file"
+    assert store[str(victim)] == {"cites": ["x"]}
+    assert [p for p in root.rglob("*") if p.is_file()]  # stored under the root
+
+
+def test_key_climbing_out_of_the_root_is_refused(tmp_path):
+    store = _json_store(tmp_path / "store")
+    with pytest.raises(KeyError, match="outside the store"):
+        store["a/../../escape"] = {}
+    assert not (tmp_path / "escape").exists()
+
+
 def test_json_store_format_is_unchanged(tmp_path):
     """Corpora written by ``dol.JsonFiles`` (indent=4, UTF-8) read the same."""
     import dol
@@ -171,6 +190,11 @@ def test_permission_error_off_windows_is_raised(tmp_path, monkeypatch):
     assert list(tmp_path.iterdir()) == []
 
 
+# Large records (~80 KB vector, up to ~200 KB of text) keep each write in
+# flight long enough that a reader on the old, non-atomic stores reliably hit a
+# torn or half-listed record.
+_DIM = 20_000
+
 _WRITER = textwrap.dedent(
     """
     import sys
@@ -180,6 +204,7 @@ _WRITER = textwrap.dedent(
     from ir.store import CorpusStore, _json_store, _ndarray_store
 
     root = Path(sys.argv[1])
+    DIM = int(sys.argv[3])
     store = CorpusStore(
         meta=_json_store(root / "meta"),
         vectors=_ndarray_store(root / "vectors"),
@@ -187,28 +212,33 @@ _WRITER = textwrap.dedent(
         config=_json_store(root / "config"),
         packed_dir=root / "matrix",
     )
-    rng = np.random.default_rng(0)
+    first = int(sys.argv[4])  # this writer's ids: r<first> .. r<first + 19>
+    rng = np.random.default_rng(first)
     for i in range(int(sys.argv[2])):
-        rid = f"r{i % 40}"  # new records, then overwrites of existing ones
+        rid = f"r{first + i % 20}"  # new records, then overwrites of existing ones
         store.put_record(Record(
             id=rid, artifact_id="a", surface_kind="document", surface_index=0,
-            text="x" * int(rng.integers(1, 4000)), metadata={},
-            vector=rng.random(128).astype(np.float32),
+            text="x" * int(rng.integers(1, 200_000)), metadata={},
+            vector=rng.random(DIM).astype(np.float32),
         ))
     """
 )
 
 
-def test_reads_while_another_process_writes_never_raise(tmp_path):
-    """The #85 repro: query a corpus while another process builds it."""
+@pytest.mark.parametrize("round_", range(3))  # each round alone caught master ~1 in 2
+def test_reads_while_another_process_writes_never_raise(tmp_path, round_):
+    """The #85 repro: query a corpus while other processes build it."""
     root = tmp_path / "corpus"
-    writer = subprocess.Popen(
-        [sys.executable, "-c", _WRITER, str(root), "400"],
-        stderr=subprocess.PIPE,
-    )
+    writers = [  # two writers on disjoint ids, as when a build and a maintain overlap
+        subprocess.Popen(
+            [sys.executable, "-c", _WRITER, str(root), "150", str(_DIM), str(first)],
+            stderr=subprocess.PIPE,
+        )
+        for first in (0, 20)
+    ]
     reads = 0
     try:
-        while writer.poll() is None or reads == 0:
+        while any(w.poll() is None for w in writers) or reads == 0:
             reader = _file_store(root)
             ids, mat, metas = reader.matrix()
             assert len(ids) == mat.shape[0] == len(metas)
@@ -217,15 +247,16 @@ def test_reads_while_another_process_writes_never_raise(tmp_path):
             assert len(set(_file_store(root).metas()[0])) <= 40
             reads += 1
     finally:
-        _out, err = writer.communicate(timeout=120)
-    assert writer.returncode == 0, err.decode()
+        errs = [w.communicate(timeout=120)[1] for w in writers]
+    for w, err in zip(writers, errs, strict=True):
+        assert w.returncode == 0, err.decode()
     assert reads > 0
     # Every record the writer wrote is whole on disk. (Whether a *packed* set a
     # reader published mid-build includes them is i2mint/ir#86, below.)
     store = _file_store(root)
     assert sorted(store.meta) == sorted(f"r{i}" for i in range(40))
     for rid in store.meta:
-        assert store.get_record(rid).vector.shape == (128,)
+        assert store.get_record(rid).vector.shape == (_DIM,)
 
 
 @pytest.mark.xfail(

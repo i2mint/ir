@@ -193,7 +193,14 @@ class _AtomicFiles(MutableMapping):
         return self._files[k]
 
     def __setitem__(self, k, v):
-        path = Path(self.rootdir, k)
+        # The file path comes from ``dol.Files`` itself (root prefix + key, as a
+        # string), so a write lands exactly where reads and deletes look. Never
+        # ``Path(root, k)``: pathlib lets an absolute key replace the root, which
+        # would write outside the store (an artifact id can be an absolute path).
+        path = Path(self._files._id_of_key(k))
+        root = os.path.normpath(self.rootdir)
+        if os.path.commonpath([root, os.path.normpath(path)]) != root:
+            raise KeyError(f"key {k!r} would write outside the store at {root}")
         path.parent.mkdir(parents=True, exist_ok=True)
         _write_atomically(path, v)
 
@@ -481,9 +488,9 @@ class CorpusStore:
 
         Another process may be writing or deleting records while this one
         rebuilds. A record that vanishes or is only half-written when read is
-        left out of the result (it is "not yet written"), and such a partial
-        result is returned but neither cached nor published, so the next call
-        reads again.
+        left out of the result (it is "not yet written"), with a warning; such
+        a partial result is cached in-process but never published as the
+        packed set, so a fresh process reads the records again.
         """
         if self._matrix_cache is not None:
             return self._matrix_cache
@@ -494,6 +501,11 @@ class CorpusStore:
         try:
             result = self._build_matrix()
         except _IncompleteRead as incomplete:
+            # Kept in-process like any build (the in-process cache never sees
+            # other processes' writes anyway), but not published: a record that
+            # can't be read -- torn, or damaged for good -- must not become part
+            # of the set every other process loads.
+            self._matrix_cache = incomplete.result
             return incomplete.result
         self._save_packed(result)
         self._matrix_cache = result
@@ -522,6 +534,7 @@ class CorpusStore:
             try:
                 meta = self.meta[rid]
             except _TORN_RECORD_ERRORS:
+                logger.debug("ir: skipped unreadable meta for record %s", rid)
                 continue
             ids.append(rid)
             metas.append(meta)
@@ -571,7 +584,9 @@ class CorpusStore:
         if skipped:
             logger.warning(
                 "ir: %d record(s) could not be read (being written by another "
-                "process, or corrupt) and were left out of this search: %s",
+                "process, or damaged) and were left out of this search: %s. If "
+                "this persists, re-index or delete those records; until then the "
+                "packed matrix cache is not written for this corpus.",
                 len(skipped),
                 ", ".join(skipped[:5]) + (", ..." if len(skipped) > 5 else ""),
             )
