@@ -448,7 +448,10 @@ backed, for file-rooted stores, by an on-disk **packed** cache — one
 normalized-matrix `.npy` plus its ids/metas, written once and reloaded
 with a single memory-mapped read. The packed cache turns a cold reopen
 from a per-record vector-file storm (thousands of tiny reads) into three
-file reads; it is cleared by any record write, so it never goes stale.
+file reads; it is cleared by a writer’s first record write, and every
+record write replaces a *write stamp* that a packed set must match to be
+published or loaded, so a set built before any later write – by this
+process or another – is never served (i2mint/ir#86).
 
 Another process may be writing or deleting records while this one
 rebuilds. A record that vanishes or is only half-written when read is

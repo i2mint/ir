@@ -1,4 +1,4 @@
-> built 2026-09-22 15:47 UTC from 5987724 (master) · ir 0.1.37. Details: build_info.json
+> built 2026-09-22 16:08 UTC from d9026d4 (master) · ir 0.1.38. Details: build_info.json
 
 # index.html.md
 
@@ -3053,7 +3053,10 @@ backed, for file-rooted stores, by an on-disk **packed** cache — one
 normalized-matrix `.npy` plus its ids/metas, written once and reloaded
 with a single memory-mapped read. The packed cache turns a cold reopen
 from a per-record vector-file storm (thousands of tiny reads) into three
-file reads; it is cleared by any record write, so it never goes stale.
+file reads; it is cleared by a writer’s first record write, and every
+record write replaces a *write stamp* that a packed set must match to be
+published or loaded, so a set built before any later write – by this
+process or another – is never served (i2mint/ir#86).
 
 Another process may be writing or deleting records while this one
 rebuilds. A record that vanishes or is only half-written when read is
@@ -5766,7 +5769,10 @@ backed, for file-rooted stores, by an on-disk **packed** cache — one
 normalized-matrix `.npy` plus its ids/metas, written once and reloaded
 with a single memory-mapped read. The packed cache turns a cold reopen
 from a per-record vector-file storm (thousands of tiny reads) into three
-file reads; it is cleared by any record write, so it never goes stale.
+file reads; it is cleared by a writer’s first record write, and every
+record write replaces a *write stamp* that a packed set must match to be
+published or loaded, so a set built before any later write – by this
+process or another – is never served (i2mint/ir#86).
 
 Another process may be writing or deleting records while this one
 rebuilds. A record that vanishes or is only half-written when read is
@@ -6244,18 +6250,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-09-22 15:47 UTC** from commit <a href="https://github.com/i2mint/ir/commit/598772440ae789fdf9c3d75c73904082486eabb0"><code>5987724</code></a> on branch <code>master</code>, for **ir 0.1.37** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-09-22 16:08 UTC** from commit <a href="https://github.com/i2mint/ir/commit/d9026d44c828e00a6ba0500e0235d9a0b4113358"><code>d9026d4</code></a> on branch <code>master</code>, for **ir 0.1.38** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.37) is behind the latest release on PyPI (0.1.38): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/598772440ae789fdf9c3d75c73904082486eabb0"><code>598772440ae789fdf9c3d75c73904082486eabb0</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/d9026d44c828e00a6ba0500e0235d9a0b4113358"><code>d9026d44c828e00a6ba0500e0235d9a0b4113358</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6266,9 +6270,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/35749476133">35749476133</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/35751859459">35751859459</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>598772440ae789fdf9c3d75c73904082486eabb0</code> (in the history of the built commit) |
+| Event commit | <code>d9026d44c828e00a6ba0500e0235d9a0b4113358</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -6293,13 +6297,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.38/">0.1.38</a>, newer than the documented version (0.1.37).
+Latest release: <a href="https://pypi.org/project/ir/0.1.38/">0.1.38</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 598772440ae789fdf9c3d75c73904082486eabb0
+git checkout d9026d44c828e00a6ba0500e0235d9a0b4113358
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

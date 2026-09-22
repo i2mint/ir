@@ -29,7 +29,7 @@
 - [ir.synopsis](_autosummary/ir.synopsis.html.md): Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).
 - [ir.tools](_autosummary/ir.tools.html.md): Agent-callable tool surface over &#96;ir&#96; — plain functions returning JSON-ready
 - [For AI agents](ai-agents.html.md): &#96;ir&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-09-22 15:47 UTC&#42;&#42; from commit &lt;a href="https://github.com/i2m...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-09-22 16:08 UTC&#42;&#42; from commit &lt;a href="https://github.com/i2m...
 
 ## Optional
 

@@ -762,7 +762,10 @@ backed, for file-rooted stores, by an on-disk <strong>packed</strong> cache — 
 normalized-matrix <code class="docutils literal notranslate"><span class="pre">.npy</span></code> plus its ids/metas, written once and reloaded
 with a single memory-mapped read. The packed cache turns a cold reopen
 from a per-record vector-file storm (thousands of tiny reads) into three
-file reads; it is cleared by any record write, so it never goes stale.</p>
+file reads; it is cleared by a writer’s first record write, and every
+record write replaces a <em>write stamp</em> that a packed set must match to be
+published or loaded, so a set built before any later write – by this
+process or another – is never served (i2mint/ir#86).</p>
 <p>Another process may be writing or deleting records while this one
 rebuilds. A record that vanishes or is only half-written when read is
 left out of the result (it is “not yet written”), with a warning; such
@@ -2341,7 +2344,7 @@ own <code class="docutils literal notranslate"><span class="pre">synthesizer_id<
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=b8ecee75"></script>
+<script src="../_static/documentation_options.js?v=50f64db7"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
