@@ -32,6 +32,7 @@ import copy
 import hashlib
 import io
 import json
+import logging
 import os
 import uuid
 from collections.abc import Iterator, Mapping, MutableMapping
@@ -41,6 +42,8 @@ from typing import Any
 import numpy as np
 
 from .base import Record
+
+logger = logging.getLogger(__name__)
 
 #: Bump when the on-disk packed-matrix layout changes so a stale cache from an
 #: older ``ir`` is treated as invalid (rebuilt) rather than mis-read.
@@ -101,13 +104,124 @@ def _packed_content_sig(ids_json: bytes, metas_json: bytes) -> str:
     return digest.hexdigest()
 
 
+#: What reading one per-record file can raise when another process is writing
+#: or deleting that record right now: ``KeyError`` (the file vanished between
+#: listing and reading), ``EOFError`` (``np.load`` of an empty/truncated
+#: ``.npy``), ``ValueError`` (a torn ``.npy`` body, or a torn JSON meta --
+#: ``json.JSONDecodeError`` is a ``ValueError``).
+_TORN_RECORD_ERRORS = (KeyError, EOFError, ValueError)
+
+
+class _IncompleteRead(Exception):
+    """A matrix build skipped records that vanished or were torn mid-read.
+
+    Carries the partial ``(ids, matrix, metas)`` so :meth:`CorpusStore.matrix`
+    can still answer the query that triggered it, without caching or
+    publishing a set it knows is missing records.
+    """
+
+    def __init__(self, result, skipped):
+        super().__init__(f"{len(skipped)} record(s) changed while being read")
+        self.result = result
+        self.skipped = skipped
+
+
+#: How often a per-record ``os.replace`` is retried when the target is held
+#: open (a Windows reader in another process), and the first back-off delay in
+#: seconds (doubled on each retry). POSIX never needs a retry.
+_REPLACE_ATTEMPTS = 6
+_REPLACE_FIRST_DELAY = 0.01
+_IS_WINDOWS = os.name == "nt"
+
+
+def _write_atomically(path: Path, data: bytes) -> None:
+    """Write ``data`` to ``path`` so no reader ever sees a partial file.
+
+    The bytes go to a hidden temp file in the same directory (hidden, so the
+    ``dol`` store listing that directory never shows it as a key), which then
+    replaces ``path`` in one ``os.replace``: a concurrent reader sees the old
+    file or the new one, never a torn mix. This is the same publish step as the
+    packed cache's ``sig.json``, minus the fsync -- per-record writes are
+    atomic against other processes, not durable against power loss, so a bulk
+    build does not pay an fsync per record.
+
+    On Windows ``os.replace`` refuses (``PermissionError``) while another
+    process has the target open for reading; it is retried with a short
+    back-off, and if the target stays busy the bytes are written in place, as
+    before this function existed, rather than failing the write.
+    """
+    import time
+
+    tmp = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        tmp.write_bytes(data)
+        delay = _REPLACE_FIRST_DELAY
+        for attempt in range(_REPLACE_ATTEMPTS):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                if not _IS_WINDOWS:
+                    raise
+                if attempt < _REPLACE_ATTEMPTS - 1:
+                    time.sleep(delay)
+                    delay *= 2
+        path.write_bytes(data)
+    finally:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass  # already replaced into ``path`` (the normal case)
+
+
+class _AtomicFiles(MutableMapping):
+    """``relative path -> bytes`` file store whose writes are atomic.
+
+    Reads, listing and deletes go through ``dol.Files`` unchanged; only
+    ``__setitem__`` differs, publishing through :func:`_write_atomically` (and
+    creating missing sub-directories, as ``dol.mk_dirs_if_missing`` did).
+    """
+
+    def __init__(self, rootdir):
+        import dol
+
+        self.rootdir = str(rootdir)
+        os.makedirs(self.rootdir, exist_ok=True)
+        self._files = dol.Files(self.rootdir)
+
+    def __getitem__(self, k):
+        return self._files[k]
+
+    def __setitem__(self, k, v):
+        # The file path comes from ``dol.Files`` itself (root prefix + key, as a
+        # string), so a write lands exactly where reads and deletes look. Never
+        # ``Path(root, k)``: pathlib lets an absolute key replace the root, which
+        # would write outside the store (an artifact id can be an absolute path).
+        path = Path(self._files._id_of_key(k))
+        root = os.path.normpath(self.rootdir)
+        if os.path.commonpath([root, os.path.normpath(path)]) != root:
+            raise KeyError(f"key {k!r} would write outside the store at {root}")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _write_atomically(path, v)
+
+    def __delitem__(self, k):
+        del self._files[k]
+
+    def __iter__(self):
+        return iter(self._files)
+
+    def __len__(self):
+        return len(self._files)
+
+    def __contains__(self, k):
+        return k in self._files
+
+
 def _ndarray_store(rootdir) -> MutableMapping[str, np.ndarray]:
-    """A ``dol`` file store whose values are float32 ``ndarray``s."""
+    """A file store whose values are float32 ``ndarray``s (atomic writes)."""
     import dol
 
-    rootdir = str(rootdir)
-    os.makedirs(rootdir, exist_ok=True)
-    files = dol.mk_dirs_if_missing(dol.Files(rootdir))
+    files = _AtomicFiles(rootdir)
 
     def encode(arr: np.ndarray) -> bytes:
         buf = io.BytesIO()
@@ -121,12 +235,29 @@ def _ndarray_store(rootdir) -> MutableMapping[str, np.ndarray]:
 
 
 def _json_store(rootdir) -> MutableMapping[str, Any]:
-    """A ``dol`` file store whose values are JSON objects."""
+    """A file store whose values are JSON objects (atomic writes).
+
+    Same on-disk format as ``dol.JsonFiles`` (UTF-8, ``indent=4``), so existing
+    corpora read unchanged.
+    """
     import dol
 
-    rootdir = str(rootdir)
-    os.makedirs(rootdir, exist_ok=True)
-    return dol.mk_dirs_if_missing(dol.JsonFiles(rootdir))
+    def encode(obj) -> bytes:
+        return json.dumps(obj, indent=4).encode("utf-8")
+
+    return dol.wrap_kvs(
+        _AtomicFiles(rootdir), obj_of_data=json.loads, data_of_obj=encode
+    )
+
+
+def _normalized_matrix(ids, rows, metas):
+    """``(ids, row-L2-normalized matrix, metas)``; a ``(0, 0)`` matrix when empty."""
+    if not ids:
+        return ([], np.zeros((0, 0), dtype=np.float32), [])
+    mat = np.vstack(rows)
+    norms = np.linalg.norm(mat, axis=1, keepdims=True)
+    norms[norms == 0] = 1.0
+    return (ids, mat / norms, metas)
 
 
 class CorpusStore:
@@ -187,7 +318,13 @@ class CorpusStore:
     # ----- record CRUD ---------------------------------------------------- #
 
     def put_record(self, record: Record) -> None:
-        """Persist *record*'s metadata + vector, invalidating the search matrix."""
+        """Persist *record*'s metadata + vector, invalidating the search matrix.
+
+        The vector is written **before** the meta: record ids are listed from
+        the meta view, so a reader in another process that lists an id always
+        finds its vector (``delete_record`` removes in the reverse order).
+        """
+        self.vectors[record.id] = np.asarray(record.vector, dtype=np.float32)
         self.meta[record.id] = {
             "artifact_id": record.artifact_id,
             "surface_kind": record.surface_kind,
@@ -195,16 +332,20 @@ class CorpusStore:
             "text": record.text,
             "metadata": dict(record.metadata),
         }
-        self.vectors[record.id] = np.asarray(record.vector, dtype=np.float32)
         self._invalidate_matrix()
 
     def delete_record(self, record_id: str) -> None:
-        """Remove a record's metadata + vector; a missing id is tolerated."""
-        self.meta.pop(record_id, None)
-        try:
-            del self.vectors[record_id]
-        except KeyError:
-            pass
+        """Remove a record's metadata + vector; a missing id is tolerated.
+
+        The meta goes first, so the id stops being listed before its vector
+        disappears. Each removal tolerates the file being gone already (another
+        process may be deleting the same record).
+        """
+        for view in (self.meta, self.vectors):
+            try:
+                del view[record_id]
+            except KeyError:
+                pass
         self._invalidate_matrix()
 
     def record_ids(self) -> Iterator[str]:
@@ -344,6 +485,12 @@ class CorpusStore:
         with a single memory-mapped read. The packed cache turns a cold reopen
         from a per-record vector-file storm (thousands of tiny reads) into three
         file reads; it is cleared by any record write, so it never goes stale.
+
+        Another process may be writing or deleting records while this one
+        rebuilds. A record that vanishes or is only half-written when read is
+        left out of the result (it is "not yet written"), with a warning; such
+        a partial result is cached in-process but never published as the
+        packed set, so a fresh process reads the records again.
         """
         if self._matrix_cache is not None:
             return self._matrix_cache
@@ -351,7 +498,15 @@ class CorpusStore:
         if packed is not None:
             self._matrix_cache = packed
             return packed
-        result = self._build_matrix()
+        try:
+            result = self._build_matrix()
+        except _IncompleteRead as incomplete:
+            # Kept in-process like any build (the in-process cache never sees
+            # other processes' writes anyway), but not published: a record that
+            # can't be read -- torn, or damaged for good -- must not become part
+            # of the set every other process loads.
+            self._matrix_cache = incomplete.result
+            return incomplete.result
         self._save_packed(result)
         self._matrix_cache = result
         return result
@@ -363,7 +518,8 @@ class CorpusStore:
         score on text alone (``mode="lexical"``): they need candidate metadata
         (text + filter fields) but never the embedding matrix, so they must not
         pay its I/O. Reuses the in-process or packed cache when present; else
-        reads only the ``meta`` view (not ``vectors``).
+        reads only the ``meta`` view (not ``vectors``), skipping a record that
+        vanishes or is half-written mid-read (as :meth:`matrix` does).
         """
         if self._matrix_cache is not None:
             ids, _mat, metas = self._matrix_cache
@@ -372,8 +528,16 @@ class CorpusStore:
         if packed is not None:
             self._matrix_cache = packed
             return packed[0], packed[2]
-        ids = list(self.meta)
-        metas = [self.meta[rid] for rid in ids]
+        ids: list[str] = []
+        metas: list[dict] = []
+        for rid in list(self.meta):
+            try:
+                meta = self.meta[rid]
+            except _TORN_RECORD_ERRORS:
+                logger.debug("ir: skipped unreadable meta for record %s", rid)
+                continue
+            ids.append(rid)
+            metas.append(meta)
         return ids, metas
 
     def _build_matrix(self) -> tuple[list[str], np.ndarray, list[dict]]:
@@ -381,20 +545,53 @@ class CorpusStore:
 
         One pass over the ids reads each record's meta and vector together
         (the previous implementation iterated the meta view three times).
+
+        Raises :class:`_IncompleteRead` (carrying the partial result) when a
+        listed record vanished or could not be decoded because another process
+        was writing or deleting it (see ``_TORN_RECORD_ERRORS``).
         """
-        ids = list(self.meta)
-        if not ids:
-            return ([], np.zeros((0, 0), dtype=np.float32), [])
+        ids: list[str] = []
         metas: list[dict] = []
         rows: list[np.ndarray] = []
-        for rid in ids:
-            metas.append(self.meta[rid])
-            rows.append(np.asarray(self.vectors[rid], dtype=np.float32))
-        mat = np.vstack(rows)
-        norms = np.linalg.norm(mat, axis=1, keepdims=True)
-        norms[norms == 0] = 1.0
-        mat = mat / norms
-        return (ids, mat, metas)
+
+        def read(rid):
+            meta = self.meta[rid]
+            return meta, np.asarray(self.vectors[rid], dtype=np.float32)
+
+        def add(rid, meta, row):
+            ids.append(rid)
+            metas.append(meta)
+            rows.append(row)
+
+        retry: list[str] = []
+        for rid in list(self.meta):
+            try:
+                add(rid, *read(rid))
+            except _TORN_RECORD_ERRORS:
+                retry.append(rid)
+        # Second look at what failed: a writer has usually finished by now, and a
+        # record whose meta is gone was deleted -- consistent with the rest of
+        # the read, so not a gap. Only what still can't be read is missing.
+        skipped: list[str] = []
+        for rid in retry:
+            if rid not in self.meta:
+                continue
+            try:
+                add(rid, *read(rid))
+            except _TORN_RECORD_ERRORS:
+                skipped.append(rid)
+        result = _normalized_matrix(ids, rows, metas)
+        if skipped:
+            logger.warning(
+                "ir: %d record(s) could not be read (being written by another "
+                "process, or damaged) and were left out of this search: %s. If "
+                "this persists, re-index or delete those records; until then the "
+                "packed matrix cache is not written for this corpus.",
+                len(skipped),
+                ", ".join(skipped[:5]) + (", ..." if len(skipped) > 5 else ""),
+            )
+            raise _IncompleteRead(result, skipped)
+        return result
 
     # ----- packed-matrix disk cache --------------------------------------- #
 
