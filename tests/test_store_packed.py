@@ -242,6 +242,8 @@ def test_legacy_flat_packed_layout_still_loads(tmp_path):
     (packed / "sig.json").write_text(
         json.dumps({"format": 1, "count": len(ids)}), encoding="utf-8"
     )
+    # Both written by an older ``ir``, which kept no write stamp (ir#86).
+    (packed / "write-stamp").unlink()
 
     store2, _ = _file_store(tmp_path)
 
@@ -261,10 +263,11 @@ def test_republishing_sweeps_older_generations(tmp_path):
     for _ in range(3):
         store._save_packed(result)
     names = sorted(p.name for p in (root / "matrix").iterdir())
-    assert len(names) == 4 and "sig.json" in names
+    # One generation (3 data files), sig.json, and the write stamp (ir#86).
+    assert len(names) == 5 and {"sig.json", "write-stamp"} <= set(names)
 
-    store.put_record(_rec("r2"))  # a write clears the cache entirely
-    assert list((root / "matrix").iterdir()) == []
+    store.put_record(_rec("r2"))  # a write clears the cache, keeping the stamp
+    assert [p.name for p in (root / "matrix").iterdir()] == ["write-stamp"]
 
 
 def test_writer_sees_its_own_write_despite_another_process_publishing(tmp_path):
@@ -299,7 +302,7 @@ def test_empty_or_truncated_packed_matrix_is_a_miss_not_an_error(tmp_path):
     for corrupt in (b"", full[:20], full[:-4]):
         matrix_file.write_bytes(corrupt)
         store2, _ = _file_store(tmp_path)
-        store2._save_packed = lambda result: None  # keep the corrupt set on disk
+        store2._save_packed = lambda result, **kw: None  # keep the corrupt set on disk
         ids2, mat2, _metas2 = store2.matrix()
         assert sorted(ids2) == ["r1", "r2"]
         assert np.asarray(mat2).shape == (2, 3)
