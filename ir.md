@@ -1,4 +1,4 @@
-> built 2026-09-22 14:42 UTC from 963eeae (master) · ir 0.1.35. Details: build_info.json
+> built 2026-09-22 15:42 UTC from 7c41dac (master) · ir 0.1.36. Details: build_info.json
 
 # index.html.md
 
@@ -2961,6 +2961,10 @@ Remove an artifact’s edges; a missing entry is tolerated.
 
 Remove a record’s metadata + vector; a missing id is tolerated.
 
+The meta goes first, so the id stops being listed before its vector
+disappears. Each removal tolerates the file being gone already (another
+process may be deleting the same record).
+
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
@@ -3051,6 +3055,12 @@ with a single memory-mapped read. The packed cache turns a cold reopen
 from a per-record vector-file storm (thousands of tiny reads) into three
 file reads; it is cleared by any record write, so it never goes stale.
 
+Another process may be writing or deleting records while this one
+rebuilds. A record that vanishes or is only half-written when read is
+left out of the result (it is “not yet written”), with a warning; such
+a partial result is cached in-process but never published as the
+packed set, so a fresh process reads the records again.
+
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], `ndarray`, [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
 
@@ -3069,7 +3079,8 @@ The vector-free counterpart of [`matrix()`](_autosummary/ir.html.md#ir.CorpusSto
 score on text alone (`mode="lexical"`): they need candidate metadata
 (text + filter fields) but never the embedding matrix, so they must not
 pay its I/O. Reuses the in-process or packed cache when present; else
-reads only the `meta` view (not `vectors`).
+reads only the `meta` view (not `vectors`), skipping a record that
+vanishes or is half-written mid-read (as [`matrix()`](_autosummary/ir.html.md#ir.CorpusStore.matrix) does).
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
@@ -3077,6 +3088,10 @@ reads only the `meta` view (not `vectors`).
 #### put_record(record)
 
 Persist *record*’s metadata + vector, invalidating the search matrix.
+
+The vector is written **before** the meta: record ids are listed from
+the meta view, so a reader in another process that lists an id always
+finds its vector (`delete_record` removes in the reverse order).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -5659,6 +5674,10 @@ Remove an artifact’s edges; a missing entry is tolerated.
 
 Remove a record’s metadata + vector; a missing id is tolerated.
 
+The meta goes first, so the id stops being listed before its vector
+disappears. Each removal tolerates the file being gone already (another
+process may be deleting the same record).
+
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
@@ -5749,6 +5768,12 @@ with a single memory-mapped read. The packed cache turns a cold reopen
 from a per-record vector-file storm (thousands of tiny reads) into three
 file reads; it is cleared by any record write, so it never goes stale.
 
+Another process may be writing or deleting records while this one
+rebuilds. A record that vanishes or is only half-written when read is
+left out of the result (it is “not yet written”), with a warning; such
+a partial result is cached in-process but never published as the
+packed set, so a fresh process reads the records again.
+
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], `ndarray`, [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
 
@@ -5767,7 +5792,8 @@ The vector-free counterpart of [`matrix()`](_autosummary/ir.store.html.md#ir.sto
 score on text alone (`mode="lexical"`): they need candidate metadata
 (text + filter fields) but never the embedding matrix, so they must not
 pay its I/O. Reuses the in-process or packed cache when present; else
-reads only the `meta` view (not `vectors`).
+reads only the `meta` view (not `vectors`), skipping a record that
+vanishes or is half-written mid-read (as [`matrix()`](_autosummary/ir.store.html.md#ir.store.CorpusStore.matrix) does).
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
@@ -5775,6 +5801,10 @@ reads only the `meta` view (not `vectors`).
 #### put_record(record)
 
 Persist *record*’s metadata + vector, invalidating the search matrix.
+
+The vector is written **before** the meta: record ids are listed from
+the meta view, so a reader in another process that lists an id always
+finds its vector (`delete_record` removes in the reverse order).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -6214,7 +6244,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-09-22 14:42 UTC** from commit <a href="https://github.com/i2mint/ir/commit/963eeae90eed126077976fbaad9a40d1de84d82a"><code>963eeae</code></a> on branch <code>master</code>, for **ir 0.1.35** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-09-22 15:42 UTC** from commit <a href="https://github.com/i2mint/ir/commit/7c41dac1d85b608aa428533edfc50a6d333c8cc1"><code>7c41dac</code></a> on branch <code>master</code>, for **ir 0.1.36** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -6223,7 +6253,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/963eeae90eed126077976fbaad9a40d1de84d82a"><code>963eeae90eed126077976fbaad9a40d1de84d82a</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/7c41dac1d85b608aa428533edfc50a6d333c8cc1"><code>7c41dac1d85b608aa428533edfc50a6d333c8cc1</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6234,9 +6264,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/35741934170">35741934170</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/35748917003">35748917003</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>963eeae90eed126077976fbaad9a40d1de84d82a</code> (in the history of the built commit) |
+| Event commit | <code>7c41dac1d85b608aa428533edfc50a6d333c8cc1</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -6261,13 +6291,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.35/">0.1.35</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.36/">0.1.36</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 963eeae90eed126077976fbaad9a40d1de84d82a
+git checkout 7c41dac1d85b608aa428533edfc50a6d333c8cc1
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

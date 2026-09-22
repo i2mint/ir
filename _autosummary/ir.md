@@ -356,6 +356,10 @@ Remove an artifact’s edges; a missing entry is tolerated.
 
 Remove a record’s metadata + vector; a missing id is tolerated.
 
+The meta goes first, so the id stops being listed before its vector
+disappears. Each removal tolerates the file being gone already (another
+process may be deleting the same record).
+
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
@@ -446,6 +450,12 @@ with a single memory-mapped read. The packed cache turns a cold reopen
 from a per-record vector-file storm (thousands of tiny reads) into three
 file reads; it is cleared by any record write, so it never goes stale.
 
+Another process may be writing or deleting records while this one
+rebuilds. A record that vanishes or is only half-written when read is
+left out of the result (it is “not yet written”), with a warning; such
+a partial result is cached in-process but never published as the
+packed set, so a fresh process reads the records again.
+
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], `ndarray`, [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
 
@@ -464,7 +474,8 @@ The vector-free counterpart of [`matrix()`](#ir.CorpusStore.matrix), for ranking
 score on text alone (`mode="lexical"`): they need candidate metadata
 (text + filter fields) but never the embedding matrix, so they must not
 pay its I/O. Reuses the in-process or packed cache when present; else
-reads only the `meta` view (not `vectors`).
+reads only the `meta` view (not `vectors`), skipping a record that
+vanishes or is half-written mid-read (as [`matrix()`](#ir.CorpusStore.matrix) does).
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
@@ -472,6 +483,10 @@ reads only the `meta` view (not `vectors`).
 #### put_record(record)
 
 Persist *record*’s metadata + vector, invalidating the search matrix.
+
+The vector is written **before** the meta: record ids are listed from
+the meta view, so a reader in another process that lists an id always
+finds its vector (`delete_record` removes in the reverse order).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
