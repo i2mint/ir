@@ -259,19 +259,17 @@ def test_reads_while_another_process_writes_never_raise(tmp_path, round_):
     for w, err in zip(writers, errs, strict=True):
         assert w.returncode == 0, err.decode()
     assert reads > 0
-    # Every record the writer wrote is whole on disk. (Whether a *packed* set a
-    # reader published mid-build includes them is i2mint/ir#86, below.)
+    # Every record the writer wrote is whole on disk, and a fresh process's
+    # matrix -- packed set or rebuild -- includes all of them (i2mint/ir#86).
     store = _file_store(root)
     assert sorted(store.meta) == sorted(f"r{i}" for i in range(40))
     for rid in store.meta:
         assert store.get_record(rid).vector.shape == (_DIM,)
+    assert sorted(_file_store(root).matrix()[0]) == sorted(store.meta)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="i2mint/ir#86: a packed set published mid-build hides later writes",
-)
 def test_reader_publishing_mid_build_does_not_hide_later_writes(tmp_path):
+    """i2mint/ir#86: a set built before a later write is never published or served."""
     root = tmp_path / "corpus"
     writer = _file_store(root)
     writer.put_record(_rec("r1"))
@@ -287,3 +285,61 @@ def test_reader_publishing_mid_build_does_not_hide_later_writes(tmp_path):
     reader.matrix()  # publishes a set without r2
     ids, _mat, _metas = _file_store(root).matrix()
     assert sorted(ids) == ["r1", "r2"]
+
+
+def test_a_set_built_across_a_write_is_not_published(tmp_path):
+    """The build noted the stamp before the write landed: no publish at all."""
+    root = tmp_path / "corpus"
+    writer = _file_store(root)
+    writer.put_record(_rec("r1"))
+    reader = _file_store(root)
+    real_build = reader._build_matrix
+
+    def build_then_writer_continues():
+        result = real_build()
+        writer.put_record(_rec("r2", vec=(0.0, 1.0, 0.0)))
+        return result
+
+    reader._build_matrix = build_then_writer_continues
+    reader.matrix()
+    assert not (root / "matrix" / "sig.json").exists()
+    assert list((root / "matrix").glob("matrix-*.npy")) == []
+
+
+def test_a_set_published_before_a_write_is_not_loaded(tmp_path):
+    """Publish, then write from another store with its once-per-session clear
+    already spent: the write stamp alone must turn the set into a miss."""
+    root = tmp_path / "corpus"
+    writer = _file_store(root)
+    writer.put_record(_rec("r1"))  # spends the writer's one clear
+    _file_store(root).matrix()  # another process publishes {r1}
+    assert (root / "matrix" / "sig.json").exists()
+    writer.put_record(_rec("r2", vec=(0.0, 1.0, 0.0)))  # no clear this time
+    assert (root / "matrix" / "sig.json").exists()
+    assert sorted(_file_store(root).matrix()[0]) == ["r1", "r2"]
+
+
+def test_an_unchanged_corpus_keeps_serving_its_packed_set(tmp_path):
+    """The stamp must not turn every load into a rebuild."""
+    root = tmp_path / "corpus"
+    writer = _file_store(root)
+    writer.put_record(_rec("r1"))
+    writer.put_record(_rec("r2", vec=(0.0, 1.0, 0.0)))
+    _file_store(root).matrix()
+    fresh = _file_store(root)
+
+    def _no_rebuild():
+        raise AssertionError("the packed set should have been loaded")
+
+    fresh._build_matrix = _no_rebuild
+    assert sorted(fresh.matrix()[0]) == ["r1", "r2"]
+
+
+def test_delete_record_also_invalidates_a_published_set(tmp_path):
+    root = tmp_path / "corpus"
+    writer = _file_store(root)
+    writer.put_record(_rec("r1"))
+    writer.put_record(_rec("r2", vec=(0.0, 1.0, 0.0)))
+    _file_store(root).matrix()
+    writer.delete_record("r2")
+    assert sorted(_file_store(root).matrix()[0]) == ["r1"]

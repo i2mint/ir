@@ -49,6 +49,18 @@ logger = logging.getLogger(__name__)
 #: older ``ir`` is treated as invalid (rebuilt) rather than mis-read.
 _PACKED_FORMAT = 1
 
+#: File in the packed-cache directory that every record write replaces with a
+#: fresh random token (i2mint/ir#86). A matrix build notes the token *before*
+#: listing records and stamps it into ``sig.json``; a packed set is only loaded
+#: while the token is unchanged. Any write that landed after the build started
+#: therefore turns the set into a miss, however close together the two were: a
+#: token comparison has no clock resolution to fall through.
+_WRITE_STAMP_FILE = "write-stamp"
+
+#: Default of ``CorpusStore._save_packed(write_stamp=...)``: "the result was
+#: built from the corpus as it is now", i.e. stamp it with the current token.
+_CURRENT_STAMP = object()
+
 
 def _write_durably(path: Path, write) -> None:
     """Create ``path``, let ``write(f)`` fill it, then flush and fsync it."""
@@ -484,7 +496,10 @@ class CorpusStore:
         normalized-matrix ``.npy`` plus its ids/metas, written once and reloaded
         with a single memory-mapped read. The packed cache turns a cold reopen
         from a per-record vector-file storm (thousands of tiny reads) into three
-        file reads; it is cleared by any record write, so it never goes stale.
+        file reads; it is cleared by a writer's first record write, and every
+        record write replaces a *write stamp* that a packed set must match to be
+        published or loaded, so a set built before any later write -- by this
+        process or another -- is never served (i2mint/ir#86).
 
         Another process may be writing or deleting records while this one
         rebuilds. A record that vanishes or is only half-written when read is
@@ -498,6 +513,9 @@ class CorpusStore:
         if packed is not None:
             self._matrix_cache = packed
             return packed
+        # Noted before listing, so any write the build might have missed
+        # changes it (put/delete replace it after their record files; ir#86).
+        write_stamp = self._read_write_stamp()
         try:
             result = self._build_matrix()
         except _IncompleteRead as incomplete:
@@ -507,7 +525,7 @@ class CorpusStore:
             # of the set every other process loads.
             self._matrix_cache = incomplete.result
             return incomplete.result
-        self._save_packed(result)
+        self._save_packed(result, write_stamp=write_stamp)
         self._matrix_cache = result
         return result
 
@@ -596,16 +614,58 @@ class CorpusStore:
     # ----- packed-matrix disk cache --------------------------------------- #
 
     def _invalidate_matrix(self) -> None:
-        """Drop the in-process matrix and clear the on-disk packed cache once.
+        """Drop the in-process matrix, stamp the write, clear the packed cache once.
 
-        Called on every record write. The on-disk clear happens at most once per
-        rebuild (guarded by ``_packed_stale``) so a bulk build's thousands of
-        ``put_record`` calls don't each touch the filesystem.
+        Called on every record write, *after* the record's files are written.
+        The on-disk clear happens at most once per rebuild (guarded by
+        ``_packed_stale``) so a bulk build's thousands of ``put_record`` calls
+        don't each sweep the cache directory. The write stamp is replaced on
+        every call: it is what stops another process from publishing, or
+        loading, a packed set built before this write (i2mint/ir#86) -- the
+        once-per-session clear cannot, since that process may publish after it.
         """
         self._matrix_cache = None
-        if self._packed_dir is not None and not self._packed_stale:
+        if self._packed_dir is None:
+            return
+        self._stamp_write()
+        if not self._packed_stale:
             self._clear_packed()
             self._packed_stale = True
+
+    def _write_stamp_path(self) -> Path:
+        return self._packed_dir / _WRITE_STAMP_FILE
+
+    def _stamp_write(self) -> None:
+        """Replace the write stamp with a fresh token (atomically; one small file).
+
+        If the stamp can't be written, the packed set is removed instead
+        (``sig.json`` first), so no set built before this write stays loadable.
+        """
+        try:
+            self._packed_dir.mkdir(parents=True, exist_ok=True)
+            _write_atomically(
+                self._write_stamp_path(), uuid.uuid4().hex.encode("ascii")
+            )
+        except OSError as error:
+            logger.warning(
+                "ir: could not update the packed-cache write stamp (%s); "
+                "dropping the packed cache instead",
+                error,
+            )
+            self._clear_packed()
+
+    def _read_write_stamp(self) -> str | None:
+        """The current write stamp, or ``None`` if no stamped write happened yet."""
+        if self._packed_dir is None:
+            return None
+        try:
+            return self._write_stamp_path().read_text(encoding="ascii")
+        except FileNotFoundError:
+            return None
+        except (OSError, ValueError):
+            # Unreadable (e.g. mid-replace on Windows): a value no sig carries,
+            # so a load misses and a build does not publish.
+            return ""
 
     # Legacy (pre-generation) flat file names. A cache written by an older
     # ``ir`` is still read through these; new writes never use them.
@@ -722,10 +782,29 @@ class CorpusStore:
         shape = sig.get("shape")
         if shape is not None and list(mat.shape) != list(shape):
             return None
+        # Checked last, after the data files are read: a set built before the
+        # latest record write may be missing it (i2mint/ir#86). A sig from an
+        # ``ir`` predating the stamp has none, which matches only a corpus no
+        # stamping ``ir`` has written to since.
+        if sig.get("write_stamp") != self._read_write_stamp():
+            return None
         return (ids, mat, metas)
 
-    def _save_packed(self, result: tuple[list[str], np.ndarray, list[dict]]) -> None:
+    def _save_packed(
+        self,
+        result: tuple[list[str], np.ndarray, list[dict]],
+        *,
+        write_stamp: str | None | object = _CURRENT_STAMP,
+    ) -> None:
         """Persist a freshly built matrix to the packed cache (best-effort).
+
+        ``write_stamp`` is the write stamp read *before* the build listed its
+        records. It goes into ``sig.json``, and a set whose stamp is no longer
+        current is not published at all: a record was written or deleted
+        while it was being built, so it may not reflect that write
+        (i2mint/ir#86). Loading checks the same stamp again, which covers a
+        write that lands between this check and the publish. Left out, the
+        current stamp is used: the caller vouches the result is up to date.
 
         Skips empty corpora. The matrix, ids and metas go to files named by a
         fresh generation token that only this call writes, and ``sig.json``
@@ -744,6 +823,8 @@ class CorpusStore:
         ids, mat, metas = result
         if not ids:
             return
+        if write_stamp is _CURRENT_STAMP:
+            write_stamp = self._read_write_stamp()
         generation = uuid.uuid4().hex
         try:
             self._packed_dir.mkdir(parents=True, exist_ok=True)
@@ -761,10 +842,20 @@ class CorpusStore:
                     "generation": generation,
                     "content_sig": _packed_content_sig(ids_json, metas_json),
                     "shape": list(arr.shape),
+                    "write_stamp": write_stamp,
                 }
             ).encode("utf-8")
             sig_tmp = self._packed_dir / f"sig-{generation}.tmp"
             _write_durably(sig_tmp, lambda f: f.write(sig_json))
+            if self._read_write_stamp() != write_stamp:
+                # Written to while we built: don't replace a possibly-current
+                # set with one that may be missing that write.
+                for path in (sig_tmp, paths["matrix"], paths["ids"], paths["metas"]):
+                    try:
+                        path.unlink()
+                    except OSError:
+                        pass
+                return
             os.replace(sig_tmp, paths["sig"])
             _fsync_dir(self._packed_dir)
             self._packed_stale = False
