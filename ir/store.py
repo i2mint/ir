@@ -33,6 +33,7 @@ import hashlib
 import io
 import json
 import os
+import uuid
 from collections.abc import Iterator, Mapping, MutableMapping
 from pathlib import Path
 from typing import Any
@@ -381,24 +382,73 @@ class CorpusStore:
             self._clear_packed()
             self._packed_stale = True
 
-    def _packed_paths(self):
-        d = self._packed_dir
-        # ``sig`` is written last and removed first, so a half-written or
-        # half-cleared cache (no/sig-less dir) always reads as invalid.
-        return {
-            "sig": d / "sig.json",
-            "matrix": d / "matrix.npy",
-            "ids": d / "ids.json",
-            "metas": d / "metas.json",
-        }
+    # Legacy (pre-generation) flat file names. A cache written by an older
+    # ``ir`` is still read through these; new writes never use them.
+    _LEGACY_PACKED_FILES = {
+        "matrix": "matrix.npy",
+        "ids": "ids.json",
+        "metas": "metas.json",
+    }
 
-    def _clear_packed(self) -> None:
+    def _packed_paths(self, generation: str | None = None):
+        """Paths of one packed set: the shared ``sig.json`` plus its data files.
+
+        Each writer puts its data files under a fresh *generation* token
+        (``matrix-<gen>.npy``, ...), so no data file is ever written by two
+        writers, and ``sig.json`` -- replaced atomically, last -- names the one
+        generation readers should load. ``generation=None`` gives the legacy
+        flat names an older ``ir`` wrote.
+        """
+        d = self._packed_dir
+        if generation is None:
+            files = self._LEGACY_PACKED_FILES
+        else:
+            files = {
+                "matrix": f"matrix-{generation}.npy",
+                "ids": f"ids-{generation}.json",
+                "metas": f"metas-{generation}.json",
+            }
+        return {"sig": d / "sig.json", **{k: d / v for k, v in files.items()}}
+
+    def _packed_data_files(self) -> list[Path]:
+        """Every packed data file on disk (legacy names and all generations)."""
+        d = self._packed_dir
+        found = [d / name for name in self._LEGACY_PACKED_FILES.values()]
+        for pattern in ("matrix-*.npy", "ids-*.json", "metas-*.json", "sig-*.tmp"):
+            found.extend(d.glob(pattern))
+        return found
+
+    def _clear_packed(self, *, keep: str | None = None) -> None:
+        """Remove the packed cache (``sig.json`` first, so it reads as invalid).
+
+        With ``keep``, only ``sig.json`` is kept and only that generation's data
+        files survive: this is the post-publish sweep of older generations.
+        Best-effort -- a file another process still has mapped may refuse to go
+        (Windows); it is then just left for a later sweep.
+        """
         if self._packed_dir is None:
             return
-        paths = self._packed_paths()
-        for key in ("sig", "matrix", "ids", "metas"):  # sig first
+        if keep is None:
             try:
-                paths[key].unlink()
+                self._packed_paths()["sig"].unlink()
+            except OSError:
+                pass
+        if not self._packed_dir.is_dir():
+            return
+        kept: set[Path] = set()
+        if keep is not None:
+            kept.update(self._packed_paths(keep).values())
+            try:  # another writer may have published after us: keep its set too
+                current = json.loads(self._packed_paths()["sig"].read_text("utf-8"))
+                if isinstance(current.get("generation"), str):
+                    kept.update(self._packed_paths(current["generation"]).values())
+            except (OSError, ValueError):
+                pass
+        for path in self._packed_data_files():
+            if path in kept:
+                continue
+            try:
+                path.unlink()
             except OSError:
                 pass
 
@@ -406,13 +456,19 @@ class CorpusStore:
         """Load ``(ids, mmap_matrix, metas)`` from the packed cache, or ``None``."""
         if self._packed_dir is None:
             return None
-        paths = self._packed_paths()
-        if not paths["sig"].exists():
+        sig_path = self._packed_paths()["sig"]
+        if not sig_path.exists():
             return None
         try:
-            sig = json.loads(paths["sig"].read_text(encoding="utf-8"))
+            sig = json.loads(sig_path.read_text(encoding="utf-8"))
             if sig.get("format") != _PACKED_FORMAT:
                 return None
+            generation = sig.get("generation")
+            if generation is not None and not (
+                isinstance(generation, str) and generation.isalnum()
+            ):
+                return None
+            paths = self._packed_paths(generation)
             mat = np.load(paths["matrix"], mmap_mode="r")
             ids_json = paths["ids"].read_bytes()
             metas_json = paths["metas"].read_bytes()
@@ -424,9 +480,7 @@ class CorpusStore:
             return None
         # A cache written before ``sig.json`` carried these fields has neither;
         # keep accepting it on the length checks alone rather than invalidating
-        # every existing cache. When they are present they must agree, or the
-        # set mixes two writers' files and reads as a miss (rebuild) instead of
-        # serving rows under the wrong ids.
+        # every existing cache. When they are present they must agree.
         content_sig = sig.get("content_sig")
         if content_sig is not None and content_sig != _packed_content_sig(
             ids_json, metas_json
@@ -440,40 +494,48 @@ class CorpusStore:
     def _save_packed(self, result: tuple[list[str], np.ndarray, list[dict]]) -> None:
         """Persist a freshly built matrix to the packed cache (best-effort).
 
-        Skips empty corpora. Writes ``sig.json`` last so a crash mid-write
-        leaves the cache marked invalid (no sig) rather than torn. The sig also
-        carries a :func:`_packed_content_sig` digest of the ids/metas bytes and
-        the matrix shape, which is what lets :meth:`_load_packed` notice the
-        case a write order cannot defend against: a *second* writer replacing
-        some of the four files while this set is on disk.
+        Skips empty corpora. The matrix, ids and metas go to files named by a
+        fresh generation token that only this call writes, and ``sig.json``
+        (naming that generation, plus a :func:`_packed_content_sig` digest and
+        the matrix shape) is published last with an atomic ``os.replace``. So a
+        crash mid-write leaves the previous sig (or none) in charge, and two
+        concurrent writers can never leave one writer's matrix beside the
+        other's ids: a reader follows ``sig.json`` to exactly one writer's
+        complete set. Older generations are swept after publishing.
         """
         if self._packed_dir is None:
             return
         ids, mat, metas = result
         if not ids:
             return
+        generation = uuid.uuid4().hex
         try:
             self._packed_dir.mkdir(parents=True, exist_ok=True)
-            paths = self._packed_paths()
+            paths = self._packed_paths(generation)
             arr = np.asarray(mat, dtype=np.float32)
             ids_json = json.dumps(ids).encode("utf-8")
             metas_json = json.dumps(metas).encode("utf-8")
             np.save(paths["matrix"], arr)
             paths["ids"].write_bytes(ids_json)
             paths["metas"].write_bytes(metas_json)
-            paths["sig"].write_text(
+            sig_tmp = self._packed_dir / f"sig-{generation}.tmp"
+            sig_tmp.write_text(
                 json.dumps(
                     {
                         "format": _PACKED_FORMAT,
                         "count": len(ids),
+                        "generation": generation,
                         "content_sig": _packed_content_sig(ids_json, metas_json),
                         "shape": list(arr.shape),
                     }
                 ),
                 encoding="utf-8",
             )
+            os.replace(sig_tmp, paths["sig"])
             self._packed_stale = False
         except OSError:
             # A read cache that can't be written is non-fatal: fall back to the
             # in-process cache (already set by the caller) for this process.
             self._clear_packed()
+            return
+        self._clear_packed(keep=generation)
