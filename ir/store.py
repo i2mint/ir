@@ -303,6 +303,7 @@ class CorpusStore:
         # is a *write-invalidated read cache*: any record write clears it.
         self._packed_dir = Path(packed_dir) if packed_dir is not None else None
         self._packed_stale = False
+        self._packed_dir_ready = False
 
     # ----- factories ------------------------------------------------------ #
 
@@ -638,20 +639,28 @@ class CorpusStore:
     def _stamp_write(self) -> None:
         """Replace the write stamp with a fresh token (atomically; one small file).
 
-        If the stamp can't be written, the packed set is removed instead
-        (``sig.json`` first), so no set built before this write stays loadable.
+        If the stamp can't be written, it is removed instead (a value no build
+        in flight can hold, unless it began before any stamped write), and the
+        packed set with it (``sig.json`` first).
         """
         try:
-            self._packed_dir.mkdir(parents=True, exist_ok=True)
+            if not self._packed_dir_ready:
+                self._packed_dir.mkdir(parents=True, exist_ok=True)
+                self._packed_dir_ready = True
             _write_atomically(
                 self._write_stamp_path(), uuid.uuid4().hex.encode("ascii")
             )
         except OSError as error:
+            self._packed_dir_ready = False
             logger.warning(
                 "ir: could not update the packed-cache write stamp (%s); "
-                "dropping the packed cache instead",
+                "dropping the stamp and the packed cache instead",
                 error,
             )
+            try:
+                self._write_stamp_path().unlink()
+            except OSError:
+                pass
             self._clear_packed()
 
     def _read_write_stamp(self) -> str | None:
@@ -659,13 +668,17 @@ class CorpusStore:
         if self._packed_dir is None:
             return None
         try:
-            return self._write_stamp_path().read_text(encoding="ascii")
+            stamp = self._write_stamp_path().read_text(encoding="ascii")
         except FileNotFoundError:
             return None
         except (OSError, ValueError):
-            # Unreadable (e.g. mid-replace on Windows): a value no sig carries,
-            # so a load misses and a build does not publish.
-            return ""
+            stamp = ""
+        if not stamp:
+            # Unreadable, or empty mid-rewrite (the Windows in-place fallback of
+            # ``_write_atomically``): a fresh value that equals nothing, so a
+            # load misses and a build does not publish.
+            return f"unreadable-{uuid.uuid4().hex}"
+        return stamp
 
     # Legacy (pre-generation) flat file names. A cache written by an older
     # ``ir`` is still read through these; new writes never use them.

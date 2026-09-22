@@ -343,3 +343,42 @@ def test_delete_record_also_invalidates_a_published_set(tmp_path):
     _file_store(root).matrix()
     writer.delete_record("r2")
     assert sorted(_file_store(root).matrix()[0]) == ["r1"]
+
+
+def test_an_unreadable_write_stamp_never_matches(tmp_path):
+    """An empty stamp (mid-rewrite on Windows) must neither publish nor load."""
+    root = tmp_path / "corpus"
+    writer = _file_store(root)
+    writer.put_record(_rec("r1"))
+    stamp = root / "matrix" / "write-stamp"
+    stamp.write_bytes(b"")
+    _file_store(root).matrix()
+    assert not (root / "matrix" / "sig.json").exists()
+
+
+def test_a_failed_stamp_write_drops_the_stamp(tmp_path, monkeypatch):
+    """A build that read the old stamp must not publish after a failed stamp."""
+    root = tmp_path / "corpus"
+    writer = _file_store(root)
+    writer.put_record(_rec("r1"))
+    reader = _file_store(root)
+    real_build = reader._build_matrix
+
+    real_write = ir_store._write_atomically
+
+    def refuse(path, data):
+        if path.name == "write-stamp":
+            raise OSError("read-only")
+        real_write(path, data)
+
+    def build_then_writer_continues():
+        result = real_build()
+        monkeypatch.setattr(ir_store, "_write_atomically", refuse)
+        writer.put_record(_rec("r2", vec=(0.0, 1.0, 0.0)))
+        monkeypatch.undo()
+        return result
+
+    reader._build_matrix = build_then_writer_continues
+    reader.matrix()
+    assert not (root / "matrix" / "write-stamp").exists()
+    assert sorted(_file_store(root).matrix()[0]) == ["r1", "r2"]
