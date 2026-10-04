@@ -139,3 +139,65 @@ def test_coverage_flags_on_disk_but_unindexed(tmp_path):
     assert "t/pkg/misc/docs/research/deep/nested/buried.md" in rep.missing
     # Excluded files never count as "missing".
     assert not any("README" in m or "node_modules" in m for m in rep.missing)
+
+
+def _make_pocket_tree(root: Path) -> None:
+    """A pocket (``i/_pocket``, not a repo) holding a repo, a worktree, and noise.
+
+    Mirrors ``i/_zodals/zodal-groups``: repos one level deeper than
+    ``<letter>/<repo>``, which a fixed ``*/*/docs`` glob never reaches.
+    """
+    repo = root / "i" / "_pocket" / "satellite"
+    (repo / ".git").mkdir(parents=True)  # a real checkout: .git is a directory
+    (repo / "docs" / "research").mkdir(parents=True)
+    (repo / "docs" / "research" / "decisions.md").write_text("pocket repo research")
+    (repo / "misc" / "docs").mkdir(parents=True)
+    (repo / "misc" / "docs" / "notes.md").write_text("pocket repo misc docs")
+    # A worktree: .git is a FILE; its docs duplicate a checkout indexed elsewhere.
+    wt = root / "i" / "_pocket" / "satellite-wt"
+    (wt / "docs").mkdir(parents=True)
+    (wt / ".git").write_text("gitdir: elsewhere")
+    (wt / "docs" / "dup.md").write_text("worktree duplicate")
+    # A non-repo folder inside a pocket is not a repo.
+    loose = root / "i" / "_pocket" / "loose" / "docs"
+    loose.mkdir(parents=True)
+    (loose / "stray.md").write_text("not in a repo")
+    # A repo at the usual depth keeps its docs, and a docs/ folder nested in one
+    # of its subpackages is NOT a pocket repo (the parent is a repo).
+    plain = root / "t" / "plain"
+    (plain / ".git").mkdir(parents=True)
+    (plain / "sub" / "docs").mkdir(parents=True)
+    (plain / "sub" / "docs" / "inner.md").write_text("subpackage docs, not a repo root")
+    (plain / "sub" / ".git").mkdir()  # even if it looks like one
+
+
+def test_reports_ingest_includes_pocket_repos(tmp_path):
+    _make_pocket_tree(tmp_path)
+    src = ir.CorpusSource.from_md_reports(projects_root=tmp_path)
+    ids = set(src.scope)
+
+    assert "i/_pocket/satellite/docs/research/decisions.md" in ids
+    assert "i/_pocket/satellite/misc/docs/notes.md" in ids
+    assert "i/_pocket/satellite-wt/docs/dup.md" not in ids  # worktree
+    assert "i/_pocket/loose/docs/stray.md" not in ids  # not a repo
+    assert "t/plain/sub/docs/inner.md" not in ids  # parent is a repo, not a pocket
+
+
+def test_pocket_reports_are_tagged_with_the_repo_not_the_pocket(tmp_path):
+    from ir.sources import _project_of
+
+    _make_pocket_tree(tmp_path)
+    rel = "i/_pocket/satellite/docs/research/decisions.md"
+    assert _project_of(rel, tmp_path) == "satellite"
+    assert _project_of(rel) == "_pocket"  # without a root: the old, path-only answer
+    assert _project_of("t/plain/docs/x.md", tmp_path) == "plain"
+
+
+def test_coverage_sees_pocket_repos(tmp_path):
+    """Coverage walks the same enumeration, so an unindexed pocket report is missing."""
+    from ir.coverage import reports_coverage
+
+    _make_pocket_tree(tmp_path)
+    rep = reports_coverage(projects_root=tmp_path, indexed_ids=[])
+    assert "i/_pocket/satellite/docs/research/decisions.md" in rep.missing
+    assert not any("satellite-wt" in m or "loose" in m for m in rep.missing)

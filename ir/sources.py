@@ -257,7 +257,8 @@ class CorpusSource:
     ) -> "CorpusSource":
         """Markdown reports under projects' ``docs/`` and ``misc/docs/`` trees.
 
-        Walks each ``*/*/docs`` and ``*/*/misc/docs`` folder **recursively**
+        Walks each ``*/*/docs`` and ``*/*/misc/docs`` folder, and those of
+        pocket repos (``i/_zodals/<repo>/docs``, see :func:`iter_pocket_repos`), **recursively**
         (``recursive=True``, default) so reports nested one or more levels deep —
         ``docs/research/…``, ``docs/decisions/…``, ``docs/adr/…`` — are indexed,
         not just files sitting directly in the folder. Pass ``recursive=False``
@@ -285,7 +286,7 @@ class CorpusSource:
                 continue
             scope[rel] = {"text": text}
             meta[rel] = {
-                "project": _project_of(rel),
+                "project": _project_of(rel, root),
                 "path": str(path),
                 "filename": path.name,
             }
@@ -487,10 +488,40 @@ def report_exclude_reason(
     return None
 
 
+#: The doc-tree roots inside a repo (relative to the repo folder).
+REPO_DOC_SUBDIRS = ("docs", "misc/docs")
+
+
+def iter_pocket_repos(root: Path):
+    """Yield repos one level deeper than usual: ``<letter>/<pocket>/<repo>``.
+
+    A *pocket* is a ``*/*`` folder that is not itself a git repo but holds repos
+    (``i/_zodals/zodal-groups``, ``i/o/<repo>``, ``i/dols/<repo>``). A child counts
+    as a repo only when its ``.git`` is a **directory**: a ``.git`` *file* marks a
+    worktree or submodule, whose docs duplicate a checkout indexed elsewhere.
+    """
+    for pocket in root.glob("*/*"):
+        if not pocket.is_dir() or (pocket / ".git").exists():
+            continue
+        for repo in pocket.iterdir():
+            if (repo / ".git").is_dir():
+                yield repo
+
+
 def iter_report_doc_folders(root: Path):
-    """Yield each existing ``*/*/docs`` and ``*/*/misc/docs`` folder under *root*."""
+    """Yield each existing report doc folder under *root*.
+
+    ``*/*/docs`` and ``*/*/misc/docs`` (a repo at ``<letter>/<repo>``), plus the
+    same two folders of every pocket repo (:func:`iter_pocket_repos`). The single
+    enumeration both ingestion and :func:`ir.coverage.reports_coverage` use.
+    """
     for pattern in REPORT_DOC_GLOBS:
         for folder in root.glob(pattern):
+            if folder.is_dir():
+                yield folder
+    for repo in iter_pocket_repos(root):
+        for sub in REPO_DOC_SUBDIRS:
+            folder = repo / sub
             if folder.is_dir():
                 yield folder
 
@@ -534,9 +565,20 @@ def _md_in(
             yield f
 
 
-def _project_of(rel_path: str) -> str:
-    """``i/dol/docs/x.md`` -> ``dol`` (the package folder name)."""
+def _project_of(rel_path: str, root: Path | None = None) -> str:
+    """``i/dol/docs/x.md`` -> ``dol`` (the package folder name).
+
+    With *root*, a pocket repo resolves to the repo, not the pocket:
+    ``i/_zodals/zodal-groups/docs/x.md`` -> ``zodal-groups``.
+    """
     parts = Path(rel_path).parts
+    if (
+        root is not None
+        and len(parts) >= 4
+        and not (root / parts[0] / parts[1] / ".git").exists()
+        and (root / parts[0] / parts[1] / parts[2] / ".git").is_dir()
+    ):
+        return parts[2]
     return parts[1] if len(parts) >= 2 else (parts[0] if parts else "")
 
 
