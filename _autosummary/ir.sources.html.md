@@ -23,14 +23,16 @@ Smart-default constructors cover the common ways to define a source:
 |---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
 | [`DFLT_SESSIONS_SINCE_DAYS`](#ir.sources.DFLT_SESSIONS_SINCE_DAYS) | Default look-back window (days) for [`CorpusSource.from_claude_sessions()`](#ir.sources.CorpusSource.from_claude_sessions). |
 | [`REPORT_DOC_GLOBS`](#ir.sources.REPORT_DOC_GLOBS)         | The two per-project doc-tree roots reports are drawn from (relative globs).                                               |
+| [`REPO_DOC_SUBDIRS`](#ir.sources.REPO_DOC_SUBDIRS)         | The doc-tree roots inside a repo (relative to the repo folder).                                                           |
 
 ### Functions
 
-| [`content_hash_signal`](#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.               |
-|-------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| [`iter_report_doc_folders`](#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing `*/*/docs` and `*/*/misc/docs` folder under *root*. |
-| [`report_exclude_reason`](#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.        |
-| [`resolve_fetcher`](#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.   |
+| [`content_hash_signal`](#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.             |
+|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+| [`iter_pocket_repos`](#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.  |
+| [`iter_report_doc_folders`](#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                   |
+| [`report_exclude_reason`](#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.      |
+| [`resolve_fetcher`](#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records. |
 
 ### Classes
 
@@ -93,7 +95,8 @@ Any mapping `{id -> raw}` (dict, `dol` store) as a corpus.
 
 Markdown reports under projects’ `docs/` and `misc/docs/` trees.
 
-Walks each `*/*/docs` and `*/*/misc/docs` folder **recursively**
+Walks each `*/*/docs` and `*/*/misc/docs` folder, and those of
+pocket repos (`i/_zodals/<repo>/docs`, see [`iter_pocket_repos()`](#ir.sources.iter_pocket_repos)), **recursively**
 (`recursive=True`, default) so reports nested one or more levels deep —
 `docs/research/…`, `docs/decisions/…`, `docs/adr/…` — are indexed,
 not just files sitting directly in the folder. Pass `recursive=False`
@@ -175,6 +178,10 @@ Default look-back window (days) for [`CorpusSource.from_claude_sessions()`](#ir.
 
 The two per-project doc-tree roots reports are drawn from (relative globs).
 
+### ir.sources.REPO_DOC_SUBDIRS *= ('docs', 'misc/docs')*
+
+The doc-tree roots inside a repo (relative to the repo folder).
+
 ### ir.sources.content_hash_signal(artifact_id, raw)
 
 Default change signal: a content hash of the raw payload.
@@ -182,9 +189,22 @@ Default change signal: a content hash of the raw payload.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
+### ir.sources.iter_pocket_repos(root)
+
+Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.
+
+A *pocket* is a `*/*` folder that is not itself a git repo but holds repos
+(`i/_zodals/zodal-groups`, `i/o/<repo>`, `i/dols/<repo>`). A child counts
+as a repo only when its `.git` is a **directory**: a `.git` *file* marks a
+worktree or submodule, whose docs duplicate a checkout indexed elsewhere.
+
 ### ir.sources.iter_report_doc_folders(root)
 
-Yield each existing `*/*/docs` and `*/*/misc/docs` folder under *root*.
+Yield each existing report doc folder under *root*.
+
+`*/*/docs` and `*/*/misc/docs` (a repo at `<letter>/<repo>`), plus the
+same two folders of every pocket repo ([`iter_pocket_repos()`](#ir.sources.iter_pocket_repos)). The single
+enumeration both ingestion and [`ir.coverage.reports_coverage()`](ir.coverage.html.md#ir.coverage.reports_coverage) use.
 
 ### ir.sources.report_exclude_reason(path, folder, , exclude_dirs=frozenset({'.git', '.hg', '.ipynb_checkpoints', '.obsidian', '.svn', '.tox', '.venv', '_\_pycache_\_', 'build', 'dist', 'node_modules', 'site-packages', 'venv'}))
 

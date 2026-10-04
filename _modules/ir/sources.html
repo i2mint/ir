@@ -464,357 +464,402 @@
 </span><span id="line-257">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CorpusSource"</span><span class="p">:</span>
 </span><span id="line-258"><span class="w">        </span><span class="sd">"""Markdown reports under projects' ``docs/`` and ``misc/docs/`` trees.</span>
 </span><span id="line-259">
-</span><span id="line-260"><span class="sd">        Walks each ``*/*/docs`` and ``*/*/misc/docs`` folder **recursively**</span>
-</span><span id="line-261"><span class="sd">        (``recursive=True``, default) so reports nested one or more levels deep —</span>
-</span><span id="line-262"><span class="sd">        ``docs/research/…``, ``docs/decisions/…``, ``docs/adr/…`` — are indexed,</span>
-</span><span id="line-263"><span class="sd">        not just files sitting directly in the folder. Pass ``recursive=False``</span>
-</span><span id="line-264"><span class="sd">        for the old shallow (top-level-only) behavior.</span>
-</span><span id="line-265">
-</span><span id="line-266"><span class="sd">        Excludes ALL-CAPS filenames (README/CLAUDE/MEMORY/SKILL...) and any file</span>
-</span><span id="line-267"><span class="sd">        under a vendored/hidden directory (``exclude_dirs``, default</span>
-</span><span id="line-268"><span class="sd">        :data:`DFLT_EXCLUDE_DIRS`; a dotted directory is always skipped). Each</span>
-</span><span id="line-269"><span class="sd">        record is a project-tagged document; ids are paths relative to the</span>
-</span><span id="line-270"><span class="sd">        projects root.</span>
-</span><span id="line-271"><span class="sd">        """</span>
-</span><span id="line-272">        <span class="n">root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">projects_root</span> <span class="ow">or</span> <span class="n">_projects_root</span><span class="p">())</span>
-</span><span id="line-273">        <span class="n">exclude</span> <span class="o">=</span> <span class="n">DFLT_EXCLUDE_DIRS</span> <span class="k">if</span> <span class="n">exclude_dirs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">exclude_dirs</span><span class="p">)</span>
-</span><span id="line-274">        <span class="n">scope</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="line-275">        <span class="n">meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="line-276">        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">_iter_md_reports</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="o">=</span><span class="n">exclude</span><span class="p">):</span>
-</span><span id="line-277">            <span class="c1"># POSIX-normalize the id so it's stable across platforms (forward</span>
-</span><span id="line-278">            <span class="c1"># slashes on Windows too); a no-op on posix systems.</span>
-</span><span id="line-279">            <span class="n">rel</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
-</span><span id="line-280">            <span class="k">try</span><span class="p">:</span>
-</span><span id="line-281">                <span class="n">text</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
-</span><span id="line-282">            <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
-</span><span id="line-283">                <span class="k">continue</span>
-</span><span id="line-284">            <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
-</span><span id="line-285">                <span class="k">continue</span>
-</span><span id="line-286">            <span class="n">scope</span><span class="p">[</span><span class="n">rel</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="n">text</span><span class="p">}</span>
-</span><span id="line-287">            <span class="n">meta</span><span class="p">[</span><span class="n">rel</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="line-288">                <span class="s2">"project"</span><span class="p">:</span> <span class="n">_project_of</span><span class="p">(</span><span class="n">rel</span><span class="p">),</span>
-</span><span id="line-289">                <span class="s2">"path"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
-</span><span id="line-290">                <span class="s2">"filename"</span><span class="p">:</span> <span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-</span><span id="line-291">            <span class="p">}</span>
-</span><span id="line-292">
-</span><span id="line-293">        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-</span><span id="line-294">            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-</span><span id="line-295">            <span class="n">scope</span><span class="o">=</span><span class="n">scope</span><span class="p">,</span>
-</span><span id="line-296">            <span class="n">indexing_strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="ow">or</span> <span class="n">Chunked</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="n">DFLT_CHUNK_MAX_TOKENS</span><span class="p">),</span>
-</span><span id="line-297">            <span class="n">metadata_of</span><span class="o">=</span><span class="k">lambda</span> <span class="n">aid</span><span class="p">,</span> <span class="n">raw</span><span class="p">:</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">aid</span><span class="p">,</span> <span class="p">{}),</span>
-</span><span id="line-298">            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="line-299">        <span class="p">)</span></div>
+</span><span id="line-260"><span class="sd">        Walks each ``*/*/docs`` and ``*/*/misc/docs`` folder, and those of</span>
+</span><span id="line-261"><span class="sd">        pocket repos (``i/_zodals/&lt;repo&gt;/docs``, see :func:`iter_pocket_repos`), **recursively**</span>
+</span><span id="line-262"><span class="sd">        (``recursive=True``, default) so reports nested one or more levels deep —</span>
+</span><span id="line-263"><span class="sd">        ``docs/research/…``, ``docs/decisions/…``, ``docs/adr/…`` — are indexed,</span>
+</span><span id="line-264"><span class="sd">        not just files sitting directly in the folder. Pass ``recursive=False``</span>
+</span><span id="line-265"><span class="sd">        for the old shallow (top-level-only) behavior.</span>
+</span><span id="line-266">
+</span><span id="line-267"><span class="sd">        Excludes ALL-CAPS filenames (README/CLAUDE/MEMORY/SKILL...) and any file</span>
+</span><span id="line-268"><span class="sd">        under a vendored/hidden directory (``exclude_dirs``, default</span>
+</span><span id="line-269"><span class="sd">        :data:`DFLT_EXCLUDE_DIRS`; a dotted directory is always skipped). Each</span>
+</span><span id="line-270"><span class="sd">        record is a project-tagged document; ids are paths relative to the</span>
+</span><span id="line-271"><span class="sd">        projects root.</span>
+</span><span id="line-272"><span class="sd">        """</span>
+</span><span id="line-273">        <span class="n">root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">projects_root</span> <span class="ow">or</span> <span class="n">_projects_root</span><span class="p">())</span>
+</span><span id="line-274">        <span class="n">exclude</span> <span class="o">=</span> <span class="n">DFLT_EXCLUDE_DIRS</span> <span class="k">if</span> <span class="n">exclude_dirs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">exclude_dirs</span><span class="p">)</span>
+</span><span id="line-275">        <span class="n">scope</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-276">        <span class="n">meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-277">        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">_iter_md_reports</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="o">=</span><span class="n">exclude</span><span class="p">):</span>
+</span><span id="line-278">            <span class="c1"># POSIX-normalize the id so it's stable across platforms (forward</span>
+</span><span id="line-279">            <span class="c1"># slashes on Windows too); a no-op on posix systems.</span>
+</span><span id="line-280">            <span class="n">rel</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+</span><span id="line-281">            <span class="k">try</span><span class="p">:</span>
+</span><span id="line-282">                <span class="n">text</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+</span><span id="line-283">            <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+</span><span id="line-284">                <span class="k">continue</span>
+</span><span id="line-285">            <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+</span><span id="line-286">                <span class="k">continue</span>
+</span><span id="line-287">            <span class="n">scope</span><span class="p">[</span><span class="n">rel</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="n">text</span><span class="p">}</span>
+</span><span id="line-288">            <span class="n">meta</span><span class="p">[</span><span class="n">rel</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="line-289">                <span class="s2">"project"</span><span class="p">:</span> <span class="n">_project_of</span><span class="p">(</span><span class="n">rel</span><span class="p">,</span> <span class="n">root</span><span class="p">),</span>
+</span><span id="line-290">                <span class="s2">"path"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+</span><span id="line-291">                <span class="s2">"filename"</span><span class="p">:</span> <span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+</span><span id="line-292">            <span class="p">}</span>
+</span><span id="line-293">
+</span><span id="line-294">        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+</span><span id="line-295">            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+</span><span id="line-296">            <span class="n">scope</span><span class="o">=</span><span class="n">scope</span><span class="p">,</span>
+</span><span id="line-297">            <span class="n">indexing_strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="ow">or</span> <span class="n">Chunked</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="n">DFLT_CHUNK_MAX_TOKENS</span><span class="p">),</span>
+</span><span id="line-298">            <span class="n">metadata_of</span><span class="o">=</span><span class="k">lambda</span> <span class="n">aid</span><span class="p">,</span> <span class="n">raw</span><span class="p">:</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">aid</span><span class="p">,</span> <span class="p">{}),</span>
+</span><span id="line-299">            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="line-300">        <span class="p">)</span></div>
 
-</span><span id="line-300">
+</span><span id="line-301">
 <div class="viewcode-block" id="CorpusSource.from_skills">
 <a class="viewcode-back" href="../../_autosummary/ir.sources.html#ir.CorpusSource.from_skills">[docs]</a>
-</span><span id="line-301">    <span class="nd">@classmethod</span>
-</span><span id="line-302">    <span class="k">def</span><span class="w"> </span><span class="nf">from_skills</span><span class="p">(</span>
-</span><span id="line-303">        <span class="bp">cls</span><span class="p">,</span>
-</span><span id="line-304">        <span class="o">*</span><span class="p">,</span>
-</span><span id="line-305">        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"skills"</span><span class="p">,</span>
-</span><span id="line-306">        <span class="nb">filter</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-307">        <span class="n">fetcher</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">list</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-308">        <span class="n">strategy</span><span class="p">:</span> <span class="n">IndexingStrategy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-309">        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="line-310">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CorpusSource"</span><span class="p">:</span>
-</span><span id="line-311"><span class="w">        </span><span class="sd">"""The agent-skills corpus, via ``priv.skills_index``.</span>
-</span><span id="line-312">
-</span><span id="line-313"><span class="sd">        ``fetcher`` overrides the source of skill records (each a mapping with</span>
-</span><span id="line-314"><span class="sd">        ``name``/``description``/``parent``) — a callable (inject a test double</span>
-</span><span id="line-315"><span class="sd">        to avoid the ``priv`` dependency) or a ``"module:attr"`` reference</span>
-</span><span id="line-316"><span class="sd">        (:func:`resolve_fetcher`), which is the form a registry entry can carry.</span>
-</span><span id="line-317"><span class="sd">        """</span>
-</span><span id="line-318">        <span class="k">if</span> <span class="n">fetcher</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-319">            <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">resolve_fetcher</span><span class="p">(</span><span class="n">fetcher</span><span class="p">)())</span>
-</span><span id="line-320">        <span class="k">else</span><span class="p">:</span>
-</span><span id="line-321">            <span class="kn">from</span><span class="w"> </span><span class="nn">priv.skills_index</span><span class="w"> </span><span class="kn">import</span> <span class="n">skills_index</span> <span class="k">as</span> <span class="n">_skills_index</span>
-</span><span id="line-322">
-</span><span id="line-323">            <span class="n">records</span> <span class="o">=</span> <span class="n">_skills_index</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="nb">filter</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">)</span>
-</span><span id="line-324">        <span class="c1"># Preserve same-named skills from different packages (collision-safe ids).</span>
-</span><span id="line-325">        <span class="n">scope</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="line-326">        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
-</span><span id="line-327">            <span class="n">key</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
-</span><span id="line-328">            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">scope</span><span class="p">:</span>
-</span><span id="line-329">                <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'parent'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
-</span><span id="line-330">            <span class="n">scope</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span>
-</span><span id="line-331">
-</span><span id="line-332">        <span class="k">def</span><span class="w"> </span><span class="nf">metadata_of</span><span class="p">(</span><span class="n">aid</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
-</span><span id="line-333">            <span class="k">return</span> <span class="p">{</span>
-</span><span id="line-334">                <span class="s2">"parent"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"parent"</span><span class="p">),</span>
-</span><span id="line-335">                <span class="s2">"skill_path"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"skill_path"</span><span class="p">),</span>
-</span><span id="line-336">                <span class="s2">"base_path"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"base_path"</span><span class="p">),</span>
-</span><span id="line-337">            <span class="p">}</span>
-</span><span id="line-338">
-</span><span id="line-339">        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-</span><span id="line-340">            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-</span><span id="line-341">            <span class="n">scope</span><span class="o">=</span><span class="n">scope</span><span class="p">,</span>
-</span><span id="line-342">            <span class="n">indexing_strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="ow">or</span> <span class="n">Skill</span><span class="p">(),</span>
-</span><span id="line-343">            <span class="n">metadata_of</span><span class="o">=</span><span class="n">metadata_of</span><span class="p">,</span>
-</span><span id="line-344">            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="line-345">        <span class="p">)</span></div>
+</span><span id="line-302">    <span class="nd">@classmethod</span>
+</span><span id="line-303">    <span class="k">def</span><span class="w"> </span><span class="nf">from_skills</span><span class="p">(</span>
+</span><span id="line-304">        <span class="bp">cls</span><span class="p">,</span>
+</span><span id="line-305">        <span class="o">*</span><span class="p">,</span>
+</span><span id="line-306">        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"skills"</span><span class="p">,</span>
+</span><span id="line-307">        <span class="nb">filter</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-308">        <span class="n">fetcher</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">list</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-309">        <span class="n">strategy</span><span class="p">:</span> <span class="n">IndexingStrategy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-310">        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="line-311">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CorpusSource"</span><span class="p">:</span>
+</span><span id="line-312"><span class="w">        </span><span class="sd">"""The agent-skills corpus, via ``priv.skills_index``.</span>
+</span><span id="line-313">
+</span><span id="line-314"><span class="sd">        ``fetcher`` overrides the source of skill records (each a mapping with</span>
+</span><span id="line-315"><span class="sd">        ``name``/``description``/``parent``) — a callable (inject a test double</span>
+</span><span id="line-316"><span class="sd">        to avoid the ``priv`` dependency) or a ``"module:attr"`` reference</span>
+</span><span id="line-317"><span class="sd">        (:func:`resolve_fetcher`), which is the form a registry entry can carry.</span>
+</span><span id="line-318"><span class="sd">        """</span>
+</span><span id="line-319">        <span class="k">if</span> <span class="n">fetcher</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-320">            <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">resolve_fetcher</span><span class="p">(</span><span class="n">fetcher</span><span class="p">)())</span>
+</span><span id="line-321">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-322">            <span class="kn">from</span><span class="w"> </span><span class="nn">priv.skills_index</span><span class="w"> </span><span class="kn">import</span> <span class="n">skills_index</span> <span class="k">as</span> <span class="n">_skills_index</span>
+</span><span id="line-323">
+</span><span id="line-324">            <span class="n">records</span> <span class="o">=</span> <span class="n">_skills_index</span><span class="p">(</span><span class="nb">filter</span><span class="o">=</span><span class="nb">filter</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">)</span>
+</span><span id="line-325">        <span class="c1"># Preserve same-named skills from different packages (collision-safe ids).</span>
+</span><span id="line-326">        <span class="n">scope</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-327">        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
+</span><span id="line-328">            <span class="n">key</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
+</span><span id="line-329">            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">scope</span><span class="p">:</span>
+</span><span id="line-330">                <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'parent'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="line-331">            <span class="n">scope</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span>
+</span><span id="line-332">
+</span><span id="line-333">        <span class="k">def</span><span class="w"> </span><span class="nf">metadata_of</span><span class="p">(</span><span class="n">aid</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+</span><span id="line-334">            <span class="k">return</span> <span class="p">{</span>
+</span><span id="line-335">                <span class="s2">"parent"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"parent"</span><span class="p">),</span>
+</span><span id="line-336">                <span class="s2">"skill_path"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"skill_path"</span><span class="p">),</span>
+</span><span id="line-337">                <span class="s2">"base_path"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"base_path"</span><span class="p">),</span>
+</span><span id="line-338">            <span class="p">}</span>
+</span><span id="line-339">
+</span><span id="line-340">        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+</span><span id="line-341">            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+</span><span id="line-342">            <span class="n">scope</span><span class="o">=</span><span class="n">scope</span><span class="p">,</span>
+</span><span id="line-343">            <span class="n">indexing_strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="ow">or</span> <span class="n">Skill</span><span class="p">(),</span>
+</span><span id="line-344">            <span class="n">metadata_of</span><span class="o">=</span><span class="n">metadata_of</span><span class="p">,</span>
+</span><span id="line-345">            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="line-346">        <span class="p">)</span></div>
 
-</span><span id="line-346">
+</span><span id="line-347">
 <div class="viewcode-block" id="CorpusSource.from_claude_sessions">
 <a class="viewcode-back" href="../../_autosummary/ir.sources.html#ir.CorpusSource.from_claude_sessions">[docs]</a>
-</span><span id="line-347">    <span class="nd">@classmethod</span>
-</span><span id="line-348">    <span class="k">def</span><span class="w"> </span><span class="nf">from_claude_sessions</span><span class="p">(</span>
-</span><span id="line-349">        <span class="bp">cls</span><span class="p">,</span>
-</span><span id="line-350">        <span class="o">*</span><span class="p">,</span>
-</span><span id="line-351">        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"sessions"</span><span class="p">,</span>
-</span><span id="line-352">        <span class="n">since</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">DFLT_SESSIONS_SINCE_DAYS</span><span class="p">,</span>
-</span><span id="line-353">        <span class="n">projects</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-354">        <span class="n">include_full</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="line-355">        <span class="n">include_session_title</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="line-356">        <span class="n">max_sessions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-357">        <span class="n">root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-358">        <span class="n">fetcher</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">list</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-359">        <span class="n">strategy</span><span class="p">:</span> <span class="n">IndexingStrategy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-360">        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="line-361">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CorpusSource"</span><span class="p">:</span>
-</span><span id="line-362"><span class="w">        </span><span class="sd">"""The user's Claude Code session transcripts as a corpus (turn pairs).</span>
-</span><span id="line-363">
-</span><span id="line-364"><span class="sd">        Each artifact is one user→assistant turn pair; the default</span>
-</span><span id="line-365"><span class="sd">        :class:`~ir.strategy.ClaudeTurn` strategy indexes the user prompt and the</span>
-</span><span id="line-366"><span class="sd">        assistant's end-of-turn summary as separate surfaces (target either with</span>
-</span><span id="line-367"><span class="sd">        ``surfaces={"user_prompt"}`` / ``{"assistant_summary"}``). ``include_full``</span>
-</span><span id="line-368"><span class="sd">        adds the full assistant text surface (off by default — the summary is the</span>
-</span><span id="line-369"><span class="sd">        signal). ``include_session_title`` (default on) also indexes one record per</span>
-</span><span id="line-370"><span class="sd">        session whose surface is the session's persisted custom/AI title — a cheap</span>
-</span><span id="line-371"><span class="sd">        "what was this session about" surface. Scope defaults to the last ``since``</span>
-</span><span id="line-372"><span class="sd">        days (a full-history build is heavy); narrow with ``projects`` (a cwd</span>
-</span><span id="line-373"><span class="sd">        substring or list) and ``max_sessions``.</span>
-</span><span id="line-374">
-</span><span id="line-375"><span class="sd">        ``fetcher`` overrides the record source (each a mapping with</span>
-</span><span id="line-376"><span class="sd">        ``user_prompt`` / ``assistant_summary`` / ... ) — a callable (inject a</span>
-</span><span id="line-377"><span class="sd">        test double to avoid the ``priv`` dependency) or a ``"module:attr"``</span>
-</span><span id="line-378"><span class="sd">        reference (:func:`resolve_fetcher`), the form a registry entry can carry,</span>
-</span><span id="line-379"><span class="sd">        so another package can own the transcripts this corpus indexes. Otherwise</span>
-</span><span id="line-380"><span class="sd">        records come from :func:`priv.claude_transcripts.turn_pair_records`.</span>
-</span><span id="line-381"><span class="sd">        """</span>
-</span><span id="line-382">        <span class="k">if</span> <span class="n">fetcher</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-383">            <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">resolve_fetcher</span><span class="p">(</span><span class="n">fetcher</span><span class="p">)())</span>
-</span><span id="line-384">        <span class="k">else</span><span class="p">:</span>
-</span><span id="line-385">            <span class="kn">from</span><span class="w"> </span><span class="nn">priv.claude_transcripts</span><span class="w"> </span><span class="kn">import</span> <span class="n">turn_pair_records</span>
-</span><span id="line-386">
-</span><span id="line-387">            <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-</span><span id="line-388">                <span class="n">turn_pair_records</span><span class="p">(</span>
-</span><span id="line-389">                    <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span>
-</span><span id="line-390">                    <span class="n">since</span><span class="o">=</span><span class="n">since</span><span class="p">,</span>
-</span><span id="line-391">                    <span class="n">projects</span><span class="o">=</span><span class="n">projects</span><span class="p">,</span>
-</span><span id="line-392">                    <span class="n">max_sessions</span><span class="o">=</span><span class="n">max_sessions</span><span class="p">,</span>
-</span><span id="line-393">                    <span class="n">include_session_title</span><span class="o">=</span><span class="n">include_session_title</span><span class="p">,</span>
-</span><span id="line-394">                <span class="p">)</span>
-</span><span id="line-395">            <span class="p">)</span>
-</span><span id="line-396">        <span class="c1"># Collision-safe scope: ids are session_id:user_uuid (already unique); a</span>
-</span><span id="line-397">        <span class="c1"># rare missing id falls back to enumeration so no pair is silently dropped.</span>
-</span><span id="line-398">        <span class="n">scope</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="line-399">        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">records</span><span class="p">):</span>
-</span><span id="line-400">            <span class="n">key</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"turn_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span>
-</span><span id="line-401">            <span class="n">scope</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span>
-</span><span id="line-402">
-</span><span id="line-403">        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-</span><span id="line-404">            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-</span><span id="line-405">            <span class="n">scope</span><span class="o">=</span><span class="n">scope</span><span class="p">,</span>
-</span><span id="line-406">            <span class="n">indexing_strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="ow">or</span> <span class="n">ClaudeTurn</span><span class="p">(</span><span class="n">include_full</span><span class="o">=</span><span class="n">include_full</span><span class="p">),</span>
-</span><span id="line-407">            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="line-408">        <span class="p">)</span></div>
+</span><span id="line-348">    <span class="nd">@classmethod</span>
+</span><span id="line-349">    <span class="k">def</span><span class="w"> </span><span class="nf">from_claude_sessions</span><span class="p">(</span>
+</span><span id="line-350">        <span class="bp">cls</span><span class="p">,</span>
+</span><span id="line-351">        <span class="o">*</span><span class="p">,</span>
+</span><span id="line-352">        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"sessions"</span><span class="p">,</span>
+</span><span id="line-353">        <span class="n">since</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">DFLT_SESSIONS_SINCE_DAYS</span><span class="p">,</span>
+</span><span id="line-354">        <span class="n">projects</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-355">        <span class="n">include_full</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="line-356">        <span class="n">include_session_title</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="line-357">        <span class="n">max_sessions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-358">        <span class="n">root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-359">        <span class="n">fetcher</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">list</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-360">        <span class="n">strategy</span><span class="p">:</span> <span class="n">IndexingStrategy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-361">        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="line-362">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CorpusSource"</span><span class="p">:</span>
+</span><span id="line-363"><span class="w">        </span><span class="sd">"""The user's Claude Code session transcripts as a corpus (turn pairs).</span>
+</span><span id="line-364">
+</span><span id="line-365"><span class="sd">        Each artifact is one user→assistant turn pair; the default</span>
+</span><span id="line-366"><span class="sd">        :class:`~ir.strategy.ClaudeTurn` strategy indexes the user prompt and the</span>
+</span><span id="line-367"><span class="sd">        assistant's end-of-turn summary as separate surfaces (target either with</span>
+</span><span id="line-368"><span class="sd">        ``surfaces={"user_prompt"}`` / ``{"assistant_summary"}``). ``include_full``</span>
+</span><span id="line-369"><span class="sd">        adds the full assistant text surface (off by default — the summary is the</span>
+</span><span id="line-370"><span class="sd">        signal). ``include_session_title`` (default on) also indexes one record per</span>
+</span><span id="line-371"><span class="sd">        session whose surface is the session's persisted custom/AI title — a cheap</span>
+</span><span id="line-372"><span class="sd">        "what was this session about" surface. Scope defaults to the last ``since``</span>
+</span><span id="line-373"><span class="sd">        days (a full-history build is heavy); narrow with ``projects`` (a cwd</span>
+</span><span id="line-374"><span class="sd">        substring or list) and ``max_sessions``.</span>
+</span><span id="line-375">
+</span><span id="line-376"><span class="sd">        ``fetcher`` overrides the record source (each a mapping with</span>
+</span><span id="line-377"><span class="sd">        ``user_prompt`` / ``assistant_summary`` / ... ) — a callable (inject a</span>
+</span><span id="line-378"><span class="sd">        test double to avoid the ``priv`` dependency) or a ``"module:attr"``</span>
+</span><span id="line-379"><span class="sd">        reference (:func:`resolve_fetcher`), the form a registry entry can carry,</span>
+</span><span id="line-380"><span class="sd">        so another package can own the transcripts this corpus indexes. Otherwise</span>
+</span><span id="line-381"><span class="sd">        records come from :func:`priv.claude_transcripts.turn_pair_records`.</span>
+</span><span id="line-382"><span class="sd">        """</span>
+</span><span id="line-383">        <span class="k">if</span> <span class="n">fetcher</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-384">            <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">resolve_fetcher</span><span class="p">(</span><span class="n">fetcher</span><span class="p">)())</span>
+</span><span id="line-385">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-386">            <span class="kn">from</span><span class="w"> </span><span class="nn">priv.claude_transcripts</span><span class="w"> </span><span class="kn">import</span> <span class="n">turn_pair_records</span>
+</span><span id="line-387">
+</span><span id="line-388">            <span class="n">records</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+</span><span id="line-389">                <span class="n">turn_pair_records</span><span class="p">(</span>
+</span><span id="line-390">                    <span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span>
+</span><span id="line-391">                    <span class="n">since</span><span class="o">=</span><span class="n">since</span><span class="p">,</span>
+</span><span id="line-392">                    <span class="n">projects</span><span class="o">=</span><span class="n">projects</span><span class="p">,</span>
+</span><span id="line-393">                    <span class="n">max_sessions</span><span class="o">=</span><span class="n">max_sessions</span><span class="p">,</span>
+</span><span id="line-394">                    <span class="n">include_session_title</span><span class="o">=</span><span class="n">include_session_title</span><span class="p">,</span>
+</span><span id="line-395">                <span class="p">)</span>
+</span><span id="line-396">            <span class="p">)</span>
+</span><span id="line-397">        <span class="c1"># Collision-safe scope: ids are session_id:user_uuid (already unique); a</span>
+</span><span id="line-398">        <span class="c1"># rare missing id falls back to enumeration so no pair is silently dropped.</span>
+</span><span id="line-399">        <span class="n">scope</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-400">        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">records</span><span class="p">):</span>
+</span><span id="line-401">            <span class="n">key</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"turn_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="line-402">            <span class="n">scope</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span>
+</span><span id="line-403">
+</span><span id="line-404">        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+</span><span id="line-405">            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+</span><span id="line-406">            <span class="n">scope</span><span class="o">=</span><span class="n">scope</span><span class="p">,</span>
+</span><span id="line-407">            <span class="n">indexing_strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="ow">or</span> <span class="n">ClaudeTurn</span><span class="p">(</span><span class="n">include_full</span><span class="o">=</span><span class="n">include_full</span><span class="p">),</span>
+</span><span id="line-408">            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="line-409">        <span class="p">)</span></div>
 
-</span><span id="line-409">
+</span><span id="line-410">
 <div class="viewcode-block" id="CorpusSource.from_packages">
 <a class="viewcode-back" href="../../_autosummary/ir.sources.html#ir.CorpusSource.from_packages">[docs]</a>
-</span><span id="line-410">    <span class="nd">@classmethod</span>
-</span><span id="line-411">    <span class="k">def</span><span class="w"> </span><span class="nf">from_packages</span><span class="p">(</span>
-</span><span id="line-412">        <span class="bp">cls</span><span class="p">,</span>
-</span><span id="line-413">        <span class="o">*</span><span class="p">,</span>
-</span><span id="line-414">        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"packages"</span><span class="p">,</span>
-</span><span id="line-415">        <span class="n">manifest</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-416">        <span class="n">readme_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20000</span><span class="p">,</span>
-</span><span id="line-417">        <span class="n">strategy</span><span class="p">:</span> <span class="n">IndexingStrategy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-418">        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="line-419">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CorpusSource"</span><span class="p">:</span>
-</span><span id="line-420"><span class="w">        </span><span class="sd">"""The local package ecosystem, scanned from the ``.pth`` manifest."""</span>
-</span><span id="line-421">        <span class="n">scope</span> <span class="o">=</span> <span class="n">_scan_packages</span><span class="p">(</span><span class="n">manifest</span><span class="p">,</span> <span class="n">readme_chars</span><span class="o">=</span><span class="n">readme_chars</span><span class="p">)</span>
-</span><span id="line-422">
-</span><span id="line-423">        <span class="k">def</span><span class="w"> </span><span class="nf">metadata_of</span><span class="p">(</span><span class="n">aid</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
-</span><span id="line-424">            <span class="k">return</span> <span class="p">{</span><span class="s2">"path"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"path"</span><span class="p">)}</span>
-</span><span id="line-425">
-</span><span id="line-426">        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-</span><span id="line-427">            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-</span><span id="line-428">            <span class="n">scope</span><span class="o">=</span><span class="n">scope</span><span class="p">,</span>
-</span><span id="line-429">            <span class="n">indexing_strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="ow">or</span> <span class="n">Package</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="n">DFLT_CHUNK_MAX_TOKENS</span><span class="p">),</span>
-</span><span id="line-430">            <span class="n">metadata_of</span><span class="o">=</span><span class="n">metadata_of</span><span class="p">,</span>
-</span><span id="line-431">            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="line-432">        <span class="p">)</span></div>
+</span><span id="line-411">    <span class="nd">@classmethod</span>
+</span><span id="line-412">    <span class="k">def</span><span class="w"> </span><span class="nf">from_packages</span><span class="p">(</span>
+</span><span id="line-413">        <span class="bp">cls</span><span class="p">,</span>
+</span><span id="line-414">        <span class="o">*</span><span class="p">,</span>
+</span><span id="line-415">        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"packages"</span><span class="p">,</span>
+</span><span id="line-416">        <span class="n">manifest</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-417">        <span class="n">readme_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20000</span><span class="p">,</span>
+</span><span id="line-418">        <span class="n">strategy</span><span class="p">:</span> <span class="n">IndexingStrategy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-419">        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="line-420">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CorpusSource"</span><span class="p">:</span>
+</span><span id="line-421"><span class="w">        </span><span class="sd">"""The local package ecosystem, scanned from the ``.pth`` manifest."""</span>
+</span><span id="line-422">        <span class="n">scope</span> <span class="o">=</span> <span class="n">_scan_packages</span><span class="p">(</span><span class="n">manifest</span><span class="p">,</span> <span class="n">readme_chars</span><span class="o">=</span><span class="n">readme_chars</span><span class="p">)</span>
+</span><span id="line-423">
+</span><span id="line-424">        <span class="k">def</span><span class="w"> </span><span class="nf">metadata_of</span><span class="p">(</span><span class="n">aid</span><span class="p">,</span> <span class="n">raw</span><span class="p">):</span>
+</span><span id="line-425">            <span class="k">return</span> <span class="p">{</span><span class="s2">"path"</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"path"</span><span class="p">)}</span>
+</span><span id="line-426">
+</span><span id="line-427">        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+</span><span id="line-428">            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+</span><span id="line-429">            <span class="n">scope</span><span class="o">=</span><span class="n">scope</span><span class="p">,</span>
+</span><span id="line-430">            <span class="n">indexing_strategy</span><span class="o">=</span><span class="n">strategy</span> <span class="ow">or</span> <span class="n">Package</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="n">DFLT_CHUNK_MAX_TOKENS</span><span class="p">),</span>
+</span><span id="line-431">            <span class="n">metadata_of</span><span class="o">=</span><span class="n">metadata_of</span><span class="p">,</span>
+</span><span id="line-432">            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="line-433">        <span class="p">)</span></div>
 </div>
 
-</span><span id="line-433">
 </span><span id="line-434">
-</span><span id="line-435"><span class="c1"># --------------------------------------------------------------------------- #</span>
-</span><span id="line-436"><span class="c1"># Source-specific scope helpers</span>
-</span><span id="line-437"><span class="c1"># --------------------------------------------------------------------------- #</span>
-</span><span id="line-438">
+</span><span id="line-435">
+</span><span id="line-436"><span class="c1"># --------------------------------------------------------------------------- #</span>
+</span><span id="line-437"><span class="c1"># Source-specific scope helpers</span>
+</span><span id="line-438"><span class="c1"># --------------------------------------------------------------------------- #</span>
 </span><span id="line-439">
-</span><span id="line-440"><span class="k">def</span><span class="w"> </span><span class="nf">_projects_root</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
-</span><span id="line-441"><span class="w">    </span><span class="sd">"""Locate the projects folder (``$PP``), preferring ``priv.config``.</span>
-</span><span id="line-442">
-</span><span id="line-443"><span class="sd">    Falls back to the ``$PP`` environment variable when ``priv.config`` is not</span>
-</span><span id="line-444"><span class="sd">    installed. Only :class:`ImportError` triggers the fallback — a</span>
-</span><span id="line-445"><span class="sd">    ``priv.config`` that *is* installed but raises is allowed to propagate, so a</span>
-</span><span id="line-446"><span class="sd">    misconfigured projects folder fails loudly instead of being silently masked</span>
-</span><span id="line-447"><span class="sd">    as "priv not installed".</span>
-</span><span id="line-448"><span class="sd">    """</span>
-</span><span id="line-449">    <span class="k">try</span><span class="p">:</span>
-</span><span id="line-450">        <span class="kn">from</span><span class="w"> </span><span class="nn">priv.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">projects_folder</span>
-</span><span id="line-451">    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-</span><span id="line-452">        <span class="k">pass</span>
-</span><span id="line-453">    <span class="k">else</span><span class="p">:</span>
-</span><span id="line-454">        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">projects_folder</span><span class="p">())</span>
-</span><span id="line-455">    <span class="n">pp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PP"</span><span class="p">)</span>
-</span><span id="line-456">    <span class="k">if</span> <span class="n">pp</span><span class="p">:</span>
-</span><span id="line-457">        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">pp</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span>
-</span><span id="line-458">    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-</span><span id="line-459">        <span class="s2">"Cannot locate the projects folder; set $PP or install priv.config."</span>
-</span><span id="line-460">    <span class="p">)</span>
-</span><span id="line-461">
+</span><span id="line-440">
+</span><span id="line-441"><span class="k">def</span><span class="w"> </span><span class="nf">_projects_root</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+</span><span id="line-442"><span class="w">    </span><span class="sd">"""Locate the projects folder (``$PP``), preferring ``priv.config``.</span>
+</span><span id="line-443">
+</span><span id="line-444"><span class="sd">    Falls back to the ``$PP`` environment variable when ``priv.config`` is not</span>
+</span><span id="line-445"><span class="sd">    installed. Only :class:`ImportError` triggers the fallback — a</span>
+</span><span id="line-446"><span class="sd">    ``priv.config`` that *is* installed but raises is allowed to propagate, so a</span>
+</span><span id="line-447"><span class="sd">    misconfigured projects folder fails loudly instead of being silently masked</span>
+</span><span id="line-448"><span class="sd">    as "priv not installed".</span>
+</span><span id="line-449"><span class="sd">    """</span>
+</span><span id="line-450">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-451">        <span class="kn">from</span><span class="w"> </span><span class="nn">priv.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">projects_folder</span>
+</span><span id="line-452">    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+</span><span id="line-453">        <span class="k">pass</span>
+</span><span id="line-454">    <span class="k">else</span><span class="p">:</span>
+</span><span id="line-455">        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">projects_folder</span><span class="p">())</span>
+</span><span id="line-456">    <span class="n">pp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PP"</span><span class="p">)</span>
+</span><span id="line-457">    <span class="k">if</span> <span class="n">pp</span><span class="p">:</span>
+</span><span id="line-458">        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">pp</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span>
+</span><span id="line-459">    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+</span><span id="line-460">        <span class="s2">"Cannot locate the projects folder; set $PP or install priv.config."</span>
+</span><span id="line-461">    <span class="p">)</span>
 </span><span id="line-462">
-</span><span id="line-463"><span class="c1">#: The two per-project doc-tree roots reports are drawn from (relative globs).</span>
-</span><span id="line-464"><span class="n">REPORT_DOC_GLOBS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"*/*/docs"</span><span class="p">,</span> <span class="s2">"*/*/misc/docs"</span><span class="p">)</span>
-</span><span id="line-465">
+</span><span id="line-463">
+</span><span id="line-464"><span class="c1">#: The two per-project doc-tree roots reports are drawn from (relative globs).</span>
+</span><span id="line-465"><span class="n">REPORT_DOC_GLOBS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"*/*/docs"</span><span class="p">,</span> <span class="s2">"*/*/misc/docs"</span><span class="p">)</span>
 </span><span id="line-466">
+</span><span id="line-467">
 <div class="viewcode-block" id="report_exclude_reason">
 <a class="viewcode-back" href="../../_autosummary/ir.sources.html#ir.report_exclude_reason">[docs]</a>
-</span><span id="line-467"><span class="k">def</span><span class="w"> </span><span class="nf">report_exclude_reason</span><span class="p">(</span>
-</span><span id="line-468">    <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">folder</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_EXCLUDE_DIRS</span>
-</span><span id="line-469"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-470"><span class="w">    </span><span class="sd">"""Why a ``*.md`` under *folder* is excluded from the reports corpus.</span>
-</span><span id="line-471">
-</span><span id="line-472"><span class="sd">    The **SSOT** for "does this report file get indexed" — consumed by both the</span>
-</span><span id="line-473"><span class="sd">    ingestion walk (:func:`_md_in`) and the coverage diagnostic</span>
-</span><span id="line-474"><span class="sd">    (:func:`ir.coverage.reports_coverage`) so the two can never drift. Returns</span>
-</span><span id="line-475"><span class="sd">    ``None`` when the file *should* be indexed, else a short reason tag:</span>
-</span><span id="line-476"><span class="sd">    ``"allcaps"`` (a README/CLAUDE/… metadata file) or ``"excluded_dir"`` (under a</span>
-</span><span id="line-477"><span class="sd">    vendored/hidden subtree).</span>
-</span><span id="line-478"><span class="sd">    """</span>
-</span><span id="line-479">    <span class="k">if</span> <span class="n">ALLCAPS_MD</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
-</span><span id="line-480">        <span class="k">return</span> <span class="s2">"allcaps"</span>
-</span><span id="line-481">    <span class="n">exclude</span> <span class="o">=</span> <span class="p">(</span>
-</span><span id="line-482">        <span class="n">exclude_dirs</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exclude_dirs</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">)</span> <span class="k">else</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">exclude_dirs</span><span class="p">)</span>
-</span><span id="line-483">    <span class="p">)</span>
-</span><span id="line-484">    <span class="n">rel_dirs</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span><span class="o">.</span><span class="n">parts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</span><span id="line-485">    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">part</span> <span class="ow">in</span> <span class="n">exclude</span> <span class="ow">or</span> <span class="n">part</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">rel_dirs</span><span class="p">):</span>
-</span><span id="line-486">        <span class="k">return</span> <span class="s2">"excluded_dir"</span>
-</span><span id="line-487">    <span class="k">return</span> <span class="kc">None</span></div>
+</span><span id="line-468"><span class="k">def</span><span class="w"> </span><span class="nf">report_exclude_reason</span><span class="p">(</span>
+</span><span id="line-469">    <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">folder</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_EXCLUDE_DIRS</span>
+</span><span id="line-470"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-471"><span class="w">    </span><span class="sd">"""Why a ``*.md`` under *folder* is excluded from the reports corpus.</span>
+</span><span id="line-472">
+</span><span id="line-473"><span class="sd">    The **SSOT** for "does this report file get indexed" — consumed by both the</span>
+</span><span id="line-474"><span class="sd">    ingestion walk (:func:`_md_in`) and the coverage diagnostic</span>
+</span><span id="line-475"><span class="sd">    (:func:`ir.coverage.reports_coverage`) so the two can never drift. Returns</span>
+</span><span id="line-476"><span class="sd">    ``None`` when the file *should* be indexed, else a short reason tag:</span>
+</span><span id="line-477"><span class="sd">    ``"allcaps"`` (a README/CLAUDE/… metadata file) or ``"excluded_dir"`` (under a</span>
+</span><span id="line-478"><span class="sd">    vendored/hidden subtree).</span>
+</span><span id="line-479"><span class="sd">    """</span>
+</span><span id="line-480">    <span class="k">if</span> <span class="n">ALLCAPS_MD</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+</span><span id="line-481">        <span class="k">return</span> <span class="s2">"allcaps"</span>
+</span><span id="line-482">    <span class="n">exclude</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="line-483">        <span class="n">exclude_dirs</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exclude_dirs</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">)</span> <span class="k">else</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">exclude_dirs</span><span class="p">)</span>
+</span><span id="line-484">    <span class="p">)</span>
+</span><span id="line-485">    <span class="n">rel_dirs</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span><span class="o">.</span><span class="n">parts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="line-486">    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">part</span> <span class="ow">in</span> <span class="n">exclude</span> <span class="ow">or</span> <span class="n">part</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">rel_dirs</span><span class="p">):</span>
+</span><span id="line-487">        <span class="k">return</span> <span class="s2">"excluded_dir"</span>
+</span><span id="line-488">    <span class="k">return</span> <span class="kc">None</span></div>
 
-</span><span id="line-488">
 </span><span id="line-489">
+</span><span id="line-490">
+</span><span id="line-491"><span class="c1">#: The doc-tree roots inside a repo (relative to the repo folder).</span>
+</span><span id="line-492"><span class="n">REPO_DOC_SUBDIRS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"docs"</span><span class="p">,</span> <span class="s2">"misc/docs"</span><span class="p">)</span>
+</span><span id="line-493">
+</span><span id="line-494">
+<div class="viewcode-block" id="iter_pocket_repos">
+<a class="viewcode-back" href="../../_autosummary/ir.sources.html#ir.iter_pocket_repos">[docs]</a>
+</span><span id="line-495"><span class="k">def</span><span class="w"> </span><span class="nf">iter_pocket_repos</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
+</span><span id="line-496"><span class="w">    </span><span class="sd">"""Yield repos one level deeper than usual: ``&lt;letter&gt;/&lt;pocket&gt;/&lt;repo&gt;``.</span>
+</span><span id="line-497">
+</span><span id="line-498"><span class="sd">    A *pocket* is a ``*/*`` folder that is not itself a git repo but holds repos</span>
+</span><span id="line-499"><span class="sd">    (``i/_zodals/zodal-groups``, ``i/o/&lt;repo&gt;``, ``i/dols/&lt;repo&gt;``). A child counts</span>
+</span><span id="line-500"><span class="sd">    as a repo only when its ``.git`` is a **directory**: a ``.git`` *file* marks a</span>
+</span><span id="line-501"><span class="sd">    worktree or submodule, whose docs duplicate a checkout indexed elsewhere.</span>
+</span><span id="line-502"><span class="sd">    """</span>
+</span><span id="line-503">    <span class="k">for</span> <span class="n">pocket</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"*/*"</span><span class="p">):</span>
+</span><span id="line-504">        <span class="k">if</span> <span class="ow">not</span> <span class="n">pocket</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span> <span class="ow">or</span> <span class="p">(</span><span class="n">pocket</span> <span class="o">/</span> <span class="s2">".git"</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span><span id="line-505">            <span class="k">continue</span>
+</span><span id="line-506">        <span class="k">for</span> <span class="n">repo</span> <span class="ow">in</span> <span class="n">pocket</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+</span><span id="line-507">            <span class="k">if</span> <span class="p">(</span><span class="n">repo</span> <span class="o">/</span> <span class="s2">".git"</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+</span><span id="line-508">                <span class="k">yield</span> <span class="n">repo</span></div>
+
+</span><span id="line-509">
+</span><span id="line-510">
 <div class="viewcode-block" id="iter_report_doc_folders">
 <a class="viewcode-back" href="../../_autosummary/ir.sources.html#ir.iter_report_doc_folders">[docs]</a>
-</span><span id="line-490"><span class="k">def</span><span class="w"> </span><span class="nf">iter_report_doc_folders</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
-</span><span id="line-491"><span class="w">    </span><span class="sd">"""Yield each existing ``*/*/docs`` and ``*/*/misc/docs`` folder under *root*."""</span>
-</span><span id="line-492">    <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">REPORT_DOC_GLOBS</span><span class="p">:</span>
-</span><span id="line-493">        <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
-</span><span id="line-494">            <span class="k">if</span> <span class="n">folder</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
-</span><span id="line-495">                <span class="k">yield</span> <span class="n">folder</span></div>
-
-</span><span id="line-496">
-</span><span id="line-497">
-</span><span id="line-498"><span class="k">def</span><span class="w"> </span><span class="nf">_iter_md_reports</span><span class="p">(</span>
-</span><span id="line-499">    <span class="n">root</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
-</span><span id="line-500">    <span class="o">*</span><span class="p">,</span>
-</span><span id="line-501">    <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="line-502">    <span class="n">exclude_dirs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_EXCLUDE_DIRS</span><span class="p">,</span>
-</span><span id="line-503"><span class="p">):</span>
-</span><span id="line-504"><span class="w">    </span><span class="sd">"""Yield non-ALLCAPS ``*.md`` files under projects' docs/ and misc/docs/.</span>
-</span><span id="line-505">
-</span><span id="line-506"><span class="sd">    Each ``*/*/docs`` and ``*/*/misc/docs`` folder is walked recursively by</span>
-</span><span id="line-507"><span class="sd">    default (``recursive=True``); ``exclude_dirs`` (plus any dotted directory)</span>
-</span><span id="line-508"><span class="sd">    prunes vendored/hidden subtrees.</span>
-</span><span id="line-509"><span class="sd">    """</span>
-</span><span id="line-510">    <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">iter_report_doc_folders</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
-</span><span id="line-511">        <span class="k">yield from</span> <span class="n">_md_in</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="o">=</span><span class="n">exclude_dirs</span><span class="p">)</span>
-</span><span id="line-512">
+</span><span id="line-511"><span class="k">def</span><span class="w"> </span><span class="nf">iter_report_doc_folders</span><span class="p">(</span><span class="n">root</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
+</span><span id="line-512"><span class="w">    </span><span class="sd">"""Yield each existing report doc folder under *root*.</span>
 </span><span id="line-513">
-</span><span id="line-514"><span class="k">def</span><span class="w"> </span><span class="nf">_md_in</span><span class="p">(</span>
-</span><span id="line-515">    <span class="n">folder</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
-</span><span id="line-516">    <span class="o">*</span><span class="p">,</span>
-</span><span id="line-517">    <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="line-518">    <span class="n">exclude_dirs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_EXCLUDE_DIRS</span><span class="p">,</span>
-</span><span id="line-519"><span class="p">):</span>
-</span><span id="line-520"><span class="w">    </span><span class="sd">"""Yield report ``*.md`` files in *folder*.</span>
-</span><span id="line-521">
-</span><span id="line-522"><span class="sd">    Recurses into subdirectories when *recursive* (default), skipping ALL-CAPS</span>
-</span><span id="line-523"><span class="sd">    filenames and any file living under an *exclude_dirs* or dotted directory</span>
-</span><span id="line-524"><span class="sd">    (per :func:`report_exclude_reason`, the shared inclusion SSOT).</span>
-</span><span id="line-525"><span class="sd">    """</span>
-</span><span id="line-526">    <span class="k">if</span> <span class="ow">not</span> <span class="n">folder</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
-</span><span id="line-527">        <span class="k">return</span>
-</span><span id="line-528">    <span class="n">exclude</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">exclude_dirs</span><span class="p">)</span>
-</span><span id="line-529">    <span class="n">walk</span> <span class="o">=</span> <span class="n">folder</span><span class="o">.</span><span class="n">rglob</span> <span class="k">if</span> <span class="n">recursive</span> <span class="k">else</span> <span class="n">folder</span><span class="o">.</span><span class="n">glob</span>
-</span><span id="line-530">    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">walk</span><span class="p">(</span><span class="s2">"*.md"</span><span class="p">):</span>
-</span><span id="line-531">        <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
-</span><span id="line-532">            <span class="k">continue</span>
-</span><span id="line-533">        <span class="k">if</span> <span class="n">report_exclude_reason</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">folder</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="o">=</span><span class="n">exclude</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-534">            <span class="k">yield</span> <span class="n">f</span>
-</span><span id="line-535">
+</span><span id="line-514"><span class="sd">    ``*/*/docs`` and ``*/*/misc/docs`` (a repo at ``&lt;letter&gt;/&lt;repo&gt;``), plus the</span>
+</span><span id="line-515"><span class="sd">    same two folders of every pocket repo (:func:`iter_pocket_repos`). The single</span>
+</span><span id="line-516"><span class="sd">    enumeration both ingestion and :func:`ir.coverage.reports_coverage` use.</span>
+</span><span id="line-517"><span class="sd">    """</span>
+</span><span id="line-518">    <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">REPORT_DOC_GLOBS</span><span class="p">:</span>
+</span><span id="line-519">        <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+</span><span id="line-520">            <span class="k">if</span> <span class="n">folder</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+</span><span id="line-521">                <span class="k">yield</span> <span class="n">folder</span>
+</span><span id="line-522">    <span class="k">for</span> <span class="n">repo</span> <span class="ow">in</span> <span class="n">iter_pocket_repos</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
+</span><span id="line-523">        <span class="k">for</span> <span class="n">sub</span> <span class="ow">in</span> <span class="n">REPO_DOC_SUBDIRS</span><span class="p">:</span>
+</span><span id="line-524">            <span class="n">folder</span> <span class="o">=</span> <span class="n">repo</span> <span class="o">/</span> <span class="n">sub</span>
+</span><span id="line-525">            <span class="k">if</span> <span class="n">folder</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+</span><span id="line-526">                <span class="k">yield</span> <span class="n">folder</span></div>
+
+</span><span id="line-527">
+</span><span id="line-528">
+</span><span id="line-529"><span class="k">def</span><span class="w"> </span><span class="nf">_iter_md_reports</span><span class="p">(</span>
+</span><span id="line-530">    <span class="n">root</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+</span><span id="line-531">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-532">    <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="line-533">    <span class="n">exclude_dirs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_EXCLUDE_DIRS</span><span class="p">,</span>
+</span><span id="line-534"><span class="p">):</span>
+</span><span id="line-535"><span class="w">    </span><span class="sd">"""Yield non-ALLCAPS ``*.md`` files under projects' docs/ and misc/docs/.</span>
 </span><span id="line-536">
-</span><span id="line-537"><span class="k">def</span><span class="w"> </span><span class="nf">_project_of</span><span class="p">(</span><span class="n">rel_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="line-538"><span class="w">    </span><span class="sd">"""``i/dol/docs/x.md`` -&gt; ``dol`` (the package folder name)."""</span>
-</span><span id="line-539">    <span class="n">parts</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">rel_path</span><span class="p">)</span><span class="o">.</span><span class="n">parts</span>
-</span><span id="line-540">    <span class="k">return</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="k">else</span> <span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">parts</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
-</span><span id="line-541">
-</span><span id="line-542">
-</span><span id="line-543"><span class="k">def</span><span class="w"> </span><span class="nf">_manifest_paths</span><span class="p">(</span><span class="n">manifest</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
-</span><span id="line-544"><span class="w">    </span><span class="sd">"""Absolute package directories listed in the ``.pth`` manifest."""</span>
-</span><span id="line-545">    <span class="n">manifest</span> <span class="o">=</span> <span class="n">manifest</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PTH_FILEPATH"</span><span class="p">)</span>
-</span><span id="line-546">    <span class="k">if</span> <span class="ow">not</span> <span class="n">manifest</span><span class="p">:</span>
-</span><span id="line-547">        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"No manifest given and $PTH_FILEPATH is unset."</span><span class="p">)</span>
-</span><span id="line-548">    <span class="n">paths</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="line-549">    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="n">manifest</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
-</span><span id="line-550">        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-</span><span id="line-551">        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">Path</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
-</span><span id="line-552">            <span class="n">paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
-</span><span id="line-553">    <span class="k">return</span> <span class="n">paths</span>
-</span><span id="line-554">
-</span><span id="line-555">
-</span><span id="line-556"><span class="k">def</span><span class="w"> </span><span class="nf">_scan_packages</span><span class="p">(</span><span class="n">manifest</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">readme_chars</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
-</span><span id="line-557"><span class="w">    </span><span class="sd">"""Build ``{package_name: {name, description, readme, owner, deps, path}}``."""</span>
-</span><span id="line-558">    <span class="kn">import</span><span class="w"> </span><span class="nn">tomllib</span>
-</span><span id="line-559">
-</span><span id="line-560">    <span class="n">scope</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="line-561">    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">_manifest_paths</span><span class="p">(</span><span class="n">manifest</span><span class="p">):</span>
-</span><span id="line-562">        <span class="n">name</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">name</span>
-</span><span id="line-563">        <span class="n">description</span><span class="p">,</span> <span class="n">deps</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span> <span class="p">[]</span>
-</span><span id="line-564">        <span class="n">pyproject</span> <span class="o">=</span> <span class="n">path</span> <span class="o">/</span> <span class="s2">"pyproject.toml"</span>
-</span><span id="line-565">        <span class="k">if</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
-</span><span id="line-566">            <span class="k">try</span><span class="p">:</span>
-</span><span id="line-567">                <span class="n">data</span> <span class="o">=</span> <span class="n">tomllib</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">pyproject</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">))</span>
-</span><span id="line-568">                <span class="n">proj</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"project"</span><span class="p">,</span> <span class="p">{})</span>
-</span><span id="line-569">                <span class="n">description</span> <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
-</span><span id="line-570">                <span class="n">deps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">proj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dependencies"</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[])</span>
-</span><span id="line-571">            <span class="k">except</span> <span class="p">(</span><span class="n">tomllib</span><span class="o">.</span><span class="n">TOMLDecodeError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="line-572">                <span class="c1"># Warn rather than silently thinning the index (matching the</span>
-</span><span id="line-573">                <span class="c1"># warn-on-degradation discipline used across ir).</span>
-</span><span id="line-574">                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-</span><span id="line-575">                    <span class="sa">f</span><span class="s2">"Could not parse </span><span class="si">{</span><span class="n">pyproject</span><span class="si">}</span><span class="s2"> for package </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">); "</span>
-</span><span id="line-576">                    <span class="sa">f</span><span class="s2">"indexing it with an empty description and no deps."</span><span class="p">,</span>
-</span><span id="line-577">                    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-</span><span id="line-578">                <span class="p">)</span>
-</span><span id="line-579">        <span class="n">readme</span> <span class="o">=</span> <span class="s2">""</span>
-</span><span id="line-580">        <span class="k">for</span> <span class="n">cand</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"README.md"</span><span class="p">,</span> <span class="s2">"README.rst"</span><span class="p">,</span> <span class="s2">"README.txt"</span><span class="p">):</span>
-</span><span id="line-581">            <span class="n">rp</span> <span class="o">=</span> <span class="n">path</span> <span class="o">/</span> <span class="n">cand</span>
-</span><span id="line-582">            <span class="k">if</span> <span class="n">rp</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
-</span><span id="line-583">                <span class="n">readme</span> <span class="o">=</span> <span class="n">rp</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)[:</span><span class="n">readme_chars</span><span class="p">]</span>
-</span><span id="line-584">                <span class="k">break</span>
-</span><span id="line-585">        <span class="n">scope</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="line-586">            <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
-</span><span id="line-587">            <span class="s2">"description"</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
-</span><span id="line-588">            <span class="s2">"readme"</span><span class="p">:</span> <span class="n">readme</span><span class="p">,</span>
-</span><span id="line-589">            <span class="s2">"owner"</span><span class="p">:</span> <span class="s2">"ours"</span><span class="p">,</span>
-</span><span id="line-590">            <span class="s2">"deps"</span><span class="p">:</span> <span class="n">deps</span><span class="p">,</span>
-</span><span id="line-591">            <span class="s2">"path"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
-</span><span id="line-592">        <span class="p">}</span>
-</span><span id="line-593">    <span class="k">return</span> <span class="n">scope</span>
+</span><span id="line-537"><span class="sd">    Each ``*/*/docs`` and ``*/*/misc/docs`` folder is walked recursively by</span>
+</span><span id="line-538"><span class="sd">    default (``recursive=True``); ``exclude_dirs`` (plus any dotted directory)</span>
+</span><span id="line-539"><span class="sd">    prunes vendored/hidden subtrees.</span>
+</span><span id="line-540"><span class="sd">    """</span>
+</span><span id="line-541">    <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">iter_report_doc_folders</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
+</span><span id="line-542">        <span class="k">yield from</span> <span class="n">_md_in</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="o">=</span><span class="n">exclude_dirs</span><span class="p">)</span>
+</span><span id="line-543">
+</span><span id="line-544">
+</span><span id="line-545"><span class="k">def</span><span class="w"> </span><span class="nf">_md_in</span><span class="p">(</span>
+</span><span id="line-546">    <span class="n">folder</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+</span><span id="line-547">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-548">    <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="line-549">    <span class="n">exclude_dirs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_EXCLUDE_DIRS</span><span class="p">,</span>
+</span><span id="line-550"><span class="p">):</span>
+</span><span id="line-551"><span class="w">    </span><span class="sd">"""Yield report ``*.md`` files in *folder*.</span>
+</span><span id="line-552">
+</span><span id="line-553"><span class="sd">    Recurses into subdirectories when *recursive* (default), skipping ALL-CAPS</span>
+</span><span id="line-554"><span class="sd">    filenames and any file living under an *exclude_dirs* or dotted directory</span>
+</span><span id="line-555"><span class="sd">    (per :func:`report_exclude_reason`, the shared inclusion SSOT).</span>
+</span><span id="line-556"><span class="sd">    """</span>
+</span><span id="line-557">    <span class="k">if</span> <span class="ow">not</span> <span class="n">folder</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+</span><span id="line-558">        <span class="k">return</span>
+</span><span id="line-559">    <span class="n">exclude</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">exclude_dirs</span><span class="p">)</span>
+</span><span id="line-560">    <span class="n">walk</span> <span class="o">=</span> <span class="n">folder</span><span class="o">.</span><span class="n">rglob</span> <span class="k">if</span> <span class="n">recursive</span> <span class="k">else</span> <span class="n">folder</span><span class="o">.</span><span class="n">glob</span>
+</span><span id="line-561">    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">walk</span><span class="p">(</span><span class="s2">"*.md"</span><span class="p">):</span>
+</span><span id="line-562">        <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+</span><span id="line-563">            <span class="k">continue</span>
+</span><span id="line-564">        <span class="k">if</span> <span class="n">report_exclude_reason</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">folder</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="o">=</span><span class="n">exclude</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-565">            <span class="k">yield</span> <span class="n">f</span>
+</span><span id="line-566">
+</span><span id="line-567">
+</span><span id="line-568"><span class="k">def</span><span class="w"> </span><span class="nf">_project_of</span><span class="p">(</span><span class="n">rel_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-569"><span class="w">    </span><span class="sd">"""``i/dol/docs/x.md`` -&gt; ``dol`` (the package folder name).</span>
+</span><span id="line-570">
+</span><span id="line-571"><span class="sd">    With *root*, a pocket repo resolves to the repo, not the pocket:</span>
+</span><span id="line-572"><span class="sd">    ``i/_zodals/zodal-groups/docs/x.md`` -&gt; ``zodal-groups``.</span>
+</span><span id="line-573"><span class="sd">    """</span>
+</span><span id="line-574">    <span class="n">parts</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">rel_path</span><span class="p">)</span><span class="o">.</span><span class="n">parts</span>
+</span><span id="line-575">    <span class="k">if</span> <span class="p">(</span>
+</span><span id="line-576">        <span class="n">root</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="line-577">        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">4</span>
+</span><span id="line-578">        <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="s2">".git"</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+</span><span id="line-579">        <span class="ow">and</span> <span class="p">(</span><span class="n">root</span> <span class="o">/</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="s2">".git"</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
+</span><span id="line-580">    <span class="p">):</span>
+</span><span id="line-581">        <span class="k">return</span> <span class="n">parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+</span><span id="line-582">    <span class="k">return</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="k">else</span> <span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">parts</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+</span><span id="line-583">
+</span><span id="line-584">
+</span><span id="line-585"><span class="k">def</span><span class="w"> </span><span class="nf">_manifest_paths</span><span class="p">(</span><span class="n">manifest</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+</span><span id="line-586"><span class="w">    </span><span class="sd">"""Absolute package directories listed in the ``.pth`` manifest."""</span>
+</span><span id="line-587">    <span class="n">manifest</span> <span class="o">=</span> <span class="n">manifest</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PTH_FILEPATH"</span><span class="p">)</span>
+</span><span id="line-588">    <span class="k">if</span> <span class="ow">not</span> <span class="n">manifest</span><span class="p">:</span>
+</span><span id="line-589">        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"No manifest given and $PTH_FILEPATH is unset."</span><span class="p">)</span>
+</span><span id="line-590">    <span class="n">paths</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="line-591">    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="n">manifest</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+</span><span id="line-592">        <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</span><span id="line-593">        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">Path</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+</span><span id="line-594">            <span class="n">paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+</span><span id="line-595">    <span class="k">return</span> <span class="n">paths</span>
+</span><span id="line-596">
+</span><span id="line-597">
+</span><span id="line-598"><span class="k">def</span><span class="w"> </span><span class="nf">_scan_packages</span><span class="p">(</span><span class="n">manifest</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">readme_chars</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+</span><span id="line-599"><span class="w">    </span><span class="sd">"""Build ``{package_name: {name, description, readme, owner, deps, path}}``."""</span>
+</span><span id="line-600">    <span class="kn">import</span><span class="w"> </span><span class="nn">tomllib</span>
+</span><span id="line-601">
+</span><span id="line-602">    <span class="n">scope</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-603">    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">_manifest_paths</span><span class="p">(</span><span class="n">manifest</span><span class="p">):</span>
+</span><span id="line-604">        <span class="n">name</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">name</span>
+</span><span id="line-605">        <span class="n">description</span><span class="p">,</span> <span class="n">deps</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span> <span class="p">[]</span>
+</span><span id="line-606">        <span class="n">pyproject</span> <span class="o">=</span> <span class="n">path</span> <span class="o">/</span> <span class="s2">"pyproject.toml"</span>
+</span><span id="line-607">        <span class="k">if</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+</span><span id="line-608">            <span class="k">try</span><span class="p">:</span>
+</span><span id="line-609">                <span class="n">data</span> <span class="o">=</span> <span class="n">tomllib</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">pyproject</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">))</span>
+</span><span id="line-610">                <span class="n">proj</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"project"</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="line-611">                <span class="n">description</span> <span class="o">=</span> <span class="n">proj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+</span><span id="line-612">                <span class="n">deps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">proj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dependencies"</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[])</span>
+</span><span id="line-613">            <span class="k">except</span> <span class="p">(</span><span class="n">tomllib</span><span class="o">.</span><span class="n">TOMLDecodeError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="line-614">                <span class="c1"># Warn rather than silently thinning the index (matching the</span>
+</span><span id="line-615">                <span class="c1"># warn-on-degradation discipline used across ir).</span>
+</span><span id="line-616">                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+</span><span id="line-617">                    <span class="sa">f</span><span class="s2">"Could not parse </span><span class="si">{</span><span class="n">pyproject</span><span class="si">}</span><span class="s2"> for package </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> (</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">); "</span>
+</span><span id="line-618">                    <span class="sa">f</span><span class="s2">"indexing it with an empty description and no deps."</span><span class="p">,</span>
+</span><span id="line-619">                    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+</span><span id="line-620">                <span class="p">)</span>
+</span><span id="line-621">        <span class="n">readme</span> <span class="o">=</span> <span class="s2">""</span>
+</span><span id="line-622">        <span class="k">for</span> <span class="n">cand</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"README.md"</span><span class="p">,</span> <span class="s2">"README.rst"</span><span class="p">,</span> <span class="s2">"README.txt"</span><span class="p">):</span>
+</span><span id="line-623">            <span class="n">rp</span> <span class="o">=</span> <span class="n">path</span> <span class="o">/</span> <span class="n">cand</span>
+</span><span id="line-624">            <span class="k">if</span> <span class="n">rp</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+</span><span id="line-625">                <span class="n">readme</span> <span class="o">=</span> <span class="n">rp</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)[:</span><span class="n">readme_chars</span><span class="p">]</span>
+</span><span id="line-626">                <span class="k">break</span>
+</span><span id="line-627">        <span class="n">scope</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="line-628">            <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+</span><span id="line-629">            <span class="s2">"description"</span><span class="p">:</span> <span class="n">description</span><span class="p">,</span>
+</span><span id="line-630">            <span class="s2">"readme"</span><span class="p">:</span> <span class="n">readme</span><span class="p">,</span>
+</span><span id="line-631">            <span class="s2">"owner"</span><span class="p">:</span> <span class="s2">"ours"</span><span class="p">,</span>
+</span><span id="line-632">            <span class="s2">"deps"</span><span class="p">:</span> <span class="n">deps</span><span class="p">,</span>
+</span><span id="line-633">            <span class="s2">"path"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+</span><span id="line-634">        <span class="p">}</span>
+</span><span id="line-635">    <span class="k">return</span> <span class="n">scope</span>
 </span></code></pre></div>
     </div></div>
           </main>
@@ -828,7 +873,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=50f64db7"></script>
+    <script src="../../_static/documentation_options.js?v=f48ec9ae"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>

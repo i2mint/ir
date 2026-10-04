@@ -161,6 +161,9 @@ hash. This is the “what counts as stale” slot, driving incremental reindex.<
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.sources.REPORT_DOC_GLOBS" title="ir.sources.REPORT_DOC_GLOBS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REPORT_DOC_GLOBS</span></code></a></p></td>
 <td><p>The two per-project doc-tree roots reports are drawn from (relative globs).</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.sources.REPO_DOC_SUBDIRS" title="ir.sources.REPO_DOC_SUBDIRS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REPO_DOC_SUBDIRS</span></code></a></p></td>
+<td><p>The doc-tree roots inside a repo (relative to the repo folder).</p></td>
+</tr>
 </tbody>
 </table>
 <p class="rubric">Functions</p>
@@ -169,13 +172,16 @@ hash. This is the “what counts as stale” slot, driving incremental reindex.<
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.sources.content_hash_signal" title="ir.sources.content_hash_signal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">content_hash_signal</span></code></a>(artifact_id, raw)</p></td>
 <td><p>Default change signal: a content hash of the raw payload.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.sources.iter_report_doc_folders" title="ir.sources.iter_report_doc_folders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">iter_report_doc_folders</span></code></a>(root)</p></td>
-<td><p>Yield each existing <code class="docutils literal notranslate"><span class="pre">*/*/docs</span></code> and <code class="docutils literal notranslate"><span class="pre">*/*/misc/docs</span></code> folder under <em>root</em>.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.sources.iter_pocket_repos" title="ir.sources.iter_pocket_repos"><code class="xref py py-obj docutils literal notranslate"><span class="pre">iter_pocket_repos</span></code></a>(root)</p></td>
+<td><p>Yield repos one level deeper than usual: <code class="docutils literal notranslate"><span class="pre">&lt;letter&gt;/&lt;pocket&gt;/&lt;repo&gt;</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.sources.report_exclude_reason" title="ir.sources.report_exclude_reason"><code class="xref py py-obj docutils literal notranslate"><span class="pre">report_exclude_reason</span></code></a>(path, folder, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.sources.iter_report_doc_folders" title="ir.sources.iter_report_doc_folders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">iter_report_doc_folders</span></code></a>(root)</p></td>
+<td><p>Yield each existing report doc folder under <em>root</em>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.sources.report_exclude_reason" title="ir.sources.report_exclude_reason"><code class="xref py py-obj docutils literal notranslate"><span class="pre">report_exclude_reason</span></code></a>(path, folder, *[, ...])</p></td>
 <td><p>Why a <code class="docutils literal notranslate"><span class="pre">*.md</span></code> under <em>folder</em> is excluded from the reports corpus.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.sources.resolve_fetcher" title="ir.sources.resolve_fetcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_fetcher</span></code></a>(fetcher)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.sources.resolve_fetcher" title="ir.sources.resolve_fetcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_fetcher</span></code></a>(fetcher)</p></td>
 <td><p>Resolve a fetcher spec to a zero-argument callable returning records.</p></td>
 </tr>
 </tbody>
@@ -255,7 +261,8 @@ records come from <code class="xref py py-func docutils literal notranslate"><sp
 <dt class="sig sig-object py" id="ir.sources.CorpusSource.from_md_reports">
 <span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_md_reports</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'reports'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projects_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude_dirs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/sources.html#CorpusSource.from_md_reports"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.CorpusSource.from_md_reports" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.CorpusSource.from_md_reports'">¶</a></dt>
 <dd><p>Markdown reports under projects’ <code class="docutils literal notranslate"><span class="pre">docs/</span></code> and <code class="docutils literal notranslate"><span class="pre">misc/docs/</span></code> trees.</p>
-<p>Walks each <code class="docutils literal notranslate"><span class="pre">*/*/docs</span></code> and <code class="docutils literal notranslate"><span class="pre">*/*/misc/docs</span></code> folder <strong>recursively</strong>
+<p>Walks each <code class="docutils literal notranslate"><span class="pre">*/*/docs</span></code> and <code class="docutils literal notranslate"><span class="pre">*/*/misc/docs</span></code> folder, and those of
+pocket repos (<code class="docutils literal notranslate"><span class="pre">i/_zodals/&lt;repo&gt;/docs</span></code>, see <a class="reference internal" href="#ir.sources.iter_pocket_repos" title="ir.sources.iter_pocket_repos"><code class="xref py py-func docutils literal notranslate"><span class="pre">iter_pocket_repos()</span></code></a>), <strong>recursively</strong>
 (<code class="docutils literal notranslate"><span class="pre">recursive=True</span></code>, default) so reports nested one or more levels deep —
 <code class="docutils literal notranslate"><span class="pre">docs/research/…</span></code>, <code class="docutils literal notranslate"><span class="pre">docs/decisions/…</span></code>, <code class="docutils literal notranslate"><span class="pre">docs/adr/…</span></code> — are indexed,
 not just files sitting directly in the folder. Pass <code class="docutils literal notranslate"><span class="pre">recursive=False</span></code>
@@ -348,6 +355,11 @@ coverage diagnostic exclude exactly the same set (see <code class="xref py py-fu
 <span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">REPORT_DOC_GLOBS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('*/*/docs',</span> <span class="pre">'*/*/misc/docs')</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.REPORT_DOC_GLOBS" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.REPORT_DOC_GLOBS'">¶</a></dt>
 <dd><p>The two per-project doc-tree roots reports are drawn from (relative globs).</p>
 </dd></dl>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.sources.REPO_DOC_SUBDIRS">
+<span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">REPO_DOC_SUBDIRS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('docs',</span> <span class="pre">'misc/docs')</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.REPO_DOC_SUBDIRS" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.REPO_DOC_SUBDIRS'">¶</a></dt>
+<dd><p>The doc-tree roots inside a repo (relative to the repo folder).</p>
+</dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.sources.content_hash_signal">
 <span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">content_hash_signal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/sources.html#content_hash_signal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.content_hash_signal" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.content_hash_signal'">¶</a></dt>
@@ -359,9 +371,23 @@ coverage diagnostic exclude exactly the same set (see <code class="xref py py-fu
 </dl>
 </dd></dl>
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.sources.iter_pocket_repos">
+<span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">iter_pocket_repos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/sources.html#iter_pocket_repos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.iter_pocket_repos" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.iter_pocket_repos'">¶</a></dt>
+<dd><p>Yield repos one level deeper than usual: <code class="docutils literal notranslate"><span class="pre">&lt;letter&gt;/&lt;pocket&gt;/&lt;repo&gt;</span></code>.</p>
+<p>A <em>pocket</em> is a <code class="docutils literal notranslate"><span class="pre">*/*</span></code> folder that is not itself a git repo but holds repos
+(<code class="docutils literal notranslate"><span class="pre">i/_zodals/zodal-groups</span></code>, <code class="docutils literal notranslate"><span class="pre">i/o/&lt;repo&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">i/dols/&lt;repo&gt;</span></code>). A child counts
+as a repo only when its <code class="docutils literal notranslate"><span class="pre">.git</span></code> is a <strong>directory</strong>: a <code class="docutils literal notranslate"><span class="pre">.git</span></code> <em>file</em> marks a
+worktree or submodule, whose docs duplicate a checkout indexed elsewhere.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.sources.iter_report_doc_folders">
 <span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">iter_report_doc_folders</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/sources.html#iter_report_doc_folders"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.iter_report_doc_folders" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.iter_report_doc_folders'">¶</a></dt>
-<dd><p>Yield each existing <code class="docutils literal notranslate"><span class="pre">*/*/docs</span></code> and <code class="docutils literal notranslate"><span class="pre">*/*/misc/docs</span></code> folder under <em>root</em>.</p>
+<dd><p>Yield each existing report doc folder under <em>root</em>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">*/*/docs</span></code> and <code class="docutils literal notranslate"><span class="pre">*/*/misc/docs</span></code> (a repo at <code class="docutils literal notranslate"><span class="pre">&lt;letter&gt;/&lt;repo&gt;</span></code>), plus the
+same two folders of every pocket repo (<a class="reference internal" href="#ir.sources.iter_pocket_repos" title="ir.sources.iter_pocket_repos"><code class="xref py py-func docutils literal notranslate"><span class="pre">iter_pocket_repos()</span></code></a>). The single
+enumeration both ingestion and <a class="reference internal" href="ir.coverage.html#ir.coverage.reports_coverage" title="ir.coverage.reports_coverage"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.coverage.reports_coverage()</span></code></a> use.</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
@@ -423,7 +449,9 @@ seam accepts a name rather than an object.</p>
 <li><a :data-current="activeSection === '#ir.sources.DFLT_EXCLUDE_DIRS'" class="reference internal" href="#ir.sources.DFLT_EXCLUDE_DIRS"><code class="docutils literal notranslate"><span class="pre">DFLT_EXCLUDE_DIRS</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.DFLT_SESSIONS_SINCE_DAYS'" class="reference internal" href="#ir.sources.DFLT_SESSIONS_SINCE_DAYS"><code class="docutils literal notranslate"><span class="pre">DFLT_SESSIONS_SINCE_DAYS</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.REPORT_DOC_GLOBS'" class="reference internal" href="#ir.sources.REPORT_DOC_GLOBS"><code class="docutils literal notranslate"><span class="pre">REPORT_DOC_GLOBS</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.sources.REPO_DOC_SUBDIRS'" class="reference internal" href="#ir.sources.REPO_DOC_SUBDIRS"><code class="docutils literal notranslate"><span class="pre">REPO_DOC_SUBDIRS</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.content_hash_signal'" class="reference internal" href="#ir.sources.content_hash_signal"><code class="docutils literal notranslate"><span class="pre">content_hash_signal()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.sources.iter_pocket_repos'" class="reference internal" href="#ir.sources.iter_pocket_repos"><code class="docutils literal notranslate"><span class="pre">iter_pocket_repos()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.iter_report_doc_folders'" class="reference internal" href="#ir.sources.iter_report_doc_folders"><code class="docutils literal notranslate"><span class="pre">iter_report_doc_folders()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.report_exclude_reason'" class="reference internal" href="#ir.sources.report_exclude_reason"><code class="docutils literal notranslate"><span class="pre">report_exclude_reason()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.resolve_fetcher'" class="reference internal" href="#ir.sources.resolve_fetcher"><code class="docutils literal notranslate"><span class="pre">resolve_fetcher()</span></code></a></li>
@@ -440,7 +468,7 @@ seam accepts a name rather than an object.</p>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=50f64db7"></script>
+<script src="../_static/documentation_options.js?v=f48ec9ae"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

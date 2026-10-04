@@ -1,4 +1,4 @@
-> built 2026-09-22 16:08 UTC from d9026d4 (master) · ir 0.1.38. Details: build_info.json
+> built 2026-10-04 13:37 UTC from 7517cb9 (master) · ir 0.1.39. Details: build_info.json
 
 # index.html.md
 
@@ -2862,7 +2862,8 @@ Any mapping `{id -> raw}` (dict, `dol` store) as a corpus.
 
 Markdown reports under projects’ `docs/` and `misc/docs/` trees.
 
-Walks each `*/*/docs` and `*/*/misc/docs` folder **recursively**
+Walks each `*/*/docs` and `*/*/misc/docs` folder, and those of
+pocket repos (`i/_zodals/<repo>/docs`, see `iter_pocket_repos()`), **recursively**
 (`recursive=True`, default) so reports nested one or more levels deep —
 `docs/research/…`, `docs/decisions/…`, `docs/adr/…` — are indexed,
 not just files sitting directly in the folder. Pass `recursive=False`
@@ -5410,14 +5411,16 @@ Smart-default constructors cover the common ways to define a source:
 |---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
 | [`DFLT_SESSIONS_SINCE_DAYS`](_autosummary/ir.sources.html.md#ir.sources.DFLT_SESSIONS_SINCE_DAYS) | Default look-back window (days) for [`CorpusSource.from_claude_sessions()`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource.from_claude_sessions). |
 | [`REPORT_DOC_GLOBS`](_autosummary/ir.sources.html.md#ir.sources.REPORT_DOC_GLOBS)         | The two per-project doc-tree roots reports are drawn from (relative globs).                                               |
+| [`REPO_DOC_SUBDIRS`](_autosummary/ir.sources.html.md#ir.sources.REPO_DOC_SUBDIRS)         | The doc-tree roots inside a repo (relative to the repo folder).                                                           |
 
 ### Functions
 
-| [`content_hash_signal`](_autosummary/ir.sources.html.md#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.               |
-|-------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| [`iter_report_doc_folders`](_autosummary/ir.sources.html.md#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing `*/*/docs` and `*/*/misc/docs` folder under *root*. |
-| [`report_exclude_reason`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.        |
-| [`resolve_fetcher`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.   |
+| [`content_hash_signal`](_autosummary/ir.sources.html.md#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.             |
+|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+| [`iter_pocket_repos`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.  |
+| [`iter_report_doc_folders`](_autosummary/ir.sources.html.md#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                   |
+| [`report_exclude_reason`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.      |
+| [`resolve_fetcher`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records. |
 
 ### Classes
 
@@ -5480,7 +5483,8 @@ Any mapping `{id -> raw}` (dict, `dol` store) as a corpus.
 
 Markdown reports under projects’ `docs/` and `misc/docs/` trees.
 
-Walks each `*/*/docs` and `*/*/misc/docs` folder **recursively**
+Walks each `*/*/docs` and `*/*/misc/docs` folder, and those of
+pocket repos (`i/_zodals/<repo>/docs`, see [`iter_pocket_repos()`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)), **recursively**
 (`recursive=True`, default) so reports nested one or more levels deep —
 `docs/research/…`, `docs/decisions/…`, `docs/adr/…` — are indexed,
 not just files sitting directly in the folder. Pass `recursive=False`
@@ -5562,6 +5566,10 @@ Default look-back window (days) for [`CorpusSource.from_claude_sessions()`](_aut
 
 The two per-project doc-tree roots reports are drawn from (relative globs).
 
+### ir.sources.REPO_DOC_SUBDIRS *= ('docs', 'misc/docs')*
+
+The doc-tree roots inside a repo (relative to the repo folder).
+
 ### ir.sources.content_hash_signal(artifact_id, raw)
 
 Default change signal: a content hash of the raw payload.
@@ -5569,9 +5577,22 @@ Default change signal: a content hash of the raw payload.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
+### ir.sources.iter_pocket_repos(root)
+
+Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.
+
+A *pocket* is a `*/*` folder that is not itself a git repo but holds repos
+(`i/_zodals/zodal-groups`, `i/o/<repo>`, `i/dols/<repo>`). A child counts
+as a repo only when its `.git` is a **directory**: a `.git` *file* marks a
+worktree or submodule, whose docs duplicate a checkout indexed elsewhere.
+
 ### ir.sources.iter_report_doc_folders(root)
 
-Yield each existing `*/*/docs` and `*/*/misc/docs` folder under *root*.
+Yield each existing report doc folder under *root*.
+
+`*/*/docs` and `*/*/misc/docs` (a repo at `<letter>/<repo>`), plus the
+same two folders of every pocket repo ([`iter_pocket_repos()`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)). The single
+enumeration both ingestion and [`ir.coverage.reports_coverage()`](_autosummary/ir.coverage.html.md#ir.coverage.reports_coverage) use.
 
 ### ir.sources.report_exclude_reason(path, folder, , exclude_dirs=frozenset({'.git', '.hg', '.ipynb_checkpoints', '.obsidian', '.svn', '.tox', '.venv', '_\_pycache_\_', 'build', 'dist', 'node_modules', 'site-packages', 'venv'}))
 
@@ -6250,7 +6271,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-09-22 16:08 UTC** from commit <a href="https://github.com/i2mint/ir/commit/d9026d44c828e00a6ba0500e0235d9a0b4113358"><code>d9026d4</code></a> on branch <code>master</code>, for **ir 0.1.38** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-04 13:37 UTC** from commit <a href="https://github.com/i2mint/ir/commit/7517cb91e7583de48219c2680ac0c2eb5b622433"><code>7517cb9</code></a> on branch <code>master</code>, for **ir 0.1.39** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -6259,7 +6280,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/d9026d44c828e00a6ba0500e0235d9a0b4113358"><code>d9026d44c828e00a6ba0500e0235d9a0b4113358</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/7517cb91e7583de48219c2680ac0c2eb5b622433"><code>7517cb91e7583de48219c2680ac0c2eb5b622433</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6270,9 +6291,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/35751859459">35751859459</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/37206177935">37206177935</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>d9026d44c828e00a6ba0500e0235d9a0b4113358</code> (in the history of the built commit) |
+| Event commit | <code>7517cb91e7583de48219c2680ac0c2eb5b622433</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -6297,13 +6318,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.38/">0.1.38</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.39/">0.1.39</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout d9026d44c828e00a6ba0500e0235d9a0b4113358
+git checkout 7517cb91e7583de48219c2680ac0c2eb5b622433
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

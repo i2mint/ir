@@ -11,12 +11,14 @@ ir.sources
       DFLT_EXCLUDE_DIRS
       DFLT_SESSIONS_SINCE_DAYS
       REPORT_DOC_GLOBS
+      REPO_DOC_SUBDIRS
    
    .. rubric:: Functions
 
    .. autosummary::
    
       content_hash_signal
+      iter_pocket_repos
       iter_report_doc_folders
       report_exclude_reason
       resolve_fetcher
