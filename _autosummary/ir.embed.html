@@ -221,9 +221,11 @@ also accepts <code class="docutils literal notranslate"><span class="pre">input_
 <span class="sig-prename descclassname"><span class="pre">ir.embed.</span></span><span class="sig-name descname"><span class="pre">make_embedder_for_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">embedder_id</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/embed.html#make_embedder_for_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.embed.make_embedder_for_id" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.embed.make_embedder_for_id'">¶</a></dt>
 <dd><p>Re-create the embedder a corpus was built with, from its stored id.</p>
 <p>The ids <a class="reference internal" href="#ir.embed.make_embedder" title="ir.embed.make_embedder"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_embedder()</span></code></a> emits are invertible: <code class="docutils literal notranslate"><span class="pre">hashing__dim&lt;N&gt;</span></code> and
-<code class="docutils literal notranslate"><span class="pre">st__&lt;model&gt;</span></code>. Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> for an id that cannot be inverted (e.g.
+<code class="docutils literal notranslate"><span class="pre">st__&lt;model&gt;</span></code>. Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> for an id that is not one of those forms (e.g.
 <code class="docutils literal notranslate"><span class="pre">"custom"</span></code>, or empty), so the caller falls back to the stored spec. Never
-degrades silently: an unavailable model raises <a class="reference internal" href="#ir.embed.EmbedderUnavailable" title="ir.embed.EmbedderUnavailable"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbedderUnavailable</span></code></a>.
+degrades silently: an unavailable model raises <a class="reference internal" href="#ir.embed.EmbedderUnavailable" title="ir.embed.EmbedderUnavailable"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbedderUnavailable</span></code></a>, and
+an id of one of those forms that does not parse raises <a class="reference internal" href="#ir.embed.EmbedderError" title="ir.embed.EmbedderError"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbedderError</span></code></a>
+(falling back to the spec there is the drift this exists to prevent).
 This is what pins a corpus to its own embedder, so the <em>machine</em> querying it
 (with or without <code class="docutils literal notranslate"><span class="pre">sentence-transformers</span></code>) cannot change the vector space.</p>
 <dl class="field-list simple">
@@ -251,7 +253,7 @@ This is what pins a corpus to its own embedder, so the <em>machine</em> querying
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=3203cd3c"></script>
+<script src="../_static/documentation_options.js?v=05fb4756"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

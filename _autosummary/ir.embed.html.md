@@ -77,8 +77,10 @@ With `strict=True` a local model that cannot be loaded raises
 Re-create the embedder a corpus was built with, from its stored id.
 
 The ids [`make_embedder()`](#ir.embed.make_embedder) emits are invertible: `hashing__dim<N>` and
-`st__<model>`. Returns `None` for an id that cannot be inverted (e.g.
+`st__<model>`. Returns `None` for an id that is not one of those forms (e.g.
 `"custom"`, or empty), so the caller falls back to the stored spec. Never
-degrades silently: an unavailable model raises [`EmbedderUnavailable`](#ir.embed.EmbedderUnavailable).
+degrades silently: an unavailable model raises [`EmbedderUnavailable`](#ir.embed.EmbedderUnavailable), and
+an id of one of those forms that does not parse raises [`EmbedderError`](#ir.embed.EmbedderError)
+(falling back to the spec there is the drift this exists to prevent).
 This is what pins a corpus to its own embedder, so the *machine* querying it
 (with or without `sentence-transformers`) cannot change the vector space.

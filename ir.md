@@ -1,4 +1,4 @@
-> built 2026-10-13 03:00 UTC from d9cf281 (master) · ir 0.1.41. Details: build_info.json
+> built 2026-10-13 07:25 UTC from 7009172 (master) · ir 0.1.42. Details: build_info.json
 
 # index.html.md
 
@@ -996,9 +996,11 @@ With `strict=True` a local model that cannot be loaded raises
 Re-create the embedder a corpus was built with, from its stored id.
 
 The ids [`make_embedder()`](_autosummary/ir.embed.html.md#ir.embed.make_embedder) emits are invertible: `hashing__dim<N>` and
-`st__<model>`. Returns `None` for an id that cannot be inverted (e.g.
+`st__<model>`. Returns `None` for an id that is not one of those forms (e.g.
 `"custom"`, or empty), so the caller falls back to the stored spec. Never
-degrades silently: an unavailable model raises [`EmbedderUnavailable`](_autosummary/ir.embed.html.md#ir.embed.EmbedderUnavailable).
+degrades silently: an unavailable model raises [`EmbedderUnavailable`](_autosummary/ir.embed.html.md#ir.embed.EmbedderUnavailable), and
+an id of one of those forms that does not parse raises [`EmbedderError`](_autosummary/ir.embed.html.md#ir.embed.EmbedderError)
+(falling back to the spec there is the drift this exists to prevent).
 This is what pins a corpus to its own embedder, so the *machine* querying it
 (with or without `sentence-transformers`) cannot change the vector space.
 
@@ -6409,18 +6411,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-13 03:00 UTC** from commit <a href="https://github.com/i2mint/ir/commit/d9cf2817e3dea35cfeaa52854f93b66c5112de0c"><code>d9cf281</code></a> on branch <code>master</code>, for **ir 0.1.41** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 07:25 UTC** from commit <a href="https://github.com/i2mint/ir/commit/70091721d2df838611e7000aa50ba2d7ab6c9a94"><code>7009172</code></a> on branch <code>master</code>, for **ir 0.1.42** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.41) is behind the latest release on PyPI (0.1.42): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/d9cf2817e3dea35cfeaa52854f93b66c5112de0c"><code>d9cf2817e3dea35cfeaa52854f93b66c5112de0c</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/70091721d2df838611e7000aa50ba2d7ab6c9a94"><code>70091721d2df838611e7000aa50ba2d7ab6c9a94</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6431,15 +6431,15 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38339476245">38339476245</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38362405119">38362405119</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>d9cf2817e3dea35cfeaa52854f93b66c5112de0c</code> (in the history of the built commit) |
+| Event commit | <code>70091721d2df838611e7000aa50ba2d7ab6c9a94</code> (in the history of the built commit) |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.12  |
+| epythet  | 0.2.15  |
 | Sphinx   | 9.1.0   |
 | docutils | 0.22.4  |
 | Python   | 3.12.15 |
@@ -6458,14 +6458,14 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.42/">0.1.42</a>, newer than the documented version (0.1.41).
+Latest release: <a href="https://pypi.org/project/ir/0.1.42/">0.1.42</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout d9cf2817e3dea35cfeaa52854f93b66c5112de0c
-pip install "epythet==0.2.12"
+git checkout 70091721d2df838611e7000aa50ba2d7ab6c9a94
+pip install "epythet==0.2.15"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 

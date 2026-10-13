@@ -340,22 +340,27 @@
 </span><span id="line-140"><span class="w">    </span><span class="sd">"""Re-create the embedder a corpus was built with, from its stored id.</span>
 </span><span id="line-141">
 </span><span id="line-142"><span class="sd">    The ids :func:`make_embedder` emits are invertible: ``hashing__dim&lt;N&gt;`` and</span>
-</span><span id="line-143"><span class="sd">    ``st__&lt;model&gt;``. Returns ``None`` for an id that cannot be inverted (e.g.</span>
+</span><span id="line-143"><span class="sd">    ``st__&lt;model&gt;``. Returns ``None`` for an id that is not one of those forms (e.g.</span>
 </span><span id="line-144"><span class="sd">    ``"custom"``, or empty), so the caller falls back to the stored spec. Never</span>
-</span><span id="line-145"><span class="sd">    degrades silently: an unavailable model raises :class:`EmbedderUnavailable`.</span>
-</span><span id="line-146"><span class="sd">    This is what pins a corpus to its own embedder, so the *machine* querying it</span>
-</span><span id="line-147"><span class="sd">    (with or without ``sentence-transformers``) cannot change the vector space.</span>
-</span><span id="line-148"><span class="sd">    """</span>
-</span><span id="line-149">    <span class="k">if</span> <span class="n">embedder_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">_HASHING_ID_PREFIX</span><span class="p">):</span>
-</span><span id="line-150">        <span class="k">try</span><span class="p">:</span>
-</span><span id="line-151">            <span class="k">return</span> <span class="n">_hashing</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">embedder_id</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">_HASHING_ID_PREFIX</span><span class="p">)</span> <span class="p">:]))</span>
-</span><span id="line-152">        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span id="line-153">            <span class="k">return</span> <span class="kc">None</span>
-</span><span id="line-154">    <span class="k">if</span> <span class="n">embedder_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">_ST_ID_PREFIX</span><span class="p">):</span>
-</span><span id="line-155">        <span class="k">return</span> <span class="n">make_embedder</span><span class="p">(</span>
-</span><span id="line-156">            <span class="n">embedder_id</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">_ST_ID_PREFIX</span><span class="p">)</span> <span class="p">:],</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span>
-</span><span id="line-157">        <span class="p">)</span>
-</span><span id="line-158">    <span class="k">return</span> <span class="kc">None</span></div>
+</span><span id="line-145"><span class="sd">    degrades silently: an unavailable model raises :class:`EmbedderUnavailable`, and</span>
+</span><span id="line-146"><span class="sd">    an id of one of those forms that does not parse raises :class:`EmbedderError`</span>
+</span><span id="line-147"><span class="sd">    (falling back to the spec there is the drift this exists to prevent).</span>
+</span><span id="line-148"><span class="sd">    This is what pins a corpus to its own embedder, so the *machine* querying it</span>
+</span><span id="line-149"><span class="sd">    (with or without ``sentence-transformers``) cannot change the vector space.</span>
+</span><span id="line-150"><span class="sd">    """</span>
+</span><span id="line-151">    <span class="k">if</span> <span class="n">embedder_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">_HASHING_ID_PREFIX</span><span class="p">):</span>
+</span><span id="line-152">        <span class="n">dim</span> <span class="o">=</span> <span class="n">embedder_id</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">_HASHING_ID_PREFIX</span><span class="p">)</span> <span class="p">:]</span>
+</span><span id="line-153">        <span class="k">if</span> <span class="ow">not</span> <span class="n">dim</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="ow">or</span> <span class="nb">int</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="line-154">            <span class="k">raise</span> <span class="n">EmbedderError</span><span class="p">(</span>
+</span><span id="line-155">                <span class="sa">f</span><span class="s2">"Corpus embedder id </span><span class="si">{</span><span class="n">embedder_id</span><span class="si">!r}</span><span class="s2"> is malformed: expected "</span>
+</span><span id="line-156">                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_HASHING_ID_PREFIX</span><span class="si">}</span><span class="s2">&lt;positive int&gt;. The index metadata may be corrupt."</span>
+</span><span id="line-157">            <span class="p">)</span>
+</span><span id="line-158">        <span class="k">return</span> <span class="n">_hashing</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
+</span><span id="line-159">    <span class="k">if</span> <span class="n">embedder_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">_ST_ID_PREFIX</span><span class="p">):</span>
+</span><span id="line-160">        <span class="k">return</span> <span class="n">make_embedder</span><span class="p">(</span>
+</span><span id="line-161">            <span class="n">embedder_id</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">_ST_ID_PREFIX</span><span class="p">)</span> <span class="p">:],</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="line-162">        <span class="p">)</span>
+</span><span id="line-163">    <span class="k">return</span> <span class="kc">None</span></div>
 
 </span></code></pre></div>
     </div></div>
@@ -370,7 +375,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=3203cd3c"></script>
+    <script src="../../_static/documentation_options.js?v=05fb4756"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
