@@ -1,4 +1,4 @@
-> built 2026-10-13 07:25 UTC from 7009172 (master) · ir 0.1.42. Details: build_info.json
+> built 2026-10-13 14:58 UTC from 549617f (master) · ir 0.1.43. Details: build_info.json
 
 # index.html.md
 
@@ -4840,23 +4840,36 @@ about `ir` or the fix. [`check_requirements()`](_autosummary/ir.requirements.htm
 `ir/__init__.py`, using only the standard library, and raises
 [`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements) (a [`ModuleNotFoundError`](https://docs.python.org/3/builtins/exceptions.html#ModuleNotFoundError)) listing every
 missing import, the interpreter it was looked up in, and the install commands.
+It also checks the version bounds `ir` declares for them (`cw>=0.1.1,<0.2`),
+read from `ir`’s installed metadata, and raises [`UnsatisfiedRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.UnsatisfiedRequirements)
+for an installed dependency outside them, instead of an opaque error later.
 
 ### Module Attributes
 
-| [`REQUIRED`](_autosummary/ir.requirements.html.md#ir.requirements.REQUIRED)   | import name -> distribution name, for everything `import ir` needs.   |
-|-------------------------------------------------------------|-----------------------------------------------------------------------|
+| [`DIST`](_autosummary/ir.requirements.html.md#ir.requirements.DIST)     | the distribution whose declared requirements hold the version bounds   |
+|-----------------------------------------------------------|------------------------------------------------------------------------|
+| [`REQUIRED`](_autosummary/ir.requirements.html.md#ir.requirements.REQUIRED) | import name -> distribution name, for everything `import ir` needs.    |
 
 ### Functions
 
-| [`check_requirements`](_autosummary/ir.requirements.html.md#ir.requirements.check_requirements)([required])   | Raise [`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements) unless every dependency is importable.   |
-|-----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
-| [`missing_requirements`](_autosummary/ir.requirements.html.md#ir.requirements.missing_requirements)([required]) | Distribution names in *required* whose import name cannot be found.                                                 |
-| [`requirements_message`](_autosummary/ir.requirements.html.md#ir.requirements.requirements_message)(missing)    | The actionable message for *missing* distributions.                                                                 |
+| [`check_requirements`](_autosummary/ir.requirements.html.md#ir.requirements.check_requirements)([required, bounds])       | Raise [`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements) unless every dependency is importable, then [`UnsatisfiedRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.UnsatisfiedRequirements) unless each is within the bounds `ir` declares (*bounds*: `{name: specifier}`, default read from `ir`'s metadata).   |
+|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`declared_bounds`](_autosummary/ir.requirements.html.md#ir.requirements.declared_bounds)([dist])                      | `{normalized dependency name: specifier}` that *dist*'s installed metadata declares for this environment (extras excluded; the specifiers of repeated names are joined); empty when *dist* is not installed or has none.                                                                                             |
+| [`missing_requirements`](_autosummary/ir.requirements.html.md#ir.requirements.missing_requirements)([required])             | Distribution names in *required* whose import name cannot be found.                                                                                                                                                                                                                                                  |
+| [`requirements_message`](_autosummary/ir.requirements.html.md#ir.requirements.requirements_message)(missing)                | The actionable message for *missing* distributions.                                                                                                                                                                                                                                                                  |
+| [`unsatisfied_message`](_autosummary/ir.requirements.html.md#ir.requirements.unsatisfied_message)(unsatisfied)             | The actionable message for *unsatisfied* `(dist, installed, specifier)`.                                                                                                                                                                                                                                             |
+| [`unsatisfied_requirements`](_autosummary/ir.requirements.html.md#ir.requirements.unsatisfied_requirements)([required, bounds]) | `(distribution, installed version, specifier)` of each dependency in *required* that is installed outside its declared bounds.                                                                                                                                                                                       |
+| [`version_satisfies`](_autosummary/ir.requirements.html.md#ir.requirements.version_satisfies)(installed, specifier)      | Whether *installed* meets *specifier* (`'>=0.1.1,<0.2'`).                                                                                                                                                                                                                                                            |
 
 ### Exceptions
 
-| [`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements)   | `ir`'s dependencies are missing from the running interpreter.   |
-|------------------------------------------------------------------------|-----------------------------------------------------------------|
+| [`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements)     | `ir`'s dependencies are missing from the running interpreter.            |
+|--------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| [`UnsatisfiedRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.UnsatisfiedRequirements) | A dependency is installed in a version outside the bounds `ir` declares. |
+
+### ir.requirements.DIST *= 'ir'*
+
+the distribution whose declared requirements hold the version bounds
 
 ### *exception* ir.requirements.MissingRequirements
 
@@ -4868,12 +4881,29 @@ Bases: [`ModuleNotFoundError`](https://docs.python.org/3/builtins/exceptions.htm
 
 import name -> distribution name, for everything `import ir` needs.
 
-### ir.requirements.check_requirements(required={'cw': 'cw', 'dol': 'dol', 'ef': 'ef', 'numpy': 'numpy', 'vd': 'vd'})
+### *exception* ir.requirements.UnsatisfiedRequirements
 
-Raise [`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements) unless every dependency is importable.
+Bases: [`ImportError`](https://docs.python.org/3/builtins/exceptions.html#ImportError)
+
+A dependency is installed in a version outside the bounds `ir` declares.
+
+### ir.requirements.check_requirements(required={'cw': 'cw', 'dol': 'dol', 'ef': 'ef', 'numpy': 'numpy', 'vd': 'vd'}, , bounds=None)
+
+Raise [`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements) unless every dependency is importable, then
+[`UnsatisfiedRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.UnsatisfiedRequirements) unless each is within the bounds `ir` declares
+(*bounds*: `{name: specifier}`, default read from `ir`’s metadata).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### ir.requirements.declared_bounds(dist='ir')
+
+`{normalized dependency name: specifier}` that *dist*’s installed metadata
+declares for this environment (extras excluded; the specifiers of repeated names
+are joined); empty when *dist* is not installed or has none.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### ir.requirements.missing_requirements(required={'cw': 'cw', 'dol': 'dol', 'ef': 'ef', 'numpy': 'numpy', 'vd': 'vd'})
 
@@ -4888,6 +4918,40 @@ The actionable message for *missing* distributions.
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### ir.requirements.unsatisfied_message(unsatisfied)
+
+The actionable message for *unsatisfied* `(dist, installed, specifier)`.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### ir.requirements.unsatisfied_requirements(required={'cw': 'cw', 'dol': 'dol', 'ef': 'ef', 'numpy': 'numpy', 'vd': 'vd'}, , bounds=None)
+
+`(distribution, installed version, specifier)` of each dependency in
+*required* that is installed outside its declared bounds.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### ir.requirements.version_satisfies(installed, specifier)
+
+Whether *installed* meets *specifier* (`'>=0.1.1,<0.2'`).
+
+Uses `packaging` when it is installed. Without it, plain releases (`1.2.3`)
+are compared with the standard library, and anything it cannot judge (a
+pre-release, `dev`, `post` or local version, an unreadable specifier) is taken
+to hold: this check must never block `import ir` on a doubt.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+```pycon
+>>> version_satisfies("0.1.6", ">=0.1.1,<0.2"), version_satisfies("0.2.0", "<0.2")
+(True, False)
+>>> version_satisfies("1.4", "~=1.2"), version_satisfies("2.0", "~=1.2")
+(True, False)
+```
 
 
 # _autosummary/ir.retrieve.html.md
@@ -6411,16 +6475,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-13 07:25 UTC** from commit <a href="https://github.com/i2mint/ir/commit/70091721d2df838611e7000aa50ba2d7ab6c9a94"><code>7009172</code></a> on branch <code>master</code>, for **ir 0.1.42** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 14:58 UTC** from commit <a href="https://github.com/i2mint/ir/commit/549617f491378fe7ac9fd005317e789ae484e552"><code>549617f</code></a> on branch <code>master</code>, for **ir 0.1.43** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.43) is behind the latest release on PyPI (0.1.44): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/70091721d2df838611e7000aa50ba2d7ab6c9a94"><code>70091721d2df838611e7000aa50ba2d7ab6c9a94</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/549617f491378fe7ac9fd005317e789ae484e552"><code>549617f491378fe7ac9fd005317e789ae484e552</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6431,15 +6497,15 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38362405119">38362405119</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38417763986">38417763986</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>70091721d2df838611e7000aa50ba2d7ab6c9a94</code> (in the history of the built commit) |
+| Event commit | <code>549617f491378fe7ac9fd005317e789ae484e552</code> (in the history of the built commit) |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.15  |
+| epythet  | 0.2.16  |
 | Sphinx   | 9.1.0   |
 | docutils | 0.22.4  |
 | Python   | 3.12.15 |
@@ -6458,14 +6524,14 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.42/">0.1.42</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.44/">0.1.44</a>, newer than the documented version (0.1.43).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 70091721d2df838611e7000aa50ba2d7ab6c9a94
-pip install "epythet==0.2.15"
+git checkout 549617f491378fe7ac9fd005317e789ae484e552
+pip install "epythet==0.2.16"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 

@@ -193,69 +193,260 @@
 </span><span id="line-7"><span class="sd">``ir/__init__.py``, using only the standard library, and raises</span>
 </span><span id="line-8"><span class="sd">:class:`MissingRequirements` (a :class:`ModuleNotFoundError`) listing every</span>
 </span><span id="line-9"><span class="sd">missing import, the interpreter it was looked up in, and the install commands.</span>
-</span><span id="line-10"><span class="sd">"""</span>
-</span><span id="line-11">
-</span><span id="line-12"><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
-</span><span id="line-13">
-</span><span id="line-14"><span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
-</span><span id="line-15"><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-</span><span id="line-16"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
-</span><span id="line-17">
-</span><span id="line-18"><span class="c1">#: import name -&gt; distribution name, for everything ``import ir`` needs.</span>
-</span><span id="line-19"><span class="n">REQUIRED</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="line-20">    <span class="s2">"numpy"</span><span class="p">:</span> <span class="s2">"numpy"</span><span class="p">,</span>
-</span><span id="line-21">    <span class="s2">"dol"</span><span class="p">:</span> <span class="s2">"dol"</span><span class="p">,</span>
-</span><span id="line-22">    <span class="s2">"ef"</span><span class="p">:</span> <span class="s2">"ef"</span><span class="p">,</span>
-</span><span id="line-23">    <span class="s2">"vd"</span><span class="p">:</span> <span class="s2">"vd"</span><span class="p">,</span>
-</span><span id="line-24">    <span class="s2">"cw"</span><span class="p">:</span> <span class="s2">"cw"</span><span class="p">,</span>
-</span><span id="line-25"><span class="p">}</span>
-</span><span id="line-26">
-</span><span id="line-27">
+</span><span id="line-10"><span class="sd">It also checks the version bounds ``ir`` declares for them (``cw&gt;=0.1.1,&lt;0.2``),</span>
+</span><span id="line-11"><span class="sd">read from ``ir``'s installed metadata, and raises :class:`UnsatisfiedRequirements`</span>
+</span><span id="line-12"><span class="sd">for an installed dependency outside them, instead of an opaque error later.</span>
+</span><span id="line-13"><span class="sd">"""</span>
+</span><span id="line-14">
+</span><span id="line-15"><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+</span><span id="line-16">
+</span><span id="line-17"><span class="kn">import</span><span class="w"> </span><span class="nn">importlib.metadata</span>
+</span><span id="line-18"><span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
+</span><span id="line-19"><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+</span><span id="line-20"><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+</span><span id="line-21"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
+</span><span id="line-22">
+</span><span id="line-23"><span class="c1">#: the distribution whose declared requirements hold the version bounds</span>
+</span><span id="line-24"><span class="n">DIST</span> <span class="o">=</span> <span class="s2">"ir"</span>
+</span><span id="line-25">
+</span><span id="line-26"><span class="c1">#: import name -&gt; distribution name, for everything ``import ir`` needs.</span>
+</span><span id="line-27"><span class="n">REQUIRED</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="line-28">    <span class="s2">"numpy"</span><span class="p">:</span> <span class="s2">"numpy"</span><span class="p">,</span>
+</span><span id="line-29">    <span class="s2">"dol"</span><span class="p">:</span> <span class="s2">"dol"</span><span class="p">,</span>
+</span><span id="line-30">    <span class="s2">"ef"</span><span class="p">:</span> <span class="s2">"ef"</span><span class="p">,</span>
+</span><span id="line-31">    <span class="s2">"vd"</span><span class="p">:</span> <span class="s2">"vd"</span><span class="p">,</span>
+</span><span id="line-32">    <span class="s2">"cw"</span><span class="p">:</span> <span class="s2">"cw"</span><span class="p">,</span>
+</span><span id="line-33"><span class="p">}</span>
+</span><span id="line-34">
+</span><span id="line-35">
 <div class="viewcode-block" id="MissingRequirements">
 <a class="viewcode-back" href="../../_autosummary/ir.requirements.html#ir.requirements.MissingRequirements">[docs]</a>
-</span><span id="line-28"><span class="k">class</span><span class="w"> </span><span class="nc">MissingRequirements</span><span class="p">(</span><span class="ne">ModuleNotFoundError</span><span class="p">):</span>
-</span><span id="line-29"><span class="w">    </span><span class="sd">"""``ir``'s dependencies are missing from the running interpreter."""</span></div>
+</span><span id="line-36"><span class="k">class</span><span class="w"> </span><span class="nc">MissingRequirements</span><span class="p">(</span><span class="ne">ModuleNotFoundError</span><span class="p">):</span>
+</span><span id="line-37"><span class="w">    </span><span class="sd">"""``ir``'s dependencies are missing from the running interpreter."""</span></div>
 
-</span><span id="line-30">
-</span><span id="line-31">
+</span><span id="line-38">
+</span><span id="line-39">
+<div class="viewcode-block" id="UnsatisfiedRequirements">
+<a class="viewcode-back" href="../../_autosummary/ir.requirements.html#ir.requirements.UnsatisfiedRequirements">[docs]</a>
+</span><span id="line-40"><span class="k">class</span><span class="w"> </span><span class="nc">UnsatisfiedRequirements</span><span class="p">(</span><span class="ne">ImportError</span><span class="p">):</span>
+</span><span id="line-41"><span class="w">    </span><span class="sd">"""A dependency is installed in a version outside the bounds ``ir`` declares."""</span></div>
+
+</span><span id="line-42">
+</span><span id="line-43">
 <div class="viewcode-block" id="missing_requirements">
 <a class="viewcode-back" href="../../_autosummary/ir.requirements.html#ir.requirements.missing_requirements">[docs]</a>
-</span><span id="line-32"><span class="k">def</span><span class="w"> </span><span class="nf">missing_requirements</span><span class="p">(</span><span class="n">required</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">REQUIRED</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-</span><span id="line-33"><span class="w">    </span><span class="sd">"""Distribution names in *required* whose import name cannot be found."""</span>
-</span><span id="line-34">    <span class="k">return</span> <span class="p">[</span>
-</span><span id="line-35">        <span class="n">dist</span>
-</span><span id="line-36">        <span class="k">for</span> <span class="n">module</span><span class="p">,</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">required</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-</span><span id="line-37">        <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="n">module</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
-</span><span id="line-38">    <span class="p">]</span></div>
+</span><span id="line-44"><span class="k">def</span><span class="w"> </span><span class="nf">missing_requirements</span><span class="p">(</span><span class="n">required</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">REQUIRED</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="line-45"><span class="w">    </span><span class="sd">"""Distribution names in *required* whose import name cannot be found."""</span>
+</span><span id="line-46">    <span class="k">return</span> <span class="p">[</span>
+</span><span id="line-47">        <span class="n">dist</span>
+</span><span id="line-48">        <span class="k">for</span> <span class="n">module</span><span class="p">,</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">required</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</span><span id="line-49">        <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="n">module</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+</span><span id="line-50">    <span class="p">]</span></div>
 
-</span><span id="line-39">
-</span><span id="line-40">
+</span><span id="line-51">
+</span><span id="line-52">
 <div class="viewcode-block" id="requirements_message">
 <a class="viewcode-back" href="../../_autosummary/ir.requirements.html#ir.requirements.requirements_message">[docs]</a>
-</span><span id="line-41"><span class="k">def</span><span class="w"> </span><span class="nf">requirements_message</span><span class="p">(</span><span class="n">missing</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="line-42"><span class="w">    </span><span class="sd">"""The actionable message for *missing* distributions."""</span>
-</span><span id="line-43">    <span class="n">missing</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span>
-</span><span id="line-44">    <span class="k">return</span> <span class="p">(</span>
-</span><span id="line-45">        <span class="sa">f</span><span class="s2">"ir cannot run in this interpreter (</span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="si">}</span><span class="s2">): missing "</span>
-</span><span id="line-46">        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">. Install ir as a standalone command, in its own "</span>
-</span><span id="line-47">        <span class="sa">f</span><span class="s2">"environment (works even where the system Python is externally "</span>
-</span><span id="line-48">        <span class="sa">f</span><span class="s2">"managed):</span><span class="se">\n</span><span class="s2">"</span>
-</span><span id="line-49">        <span class="sa">f</span><span class="s2">"  uv tool install ir</span><span class="se">\n</span><span class="s2">"</span>
-</span><span id="line-50">        <span class="sa">f</span><span class="s2">"or into an environment you own:</span><span class="se">\n</span><span class="s2">"</span>
-</span><span id="line-51">        <span class="sa">f</span><span class="s2">"  uv pip install --python &lt;that-env&gt;/bin/python ir</span><span class="se">\n</span><span class="s2">"</span>
-</span><span id="line-52">        <span class="sa">f</span><span class="s2">"From a source checkout: uv pip install --python &lt;that-env&gt;/bin/python "</span>
-</span><span id="line-53">        <span class="sa">f</span><span class="s2">"-e &lt;path-to-ir&gt;"</span>
-</span><span id="line-54">    <span class="p">)</span></div>
+</span><span id="line-53"><span class="k">def</span><span class="w"> </span><span class="nf">requirements_message</span><span class="p">(</span><span class="n">missing</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-54"><span class="w">    </span><span class="sd">"""The actionable message for *missing* distributions."""</span>
+</span><span id="line-55">    <span class="n">missing</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span>
+</span><span id="line-56">    <span class="k">return</span> <span class="p">(</span>
+</span><span id="line-57">        <span class="sa">f</span><span class="s2">"ir cannot run in this interpreter (</span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="si">}</span><span class="s2">): missing "</span>
+</span><span id="line-58">        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">. Install ir as a standalone command, in its own "</span>
+</span><span id="line-59">        <span class="sa">f</span><span class="s2">"environment (works even where the system Python is externally "</span>
+</span><span id="line-60">        <span class="sa">f</span><span class="s2">"managed):</span><span class="se">\n</span><span class="s2">"</span>
+</span><span id="line-61">        <span class="sa">f</span><span class="s2">"  uv tool install ir</span><span class="se">\n</span><span class="s2">"</span>
+</span><span id="line-62">        <span class="sa">f</span><span class="s2">"or into an environment you own:</span><span class="se">\n</span><span class="s2">"</span>
+</span><span id="line-63">        <span class="sa">f</span><span class="s2">"  uv pip install --python &lt;that-env&gt;/bin/python ir</span><span class="se">\n</span><span class="s2">"</span>
+</span><span id="line-64">        <span class="sa">f</span><span class="s2">"From a source checkout: uv pip install --python &lt;that-env&gt;/bin/python "</span>
+</span><span id="line-65">        <span class="sa">f</span><span class="s2">"-e &lt;path-to-ir&gt;"</span>
+</span><span id="line-66">    <span class="p">)</span></div>
 
-</span><span id="line-55">
-</span><span id="line-56">
+</span><span id="line-67">
+</span><span id="line-68">
+</span><span id="line-69"><span class="n">_REQUIREMENT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+</span><span id="line-70">    <span class="sa">r</span><span class="s2">"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*([^;]*)"</span>
+</span><span id="line-71"><span class="p">)</span>
+</span><span id="line-72"><span class="n">_CLAUSE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^\s*(===|==|!=|~=|&gt;=|&lt;=|&gt;|&lt;)\s*([A-Za-z0-9.*+!_-]+)\s*$"</span><span class="p">)</span>
+</span><span id="line-73"><span class="n">_PLAIN_RELEASE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^\d+(\.\d+)*$"</span><span class="p">)</span>
+</span><span id="line-74"><span class="n">_RELEASE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^v?(?:\d+!)?(\d+(?:\.\d+)*)"</span><span class="p">)</span>
+</span><span id="line-75">
+</span><span id="line-76">
+</span><span id="line-77"><span class="k">def</span><span class="w"> </span><span class="nf">_normalize</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-78">    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[-_.]+"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+</span><span id="line-79">
+</span><span id="line-80">
+</span><span id="line-81"><span class="k">def</span><span class="w"> </span><span class="nf">_release</span><span class="p">(</span><span class="n">version</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-82"><span class="w">    </span><span class="sd">"""The numeric release segments of *version* (``'0.2.0rc1'`` -&gt; ``(0, 2, 0)``)."""</span>
+</span><span id="line-83">    <span class="n">found</span> <span class="o">=</span> <span class="n">_RELEASE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">version</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+</span><span id="line-84">    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">found</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">))</span> <span class="k">if</span> <span class="n">found</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="line-85">
+</span><span id="line-86">
+</span><span id="line-87"><span class="k">def</span><span class="w"> </span><span class="nf">_padded</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">b</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]):</span>
+</span><span id="line-88">    <span class="n">n</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+</span><span id="line-89">    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)),</span> <span class="n">b</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+</span><span id="line-90">
+</span><span id="line-91">
+</span><span id="line-92"><span class="k">def</span><span class="w"> </span><span class="nf">_clause_holds</span><span class="p">(</span><span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bound</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">installed</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="line-93"><span class="w">    </span><span class="sd">"""One ``op bound`` clause against *installed*, comparing numeric releases only</span>
+</span><span id="line-94"><span class="sd">    (the stdlib fallback for ``packaging``); a clause it cannot read holds."""</span>
+</span><span id="line-95">    <span class="n">have</span><span class="p">,</span> <span class="n">want</span> <span class="o">=</span> <span class="n">_release</span><span class="p">(</span><span class="n">installed</span><span class="p">),</span> <span class="n">_release</span><span class="p">(</span><span class="n">bound</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">".*"</span><span class="p">))</span>
+</span><span id="line-96">    <span class="k">if</span> <span class="n">have</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">want</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-97">        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="line-98">    <span class="k">if</span> <span class="n">op</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"=="</span><span class="p">,</span> <span class="s2">"!="</span><span class="p">)</span> <span class="ow">and</span> <span class="n">bound</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".*"</span><span class="p">):</span>
+</span><span id="line-99">        <span class="n">same</span> <span class="o">=</span> <span class="n">have</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">want</span><span class="p">)]</span> <span class="o">==</span> <span class="n">want</span>
+</span><span id="line-100">        <span class="k">return</span> <span class="n">same</span> <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"=="</span> <span class="k">else</span> <span class="ow">not</span> <span class="n">same</span>
+</span><span id="line-101">    <span class="k">if</span> <span class="p">(</span>
+</span><span id="line-102">        <span class="n">op</span> <span class="o">==</span> <span class="s2">"~="</span>
+</span><span id="line-103">    <span class="p">):</span>  <span class="c1"># compatible release: &gt;= bound, and == bound with its last part dropped</span>
+</span><span id="line-104">        <span class="n">keep</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">want</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="line-105">        <span class="n">have</span><span class="p">,</span> <span class="n">want</span> <span class="o">=</span> <span class="n">_padded</span><span class="p">(</span><span class="n">have</span><span class="p">,</span> <span class="n">want</span><span class="p">)</span>
+</span><span id="line-106">        <span class="k">return</span> <span class="n">have</span> <span class="o">&gt;=</span> <span class="n">want</span> <span class="ow">and</span> <span class="n">have</span><span class="p">[:</span><span class="n">keep</span><span class="p">]</span> <span class="o">==</span> <span class="n">want</span><span class="p">[:</span><span class="n">keep</span><span class="p">]</span>
+</span><span id="line-107">    <span class="n">have</span><span class="p">,</span> <span class="n">want</span> <span class="o">=</span> <span class="n">_padded</span><span class="p">(</span><span class="n">have</span><span class="p">,</span> <span class="n">want</span><span class="p">)</span>
+</span><span id="line-108">    <span class="k">return</span> <span class="p">{</span>
+</span><span id="line-109">        <span class="s2">"=="</span><span class="p">:</span> <span class="n">have</span> <span class="o">==</span> <span class="n">want</span><span class="p">,</span>
+</span><span id="line-110">        <span class="s2">"==="</span><span class="p">:</span> <span class="n">have</span> <span class="o">==</span> <span class="n">want</span><span class="p">,</span>
+</span><span id="line-111">        <span class="s2">"!="</span><span class="p">:</span> <span class="n">have</span> <span class="o">!=</span> <span class="n">want</span><span class="p">,</span>
+</span><span id="line-112">        <span class="s2">"&gt;="</span><span class="p">:</span> <span class="n">have</span> <span class="o">&gt;=</span> <span class="n">want</span><span class="p">,</span>
+</span><span id="line-113">        <span class="s2">"&lt;="</span><span class="p">:</span> <span class="n">have</span> <span class="o">&lt;=</span> <span class="n">want</span><span class="p">,</span>
+</span><span id="line-114">        <span class="s2">"&gt;"</span><span class="p">:</span> <span class="n">have</span> <span class="o">&gt;</span> <span class="n">want</span><span class="p">,</span>
+</span><span id="line-115">        <span class="s2">"&lt;"</span><span class="p">:</span> <span class="n">have</span> <span class="o">&lt;</span> <span class="n">want</span><span class="p">,</span>
+</span><span id="line-116">    <span class="p">}[</span><span class="n">op</span><span class="p">]</span>
+</span><span id="line-117">
+</span><span id="line-118">
+<div class="viewcode-block" id="version_satisfies">
+<a class="viewcode-back" href="../../_autosummary/ir.requirements.html#ir.requirements.version_satisfies">[docs]</a>
+</span><span id="line-119"><span class="k">def</span><span class="w"> </span><span class="nf">version_satisfies</span><span class="p">(</span><span class="n">installed</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">specifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="line-120"><span class="w">    </span><span class="sd">"""Whether *installed* meets *specifier* (``'&gt;=0.1.1,&lt;0.2'``).</span>
+</span><span id="line-121">
+</span><span id="line-122"><span class="sd">    Uses ``packaging`` when it is installed. Without it, plain releases (``1.2.3``)</span>
+</span><span id="line-123"><span class="sd">    are compared with the standard library, and anything it cannot judge (a</span>
+</span><span id="line-124"><span class="sd">    pre-release, ``dev``, ``post`` or local version, an unreadable specifier) is taken</span>
+</span><span id="line-125"><span class="sd">    to hold: this check must never block ``import ir`` on a doubt.</span>
+</span><span id="line-126">
+</span><span id="line-127"><span class="sd">    &gt;&gt;&gt; version_satisfies("0.1.6", "&gt;=0.1.1,&lt;0.2"), version_satisfies("0.2.0", "&lt;0.2")</span>
+</span><span id="line-128"><span class="sd">    (True, False)</span>
+</span><span id="line-129"><span class="sd">    &gt;&gt;&gt; version_satisfies("1.4", "~=1.2"), version_satisfies("2.0", "~=1.2")</span>
+</span><span id="line-130"><span class="sd">    (True, False)</span>
+</span><span id="line-131"><span class="sd">    """</span>
+</span><span id="line-132">    <span class="n">specifier</span> <span class="o">=</span> <span class="n">specifier</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">"()"</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+</span><span id="line-133">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-134">        <span class="kn">from</span><span class="w"> </span><span class="nn">packaging.specifiers</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidSpecifier</span><span class="p">,</span> <span class="n">SpecifierSet</span>
+</span><span id="line-135">        <span class="kn">from</span><span class="w"> </span><span class="nn">packaging.version</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidVersion</span>
+</span><span id="line-136">    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+</span><span id="line-137">        <span class="k">pass</span>
+</span><span id="line-138">    <span class="k">else</span><span class="p">:</span>
+</span><span id="line-139">        <span class="k">try</span><span class="p">:</span>
+</span><span id="line-140">            <span class="k">return</span> <span class="n">SpecifierSet</span><span class="p">(</span><span class="n">specifier</span><span class="p">)</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">installed</span><span class="p">,</span> <span class="n">prereleases</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-141">        <span class="k">except</span> <span class="p">(</span><span class="n">InvalidSpecifier</span><span class="p">,</span> <span class="n">InvalidVersion</span><span class="p">):</span>
+</span><span id="line-142">            <span class="k">return</span> <span class="kc">True</span>
+</span><span id="line-143">    <span class="k">if</span> <span class="ow">not</span> <span class="n">_PLAIN_RELEASE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">installed</span><span class="o">.</span><span class="n">strip</span><span class="p">()):</span>
+</span><span id="line-144">        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># a pre/dev/post/local/epoch version is for packaging to judge</span>
+</span><span id="line-145">    <span class="k">for</span> <span class="n">clause</span> <span class="ow">in</span> <span class="nb">filter</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">specifier</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">))):</span>
+</span><span id="line-146">        <span class="n">parsed</span> <span class="o">=</span> <span class="n">_CLAUSE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">clause</span><span class="p">)</span>
+</span><span id="line-147">        <span class="k">if</span> <span class="n">parsed</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_clause_holds</span><span class="p">(</span><span class="n">parsed</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">parsed</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">installed</span><span class="p">):</span>
+</span><span id="line-148">            <span class="k">return</span> <span class="kc">False</span>
+</span><span id="line-149">    <span class="k">return</span> <span class="kc">True</span></div>
+
+</span><span id="line-150">
+</span><span id="line-151">
+</span><span id="line-152"><span class="k">def</span><span class="w"> </span><span class="nf">_marker_applies</span><span class="p">(</span><span class="n">marker</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="line-153"><span class="w">    </span><span class="sd">"""Whether a requirement's environment *marker* holds here; without ``packaging``</span>
+</span><span id="line-154"><span class="sd">    to evaluate it, it does not (a bound that may not apply is not enforced)."""</span>
+</span><span id="line-155">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-156">        <span class="kn">from</span><span class="w"> </span><span class="nn">packaging.markers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Marker</span>
+</span><span id="line-157">    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+</span><span id="line-158">        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="line-159">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-160">        <span class="k">return</span> <span class="n">Marker</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+</span><span id="line-161">    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># an unreadable marker: skip the line</span>
+</span><span id="line-162">        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="line-163">
+</span><span id="line-164">
+<div class="viewcode-block" id="declared_bounds">
+<a class="viewcode-back" href="../../_autosummary/ir.requirements.html#ir.requirements.declared_bounds">[docs]</a>
+</span><span id="line-165"><span class="k">def</span><span class="w"> </span><span class="nf">declared_bounds</span><span class="p">(</span><span class="n">dist</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DIST</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="line-166"><span class="w">    </span><span class="sd">"""``{normalized dependency name: specifier}`` that *dist*'s installed metadata</span>
+</span><span id="line-167"><span class="sd">    declares for this environment (extras excluded; the specifiers of repeated names</span>
+</span><span id="line-168"><span class="sd">    are joined); empty when *dist* is not installed or has none."""</span>
+</span><span id="line-169">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-170">        <span class="n">lines</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">requires</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+</span><span id="line-171">    <span class="k">except</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">PackageNotFoundError</span><span class="p">:</span>
+</span><span id="line-172">        <span class="k">return</span> <span class="p">{}</span>
+</span><span id="line-173">    <span class="n">bounds</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-174">    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+</span><span id="line-175">        <span class="n">requirement</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">";"</span><span class="p">)</span>
+</span><span id="line-176">        <span class="k">if</span> <span class="s2">"extra"</span> <span class="ow">in</span> <span class="n">marker</span><span class="p">:</span>
+</span><span id="line-177">            <span class="k">continue</span>
+</span><span id="line-178">        <span class="k">if</span> <span class="n">marker</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_marker_applies</span><span class="p">(</span><span class="n">marker</span><span class="o">.</span><span class="n">strip</span><span class="p">()):</span>
+</span><span id="line-179">            <span class="k">continue</span>
+</span><span id="line-180">        <span class="n">parsed</span> <span class="o">=</span> <span class="n">_REQUIREMENT</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span>
+</span><span id="line-181">        <span class="k">if</span> <span class="n">parsed</span> <span class="ow">and</span> <span class="n">parsed</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+</span><span id="line-182">            <span class="n">name</span> <span class="o">=</span> <span class="n">_normalize</span><span class="p">(</span><span class="n">parsed</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+</span><span id="line-183">            <span class="n">bounds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+</span><span id="line-184">                <span class="nb">filter</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">(</span><span class="n">bounds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">parsed</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+</span><span id="line-185">            <span class="p">)</span>
+</span><span id="line-186">    <span class="k">return</span> <span class="n">bounds</span></div>
+
+</span><span id="line-187">
+</span><span id="line-188">
+<div class="viewcode-block" id="unsatisfied_requirements">
+<a class="viewcode-back" href="../../_autosummary/ir.requirements.html#ir.requirements.unsatisfied_requirements">[docs]</a>
+</span><span id="line-189"><span class="k">def</span><span class="w"> </span><span class="nf">unsatisfied_requirements</span><span class="p">(</span>
+</span><span id="line-190">    <span class="n">required</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">REQUIRED</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">bounds</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="line-191"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+</span><span id="line-192"><span class="w">    </span><span class="sd">"""``(distribution, installed version, specifier)`` of each dependency in</span>
+</span><span id="line-193"><span class="sd">    *required* that is installed outside its declared bounds."""</span>
+</span><span id="line-194">    <span class="n">bounds</span> <span class="o">=</span> <span class="n">declared_bounds</span><span class="p">()</span> <span class="k">if</span> <span class="n">bounds</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">bounds</span>
+</span><span id="line-195">    <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="line-196">    <span class="k">for</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">required</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+</span><span id="line-197">        <span class="n">specifier</span> <span class="o">=</span> <span class="n">bounds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_normalize</span><span class="p">(</span><span class="n">dist</span><span class="p">))</span>
+</span><span id="line-198">        <span class="k">if</span> <span class="ow">not</span> <span class="n">specifier</span><span class="p">:</span>
+</span><span id="line-199">            <span class="k">continue</span>
+</span><span id="line-200">        <span class="k">try</span><span class="p">:</span>
+</span><span id="line-201">            <span class="n">installed</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+</span><span id="line-202">        <span class="k">except</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">PackageNotFoundError</span><span class="p">:</span>
+</span><span id="line-203">            <span class="k">continue</span>
+</span><span id="line-204">        <span class="k">if</span> <span class="ow">not</span> <span class="n">installed</span><span class="p">:</span>  <span class="c1"># broken metadata without a Version</span>
+</span><span id="line-205">            <span class="k">continue</span>
+</span><span id="line-206">        <span class="k">if</span> <span class="ow">not</span> <span class="n">version_satisfies</span><span class="p">(</span><span class="n">installed</span><span class="p">,</span> <span class="n">specifier</span><span class="p">):</span>
+</span><span id="line-207">            <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">dist</span><span class="p">,</span> <span class="n">installed</span><span class="p">,</span> <span class="n">specifier</span><span class="p">))</span>
+</span><span id="line-208">    <span class="k">return</span> <span class="n">found</span></div>
+
+</span><span id="line-209">
+</span><span id="line-210">
+<div class="viewcode-block" id="unsatisfied_message">
+<a class="viewcode-back" href="../../_autosummary/ir.requirements.html#ir.requirements.unsatisfied_message">[docs]</a>
+</span><span id="line-211"><span class="k">def</span><span class="w"> </span><span class="nf">unsatisfied_message</span><span class="p">(</span><span class="n">unsatisfied</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-212"><span class="w">    </span><span class="sd">"""The actionable message for *unsatisfied* ``(dist, installed, specifier)``."""</span>
+</span><span id="line-213">    <span class="n">unsatisfied</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">unsatisfied</span><span class="p">)</span>
+</span><span id="line-214">    <span class="n">have</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2"> (needs </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">)"</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">unsatisfied</span><span class="p">)</span>
+</span><span id="line-215">    <span class="n">pins</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'"</span><span class="si">{</span><span class="n">d</span><span class="si">}{</span><span class="n">s</span><span class="si">}</span><span class="s1">"'</span> <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">unsatisfied</span><span class="p">)</span>
+</span><span id="line-216">    <span class="k">return</span> <span class="p">(</span>
+</span><span id="line-217">        <span class="sa">f</span><span class="s2">"ir cannot run in this interpreter (</span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="si">}</span><span class="s2">): installed "</span>
+</span><span id="line-218">        <span class="sa">f</span><span class="s2">"dependencies outside the bounds ir declares: </span><span class="si">{</span><span class="n">have</span><span class="si">}</span><span class="s2">. Install versions "</span>
+</span><span id="line-219">        <span class="sa">f</span><span class="s2">"within them:</span><span class="se">\n</span><span class="s2">"</span>
+</span><span id="line-220">        <span class="sa">f</span><span class="s2">"  uv pip install --python </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">pins</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="line-221">    <span class="p">)</span></div>
+
+</span><span id="line-222">
+</span><span id="line-223">
 <div class="viewcode-block" id="check_requirements">
 <a class="viewcode-back" href="../../_autosummary/ir.requirements.html#ir.requirements.check_requirements">[docs]</a>
-</span><span id="line-57"><span class="k">def</span><span class="w"> </span><span class="nf">check_requirements</span><span class="p">(</span><span class="n">required</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">REQUIRED</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-58"><span class="w">    </span><span class="sd">"""Raise :class:`MissingRequirements` unless every dependency is importable."""</span>
-</span><span id="line-59">    <span class="n">missing</span> <span class="o">=</span> <span class="n">missing_requirements</span><span class="p">(</span><span class="n">required</span><span class="p">)</span>
-</span><span id="line-60">    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
-</span><span id="line-61">        <span class="k">raise</span> <span class="n">MissingRequirements</span><span class="p">(</span><span class="n">requirements_message</span><span class="p">(</span><span class="n">missing</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">missing</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+</span><span id="line-224"><span class="k">def</span><span class="w"> </span><span class="nf">check_requirements</span><span class="p">(</span>
+</span><span id="line-225">    <span class="n">required</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">REQUIRED</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">bounds</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="line-226"><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-227"><span class="w">    </span><span class="sd">"""Raise :class:`MissingRequirements` unless every dependency is importable, then</span>
+</span><span id="line-228"><span class="sd">    :class:`UnsatisfiedRequirements` unless each is within the bounds ``ir`` declares</span>
+</span><span id="line-229"><span class="sd">    (*bounds*: ``{name: specifier}``, default read from ``ir``'s metadata)."""</span>
+</span><span id="line-230">    <span class="n">missing</span> <span class="o">=</span> <span class="n">missing_requirements</span><span class="p">(</span><span class="n">required</span><span class="p">)</span>
+</span><span id="line-231">    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+</span><span id="line-232">        <span class="k">raise</span> <span class="n">MissingRequirements</span><span class="p">(</span><span class="n">requirements_message</span><span class="p">(</span><span class="n">missing</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">missing</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span id="line-233">    <span class="n">unsatisfied</span> <span class="o">=</span> <span class="n">unsatisfied_requirements</span><span class="p">(</span><span class="n">required</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">)</span>
+</span><span id="line-234">    <span class="k">if</span> <span class="n">unsatisfied</span><span class="p">:</span>
+</span><span id="line-235">        <span class="k">raise</span> <span class="n">UnsatisfiedRequirements</span><span class="p">(</span>
+</span><span id="line-236">            <span class="n">unsatisfied_message</span><span class="p">(</span><span class="n">unsatisfied</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">unsatisfied</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="line-237">        <span class="p">)</span></div>
 
 </span></code></pre></div>
     </div></div>
@@ -270,7 +461,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=05fb4756"></script>
+    <script src="../../_static/documentation_options.js?v=a183c34f"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
