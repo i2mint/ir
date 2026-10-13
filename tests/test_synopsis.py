@@ -523,3 +523,15 @@ def test_description_gain_drops_stale_synopsis_on_incremental_rebuild():
     corpus = ir.build(src, store=store, embedder="light")
     kinds = [r.surface_kind for r in records_for_artifact(corpus, "empty")]
     assert "synopsis" not in kinds
+
+
+def test_gate_is_not_disabled_by_an_id_named_always():
+    synth, calls = _counting_synth()
+    strat = ir.with_synopsis(
+        ir.Package(), synthesize=synth, synthesizer_id="v1",
+        when=lambda a: False, when_id="always",
+    )
+    _build_pkgs(strat)
+    assert calls == []  # the gate is honoured whatever its id is called
+    with pytest.raises(ValueError, match="when_id"):
+        ir.with_synopsis(ir.Package(), synthesize=synth, synthesizer_id="v1", when_id="x")

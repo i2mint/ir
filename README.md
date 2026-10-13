@@ -276,7 +276,7 @@ strat = ir.with_synopsis(ir.Package(), when=ir.thin_description_predicate)
 ```
 
 The predicate's identity (`when_id`) is part of the strategy id, so changing it
-re-decomposes exactly the affected artifacts.
+re-processes the corpus and re-synthesizes every artifact the new gate selects.
 
 **Flat top-k stays the default** — `traverse` is opt-in, and a policy earns its
 keep only by beating flat+rerank on your eval set (a strong flat retriever wins

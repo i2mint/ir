@@ -46,7 +46,8 @@ e.g. ``with_synopsis(ir.Package(), when=thin_description_predicate)`` synthesize
 only for packages whose ``[project].description`` is empty or short (their
 README is the only topical signal), and skips the rest *without calling the
 synthesizer*. The predicate's identity folds into ``strategy_id`` (``when_id``)
-like the synthesizer's, so changing it re-decomposes exactly the affected artifacts.
+like the synthesizer's, so changing it re-processes the corpus (``strategy_id`` is
+corpus-wide) and re-synthesizes every artifact the new gate selects.
 
 **Caveat — ``edge_extractor``.** Eager edge ingest (``build(edge_extractor=...)``)
 calls ``decompose`` for *every* artifact each build, and synthesis lives in
@@ -230,7 +231,7 @@ class _SynopsisStrategy:
         # instance attributes, so an ungated wrapper keeps its pre-``when`` id and
         # existing synopsis corpora are not re-synthesized by this feature.
         resolved = self._resolve_when_id(when, when_id)
-        if resolved != ALWAYS:
+        if not isinstance(when, str):  # gated (decided on `when`, not its id)
             self.when = when
             self.when_id = resolved
         # The default synthesizer summarizes the same field the inner strategy
@@ -247,6 +248,8 @@ class _SynopsisStrategy:
     def _resolve_when_id(when: Union[str, Predicate], explicit: str | None) -> str:
         """Identity of the gate for staleness (``"always"`` for no gate)."""
         if isinstance(when, str):
+            if explicit is not None:
+                raise ValueError("with_synopsis: when_id requires a `when` predicate")
             if when != ALWAYS:
                 raise ValueError(
                     f"with_synopsis: when must be {ALWAYS!r} or a callable "
