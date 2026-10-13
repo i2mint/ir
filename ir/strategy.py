@@ -406,6 +406,10 @@ class Package:
     strategy change) — read it with ``metadata.get("n_chunks")``.
     """
 
+    #: The record fields a synopsis is written from (see :func:`ir.synopsis.with_synopsis`):
+    #: prose only. The record's ``path`` (a local absolute path) and ``deps`` never go to an LLM.
+    synopsis_fields = ("name", "description", "readme")
+
     def __init__(
         self,
         *,
