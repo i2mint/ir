@@ -84,7 +84,7 @@ uv tool install ir          # puts `ir` on PATH (~/.local/bin)
 ir discover packages "cache"
 ```
 
-Or install into an interpreter you already use: `uv pip install --python <that python> ir`. If you run `ir` where its dependencies are missing, it now says which ones and prints these commands, instead of a bare `ModuleNotFoundError` from `ir/base.py`.
+Or install into an environment you own: `uv pip install --python <env>/bin/python ir` (a distro-managed system Python refuses this; use `uv tool install`). If you run `ir` where its dependencies are missing, it now says which ones and prints these commands, instead of a bare `ModuleNotFoundError` from `ir/base.py`.
 
 **Where the index comes from.** Nothing is shipped or synced: each machine builds its own indexes from what is on that machine. The first `ir discover` on a machine that never built one prints `corpus 'packages' is empty; build it first: ir build packages`. Run it once (`ir build skills`, `ir build packages`, ...); later builds are incremental, and `ir maintain --all` (or `ir schedule`) keeps them fresh. Indexes live under `~/.local/share/ir`.
 

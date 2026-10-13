@@ -43,12 +43,14 @@ def requirements_message(missing: Iterable[str]) -> str:
     missing = list(missing)
     return (
         f"ir cannot run in this interpreter ({sys.executable}): missing "
-        f"{', '.join(missing)}. Install ir with its dependencies into the "
-        f"interpreter you run it with:\n"
-        f"  uv pip install --python {sys.executable} ir     # or: python -m pip install ir\n"
-        f"or install it as a standalone command (puts `ir` on PATH):\n"
+        f"{', '.join(missing)}. Install ir as a standalone command, in its own "
+        f"environment (works even where the system Python is externally "
+        f"managed):\n"
         f"  uv tool install ir\n"
-        f"From a source checkout: uv pip install --python {sys.executable} -e <path-to-ir>"
+        f"or into an environment you own:\n"
+        f"  uv pip install --python <that-env>/bin/python ir\n"
+        f"From a source checkout: uv pip install --python <that-env>/bin/python "
+        f"-e <path-to-ir>"
     )
 
 

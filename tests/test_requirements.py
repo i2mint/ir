@@ -24,7 +24,9 @@ def test_missing_dependency_raises_actionable_error():
     assert "uv tool install ir" in str(info.value)
 
 
-def test_message_names_the_interpreter():
+def test_message_names_the_interpreter_and_leads_with_uv_tool():
     import sys
 
-    assert sys.executable in requirements_message(["numpy"])
+    message = requirements_message(["numpy"])
+    assert sys.executable in message
+    assert message.index("uv tool install") < message.index("uv pip install")

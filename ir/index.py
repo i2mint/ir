@@ -93,9 +93,7 @@ class _LazyEmbedder:
 
     def _resolve(self) -> Callable:
         if self._resolved is None:
-            pinned = (
-                make_embedder_for_id(self._pinned_id) if self._pinned_id else None
-            )
+            pinned = make_embedder_for_id(self._pinned_id) if self._pinned_id else None
             self._resolved, self._resolved_id = pinned or make_embedder(self._spec)
         return self._resolved
 
