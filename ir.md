@@ -1,4 +1,4 @@
-> built 2026-10-04 13:37 UTC from 7517cb9 (master) · ir 0.1.39. Details: build_info.json
+> built 2026-10-13 02:54 UTC from 94d1374 (master) · ir 0.1.40. Details: build_info.json
 
 # index.html.md
 
@@ -927,18 +927,63 @@ numpy ABI. Import `ir` before anything that imports `transformers`.
 
 ### Functions
 
-| [`make_embedder`](_autosummary/ir.embed.html.md#ir.embed.make_embedder)([spec, cache])   | Resolve *spec* to `(embedder, embedder_id)`.   |
-|---------------------------------------------------------------------------------|------------------------------------------------|
+| [`make_embedder`](_autosummary/ir.embed.html.md#ir.embed.make_embedder)([spec, cache, strict])           | Resolve *spec* to `(embedder, embedder_id)`.                        |
+|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| [`make_embedder_for_id`](_autosummary/ir.embed.html.md#ir.embed.make_embedder_for_id)(embedder_id, \*[, cache]) | Re-create the embedder a corpus was built with, from its stored id. |
 
-### ir.embed.make_embedder(spec='default', , cache=True)
+### Exceptions
+
+| [`EmbedderError`](_autosummary/ir.embed.html.md#ir.embed.EmbedderError)       | A corpus cannot be queried with the embedder at hand.       |
+|----------------------------------------------------------------------|-------------------------------------------------------------|
+| [`EmbedderMismatch`](_autosummary/ir.embed.html.md#ir.embed.EmbedderMismatch)    | The query embedding's dimension differs from the index's.   |
+| [`EmbedderUnavailable`](_autosummary/ir.embed.html.md#ir.embed.EmbedderUnavailable) | The embedder a corpus was built with cannot be loaded here. |
+
+### *exception* ir.embed.EmbedderError
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A corpus cannot be queried with the embedder at hand.
+
+Subclasses [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError) (the type earlier versions raised) so existing
+`except ValueError` callers keep working. The message is always actionable:
+it says what is wrong and the command that fixes it.
+
+### *exception* ir.embed.EmbedderMismatch
+
+Bases: [`EmbedderError`](_autosummary/ir.embed.html.md#ir.embed.EmbedderError)
+
+The query embedding’s dimension differs from the index’s.
+
+### *exception* ir.embed.EmbedderUnavailable
+
+Bases: [`EmbedderError`](_autosummary/ir.embed.html.md#ir.embed.EmbedderError)
+
+The embedder a corpus was built with cannot be loaded here.
+
+### ir.embed.make_embedder(spec='default', , cache=True, strict=False)
 
 Resolve *spec* to `(embedder, embedder_id)`.
 
 `embedder` is a batch callable `Iterable[str] -> ndarray(n, dim)` that
 also accepts `input_type=` (`"query"` / `"document"`).
 
+With `strict=True` a local model that cannot be loaded raises
+[`EmbedderUnavailable`](_autosummary/ir.embed.html.md#ir.embed.EmbedderUnavailable) instead of degrading to the hashing embedder
+(used when reopening a corpus, whose vectors only match its own model).
+
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.embed.make_embedder_for_id(embedder_id, , cache=True)
+
+Re-create the embedder a corpus was built with, from its stored id.
+
+The ids [`make_embedder()`](_autosummary/ir.embed.html.md#ir.embed.make_embedder) emits are invertible: `hashing__dim<N>` and
+`st__<model>`. Returns `None` for an id that cannot be inverted (e.g.
+`"custom"`, or empty), so the caller falls back to the stored spec. Never
+degrades silently: an unavailable model raises [`EmbedderUnavailable`](_autosummary/ir.embed.html.md#ir.embed.EmbedderUnavailable).
+This is what pins a corpus to its own embedder, so the *machine* querying it
+(with or without `sentence-transformers`) cannot change the vector space.
 
 
 # _autosummary/ir.eval.html.md
@@ -3977,6 +4022,12 @@ only loads the model when a dense/hybrid query actually embeds. So `ir ls`,
 `ir info`, and lexical-only search open a corpus without the model-load
 cost. Pass `embedder=` to override the stored spec.
 
+Without an override the corpus is \*\*pinned to the embedder it was built
+with\*\* (its stored `embedder_id`), not re-resolved from the spec: a spec
+like `"default"` means different models on machines with and without
+`sentence-transformers`, which would make the query vectors incompatible
+with the index.
+
 * **Return type:**
   [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus)
 
@@ -4330,6 +4381,12 @@ returned corpus knows its `embedder_id` from stored config immediately, but
 only loads the model when a dense/hybrid query actually embeds. So `ir ls`,
 `ir info`, and lexical-only search open a corpus without the model-load
 cost. Pass `embedder=` to override the stored spec.
+
+Without an override the corpus is \*\*pinned to the embedder it was built
+with\*\* (its stored `embedder_id`), not re-resolved from the spec: a spec
+like `"default"` means different models on machines with and without
+`sentence-transformers`, which would make the query vectors incompatible
+with the index.
 
 * **Return type:**
   [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus)
@@ -6271,16 +6328,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-04 13:37 UTC** from commit <a href="https://github.com/i2mint/ir/commit/7517cb91e7583de48219c2680ac0c2eb5b622433"><code>7517cb9</code></a> on branch <code>master</code>, for **ir 0.1.39** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 02:54 UTC** from commit <a href="https://github.com/i2mint/ir/commit/94d13745071d0cc9d6b842a1e08ccdd973937ff0"><code>94d1374</code></a> on branch <code>master</code>, for **ir 0.1.40** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.40) is behind the latest release on PyPI (0.1.41): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/7517cb91e7583de48219c2680ac0c2eb5b622433"><code>7517cb91e7583de48219c2680ac0c2eb5b622433</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/94d13745071d0cc9d6b842a1e08ccdd973937ff0"><code>94d13745071d0cc9d6b842a1e08ccdd973937ff0</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6291,9 +6350,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/37206177935">37206177935</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38338995261">38338995261</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>7517cb91e7583de48219c2680ac0c2eb5b622433</code> (in the history of the built commit) |
+| Event commit | <code>94d13745071d0cc9d6b842a1e08ccdd973937ff0</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -6302,7 +6361,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 | epythet  | 0.2.12  |
 | Sphinx   | 9.1.0   |
 | docutils | 0.22.4  |
-| Python   | 3.12.14 |
+| Python   | 3.12.15 |
 
 ## Configuration as resolved
 
@@ -6318,13 +6377,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.39/">0.1.39</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.41/">0.1.41</a>, newer than the documented version (0.1.40).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 7517cb91e7583de48219c2680ac0c2eb5b622433
+git checkout 94d13745071d0cc9d6b842a1e08ccdd973937ff0
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

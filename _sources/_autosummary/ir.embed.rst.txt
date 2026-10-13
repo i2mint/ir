@@ -9,4 +9,13 @@ ir.embed
    .. autosummary::
    
       make_embedder
+      make_embedder_for_id
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      EmbedderError
+      EmbedderMismatch
+      EmbedderUnavailable
    

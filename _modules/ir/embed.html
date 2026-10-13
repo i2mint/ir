@@ -225,67 +225,136 @@
 </span><span id="line-40"><span class="n">_LOCAL</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"default"</span><span class="p">,</span> <span class="s2">"local"</span><span class="p">,</span> <span class="s2">"minilm"</span><span class="p">,</span> <span class="s2">"st"</span><span class="p">,</span> <span class="s2">"sentence-transformers"</span><span class="p">}</span>
 </span><span id="line-41">
 </span><span id="line-42">
-</span><span id="line-43"><span class="k">def</span><span class="w"> </span><span class="nf">_hashing</span><span class="p">():</span>
-</span><span id="line-44">    <span class="kn">import</span><span class="w"> </span><span class="nn">ef</span>
+<div class="viewcode-block" id="EmbedderError">
+<a class="viewcode-back" href="../../_autosummary/ir.embed.html#ir.embed.EmbedderError">[docs]</a>
+</span><span id="line-43"><span class="k">class</span><span class="w"> </span><span class="nc">EmbedderError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+</span><span id="line-44"><span class="w">    </span><span class="sd">"""A corpus cannot be queried with the embedder at hand.</span>
 </span><span id="line-45">
-</span><span id="line-46">    <span class="k">return</span> <span class="n">ef</span><span class="o">.</span><span class="n">HashingEmbedder</span><span class="p">(),</span> <span class="s2">"hashing__dim512"</span>
-</span><span id="line-47">
-</span><span id="line-48">
-</span><span id="line-49"><span class="k">def</span><span class="w"> </span><span class="nf">_sentence_transformers</span><span class="p">(</span><span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="line-50">    <span class="kn">from</span><span class="w"> </span><span class="nn">ef</span><span class="w"> </span><span class="kn">import</span> <span class="n">embedder_adapters</span>
+</span><span id="line-46"><span class="sd">    Subclasses :class:`ValueError` (the type earlier versions raised) so existing</span>
+</span><span id="line-47"><span class="sd">    ``except ValueError`` callers keep working. The message is always actionable:</span>
+</span><span id="line-48"><span class="sd">    it says what is wrong and the command that fixes it.</span>
+</span><span id="line-49"><span class="sd">    """</span></div>
+
+</span><span id="line-50">
 </span><span id="line-51">
-</span><span id="line-52">    <span class="n">emb</span> <span class="o">=</span> <span class="n">embedder_adapters</span><span class="o">.</span><span class="n">sentence_transformers_embedder</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="line-53">    <span class="k">return</span> <span class="n">emb</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"st__</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">"</span>
+<div class="viewcode-block" id="EmbedderMismatch">
+<a class="viewcode-back" href="../../_autosummary/ir.embed.html#ir.embed.EmbedderMismatch">[docs]</a>
+</span><span id="line-52"><span class="k">class</span><span class="w"> </span><span class="nc">EmbedderMismatch</span><span class="p">(</span><span class="n">EmbedderError</span><span class="p">):</span>
+</span><span id="line-53"><span class="w">    </span><span class="sd">"""The query embedding's dimension differs from the index's."""</span></div>
+
 </span><span id="line-54">
 </span><span id="line-55">
-</span><span id="line-56"><span class="k">def</span><span class="w"> </span><span class="nf">_with_cache</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="line-57"><span class="w">    </span><span class="sd">"""Wrap *emb* in a disk-cached embedder keyed under this model's cache dir."""</span>
-</span><span id="line-58">    <span class="kn">import</span><span class="w"> </span><span class="nn">ef</span>
+<div class="viewcode-block" id="EmbedderUnavailable">
+<a class="viewcode-back" href="../../_autosummary/ir.embed.html#ir.embed.EmbedderUnavailable">[docs]</a>
+</span><span id="line-56"><span class="k">class</span><span class="w"> </span><span class="nc">EmbedderUnavailable</span><span class="p">(</span><span class="n">EmbedderError</span><span class="p">):</span>
+</span><span id="line-57"><span class="w">    </span><span class="sd">"""The embedder a corpus was built with cannot be loaded here."""</span></div>
+
+</span><span id="line-58">
 </span><span id="line-59">
-</span><span id="line-60">    <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">embeddings_cache_dir</span>
-</span><span id="line-61">    <span class="kn">from</span><span class="w"> </span><span class="nn">.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ndarray_store</span>
-</span><span id="line-62">
-</span><span id="line-63">    <span class="n">store</span> <span class="o">=</span> <span class="n">_ndarray_store</span><span class="p">(</span><span class="n">embeddings_cache_dir</span><span class="p">(</span><span class="n">model_id</span><span class="p">))</span>
-</span><span id="line-64">    <span class="k">return</span> <span class="n">ef</span><span class="o">.</span><span class="n">CachedEmbedder</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
-</span><span id="line-65">
-</span><span id="line-66">
+</span><span id="line-60"><span class="n">_HASHING_ID_PREFIX</span> <span class="o">=</span> <span class="s2">"hashing__dim"</span>
+</span><span id="line-61"><span class="n">_ST_ID_PREFIX</span> <span class="o">=</span> <span class="s2">"st__"</span>
+</span><span id="line-62"><span class="n">DFLT_HASHING_DIM</span> <span class="o">=</span> <span class="mi">512</span>
+</span><span id="line-63">
+</span><span id="line-64">
+</span><span id="line-65"><span class="k">def</span><span class="w"> </span><span class="nf">_hashing</span><span class="p">(</span><span class="n">dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_HASHING_DIM</span><span class="p">):</span>
+</span><span id="line-66">    <span class="kn">import</span><span class="w"> </span><span class="nn">ef</span>
+</span><span id="line-67">
+</span><span id="line-68">    <span class="k">return</span> <span class="n">ef</span><span class="o">.</span><span class="n">HashingEmbedder</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">),</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_HASHING_ID_PREFIX</span><span class="si">}{</span><span class="n">dim</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="line-69">
+</span><span id="line-70">
+</span><span id="line-71"><span class="k">def</span><span class="w"> </span><span class="nf">_sentence_transformers</span><span class="p">(</span><span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="line-72">    <span class="kn">from</span><span class="w"> </span><span class="nn">ef</span><span class="w"> </span><span class="kn">import</span> <span class="n">embedder_adapters</span>
+</span><span id="line-73">
+</span><span id="line-74">    <span class="n">emb</span> <span class="o">=</span> <span class="n">embedder_adapters</span><span class="o">.</span><span class="n">sentence_transformers_embedder</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-75">    <span class="k">return</span> <span class="n">emb</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"st__</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="line-76">
+</span><span id="line-77">
+</span><span id="line-78"><span class="k">def</span><span class="w"> </span><span class="nf">_with_cache</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="line-79"><span class="w">    </span><span class="sd">"""Wrap *emb* in a disk-cached embedder keyed under this model's cache dir."""</span>
+</span><span id="line-80">    <span class="kn">import</span><span class="w"> </span><span class="nn">ef</span>
+</span><span id="line-81">
+</span><span id="line-82">    <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">embeddings_cache_dir</span>
+</span><span id="line-83">    <span class="kn">from</span><span class="w"> </span><span class="nn">.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ndarray_store</span>
+</span><span id="line-84">
+</span><span id="line-85">    <span class="n">store</span> <span class="o">=</span> <span class="n">_ndarray_store</span><span class="p">(</span><span class="n">embeddings_cache_dir</span><span class="p">(</span><span class="n">model_id</span><span class="p">))</span>
+</span><span id="line-86">    <span class="k">return</span> <span class="n">ef</span><span class="o">.</span><span class="n">CachedEmbedder</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+</span><span id="line-87">
+</span><span id="line-88">
 <div class="viewcode-block" id="make_embedder">
 <a class="viewcode-back" href="../../_autosummary/ir.embed.html#ir.embed.make_embedder">[docs]</a>
-</span><span id="line-67"><span class="k">def</span><span class="w"> </span><span class="nf">make_embedder</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Callable</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="line-68"><span class="w">    </span><span class="sd">"""Resolve *spec* to ``(embedder, embedder_id)``.</span>
-</span><span id="line-69">
-</span><span id="line-70"><span class="sd">    ``embedder`` is a batch callable ``Iterable[str] -&gt; ndarray(n, dim)`` that</span>
-</span><span id="line-71"><span class="sd">    also accepts ``input_type=`` (``"query"`` / ``"document"``).</span>
-</span><span id="line-72"><span class="sd">    """</span>
-</span><span id="line-73">    <span class="kn">import</span><span class="w"> </span><span class="nn">ef</span>
-</span><span id="line-74">
-</span><span id="line-75">    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="line-76">        <span class="k">return</span> <span class="n">ef</span><span class="o">.</span><span class="n">as_embedder</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="s2">"_ir_id"</span><span class="p">,</span> <span class="s2">"custom"</span><span class="p">)</span>
-</span><span id="line-77">
-</span><span id="line-78">    <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">spec</span> <span class="ow">or</span> <span class="s2">"default"</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-</span><span id="line-79">
-</span><span id="line-80">    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_LIGHT</span><span class="p">:</span>
-</span><span id="line-81">        <span class="k">return</span> <span class="n">_hashing</span><span class="p">()</span>
-</span><span id="line-82">
-</span><span id="line-83">    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_LOCAL</span><span class="p">:</span>
-</span><span id="line-84">        <span class="n">model_name</span> <span class="o">=</span> <span class="n">DEFAULT_MODEL</span>
-</span><span id="line-85">    <span class="k">else</span><span class="p">:</span>
-</span><span id="line-86">        <span class="n">model_name</span> <span class="o">=</span> <span class="n">spec</span>  <span class="c1"># any other string is a model name</span>
-</span><span id="line-87">
-</span><span id="line-88">    <span class="k">try</span><span class="p">:</span>
-</span><span id="line-89">        <span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span> <span class="o">=</span> <span class="n">_sentence_transformers</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
-</span><span id="line-90">    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># ImportError or model-load failure</span>
-</span><span id="line-91">        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-</span><span id="line-92">            <span class="sa">f</span><span class="s2">"Local embedder </span><span class="si">{</span><span class="n">model_name</span><span class="si">!r}</span><span class="s2"> unavailable (</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">); "</span>
-</span><span id="line-93">            <span class="sa">f</span><span class="s2">"falling back to the light hashing embedder. "</span>
-</span><span id="line-94">            <span class="sa">f</span><span class="s2">"Install with `pip install sentence-transformers` for semantic search."</span><span class="p">,</span>
-</span><span id="line-95">            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-</span><span id="line-96">        <span class="p">)</span>
-</span><span id="line-97">        <span class="k">return</span> <span class="n">_hashing</span><span class="p">()</span>
-</span><span id="line-98">
-</span><span id="line-99">    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-</span><span id="line-100">        <span class="n">emb</span> <span class="o">=</span> <span class="n">_with_cache</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span><span class="p">)</span>
-</span><span id="line-101">    <span class="k">return</span> <span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span></div>
+</span><span id="line-89"><span class="k">def</span><span class="w"> </span><span class="nf">make_embedder</span><span class="p">(</span>
+</span><span id="line-90">    <span class="n">spec</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="line-91"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Callable</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="line-92"><span class="w">    </span><span class="sd">"""Resolve *spec* to ``(embedder, embedder_id)``.</span>
+</span><span id="line-93">
+</span><span id="line-94"><span class="sd">    ``embedder`` is a batch callable ``Iterable[str] -&gt; ndarray(n, dim)`` that</span>
+</span><span id="line-95"><span class="sd">    also accepts ``input_type=`` (``"query"`` / ``"document"``).</span>
+</span><span id="line-96">
+</span><span id="line-97"><span class="sd">    With ``strict=True`` a local model that cannot be loaded raises</span>
+</span><span id="line-98"><span class="sd">    :class:`EmbedderUnavailable` instead of degrading to the hashing embedder</span>
+</span><span id="line-99"><span class="sd">    (used when reopening a corpus, whose vectors only match its own model).</span>
+</span><span id="line-100"><span class="sd">    """</span>
+</span><span id="line-101">    <span class="kn">import</span><span class="w"> </span><span class="nn">ef</span>
+</span><span id="line-102">
+</span><span id="line-103">    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="line-104">        <span class="k">return</span> <span class="n">ef</span><span class="o">.</span><span class="n">as_embedder</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="s2">"_ir_id"</span><span class="p">,</span> <span class="s2">"custom"</span><span class="p">)</span>
+</span><span id="line-105">
+</span><span id="line-106">    <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">spec</span> <span class="ow">or</span> <span class="s2">"default"</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+</span><span id="line-107">
+</span><span id="line-108">    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_LIGHT</span><span class="p">:</span>
+</span><span id="line-109">        <span class="k">return</span> <span class="n">_hashing</span><span class="p">()</span>
+</span><span id="line-110">
+</span><span id="line-111">    <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_LOCAL</span><span class="p">:</span>
+</span><span id="line-112">        <span class="n">model_name</span> <span class="o">=</span> <span class="n">DEFAULT_MODEL</span>
+</span><span id="line-113">    <span class="k">else</span><span class="p">:</span>
+</span><span id="line-114">        <span class="n">model_name</span> <span class="o">=</span> <span class="n">spec</span>  <span class="c1"># any other string is a model name</span>
+</span><span id="line-115">
+</span><span id="line-116">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-117">        <span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span> <span class="o">=</span> <span class="n">_sentence_transformers</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+</span><span id="line-118">    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># ImportError or model-load failure</span>
+</span><span id="line-119">        <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
+</span><span id="line-120">            <span class="k">raise</span> <span class="n">EmbedderUnavailable</span><span class="p">(</span>
+</span><span id="line-121">                <span class="sa">f</span><span class="s2">"Embedder </span><span class="si">{</span><span class="n">model_name</span><span class="si">!r}</span><span class="s2"> cannot be loaded (</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">). Install it "</span>
+</span><span id="line-122">                <span class="sa">f</span><span class="s2">"(`uv pip install sentence-transformers`), or re-embed the corpus "</span>
+</span><span id="line-123">                <span class="sa">f</span><span class="s2">"with an embedder available here (`ir build &lt;corpus&gt;`), or "</span>
+</span><span id="line-124">                <span class="sa">f</span><span class="s2">"query without embeddings (`--mode lexical`)."</span>
+</span><span id="line-125">            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+</span><span id="line-126">        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+</span><span id="line-127">            <span class="sa">f</span><span class="s2">"Local embedder </span><span class="si">{</span><span class="n">model_name</span><span class="si">!r}</span><span class="s2"> unavailable (</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">); "</span>
+</span><span id="line-128">            <span class="sa">f</span><span class="s2">"falling back to the light hashing embedder. "</span>
+</span><span id="line-129">            <span class="sa">f</span><span class="s2">"Install with `pip install sentence-transformers` for semantic search."</span><span class="p">,</span>
+</span><span id="line-130">            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+</span><span id="line-131">        <span class="p">)</span>
+</span><span id="line-132">        <span class="k">return</span> <span class="n">_hashing</span><span class="p">()</span>
+</span><span id="line-133">
+</span><span id="line-134">    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+</span><span id="line-135">        <span class="n">emb</span> <span class="o">=</span> <span class="n">_with_cache</span><span class="p">(</span><span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span><span class="p">)</span>
+</span><span id="line-136">    <span class="k">return</span> <span class="n">emb</span><span class="p">,</span> <span class="n">model_id</span></div>
+
+</span><span id="line-137">
+</span><span id="line-138">
+<div class="viewcode-block" id="make_embedder_for_id">
+<a class="viewcode-back" href="../../_autosummary/ir.embed.html#ir.embed.make_embedder_for_id">[docs]</a>
+</span><span id="line-139"><span class="k">def</span><span class="w"> </span><span class="nf">make_embedder_for_id</span><span class="p">(</span><span class="n">embedder_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+</span><span id="line-140"><span class="w">    </span><span class="sd">"""Re-create the embedder a corpus was built with, from its stored id.</span>
+</span><span id="line-141">
+</span><span id="line-142"><span class="sd">    The ids :func:`make_embedder` emits are invertible: ``hashing__dim&lt;N&gt;`` and</span>
+</span><span id="line-143"><span class="sd">    ``st__&lt;model&gt;``. Returns ``None`` for an id that cannot be inverted (e.g.</span>
+</span><span id="line-144"><span class="sd">    ``"custom"``, or empty), so the caller falls back to the stored spec. Never</span>
+</span><span id="line-145"><span class="sd">    degrades silently: an unavailable model raises :class:`EmbedderUnavailable`.</span>
+</span><span id="line-146"><span class="sd">    This is what pins a corpus to its own embedder, so the *machine* querying it</span>
+</span><span id="line-147"><span class="sd">    (with or without ``sentence-transformers``) cannot change the vector space.</span>
+</span><span id="line-148"><span class="sd">    """</span>
+</span><span id="line-149">    <span class="k">if</span> <span class="n">embedder_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">_HASHING_ID_PREFIX</span><span class="p">):</span>
+</span><span id="line-150">        <span class="k">try</span><span class="p">:</span>
+</span><span id="line-151">            <span class="k">return</span> <span class="n">_hashing</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">embedder_id</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">_HASHING_ID_PREFIX</span><span class="p">)</span> <span class="p">:]))</span>
+</span><span id="line-152">        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="line-153">            <span class="k">return</span> <span class="kc">None</span>
+</span><span id="line-154">    <span class="k">if</span> <span class="n">embedder_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">_ST_ID_PREFIX</span><span class="p">):</span>
+</span><span id="line-155">        <span class="k">return</span> <span class="n">make_embedder</span><span class="p">(</span>
+</span><span id="line-156">            <span class="n">embedder_id</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">_ST_ID_PREFIX</span><span class="p">)</span> <span class="p">:],</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="line-157">        <span class="p">)</span>
+</span><span id="line-158">    <span class="k">return</span> <span class="kc">None</span></div>
 
 </span></code></pre></div>
     </div></div>
@@ -300,7 +369,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=f48ec9ae"></script>
+    <script src="../../_static/documentation_options.js?v=967b4925"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>

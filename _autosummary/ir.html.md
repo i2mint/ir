@@ -1372,6 +1372,12 @@ only loads the model when a dense/hybrid query actually embeds. So `ir ls`,
 `ir info`, and lexical-only search open a corpus without the model-load
 cost. Pass `embedder=` to override the stored spec.
 
+Without an override the corpus is \*\*pinned to the embedder it was built
+with\*\* (its stored `embedder_id`), not re-resolved from the spec: a spec
+like `"default"` means different models on machines with and without
+`sentence-transformers`, which would make the query vectors incompatible
+with the index.
+
 * **Return type:**
   [`Corpus`](ir.index.html.md#ir.index.Corpus)
 

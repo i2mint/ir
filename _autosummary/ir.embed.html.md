@@ -25,15 +25,60 @@ numpy ABI. Import `ir` before anything that imports `transformers`.
 
 ### Functions
 
-| [`make_embedder`](#ir.embed.make_embedder)([spec, cache])   | Resolve *spec* to `(embedder, embedder_id)`.   |
-|---------------------------------------------------------------------------------|------------------------------------------------|
+| [`make_embedder`](#ir.embed.make_embedder)([spec, cache, strict])           | Resolve *spec* to `(embedder, embedder_id)`.                        |
+|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| [`make_embedder_for_id`](#ir.embed.make_embedder_for_id)(embedder_id, \*[, cache]) | Re-create the embedder a corpus was built with, from its stored id. |
 
-### ir.embed.make_embedder(spec='default', , cache=True)
+### Exceptions
+
+| [`EmbedderError`](#ir.embed.EmbedderError)       | A corpus cannot be queried with the embedder at hand.       |
+|----------------------------------------------------------------------|-------------------------------------------------------------|
+| [`EmbedderMismatch`](#ir.embed.EmbedderMismatch)    | The query embedding's dimension differs from the index's.   |
+| [`EmbedderUnavailable`](#ir.embed.EmbedderUnavailable) | The embedder a corpus was built with cannot be loaded here. |
+
+### *exception* ir.embed.EmbedderError
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A corpus cannot be queried with the embedder at hand.
+
+Subclasses [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError) (the type earlier versions raised) so existing
+`except ValueError` callers keep working. The message is always actionable:
+it says what is wrong and the command that fixes it.
+
+### *exception* ir.embed.EmbedderMismatch
+
+Bases: [`EmbedderError`](#ir.embed.EmbedderError)
+
+The query embedding’s dimension differs from the index’s.
+
+### *exception* ir.embed.EmbedderUnavailable
+
+Bases: [`EmbedderError`](#ir.embed.EmbedderError)
+
+The embedder a corpus was built with cannot be loaded here.
+
+### ir.embed.make_embedder(spec='default', , cache=True, strict=False)
 
 Resolve *spec* to `(embedder, embedder_id)`.
 
 `embedder` is a batch callable `Iterable[str] -> ndarray(n, dim)` that
 also accepts `input_type=` (`"query"` / `"document"`).
 
+With `strict=True` a local model that cannot be loaded raises
+[`EmbedderUnavailable`](#ir.embed.EmbedderUnavailable) instead of degrading to the hashing embedder
+(used when reopening a corpus, whose vectors only match its own model).
+
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.embed.make_embedder_for_id(embedder_id, , cache=True)
+
+Re-create the embedder a corpus was built with, from its stored id.
+
+The ids [`make_embedder()`](#ir.embed.make_embedder) emits are invertible: `hashing__dim<N>` and
+`st__<model>`. Returns `None` for an id that cannot be inverted (e.g.
+`"custom"`, or empty), so the caller falls back to the stored spec. Never
+degrades silently: an unavailable model raises [`EmbedderUnavailable`](#ir.embed.EmbedderUnavailable).
+This is what pins a corpus to its own embedder, so the *machine* querying it
+(with or without `sentence-transformers`) cannot change the vector space.
