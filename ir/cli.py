@@ -68,7 +68,10 @@ def _report_embedder_errors(func):
         except EmbedderError as error:
             # stderr + nonzero exit: a failed index is not an empty result, and
             # `&&` chains / agents must not read it as success.
-            print(f"ir: error (broken index, not an empty result): {error}", file=sys.stderr)
+            print(
+                f"ir: error (broken index, not an empty result): {error}",
+                file=sys.stderr,
+            )
             raise SystemExit(2) from error
 
     return wrapper
