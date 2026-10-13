@@ -31,9 +31,9 @@ implementation; this module adds the three things ``ef`` cannot know about an ``
 Relative selection strategies (``rel_threshold``, ``score_gap``...) compare score *ratios*,
 so a reranker used with them must return non-negative scores. The ``"cross-encoder"`` spec
 guarantees that: most cross-encoders (including ef's default ms-marco model) return raw
-logits that run negative, so ir passes them through a sigmoid into ``(0, 1)``. (A model that
-already applies a sigmoid is squashed a second time -- monotone, so the order is unchanged,
-only the scale is compressed.) A callable you pass yourself is used as is: keep it in
+logits that run negative, so ir passes them through a sigmoid into ``(0, 1)``. (A model that already applies a sigmoid would be squashed a second time, which keeps the
+order but compresses the scale until relative selectors can no longer tell hits apart: use
+such a model as a callable, ``ef.cross_encoder_reranker(model)`` with a ``rerank_id``.) A callable you pass yourself is used as is: keep it in
 ``[0, 1]``, or give it a stable ``rerank_id`` attribute so its calibrated floor is kept apart.
 
 >>> resolve_reranker(None) is None
@@ -41,15 +41,19 @@ True
 >>> calibration_key("hybrid", None)
 'hybrid'
 >>> calibration_key("hybrid", rerank_tag(lambda q, s: [], "artifact"))
-'hybrid+rerank-anonymous+artifact'
+'hybrid+rerank-~anonymous+artifact'
 """
 
 from __future__ import annotations
 
+import hashlib
+import importlib.util
+import inspect
 import math
 import re
 import sys
 import threading
+import types
 import warnings
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
@@ -62,6 +66,7 @@ __all__ = [
     "resolve_reranker",
     "rerank_tag",
     "is_anonymous",
+    "spec_tag",
     "calibration_key",
     "passage_texts",
 ]
@@ -162,29 +167,49 @@ def _sigmoid_scores(raw: Callable, model: str) -> Callable:
 
 
 def _sigmoid(x: float) -> float:
-    x = max(-60.0, min(60.0, float(x)))
+    x = float(x)
+    if (
+        x != x
+    ):  # NaN: an unscorable pair must not outrank everything (min/max would say 60)
+        return 0.0
+    x = max(-60.0, min(60.0, x))
     return 1.0 / (1.0 + math.exp(-x))
 
 
-ANONYMOUS = "anonymous"
+#: Marks a tag resting on an unnamed callable. ``~`` is never produced by :func:`_slug`
+#: (it escapes it), so no real model name or ``rerank_id`` can spell it.
+ANONYMOUS = "~anonymous"
+
+#: Longest tag kept verbatim: a calibration key is a file name on the file store.
+MAX_TAG_CHARS = 120
 
 
 def _slug(text: str) -> str:
-    return re.sub(r"[^A-Za-z0-9_.]+", "-", text).strip("-") or ANONYMOUS
+    """``text`` as key-safe characters, losslessly: ``org/m`` and ``org-m`` stay apart."""
+    return re.sub(r"[^A-Za-z0-9.-]", lambda m: f"_{ord(m.group()):x}_", text) or "_"
 
 
 def _identity(obj: Any) -> str:
     """A stable name for a reranker / text callable, or ``ANONYMOUS``.
 
     ``rerank_id`` (set it on your callable) beats ``model_name`` beats ``__name__``.
-    Lambdas, ``functools.partial`` and bare instances have no stable name: two of them
-    would otherwise collide on one calibration key.
+    Lambdas, ``functools.partial``, bare instances, closures made by a factory and bound
+    methods have no stable name -- two of them would share one calibration key while
+    scoring on different scales -- unless they carry a ``rerank_id`` / ``model_name``.
     """
-    for attr in ("rerank_id", "model_name", "__name__"):
+    for attr in ("rerank_id", "model_name"):
         value = getattr(obj, attr, None)
-        if value and value not in ("<lambda>", "partial"):
+        if value:
             return _slug(str(value))
-    return ANONYMOUS
+    name = getattr(obj, "__name__", None)
+    qualname = getattr(obj, "__qualname__", "")
+    unstable = (
+        not name
+        or name in ("<lambda>", "partial")
+        or "<locals>" in qualname
+        or inspect.ismethod(obj)
+    )
+    return ANONYMOUS if unstable else _slug(str(name))
 
 
 def rerank_tag(
@@ -197,23 +222,54 @@ def rerank_tag(
 
     Built from the reranker's identity (see :func:`_identity`), the ``rerank_text`` choice
     and, for ``"artifact"``, a non-default ``max_chars`` -- everything that changes the
-    score scale. An anonymous reranker or text callable gets ``anonymous`` in its tag, which
-    ir refuses to persist a floor under (:func:`is_anonymous`).
+    score scale. An unnamed reranker or text callable puts ``~anonymous`` in its tag, which
+    ir refuses to persist a floor under (:func:`is_anonymous`). A tag longer than
+    ``MAX_TAG_CHARS`` is shortened with a hash of the whole, so it stays a usable file name.
     """
     if reranker is None:
         return None
     if isinstance(rerank_text, str):
-        text = rerank_text
-        if text == "artifact" and max_chars != DFLT_RERANK_MAX_CHARS:
+        text = _slug(rerank_text)
+        if rerank_text == "artifact" and max_chars != DFLT_RERANK_MAX_CHARS:
             text += f"@{max_chars}"
     else:
         text = f"fn-{_identity(rerank_text)}"
-    return f"rerank-{_identity(reranker)}+{text}"
+    tag = f"rerank-{_identity(reranker)}+{text}"
+    if len(tag) > MAX_TAG_CHARS:
+        digest = hashlib.sha1(tag.encode()).hexdigest()[:12]
+        tag = f"{tag[: MAX_TAG_CHARS - 13]}.{digest}"
+    return tag
 
 
 def is_anonymous(tag: str | None) -> bool:
     """Does ``tag`` rest on an unnamed callable (so its calibration key may collide)?"""
-    return bool(tag) and (f"-{ANONYMOUS}+" in tag or tag.endswith(f"-{ANONYMOUS}"))
+    return bool(tag) and ANONYMOUS in tag
+
+
+def _has_sentence_transformers() -> bool:
+    """Is the optional extra importable? (Without importing it: that loads torch.)"""
+    if "sentence_transformers" in sys.modules:
+        return sys.modules["sentence_transformers"] is not None
+    return importlib.util.find_spec("sentence_transformers") is not None
+
+
+def spec_tag(
+    spec: Any, rerank_text: Any = "surface", *, max_chars: int = DFLT_RERANK_MAX_CHARS
+):
+    """The tag a ``rerank`` spec *would* get, without loading a model; ``None`` if the
+    spec cannot run here (a ``"cross-encoder"`` spec whose extra is not installed).
+
+    For lookups such as :func:`ir.eval.load_calibration`, which need the key, not the model.
+    """
+    if not isinstance(spec, str):
+        return rerank_tag(spec, rerank_text, max_chars=max_chars)
+    name, _, model = spec.partition(":")
+    if name != CROSS_ENCODER:
+        resolve_reranker(spec)  # raises the usual error
+    if not _has_sentence_transformers():
+        return None
+    ghost = types.SimpleNamespace(rerank_id=f"{model or DFLT_RERANK_MODEL}+sigmoid")
+    return rerank_tag(ghost, rerank_text, max_chars=max_chars)
 
 
 def calibration_key(mode: str, tag: str | None = None) -> str:
@@ -246,6 +302,8 @@ def passage_texts(
     know falls back to its matched surface. A callable is called as ``rerank_text(corpus,
     meta)``.
     """
+    if max_chars < 1:
+        raise ValueError(f"rerank_max_chars must be positive, got {max_chars}")
     if callable(rerank_text):
         return [str(rerank_text(corpus, meta)) for meta in candidates]
     if rerank_text == "surface":

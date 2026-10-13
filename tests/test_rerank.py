@@ -31,7 +31,11 @@ PKG = {
         "description": "async task framework with a single DAG bullet",
         "readme": "Runs queued jobs. " * 20,
     },
-    "other": {"name": "other", "description": "pdf tools", "readme": "Merge pdf. " * 20},
+    "other": {
+        "name": "other",
+        "description": "pdf tools",
+        "readme": "Merge pdf. " * 20,
+    },
 }
 QUERY = "audio directed acyclic graph pipelines"
 
@@ -366,7 +370,7 @@ def test_a_reranked_floor_is_stored_apart_and_not_applied_to_first_stage(fake_st
         rerank_text="artifact",
     )
     assert plain.rerank is None and ce.rerank == (
-        f"rerank-{rr.DFLT_RERANK_MODEL.replace('/', '-')}-sigmoid+artifact"
+        "rerank-cross-encoder_2f_ms-marco-MiniLM-L-6-v2_2b_sigmoid+artifact"
     )
     keys = set(corpus.store.calibration)
     assert keys == {"hybrid", f"hybrid+{ce.rerank}"}
@@ -445,3 +449,96 @@ def test_federated_auto_floors_follow_the_rerank_tag(fake_st):
             [a, b], QUERY, mode="hybrid", min_score="auto", rerank="cross-encoder"
         )
     assert result.signals["per_source"]["fa"]["floor"] is not None
+
+
+# ------------------------------------------------ second review round (ir#103)
+
+
+def test_closures_bound_methods_and_punctuation_do_not_collide():
+    def make(scale):
+        def reranker(query, segments):
+            return [scale] * len(segments)
+
+        return reranker
+
+    class Scorer:
+        def score(self, query, segments):
+            return [0.0] * len(segments)
+
+    tag = rr.rerank_tag
+    assert rr.is_anonymous(tag(make(1), "surface"))  # a factory's closure
+    assert rr.is_anonymous(tag(Scorer().score, "surface"))  # a bound method
+    assert (
+        len({tag(_named(n), "surface") for n in ("org/m", "org-m", "org m", "org_m")})
+        == 4
+    )
+    assert rr.is_anonymous(tag(_named("m"), lambda c, m: ""))
+    assert not rr.is_anonymous(tag(_named("my-anonymous"), "surface"))
+    named = make(1)
+    named.rerank_id = "scale-1"
+    assert not rr.is_anonymous(tag(named, "surface"))
+
+
+def test_a_closure_floor_is_not_borrowed_by_its_sibling():
+    corpus = _corpus()
+
+    def make(scale):
+        return lambda q, segs: [scale] * len(segs)
+
+    with pytest.raises(ValueError, match="stable identity"):
+        ev.calibrate_min_score(
+            corpus, _cases(), mode="hybrid", k=3, persist=True, rerank=make(1000.0)
+        )
+    with pytest.warns(UserWarning, match="stable identity"):
+        ir.discover(corpus, QUERY, mode="hybrid", min_score="auto", rerank=make(1.0))
+
+
+def test_a_nan_logit_does_not_become_the_top_hit(fake_st, monkeypatch):
+    corpus = _corpus()
+    calls = {"n": 0}
+    real = FakeCrossEncoder.predict
+
+    def predict(self, pairs, batch_size=32, **kwargs):
+        scores = real(self, pairs, batch_size, **kwargs)
+        calls["n"] += 1
+        return scores[:-1] + [float("nan")]
+
+    monkeypatch.setattr(FakeCrossEncoder, "predict", predict)
+    hits = ir.search(corpus, QUERY, k=3, rerank="cross-encoder", rerank_text="artifact")
+    assert calls["n"] and hits[-1].score == 0.0 or all(h.score < 1.0 for h in hits)
+    assert all(0.0 <= h.score < 1.0 for h in hits)
+
+
+def test_long_tags_are_shortened_to_a_usable_key_and_stay_distinct():
+    a, b = _named("m" * 300 + "a"), _named("m" * 300 + "b")
+    ta, tb = rr.rerank_tag(a, "surface"), rr.rerank_tag(b, "surface")
+    assert len(ta) <= rr.MAX_TAG_CHARS and ta != tb
+
+
+def test_loading_a_floor_for_a_rerank_that_cannot_run_returns_none(no_st):
+    corpus = _corpus()
+    ev.calibrate_min_score(corpus, _cases(), mode="hybrid", k=3, persist=True)
+    assert ev.load_calibration(corpus, "hybrid") is not None
+    assert ev.load_calibration(corpus, "hybrid", rerank="cross-encoder") is None
+
+
+def test_loading_a_cross_encoder_floor_does_not_load_the_model(fake_st):
+    corpus = _corpus()
+    ev.calibrate_min_score(
+        corpus, _cases(), mode="hybrid", k=3, persist=True, rerank="cross-encoder"
+    )
+    FakeCrossEncoder.instances.clear()
+    rr._model_cache.clear()
+    assert ev.load_calibration(corpus, "hybrid", rerank="cross-encoder") is not None
+    assert FakeCrossEncoder.instances == []
+
+
+def test_rerank_max_chars_must_be_positive():
+    with pytest.raises(ValueError, match="rerank_max_chars"):
+        ir.search(
+            _corpus(),
+            QUERY,
+            rerank=lambda q, s: [0.0] * len(s),
+            rerank_text="artifact",
+            rerank_max_chars=0,
+        )

@@ -77,6 +77,7 @@ from .rerank import (
     is_anonymous,
     rerank_tag,
     resolve_reranker,
+    spec_tag,
 )
 from .retrieve import search as _search
 from .select import DFLT_GAP_RATIO, DFLT_MAX_K, DFLT_REL_THRESHOLD
@@ -1729,7 +1730,12 @@ def load_calibration(
     embedder id.
     """
     corpus = _as_corpus(corpus)
-    tag = rerank_tag(resolve_reranker(rerank), rerank_text, max_chars=rerank_max_chars)
+    if rerank is not None:
+        tag = spec_tag(rerank, rerank_text, max_chars=rerank_max_chars)
+        if tag is None:  # a rerank that cannot run here has no floor to load
+            return None
+    else:
+        tag = None
     rec = corpus.store.get_calibration(calibration_key(mode, tag))
     return MinScoreCalibration.from_dict(rec) if rec else None
 
