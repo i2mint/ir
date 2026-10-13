@@ -96,6 +96,7 @@
 <li class="toctree-l3"><a class="reference internal" href="ir.maintenance.html">ir.maintenance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.policy.html">ir.policy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.registry.html">ir.registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ir.requirements.html">ir.requirements</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.schedule.html">ir.schedule</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.sources.html">ir.sources</a></li>
@@ -2162,25 +2163,28 @@ own <code class="docutils literal notranslate"><span class="pre">synthesizer_id<
 <tr class="row-odd"><td><p><a class="reference internal" href="ir.registry.html#module-ir.registry" title="ir.registry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">registry</span></code></a></p></td>
 <td><p>Named-corpus registry — persistent, reusable corpus definitions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="ir.retrieve.html#module-ir.retrieve" title="ir.retrieve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">retrieve</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="ir.requirements.html#module-ir.requirements" title="ir.requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requirements</span></code></a></p></td>
+<td><p>Dependency check for <code class="docutils literal notranslate"><span class="pre">ir</span></code>: name what is missing and how to install it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ir.retrieve.html#module-ir.retrieve" title="ir.retrieve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">retrieve</span></code></a></p></td>
 <td><p>Retrieval — hard metadata filtering + dense / lexical / hybrid ranking.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="ir.schedule.html#module-ir.schedule" title="ir.schedule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="ir.schedule.html#module-ir.schedule" title="ir.schedule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule</span></code></a></p></td>
 <td><p>Install and operate the OS job that runs <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span></code> — <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">schedule</span></code> (issue #75).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="ir.sources.html#module-ir.sources" title="ir.sources"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sources</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="ir.sources.html#module-ir.sources" title="ir.sources"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sources</span></code></a></p></td>
 <td><p>Defining a corpus source — an abstract strategy plus parameters.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="ir.store.html#module-ir.store" title="ir.store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">store</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="ir.store.html#module-ir.store" title="ir.store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">store</span></code></a></p></td>
 <td><p>Persistence for <code class="docutils literal notranslate"><span class="pre">ir</span></code> — the repository layer over <code class="docutils literal notranslate"><span class="pre">dol</span></code> key-value views.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="ir.strategy.html#module-ir.strategy" title="ir.strategy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strategy</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="ir.strategy.html#module-ir.strategy" title="ir.strategy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strategy</span></code></a></p></td>
 <td><p>Indexing strategies — the "what do we index?" seam.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="ir.synopsis.html#module-ir.synopsis" title="ir.synopsis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">synopsis</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="ir.synopsis.html#module-ir.synopsis" title="ir.synopsis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">synopsis</span></code></a></p></td>
 <td><p>Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="ir.tools.html#module-ir.tools" title="ir.tools"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tools</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="ir.tools.html#module-ir.tools" title="ir.tools"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tools</span></code></a></p></td>
 <td><p>Agent-callable tool surface over <code class="docutils literal notranslate"><span class="pre">ir</span></code> — plain functions returning JSON-ready dicts, deliberately MCP/HTTP-agnostic.</p></td>
 </tr>
 </tbody>
@@ -2350,7 +2354,7 @@ own <code class="docutils literal notranslate"><span class="pre">synthesizer_id<
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=967b4925"></script>
+<script src="../_static/documentation_options.js?v=3203cd3c"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

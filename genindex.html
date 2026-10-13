@@ -126,6 +126,7 @@
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.maintenance.html">ir.maintenance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.policy.html">ir.policy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.registry.html">ir.registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.requirements.html">ir.requirements</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.schedule.html">ir.schedule</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.sources.html">ir.sources</a></li>
@@ -285,6 +286,8 @@
       </ul></li>
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.ScheduleStatus.changed">changed (ir.schedule.ScheduleStatus property)</a>
 </li>
+      <li><a href="_autosummary/ir.requirements.html#ir.requirements.check_requirements">check_requirements() (in module ir.requirements)</a>
+</li>
       <li><a href="_autosummary/ir.graph.html#ir.graph.CHILD">CHILD (in module ir.graph)</a>
 </li>
       <li><a href="_autosummary/ir.html#ir.Chunked">Chunked (class in ir)</a>
@@ -311,10 +314,10 @@
 </li>
       <li><a href="_autosummary/ir.config.html#ir.config.config_dir">config_dir() (in module ir.config)</a>
 </li>
-      <li><a href="_autosummary/ir.sources.html#ir.sources.content_hash_signal">content_hash_signal() (in module ir.sources)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
+      <li><a href="_autosummary/ir.sources.html#ir.sources.content_hash_signal">content_hash_signal() (in module ir.sources)</a>
+</li>
       <li><a href="_autosummary/ir.html#ir.corpora">corpora() (in module ir)</a>
 </li>
       <li><a href="_autosummary/ir.html#ir.Corpus">Corpus (class in ir)</a>
@@ -798,8 +801,6 @@
         <li><a href="_autosummary/ir.formulate.html#module-ir.formulate">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li>
     ir.graph
 
@@ -807,6 +808,8 @@
         <li><a href="_autosummary/ir.graph.html#module-ir.graph">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li>
     ir.index
 
@@ -833,6 +836,13 @@
 
       <ul style="list-style-type:none">
         <li><a href="_autosummary/ir.registry.html#module-ir.registry">module</a>
+</li>
+      </ul></li>
+      <li>
+    ir.requirements
+
+      <ul style="list-style-type:none">
+        <li><a href="_autosummary/ir.requirements.html#module-ir.requirements">module</a>
 </li>
       </ul></li>
       <li>
@@ -1069,6 +1079,10 @@
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.MinScoreCalibration">MinScoreCalibration (class in ir.eval)</a>
 </li>
+      <li><a href="_autosummary/ir.requirements.html#ir.requirements.missing_requirements">missing_requirements() (in module ir.requirements)</a>
+</li>
+      <li><a href="_autosummary/ir.requirements.html#ir.requirements.MissingRequirements">MissingRequirements</a>
+</li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.DiscoveryReport.mode">mode (ir.eval.DiscoveryReport attribute)</a>
 </li>
       <li><a href="_autosummary/ir.retrieve.html#ir.retrieve.MODES">MODES (in module ir.retrieve)</a>
@@ -1104,6 +1118,8 @@
         <li><a href="_autosummary/ir.policy.html#module-ir.policy">ir.policy</a>
 </li>
         <li><a href="_autosummary/ir.registry.html#module-ir.registry">ir.registry</a>
+</li>
+        <li><a href="_autosummary/ir.requirements.html#module-ir.requirements">ir.requirements</a>
 </li>
         <li><a href="_autosummary/ir.retrieve.html#module-ir.retrieve">ir.retrieve</a>
 </li>
@@ -1315,10 +1331,10 @@
       </ul></li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.RELEVANCE_LEVELS">RELEVANCE_LEVELS (in module ir.eval)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.remove">remove() (in module ir.schedule)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.render">render() (in module ir.schedule)</a>
 </li>
       <li><a href="_autosummary/ir.sources.html#ir.sources.REPO_DOC_SUBDIRS">REPO_DOC_SUBDIRS (in module ir.sources)</a>
@@ -1335,6 +1351,10 @@
         <li><a href="_autosummary/ir.coverage.html#ir.coverage.reports_coverage">(in module ir.coverage)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/ir.requirements.html#ir.requirements.REQUIRED">REQUIRED (in module ir.requirements)</a>
+</li>
+      <li><a href="_autosummary/ir.requirements.html#ir.requirements.requirements_message">requirements_message() (in module ir.requirements)</a>
+</li>
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.resolve_backend">resolve_backend() (in module ir.schedule)</a>
 </li>
       <li><a href="_autosummary/ir.sources.html#ir.sources.resolve_fetcher">resolve_fetcher() (in module ir.sources)</a>
@@ -1693,7 +1713,7 @@
 </footer>
     </div>
     
-    <script src="_static/documentation_options.js?v=967b4925"></script>
+    <script src="_static/documentation_options.js?v=3203cd3c"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>

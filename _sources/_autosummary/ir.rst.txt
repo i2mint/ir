@@ -93,6 +93,7 @@
    maintenance
    policy
    registry
+   requirements
    retrieve
    schedule
    sources

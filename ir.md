@@ -1,4 +1,4 @@
-> built 2026-10-13 02:54 UTC from 94d1374 (master) · ir 0.1.40. Details: build_info.json
+> built 2026-10-13 03:00 UTC from d9cf281 (master) · ir 0.1.41. Details: build_info.json
 
 # index.html.md
 
@@ -78,6 +78,23 @@ Notes for the default (semantic) path:
   subscription instead of a metered key — see
   [`ir_10`]()
   (MCP sampling for connectors / the Agent SDK for Claude Code).
+
+## Install on a fresh server
+
+A machine with only a system `python3` cannot run `ir` (no `numpy`, `dol`, `ef`, `vd`, `cw`). One command gives you an `ir` on `PATH`, in its own isolated environment:
+
+```bash
+uv tool install ir          # puts `ir` on PATH (~/.local/bin)
+ir discover packages "cache"
+```
+
+Or install into an environment you own: `uv pip install --python <env>/bin/python ir` (a distro-managed system Python refuses this; use `uv tool install`). If you run `ir` where its dependencies are missing, it now says which ones and prints these commands, instead of a bare `ModuleNotFoundError` from `ir/base.py`.
+
+**Where the index comes from.** Nothing is shipped or synced: each machine builds its own indexes from what is on that machine. The first `ir discover` on a machine that never built one prints `corpus 'packages' is empty; build it first: ir build packages`. Run it once (`ir build skills`, `ir build packages`, …); later builds are incremental, and `ir maintain --all` (or `ir schedule`) keeps them fresh. Indexes live under `~/.local/share/ir`.
+
+**How long a first build takes.** With the light embedder (no model download), `ir build packages` over about 2,800 records took 12 s on a small server. With the default MiniLM embedder the first build also downloads the model (about 90 MB) and embeds on CPU, so budget minutes (not measured here); `uv pip install --python <python> 'ef[sentence-transformers]'` enables it. Without that package `ir build` warns and builds with the light embedder.
+
+A corpus is pinned to the embedder it was built with (its `embedder_id`, shown by `ir info`), so installing or removing `sentence-transformers` later does not break querying. To switch embedders, re-embed with `ir build NAME`.
 
 ## The pipeline
 
@@ -4283,27 +4300,28 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 
 ### Modules
 
-| [`base`](_autosummary/ir.base.html.md#module-ir.base)               | Core data model for `ir`.                                                                                              |
-|------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| [`cli`](_autosummary/ir.cli.html.md#module-ir.cli)                 | Command-line surface for `ir` (dispatched by cw).                                                                      |
-| [`config`](_autosummary/ir.config.html.md#module-ir.config)           | Filesystem locations and process-wide defaults for `ir`.                                                               |
-| [`coverage`](_autosummary/ir.coverage.html.md#module-ir.coverage)       | Corpus-coverage diagnostic — what's on disk vs. what's actually indexed.                                               |
-| [`embed`](_autosummary/ir.embed.html.md#module-ir.embed)             | Embedder resolution for `ir` — a decent local default, a light fallback.                                               |
-| [`eval`](_autosummary/ir.eval.html.md#module-ir.eval)               | Capability-discovery evaluation — measuring how well a corpus is *found*.                                              |
-| [`eval_gen`](_autosummary/ir.eval_gen.html.md#module-ir.eval_gen)       | LLM-backed generation of evaluation cases for [`ir.eval`](_autosummary/ir.eval.html.md#module-ir.eval). |
-| [`formulate`](_autosummary/ir.formulate.html.md#module-ir.formulate)     | Query formulation — the Formulator seam (ir_09 §3).                                                                    |
-| [`graph`](_autosummary/ir.graph.html.md#module-ir.graph)             | The semantic link graph — typed edges between artifacts (report 12).                                                   |
-| [`index`](_autosummary/ir.index.html.md#module-ir.index)             | The indexing pipeline and incremental maintenance.                                                                     |
-| [`maintenance`](_autosummary/ir.maintenance.html.md#module-ir.maintenance) | Idempotent background-work runner — `ir maintain` (issue #58).                                                         |
-| [`policy`](_autosummary/ir.policy.html.md#module-ir.policy)           | Per-corpus policy — how a corpus is segmented/stored and what background work it gets.                                 |
-| [`registry`](_autosummary/ir.registry.html.md#module-ir.registry)       | Named-corpus registry — persistent, reusable corpus definitions.                                                       |
-| [`retrieve`](_autosummary/ir.retrieve.html.md#module-ir.retrieve)       | Retrieval — hard metadata filtering + dense / lexical / hybrid ranking.                                                |
-| [`schedule`](_autosummary/ir.schedule.html.md#module-ir.schedule)       | Install and operate the OS job that runs `ir maintain` — `ir schedule` (issue #75).                                    |
-| [`sources`](_autosummary/ir.sources.html.md#module-ir.sources)         | Defining a corpus source — an abstract strategy plus parameters.                                                       |
-| [`store`](_autosummary/ir.store.html.md#module-ir.store)             | Persistence for `ir` — the repository layer over `dol` key-value views.                                                |
-| [`strategy`](_autosummary/ir.strategy.html.md#module-ir.strategy)       | Indexing strategies — the "what do we index?" seam.                                                                    |
-| [`synopsis`](_autosummary/ir.synopsis.html.md#module-ir.synopsis)       | Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).                                           |
-| [`tools`](_autosummary/ir.tools.html.md#module-ir.tools)             | Agent-callable tool surface over `ir` — plain functions returning JSON-ready dicts, deliberately MCP/HTTP-agnostic.    |
+| [`base`](_autosummary/ir.base.html.md#module-ir.base)                 | Core data model for `ir`.                                                                                              |
+|--------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| [`cli`](_autosummary/ir.cli.html.md#module-ir.cli)                   | Command-line surface for `ir` (dispatched by cw).                                                                      |
+| [`config`](_autosummary/ir.config.html.md#module-ir.config)             | Filesystem locations and process-wide defaults for `ir`.                                                               |
+| [`coverage`](_autosummary/ir.coverage.html.md#module-ir.coverage)         | Corpus-coverage diagnostic — what's on disk vs. what's actually indexed.                                               |
+| [`embed`](_autosummary/ir.embed.html.md#module-ir.embed)               | Embedder resolution for `ir` — a decent local default, a light fallback.                                               |
+| [`eval`](_autosummary/ir.eval.html.md#module-ir.eval)                 | Capability-discovery evaluation — measuring how well a corpus is *found*.                                              |
+| [`eval_gen`](_autosummary/ir.eval_gen.html.md#module-ir.eval_gen)         | LLM-backed generation of evaluation cases for [`ir.eval`](_autosummary/ir.eval.html.md#module-ir.eval). |
+| [`formulate`](_autosummary/ir.formulate.html.md#module-ir.formulate)       | Query formulation — the Formulator seam (ir_09 §3).                                                                    |
+| [`graph`](_autosummary/ir.graph.html.md#module-ir.graph)               | The semantic link graph — typed edges between artifacts (report 12).                                                   |
+| [`index`](_autosummary/ir.index.html.md#module-ir.index)               | The indexing pipeline and incremental maintenance.                                                                     |
+| [`maintenance`](_autosummary/ir.maintenance.html.md#module-ir.maintenance)   | Idempotent background-work runner — `ir maintain` (issue #58).                                                         |
+| [`policy`](_autosummary/ir.policy.html.md#module-ir.policy)             | Per-corpus policy — how a corpus is segmented/stored and what background work it gets.                                 |
+| [`registry`](_autosummary/ir.registry.html.md#module-ir.registry)         | Named-corpus registry — persistent, reusable corpus definitions.                                                       |
+| [`requirements`](_autosummary/ir.requirements.html.md#module-ir.requirements) | Dependency check for `ir`: name what is missing and how to install it.                                                 |
+| [`retrieve`](_autosummary/ir.retrieve.html.md#module-ir.retrieve)         | Retrieval — hard metadata filtering + dense / lexical / hybrid ranking.                                                |
+| [`schedule`](_autosummary/ir.schedule.html.md#module-ir.schedule)         | Install and operate the OS job that runs `ir maintain` — `ir schedule` (issue #75).                                    |
+| [`sources`](_autosummary/ir.sources.html.md#module-ir.sources)           | Defining a corpus source — an abstract strategy plus parameters.                                                       |
+| [`store`](_autosummary/ir.store.html.md#module-ir.store)               | Persistence for `ir` — the repository layer over `dol` key-value views.                                                |
+| [`strategy`](_autosummary/ir.strategy.html.md#module-ir.strategy)         | Indexing strategies — the "what do we index?" seam.                                                                    |
+| [`synopsis`](_autosummary/ir.synopsis.html.md#module-ir.synopsis)         | Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).                                           |
+| [`tools`](_autosummary/ir.tools.html.md#module-ir.tools)               | Agent-callable tool surface over `ir` — plain functions returning JSON-ready dicts, deliberately MCP/HTTP-agnostic.    |
 
 
 # _autosummary/ir.index.html.md
@@ -4805,6 +4823,69 @@ Remove *name* from the registry (does not delete built data).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+
+# _autosummary/ir.requirements.html.md
+
+# ir.requirements
+
+Dependency check for `ir`: name what is missing and how to install it.
+
+`ir` imports its dependencies deep inside `ir/base.py` and friends; on an
+interpreter that lacks them (a fresh server’s system `python3`) that surfaces
+as a bare `ModuleNotFoundError: No module named 'numpy'` that says nothing
+about `ir` or the fix. [`check_requirements()`](_autosummary/ir.requirements.html.md#ir.requirements.check_requirements) runs first, from
+`ir/__init__.py`, using only the standard library, and raises
+[`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements) (a [`ModuleNotFoundError`](https://docs.python.org/3/builtins/exceptions.html#ModuleNotFoundError)) listing every
+missing import, the interpreter it was looked up in, and the install commands.
+
+### Module Attributes
+
+| [`REQUIRED`](_autosummary/ir.requirements.html.md#ir.requirements.REQUIRED)   | import name -> distribution name, for everything `import ir` needs.   |
+|-------------------------------------------------------------|-----------------------------------------------------------------------|
+
+### Functions
+
+| [`check_requirements`](_autosummary/ir.requirements.html.md#ir.requirements.check_requirements)([required])   | Raise [`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements) unless every dependency is importable.   |
+|-----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| [`missing_requirements`](_autosummary/ir.requirements.html.md#ir.requirements.missing_requirements)([required]) | Distribution names in *required* whose import name cannot be found.                                                 |
+| [`requirements_message`](_autosummary/ir.requirements.html.md#ir.requirements.requirements_message)(missing)    | The actionable message for *missing* distributions.                                                                 |
+
+### Exceptions
+
+| [`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements)   | `ir`'s dependencies are missing from the running interpreter.   |
+|------------------------------------------------------------------------|-----------------------------------------------------------------|
+
+### *exception* ir.requirements.MissingRequirements
+
+Bases: [`ModuleNotFoundError`](https://docs.python.org/3/builtins/exceptions.html#ModuleNotFoundError)
+
+`ir`’s dependencies are missing from the running interpreter.
+
+### ir.requirements.REQUIRED *: [Mapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {'cw': 'cw', 'dol': 'dol', 'ef': 'ef', 'numpy': 'numpy', 'vd': 'vd'}*
+
+import name -> distribution name, for everything `import ir` needs.
+
+### ir.requirements.check_requirements(required={'cw': 'cw', 'dol': 'dol', 'ef': 'ef', 'numpy': 'numpy', 'vd': 'vd'})
+
+Raise [`MissingRequirements`](_autosummary/ir.requirements.html.md#ir.requirements.MissingRequirements) unless every dependency is importable.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### ir.requirements.missing_requirements(required={'cw': 'cw', 'dol': 'dol', 'ef': 'ef', 'numpy': 'numpy', 'vd': 'vd'})
+
+Distribution names in *required* whose import name cannot be found.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.requirements.requirements_message(missing)
+
+The actionable message for *missing* distributions.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 
 # _autosummary/ir.retrieve.html.md
@@ -6328,18 +6409,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-13 02:54 UTC** from commit <a href="https://github.com/i2mint/ir/commit/94d13745071d0cc9d6b842a1e08ccdd973937ff0"><code>94d1374</code></a> on branch <code>master</code>, for **ir 0.1.40** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 03:00 UTC** from commit <a href="https://github.com/i2mint/ir/commit/d9cf2817e3dea35cfeaa52854f93b66c5112de0c"><code>d9cf281</code></a> on branch <code>master</code>, for **ir 0.1.41** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.1.40) is behind the latest release on PyPI (0.1.41): `pip install ir` gives newer code than these docs describe.
+- The documented version (0.1.41) is behind the latest release on PyPI (0.1.42): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/94d13745071d0cc9d6b842a1e08ccdd973937ff0"><code>94d13745071d0cc9d6b842a1e08ccdd973937ff0</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/d9cf2817e3dea35cfeaa52854f93b66c5112de0c"><code>d9cf2817e3dea35cfeaa52854f93b66c5112de0c</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6350,9 +6431,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38338995261">38338995261</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38339476245">38339476245</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>94d13745071d0cc9d6b842a1e08ccdd973937ff0</code> (in the history of the built commit) |
+| Event commit | <code>d9cf2817e3dea35cfeaa52854f93b66c5112de0c</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -6377,13 +6458,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.41/">0.1.41</a>, newer than the documented version (0.1.40).
+Latest release: <a href="https://pypi.org/project/ir/0.1.42/">0.1.42</a>, newer than the documented version (0.1.41).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 94d13745071d0cc9d6b842a1e08ccdd973937ff0
+git checkout d9cf2817e3dea35cfeaa52854f93b66c5112de0c
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -19,6 +19,7 @@
 - [ir.maintenance](ir.maintenance.html.md): Idempotent background-work runner — &#96;ir maintain&#96; (issue #58).
 - [ir.policy](ir.policy.html.md): Per-corpus policy — how a corpus is segmented/stored and what background work it gets.
 - [ir.registry](ir.registry.html.md): Named-corpus registry — persistent, reusable corpus definitions.
+- [ir.requirements](ir.requirements.html.md): Dependency check for &#96;ir&#96;: name what is missing and how to install it.
 - [ir.retrieve](ir.retrieve.html.md): Retrieval — hard metadata filtering + dense / lexical / hybrid ranking.
 - [ir.schedule](ir.schedule.html.md): Install and operate the OS job that runs &#96;ir maintain&#96; — &#96;ir schedule&#96; (issue #75).
 - [ir.sources](ir.sources.html.md): Defining a corpus source — an abstract strategy plus parameters.

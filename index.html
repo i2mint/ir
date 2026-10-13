@@ -95,6 +95,7 @@
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.maintenance.html">ir.maintenance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.policy.html">ir.policy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.registry.html">ir.registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.requirements.html">ir.requirements</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.schedule.html">ir.schedule</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.sources.html">ir.sources</a></li>
@@ -190,6 +191,18 @@ subscription instead of a metered key — see
 <a class="reference internal" href="#misc/docs/ir_10%20--%20LLM%20Routing%20--%20Running%20Agentic%20Search%20on%20a%20Claude%20Subscription%20instead%20of%20pay-as-you-go.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">ir_10</span></code></span></a>
 (MCP sampling for connectors / the Agent SDK for Claude Code).</p></li>
 </ul>
+</section>
+<section id="install-on-a-fresh-server">
+<h2>Install on a fresh server<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#install-on-a-fresh-server" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#install-on-a-fresh-server'">¶</a></h2>
+<p>A machine with only a system <code class="docutils literal notranslate"><span class="pre">python3</span></code> cannot run <code class="docutils literal notranslate"><span class="pre">ir</span></code> (no <code class="docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="docutils literal notranslate"><span class="pre">dol</span></code>, <code class="docutils literal notranslate"><span class="pre">ef</span></code>, <code class="docutils literal notranslate"><span class="pre">vd</span></code>, <code class="docutils literal notranslate"><span class="pre">cw</span></code>). One command gives you an <code class="docutils literal notranslate"><span class="pre">ir</span></code> on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, in its own isolated environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>ir<span class="w">          </span><span class="c1"># puts `ir` on PATH (~/.local/bin)</span>
+</span><span id="line-2">ir<span class="w"> </span>discover<span class="w"> </span>packages<span class="w"> </span><span class="s2">"cache"</span>
+</span></code></pre></div>
+</div>
+<p>Or install into an environment you own: <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--python</span> <span class="pre">&lt;env&gt;/bin/python</span> <span class="pre">ir</span></code> (a distro-managed system Python refuses this; use <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">tool</span> <span class="pre">install</span></code>). If you run <code class="docutils literal notranslate"><span class="pre">ir</span></code> where its dependencies are missing, it now says which ones and prints these commands, instead of a bare <code class="docutils literal notranslate"><span class="pre">ModuleNotFoundError</span></code> from <code class="docutils literal notranslate"><span class="pre">ir/base.py</span></code>.</p>
+<p><strong>Where the index comes from.</strong> Nothing is shipped or synced: each machine builds its own indexes from what is on that machine. The first <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">discover</span></code> on a machine that never built one prints <code class="docutils literal notranslate"><span class="pre">corpus</span> <span class="pre">'packages'</span> <span class="pre">is</span> <span class="pre">empty;</span> <span class="pre">build</span> <span class="pre">it</span> <span class="pre">first:</span> <span class="pre">ir</span> <span class="pre">build</span> <span class="pre">packages</span></code>. Run it once (<code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">build</span> <span class="pre">skills</span></code>, <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">build</span> <span class="pre">packages</span></code>, …); later builds are incremental, and <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">maintain</span> <span class="pre">--all</span></code> (or <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">schedule</span></code>) keeps them fresh. Indexes live under <code class="docutils literal notranslate"><span class="pre">~/.local/share/ir</span></code>.</p>
+<p><strong>How long a first build takes.</strong> With the light embedder (no model download), <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">build</span> <span class="pre">packages</span></code> over about 2,800 records took 12 s on a small server. With the default MiniLM embedder the first build also downloads the model (about 90 MB) and embeds on CPU, so budget minutes (not measured here); <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--python</span> <span class="pre">&lt;python&gt;</span> <span class="pre">'ef[sentence-transformers]'</span></code> enables it. Without that package <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">build</span></code> warns and builds with the light embedder.</p>
+<p>A corpus is pinned to the embedder it was built with (its <code class="docutils literal notranslate"><span class="pre">embedder_id</span></code>, shown by <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">info</span></code>), so installing or removing <code class="docutils literal notranslate"><span class="pre">sentence-transformers</span></code> later does not break querying. To switch embedders, re-embed with <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">build</span> <span class="pre">NAME</span></code>.</p>
 </section>
 <section id="the-pipeline">
 <h2>The pipeline<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#the-pipeline" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#the-pipeline'">¶</a></h2>
@@ -477,11 +490,12 @@ calibration, and magnitude-preserving fusion. <code class="docutils literal notr
 
 </section>
 </section>
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-13 02:54 UTC from <a href="https://github.com/i2mint/ir/commit/94d13745071d0cc9d6b842a1e08ccdd973937ff0">94d1374</a> (master) · ir 0.1.40 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-13 03:00 UTC from <a href="https://github.com/i2mint/ir/commit/d9cf2817e3dea35cfeaa52854f93b66c5112de0c">d9cf281</a> (master) · ir 0.1.41 · <a href="about-this-build.html">about this build</a></p>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
 <li><a :data-current="activeSection === '#install'" class="reference internal" href="#install">Install</a></li>
+<li><a :data-current="activeSection === '#install-on-a-fresh-server'" class="reference internal" href="#install-on-a-fresh-server">Install on a fresh server</a></li>
 <li><a :data-current="activeSection === '#the-pipeline'" class="reference internal" href="#the-pipeline">The pipeline</a><ul>
 <li><a :data-current="activeSection === '#retrieve'" class="reference internal" href="#retrieve">Retrieve</a></li>
 <li><a :data-current="activeSection === '#expand'" class="reference internal" href="#expand">Expand</a></li>
@@ -507,7 +521,7 @@ calibration, and magnitude-preserving fusion. <code class="docutils literal notr
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=967b4925"></script>
+<script src="_static/documentation_options.js?v=3203cd3c"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>

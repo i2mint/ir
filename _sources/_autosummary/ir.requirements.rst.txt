@@ -1,0 +1,26 @@
+ir.requirements
+===============
+
+.. automodule:: ir.requirements
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      REQUIRED
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      check_requirements
+      missing_requirements
+      requirements_message
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      MissingRequirements
+   

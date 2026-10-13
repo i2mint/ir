@@ -75,6 +75,23 @@ Notes for the default (semantic) path:
   [`ir_10`]()
   (MCP sampling for connectors / the Agent SDK for Claude Code).
 
+## Install on a fresh server
+
+A machine with only a system `python3` cannot run `ir` (no `numpy`, `dol`, `ef`, `vd`, `cw`). One command gives you an `ir` on `PATH`, in its own isolated environment:
+
+```bash
+uv tool install ir          # puts `ir` on PATH (~/.local/bin)
+ir discover packages "cache"
+```
+
+Or install into an environment you own: `uv pip install --python <env>/bin/python ir` (a distro-managed system Python refuses this; use `uv tool install`). If you run `ir` where its dependencies are missing, it now says which ones and prints these commands, instead of a bare `ModuleNotFoundError` from `ir/base.py`.
+
+**Where the index comes from.** Nothing is shipped or synced: each machine builds its own indexes from what is on that machine. The first `ir discover` on a machine that never built one prints `corpus 'packages' is empty; build it first: ir build packages`. Run it once (`ir build skills`, `ir build packages`, …); later builds are incremental, and `ir maintain --all` (or `ir schedule`) keeps them fresh. Indexes live under `~/.local/share/ir`.
+
+**How long a first build takes.** With the light embedder (no model download), `ir build packages` over about 2,800 records took 12 s on a small server. With the default MiniLM embedder the first build also downloads the model (about 90 MB) and embeds on CPU, so budget minutes (not measured here); `uv pip install --python <python> 'ef[sentence-transformers]'` enables it. Without that package `ir build` warns and builds with the light embedder.
+
+A corpus is pinned to the embedder it was built with (its `embedder_id`, shown by `ir info`), so installing or removing `sentence-transformers` later does not break querying. To switch embedders, re-embed with `ir build NAME`.
+
 ## The pipeline
 
 `ir` is a six-stage pipeline, each stage a small, swappable seam:

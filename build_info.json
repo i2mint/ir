@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-13T02:54:32Z",
+  "built_at": "2026-10-13T03:00:25Z",
   "package": {
     "name": "ir",
-    "version": "0.1.40",
+    "version": "0.1.41",
     "display_name": "ir",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "94d13745071d0cc9d6b842a1e08ccdd973937ff0",
-    "short_commit": "94d1374",
+    "commit": "d9cf2817e3dea35cfeaa52854f93b66c5112de0c",
+    "short_commit": "d9cf281",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/ir",
-    "commit_url": "https://github.com/i2mint/ir/commit/94d13745071d0cc9d6b842a1e08ccdd973937ff0",
+    "commit_url": "https://github.com/i2mint/ir/commit/d9cf2817e3dea35cfeaa52854f93b66c5112de0c",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/ir",
-    "sha": "94d13745071d0cc9d6b842a1e08ccdd973937ff0",
+    "sha": "d9cf2817e3dea35cfeaa52854f93b66c5112de0c",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "38338995261",
-    "run_url": "https://github.com/i2mint/ir/actions/runs/38338995261",
+    "run_id": "38339476245",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/38339476245",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -55,21 +55,21 @@
     "docs_dir": "docsrc"
   },
   "site": {
-    "modules_documented": 21,
-    "objects_documented": 465
+    "modules_documented": 22,
+    "objects_documented": 470
   },
   "pypi": {
     "checked": true,
-    "latest": "0.1.41",
+    "latest": "0.1.42",
     "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout 94d13745071d0cc9d6b842a1e08ccdd973937ff0\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout d9cf2817e3dea35cfeaa52854f93b66c5112de0c\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": false,
     "notes": [
-      "The documented version (0.1.40) is behind the latest release on PyPI (0.1.41): `pip install ir` gives newer code than these docs describe."
+      "The documented version (0.1.41) is behind the latest release on PyPI (0.1.42): `pip install ir` gives newer code than these docs describe."
     ]
   }
 }
