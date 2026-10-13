@@ -1,0 +1,26 @@
+ir.rerank
+=========
+
+.. automodule:: ir.rerank
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      RERANK_TEXTS
+      DFLT_RERANK_MODEL
+      DFLT_RERANK_MAX_CHARS
+      CROSS_ENCODER
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      resolve_reranker
+      rerank_tag
+      is_anonymous
+      spec_tag
+      calibration_key
+      passage_texts
+   

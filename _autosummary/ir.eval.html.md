@@ -93,7 +93,7 @@ ev.retrieval_report(corpus, cases, mode="hybrid").primary
 | [`evaluate_selection`](#ir.eval.evaluate_selection)(corpus, cases, \*[, ...])       | Score a selector against `cases` — selection quality, isolated.                                                                                                |
 | [`fp_rate_on_distractors`](#ir.eval.fp_rate_on_distractors)(ranking, ...)               | Fraction of named distractors that appear in the top-`k` of `ranking`.                                                                                         |
 | [`level_histogram`](#ir.eval.level_histogram)(cases, theme)                      | Count of artifacts at each level for `theme` (every level represented).                                                                                        |
-| [`load_calibration`](#ir.eval.load_calibration)(corpus, mode)                     | Load a persisted [`MinScoreCalibration`](#ir.eval.MinScoreCalibration) for `(corpus, mode)`.                                                    |
+| [`load_calibration`](#ir.eval.load_calibration)(corpus, mode, \*[, rerank, ...])  | Load a persisted [`MinScoreCalibration`](#ir.eval.MinScoreCalibration) for `(corpus, mode)`.                                                    |
 | [`load_cases`](#ir.eval.load_cases)(path)                                   | Read [`DiscoveryCase`](#ir.eval.DiscoveryCase)s from a JSONL file (skips a `__meta__` header).                                            |
 | [`load_package_cases`](#ir.eval.load_package_cases)(path)                           | Read [`PackageRelevanceCase`](#ir.eval.PackageRelevanceCase)s from JSONL (skips a `__meta__` header).                                            |
 | [`read_package_meta`](#ir.eval.read_package_meta)(path)                            | Return the `__meta__` header dict from a package-cases JSONL (`{}` if absent).                                                                                 |
@@ -325,7 +325,7 @@ relevant tooling); `tangential`/`none` are non-relevant (gain `0`). These
 gains are the knob that lets nDCG rank a core-first ordering strictly above a
 uses-tools-first one at identical recall.
 
-### *class* ir.eval.MinScoreCalibration(corpus_name, mode, k, min_score, sensitivity, specificity, youden_j, balanced_accuracy, separable, sensitivity_weight, n_positive, n_abstention, n_retrieval_miss, positive_scores, abstention_scores, grid, reason, embedder_id=None, strategy='conservative', vd_degraded=False)
+### *class* ir.eval.MinScoreCalibration(corpus_name, mode, k, min_score, sensitivity, specificity, youden_j, balanced_accuracy, separable, sensitivity_weight, n_positive, n_abstention, n_retrieval_miss, positive_scores, abstention_scores, grid, reason, embedder_id=None, strategy='conservative', vd_degraded=False, rerank=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -1005,9 +1005,12 @@ Count of artifacts at each level for `theme` (every level represented).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`int`](https://docs.python.org/3/builtins/functions.html#int)]
 
-### ir.eval.load_calibration(corpus, mode)
+### ir.eval.load_calibration(corpus, mode, , rerank=None, rerank_text='surface', rerank_max_chars=2000)
 
 Load a persisted [`MinScoreCalibration`](#ir.eval.MinScoreCalibration) for `(corpus, mode)`.
+
+`rerank` / `rerank_text` select the floor calibrated for a reranked search
+(same values as [`ir.search()`](ir.html.md#ir.search)); the default is the first-stage floor.
 
 Returns `None` when no calibration has been stored for that mode. Does not
 validate the embedder stamp — that staleness check lives at the

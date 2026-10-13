@@ -8,6 +8,8 @@
 
    .. autosummary::
    
+      resolve_reranker
+      calibration_key
       search_tool
       make_search
       with_synopsis
@@ -96,6 +98,7 @@
    policy
    registry
    requirements
+   rerank
    retrieve
    schedule
    sources

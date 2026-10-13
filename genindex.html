@@ -127,6 +127,7 @@
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.policy.html">ir.policy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.registry.html">ir.registry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.requirements.html">ir.requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.rerank.html">ir.rerank</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.schedule.html">ir.schedule</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.sources.html">ir.sources</a></li>
@@ -266,6 +267,12 @@
         <li><a href="_autosummary/ir.eval.html#ir.eval.calibrate_min_score">(in module ir.eval)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/ir.html#ir.calibration_key">calibration_key() (in module ir)</a>
+
+      <ul style="list-style-type:none">
+        <li><a href="_autosummary/ir.rerank.html#ir.rerank.calibration_key">(in module ir.rerank)</a>
+</li>
+      </ul></li>
       <li><a href="_autosummary/ir.html#ir.CorpusStore.calibration_modes">calibration_modes() (ir.CorpusStore method)</a>
 
       <ul style="list-style-type:none">
@@ -378,6 +385,8 @@
 </li>
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.crontab_without_line">crontab_without_line() (in module ir.schedule)</a>
 </li>
+      <li><a href="_autosummary/ir.rerank.html#ir.rerank.CROSS_ENCODER">CROSS_ENCODER (in module ir.rerank)</a>
+</li>
   </ul></td>
   </tr>
       </table>
@@ -445,10 +454,10 @@
 </li>
       <li><a href="_autosummary/ir.sources.html#ir.sources.DFLT_EXCLUDE_DIRS">DFLT_EXCLUDE_DIRS (in module ir.sources)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.eval.html#ir.eval.DFLT_K_VALUES">DFLT_K_VALUES (in module ir.eval)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.DFLT_LABEL">DFLT_LABEL (in module ir.schedule)</a>
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.DFLT_METRICS">DFLT_METRICS (in module ir.eval)</a>
@@ -458,6 +467,10 @@
       <li><a href="_autosummary/ir.eval.html#ir.eval.DFLT_MODE">DFLT_MODE (in module ir.eval)</a>
 </li>
       <li><a href="_autosummary/ir.eval_gen.html#ir.eval_gen.DFLT_QUERIES_PER_ARTIFACT">DFLT_QUERIES_PER_ARTIFACT (in module ir.eval_gen)</a>
+</li>
+      <li><a href="_autosummary/ir.rerank.html#ir.rerank.DFLT_RERANK_MAX_CHARS">DFLT_RERANK_MAX_CHARS (in module ir.rerank)</a>
+</li>
+      <li><a href="_autosummary/ir.rerank.html#ir.rerank.DFLT_RERANK_MODEL">DFLT_RERANK_MODEL (in module ir.rerank)</a>
 </li>
       <li><a href="_autosummary/ir.retrieve.html#ir.retrieve.DFLT_RRF_K">DFLT_RRF_K (in module ir.retrieve)</a>
 </li>
@@ -816,8 +829,6 @@
         <li><a href="_autosummary/ir.graph.html#module-ir.graph">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li>
     ir.index
 
@@ -825,6 +836,8 @@
         <li><a href="_autosummary/ir.index.html#module-ir.index">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li>
     ir.maintenance
 
@@ -851,6 +864,13 @@
 
       <ul style="list-style-type:none">
         <li><a href="_autosummary/ir.requirements.html#module-ir.requirements">module</a>
+</li>
+      </ul></li>
+      <li>
+    ir.rerank
+
+      <ul style="list-style-type:none">
+        <li><a href="_autosummary/ir.rerank.html#module-ir.rerank">module</a>
 </li>
       </ul></li>
       <li>
@@ -902,6 +922,8 @@
         <li><a href="_autosummary/ir.tools.html#module-ir.tools">module</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/ir.rerank.html#ir.rerank.is_anonymous">is_anonymous() (in module ir.rerank)</a>
+</li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.PackageRelevanceCase.is_distractor">is_distractor (ir.eval.PackageRelevanceCase attribute)</a>
 </li>
       <li><a href="_autosummary/ir.policy.html#ir.policy.is_reindex_due">is_reindex_due() (in module ir.policy)</a>
@@ -1135,6 +1157,8 @@
 </li>
         <li><a href="_autosummary/ir.requirements.html#module-ir.requirements">ir.requirements</a>
 </li>
+        <li><a href="_autosummary/ir.rerank.html#module-ir.rerank">ir.rerank</a>
+</li>
         <li><a href="_autosummary/ir.retrieve.html#module-ir.retrieve">ir.retrieve</a>
 </li>
         <li><a href="_autosummary/ir.schedule.html#module-ir.schedule">ir.schedule</a>
@@ -1234,6 +1258,8 @@
       <li><a href="_autosummary/ir.html#ir.Passage">Passage (class in ir)</a>
 </li>
       <li><a href="_autosummary/ir.html#ir.Disclosure.passage">passage (ir.Disclosure attribute)</a>
+</li>
+      <li><a href="_autosummary/ir.rerank.html#ir.rerank.passage_texts">passage_texts() (in module ir.rerank)</a>
 </li>
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.plist_bytes">plist_bytes() (in module ir.schedule)</a>
 </li>
@@ -1349,12 +1375,12 @@
 </li>
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.remove">remove() (in module ir.schedule)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.render">render() (in module ir.schedule)</a>
 </li>
       <li><a href="_autosummary/ir.sources.html#ir.sources.REPO_DOC_SUBDIRS">REPO_DOC_SUBDIRS (in module ir.sources)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.eval.html#ir.eval.SelectionGridPoint.report">report (ir.eval.SelectionGridPoint attribute)</a>
 </li>
       <li><a href="_autosummary/ir.sources.html#ir.sources.REPORT_DOC_GLOBS">REPORT_DOC_GLOBS (in module ir.sources)</a>
@@ -1371,6 +1397,10 @@
 </li>
       <li><a href="_autosummary/ir.requirements.html#ir.requirements.requirements_message">requirements_message() (in module ir.requirements)</a>
 </li>
+      <li><a href="_autosummary/ir.rerank.html#ir.rerank.rerank_tag">rerank_tag() (in module ir.rerank)</a>
+</li>
+      <li><a href="_autosummary/ir.rerank.html#ir.rerank.RERANK_TEXTS">RERANK_TEXTS (in module ir.rerank)</a>
+</li>
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.resolve_backend">resolve_backend() (in module ir.schedule)</a>
 </li>
       <li><a href="_autosummary/ir.sources.html#ir.sources.resolve_fetcher">resolve_fetcher() (in module ir.sources)</a>
@@ -1379,6 +1409,12 @@
 
       <ul style="list-style-type:none">
         <li><a href="_autosummary/ir.policy.html#ir.policy.resolve_policy">(in module ir.policy)</a>
+</li>
+      </ul></li>
+      <li><a href="_autosummary/ir.html#ir.resolve_reranker">resolve_reranker() (in module ir)</a>
+
+      <ul style="list-style-type:none">
+        <li><a href="_autosummary/ir.rerank.html#ir.rerank.resolve_reranker">(in module ir.rerank)</a>
 </li>
       </ul></li>
       <li><a href="_autosummary/ir.policy.html#ir.policy.resolve_storage">resolve_storage() (in module ir.policy)</a>
@@ -1541,6 +1577,8 @@
       <li><a href="_autosummary/ir.registry.html#ir.registry.source_from_entry">source_from_entry() (in module ir.registry)</a>
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.DiscoveryCase.source_id">source_id (ir.eval.DiscoveryCase attribute)</a>
+</li>
+      <li><a href="_autosummary/ir.rerank.html#ir.rerank.spec_tag">spec_tag() (in module ir.rerank)</a>
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.MinScoreCalibration.specificity">specificity (ir.eval.MinScoreCalibration attribute)</a>
 </li>
@@ -1749,7 +1787,7 @@
 </footer>
     </div>
     
-    <script src="_static/documentation_options.js?v=ce72d79b"></script>
+    <script src="_static/documentation_options.js?v=f98a5df1"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>

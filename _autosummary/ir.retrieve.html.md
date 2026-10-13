@@ -236,7 +236,7 @@ siblings.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Record`](ir.base.html.md#ir.base.Record)]
 
-### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, bm25=None, formulate=None)
+### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None)
 
 Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
 
@@ -254,10 +254,20 @@ Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
   * **rrf_k** ([`int`](https://docs.python.org/3/builtins/functions.html#int))
   * **alpha** ([`float`](https://docs.python.org/3/builtins/functions.html#float))
   * **bm25_sat_k** ([`float`](https://docs.python.org/3/builtins/functions.html#float))
-  * **fetch_k** ([`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – (default `max(k*5, 50)` when collapsing per artifact, else `k`).
-  * **rerank** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – that re-scores the ranked candidates after fusion. The reranker sees
-    the full candidate list (up to `fetch_k` items) and may reorder it.
-    Default `None` keeps retrieval offline (no model download / API call).
+  * **fetch_k** ([`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – (default `max(k*5, 50)` when collapsing per artifact or reranking, else `k`).
+  * **rerank** (`Union`[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – that re-scores the ranked candidates after fusion – the precision stage.
+    The reranker sees the full candidate list (up to `fetch_k` items) and may
+    reorder it; reranked hits carry the *reranker’s* score, which is on its own
+    scale (see [`ir.rerank`](ir.rerank.html.md#module-ir.rerank), and [`ir.rerank.calibration_key()`](ir.rerank.html.md#ir.rerank.calibration_key) for
+    abstention floors). Pass `"cross-encoder"` (or `"cross-encoder:<model>"`)
+    for ef’s sentence-transformers cross-encoder, imported lazily; when that
+    extra (`ir[rerank]`) is missing the search warns once and keeps the
+    first-stage ranking. Default `None` keeps retrieval offline (no model
+    download / API call).
+  * **rerank_text** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – (default; the matched surface’s text), `"artifact"` (the artifact’s
+    sibling surfaces joined in plan order, so a thin description is judged
+    against its full README), or a callable `(corpus, meta) -> str`.
+  * **rerank_max_chars** ([`int`](https://docs.python.org/3/builtins/functions.html#int))
   * **bm25** ([`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – (e.g. `{"k1": 1.5, "b": 0.75}`).
   * **formulate** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – [str, …]\`\`) applied *before* retrieval — rewrite / expand / HyDE
     (ir_09 §3). Identity by default (embed the query verbatim). When it

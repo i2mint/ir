@@ -96,6 +96,7 @@
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.policy.html">ir.policy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.registry.html">ir.registry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.requirements.html">ir.requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.rerank.html">ir.rerank</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.retrieve.html">ir.retrieve</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.schedule.html">ir.schedule</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.sources.html">ir.sources</a></li>
@@ -273,6 +274,24 @@ abstention calibration needs, so <code class="docutils literal notranslate"><spa
 queries far better (and even beats dense); the tradeoff is lower lexical recall
 on terse corpora, so RRF stays the default. Use <code class="docutils literal notranslate"><span class="pre">blend</span></code> when abstention matters
 — see <a class="reference internal" href="#misc/docs/ir_08%20--%20Magnitude-Preserving%20Hybrid%20Fusion%20--%20Trading%20rank-RRF%20for%20abstention%20separability.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">ir_08</span></code></span></a>.</p>
+<section id="precision-stage-cross-encoder-rerank-opt-in">
+<h4>Precision stage: cross-encoder rerank (opt-in)<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#precision-stage-cross-encoder-rerank-opt-in">¶</a></h4>
+<p>First-stage retrieval is tuned for recall; a cross-encoder re-scores the top <code class="docutils literal notranslate"><span class="pre">fetch_k</span></code>
+candidates against the query <em>jointly</em>, which suppresses jargon-sharing distractors.
+Single-shot and agent-free (the evaluator back-edge stays in <code class="docutils literal notranslate"><span class="pre">raglab</span></code>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">hits</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">"audio DAG pipelines"</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">,</span>
+</span><span id="line-2">                 <span class="n">rerank</span><span class="o">=</span><span class="s2">"cross-encoder"</span><span class="p">,</span>       <span class="c1"># ef's cross-encoder, loaded lazily</span>
+</span><span id="line-3">                 <span class="n">rerank_text</span><span class="o">=</span><span class="s2">"artifact"</span><span class="p">)</span>       <span class="c1"># read the whole artifact, not the matched surface</span>
+</span></code></pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'ir[rerank]'</span></code> brings <code class="docutils literal notranslate"><span class="pre">sentence-transformers</span></code>; without it the search warns once
+and returns the first-stage ranking. <code class="docutils literal notranslate"><span class="pre">rerank=</span></code> also takes any <code class="docutils literal notranslate"><span class="pre">ef.Reranker</span></code> callable (a
+stub, a hosted model), and <code class="docutils literal notranslate"><span class="pre">rerank_text=</span></code> a <code class="docutils literal notranslate"><span class="pre">(corpus,</span> <span class="pre">meta)</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code> callable. The <code class="docutils literal notranslate"><span class="pre">"cross-encoder"</span></code> spec squashes the model’s raw logits through a sigmoid into (0, 1), so
+relative selectors keep working. A reranked hit’s score is the reranker’s, on its own scale,
+so its abstention floor is calibrated and stored separately (a callable you pass needs a stable
+<code class="docutils literal notranslate"><span class="pre">rerank_id</span></code> attribute for that): pass the same <code class="docutils literal notranslate"><span class="pre">rerank=</span></code> / <code class="docutils literal notranslate"><span class="pre">rerank_text=</span></code> to <code class="docutils literal notranslate"><span class="pre">ir.eval.calibrate_min_score</span></code>
+and <code class="docutils literal notranslate"><span class="pre">ir.discover(...,</span> <span class="pre">min_score="auto")</span></code> (see <code class="docutils literal notranslate"><span class="pre">ir.rerank</span></code>).</p>
+</section>
 </section>
 <section id="expand">
 <h3>Expand<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#expand" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#expand'">¶</a></h3>
@@ -500,14 +519,17 @@ calibration, and magnitude-preserving fusion. <code class="docutils literal notr
 
 </section>
 </section>
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-13 17:21 UTC from <a href="https://github.com/i2mint/ir/commit/3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a">3bd14f6</a> (master) · ir 0.1.45 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-13 23:15 UTC from <a href="https://github.com/i2mint/ir/commit/4683d7eb0d9e1dddb46c34b249b8aa14b5891149">4683d7e</a> (master) · ir 0.1.46 · <a href="about-this-build.html">about this build</a></p>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
 <li><a :data-current="activeSection === '#install'" class="reference internal" href="#install">Install</a></li>
 <li><a :data-current="activeSection === '#install-on-a-fresh-server'" class="reference internal" href="#install-on-a-fresh-server">Install on a fresh server</a></li>
 <li><a :data-current="activeSection === '#the-pipeline'" class="reference internal" href="#the-pipeline">The pipeline</a><ul>
-<li><a :data-current="activeSection === '#retrieve'" class="reference internal" href="#retrieve">Retrieve</a></li>
+<li><a :data-current="activeSection === '#retrieve'" class="reference internal" href="#retrieve">Retrieve</a><ul>
+<li><a :data-current="activeSection === '#precision-stage-cross-encoder-rerank-opt-in'" class="reference internal" href="#precision-stage-cross-encoder-rerank-opt-in">Precision stage: cross-encoder rerank (opt-in)</a></li>
+</ul>
+</li>
 <li><a :data-current="activeSection === '#expand'" class="reference internal" href="#expand">Expand</a></li>
 <li><a :data-current="activeSection === '#select'" class="reference internal" href="#select">Select</a></li>
 <li><a :data-current="activeSection === '#disclose'" class="reference internal" href="#disclose">Disclose</a></li>
@@ -531,7 +553,7 @@ calibration, and magnitude-preserving fusion. <code class="docutils literal notr
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=ce72d79b"></script>
+<script src="_static/documentation_options.js?v=f98a5df1"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>

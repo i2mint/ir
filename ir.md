@@ -1,4 +1,4 @@
-> built 2026-10-13 17:21 UTC from 3bd14f6 (master) · ir 0.1.45. Details: build_info.json
+> built 2026-10-13 23:15 UTC from 4683d7e (master) · ir 0.1.46. Details: build_info.json
 
 # index.html.md
 
@@ -146,6 +146,26 @@ abstention calibration needs, so `blend` separates in-scope from out-of-scope
 queries far better (and even beats dense); the tradeoff is lower lexical recall
 on terse corpora, so RRF stays the default. Use `blend` when abstention matters
 — see [`ir_08`]().
+
+#### Precision stage: cross-encoder rerank (opt-in)
+
+First-stage retrieval is tuned for recall; a cross-encoder re-scores the top `fetch_k`
+candidates against the query *jointly*, which suppresses jargon-sharing distractors.
+Single-shot and agent-free (the evaluator back-edge stays in `raglab`):
+
+```python
+hits = ir.search(corpus, "audio DAG pipelines", mode="hybrid",
+                 rerank="cross-encoder",       # ef's cross-encoder, loaded lazily
+                 rerank_text="artifact")       # read the whole artifact, not the matched surface
+```
+
+`pip install 'ir[rerank]'` brings `sentence-transformers`; without it the search warns once
+and returns the first-stage ranking. `rerank=` also takes any `ef.Reranker` callable (a
+stub, a hosted model), and `rerank_text=` a `(corpus, meta) -> str` callable. The `"cross-encoder"` spec squashes the model’s raw logits through a sigmoid into (0, 1), so
+relative selectors keep working. A reranked hit’s score is the reranker’s, on its own scale,
+so its abstention floor is calibrated and stored separately (a callable you pass needs a stable
+`rerank_id` attribute for that): pass the same `rerank=` / `rerank_text=` to `ir.eval.calibrate_min_score`
+and `ir.discover(..., min_score="auto")` (see `ir.rerank`).
 
 ### Expand
 
@@ -1115,7 +1135,7 @@ ev.retrieval_report(corpus, cases, mode="hybrid").primary
 | [`evaluate_selection`](_autosummary/ir.eval.html.md#ir.eval.evaluate_selection)(corpus, cases, \*[, ...])       | Score a selector against `cases` — selection quality, isolated.                                                                                                |
 | [`fp_rate_on_distractors`](_autosummary/ir.eval.html.md#ir.eval.fp_rate_on_distractors)(ranking, ...)               | Fraction of named distractors that appear in the top-`k` of `ranking`.                                                                                         |
 | [`level_histogram`](_autosummary/ir.eval.html.md#ir.eval.level_histogram)(cases, theme)                      | Count of artifacts at each level for `theme` (every level represented).                                                                                        |
-| [`load_calibration`](_autosummary/ir.eval.html.md#ir.eval.load_calibration)(corpus, mode)                     | Load a persisted [`MinScoreCalibration`](_autosummary/ir.eval.html.md#ir.eval.MinScoreCalibration) for `(corpus, mode)`.                                                    |
+| [`load_calibration`](_autosummary/ir.eval.html.md#ir.eval.load_calibration)(corpus, mode, \*[, rerank, ...])  | Load a persisted [`MinScoreCalibration`](_autosummary/ir.eval.html.md#ir.eval.MinScoreCalibration) for `(corpus, mode)`.                                                    |
 | [`load_cases`](_autosummary/ir.eval.html.md#ir.eval.load_cases)(path)                                   | Read [`DiscoveryCase`](_autosummary/ir.eval.html.md#ir.eval.DiscoveryCase)s from a JSONL file (skips a `__meta__` header).                                            |
 | [`load_package_cases`](_autosummary/ir.eval.html.md#ir.eval.load_package_cases)(path)                           | Read [`PackageRelevanceCase`](_autosummary/ir.eval.html.md#ir.eval.PackageRelevanceCase)s from JSONL (skips a `__meta__` header).                                            |
 | [`read_package_meta`](_autosummary/ir.eval.html.md#ir.eval.read_package_meta)(path)                            | Return the `__meta__` header dict from a package-cases JSONL (`{}` if absent).                                                                                 |
@@ -1347,7 +1367,7 @@ relevant tooling); `tangential`/`none` are non-relevant (gain `0`). These
 gains are the knob that lets nDCG rank a core-first ordering strictly above a
 uses-tools-first one at identical recall.
 
-### *class* ir.eval.MinScoreCalibration(corpus_name, mode, k, min_score, sensitivity, specificity, youden_j, balanced_accuracy, separable, sensitivity_weight, n_positive, n_abstention, n_retrieval_miss, positive_scores, abstention_scores, grid, reason, embedder_id=None, strategy='conservative', vd_degraded=False)
+### *class* ir.eval.MinScoreCalibration(corpus_name, mode, k, min_score, sensitivity, specificity, youden_j, balanced_accuracy, separable, sensitivity_weight, n_positive, n_abstention, n_retrieval_miss, positive_scores, abstention_scores, grid, reason, embedder_id=None, strategy='conservative', vd_degraded=False, rerank=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2027,9 +2047,12 @@ Count of artifacts at each level for `theme` (every level represented).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`int`](https://docs.python.org/3/builtins/functions.html#int)]
 
-### ir.eval.load_calibration(corpus, mode)
+### ir.eval.load_calibration(corpus, mode, , rerank=None, rerank_text='surface', rerank_max_chars=2000)
 
 Load a persisted [`MinScoreCalibration`](_autosummary/ir.eval.html.md#ir.eval.MinScoreCalibration) for `(corpus, mode)`.
+
+`rerank` / `rerank_text` select the floor calibrated for a reranked search
+(same values as [`ir.search()`](_autosummary/ir.html.md#ir.search)); the default is the first-stage floor.
 
 Returns `None` when no calibration has been stored for that mode. Does not
 validate the embedder stamp — that staleness check lives at the
@@ -2722,42 +2745,44 @@ the reviewing search subagent shipped under `.claude/`.
 
 ### Functions
 
-| [`search_tool`](_autosummary/ir.html.md#ir.search_tool)(query, \*, corpus[, k, mode, filter])   | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                     |
-|------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| [`make_search`](_autosummary/ir.html.md#ir.make_search)(corpus, \*[, name, description, ...])   | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                             |
-| [`with_synopsis`](_autosummary/ir.html.md#ir.with_synopsis)(strategy, \*[, synthesize, ...])      | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                    |
-| [`make_thin_description_predicate`](_autosummary/ir.html.md#ir.make_thin_description_predicate)(\*[, ...])          | A `Predicate` true when the artifact's `field` is empty or thin.                                                                           |
-| `thin_description_predicate`(artifact)                                                               | Ready-made gate: synthesize only for packages with an empty / short description.                                                           |
-| [`make_llm_synthesizer`](_autosummary/ir.html.md#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...])  | An LLM-backed `Synthesizer` ([`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → synopsis).                       |
-| [`build`](_autosummary/ir.html.md#ir.build)(source, \*[, store, embedder, full, ...])     | Build or incrementally update *source* into a [`Corpus`](_autosummary/ir.html.md#ir.Corpus).                                     |
-| [`open_corpus`](_autosummary/ir.html.md#ir.open_corpus)(name, \*[, embedder])                   | Reopen a previously built corpus by name.                                                                                                  |
-| [`reports_coverage`](_autosummary/ir.html.md#ir.reports_coverage)([name, projects_root, ...])        | Diff the reports docs tree on disk against the built `name` corpus.                                                                        |
-| [`search`](_autosummary/ir.html.md#ir.search)(corpus, query, \*\*kwargs)                   | Search a [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus) (or a corpus *name*, reopened lazily).                    |
-| [`as_retriever`](_autosummary/ir.html.md#ir.as_retriever)(corpus_or_name, \*\*search_defaults)   | Bind ONE corpus to the uniform `Retriever` contract.                                                                                       |
-| [`retrievers`](_autosummary/ir.html.md#ir.retrievers)(\*\*search_defaults)                     | A lazy `Mapping[name, Retriever]` view over the registry (ir_09 §8).                                                                       |
-| [`retriever_for`](_autosummary/ir.html.md#ir.retriever_for)(name, \*\*search_defaults)            | A [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.                  |
-| [`fuse_hits`](_autosummary/ir.html.md#ir.fuse_hits)(hits_by_source, \*[, rrf_k, ...])         | Merge per-source ranked hit lists into one ranking — by rank, not score.                                                                   |
-| [`records_for_artifact`](_autosummary/ir.html.md#ir.records_for_artifact)(store_or_corpus, ...[, ...])   | All stored records of *artifact_id*, ordered by `surface_index`.                                                                           |
-| [`default_edge_extractor`](_autosummary/ir.html.md#ir.default_edge_extractor)(artifact_id, ...)            | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.                                                               |
-| [`canonical_node_id`](_autosummary/ir.html.md#ir.canonical_node_id)(target, \*, source)               | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.                                                                     |
-| [`traverse`](_autosummary/ir.html.md#ir.traverse)(query, store, \*, policy[, ...])           | Walk *store* from *query* under *policy*, returning the top-*k* hits.                                                                      |
-| [`collapsed_tree_policy`](_autosummary/ir.html.md#ir.collapsed_tree_policy)(\*[, summary_kinds, ...])     | The pure-vector summary-routing / collapsed-tree [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy).                              |
-| [`expand`](_autosummary/ir.html.md#ir.expand)(hit, corpus, \*[, policy])                   | Expand *hit* into a [`Passage`](_autosummary/ir.html.md#ir.Passage) of its neighborhood in *corpus*.                              |
-| [`sentence_window_policy`](_autosummary/ir.html.md#ir.sentence_window_policy)([k])                         | ±\*k\* same-kind neighbors around the seed (NEXT/PREV expansion).                                                                          |
-| [`parent_policy`](_autosummary/ir.html.md#ir.parent_policy)()                                     | The whole artifact (small-to-big): every stored surface, plan order.                                                                       |
-| [`tag_source`](_autosummary/ir.html.md#ir.tag_source)(hits, source)                            | Stamp *source* on every hit that doesn't already carry one.                                                                                |
-| [`make_llm_formulator`](_autosummary/ir.html.md#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])    | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                               |
-| [`select`](_autosummary/ir.html.md#ir.select)(hits, \*[, strategy, max_k, rel, ...])       | Commit to a subset of ranked `hits` — the selection stage.                                                                                 |
-| [`disclose`](_autosummary/ir.html.md#ir.disclose)(selection, \*[, level, loader, ...])       | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                    |
-| [`discover`](_autosummary/ir.html.md#ir.discover)(corpus, query, \*[, k, mode, ...])         | Find and commit to the capabilities for `query` — the one search tool.                                                                     |
-| [`register`](_autosummary/ir.html.md#ir.register)(name, kind, \*[, embedder, ...])           | Register (or overwrite) a named corpus definition.                                                                                         |
-| [`corpora`](_autosummary/ir.html.md#ir.corpora)()                                           | All registered corpus definitions, keyed by name.                                                                                          |
-| [`build_corpus`](_autosummary/ir.html.md#ir.build_corpus)(name, \*\*kwargs)                      | Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus). |
-| [`maintain`](_autosummary/ir.html.md#ir.maintain)([name, all, now, dry_run])                 | Run due background work for one corpus (*name*) or every registered one (*all*).                                                           |
-| [`maintain_corpus`](_autosummary/ir.html.md#ir.maintain_corpus)(name, \*[, now, dry_run, full])     | Do the due background work for one corpus (idempotent).                                                                                    |
-| [`resolve_policy`](_autosummary/ir.html.md#ir.resolve_policy)(entry)                               | The effective policy for a registry `entry`: entry over kind over global.                                                                  |
-| [`default_policy_for_kind`](_autosummary/ir.html.md#ir.default_policy_for_kind)(kind)                       | The smart-default [`MaintenancePolicy`](_autosummary/ir.html.md#ir.MaintenancePolicy) for a corpus `kind`.                                  |
-| [`policy_for`](_autosummary/ir.html.md#ir.policy_for)(name)                                    | The effective [`ir.policy.MaintenancePolicy`](_autosummary/ir.policy.html.md#ir.policy.MaintenancePolicy) for corpus *name*.  |
+| [`resolve_reranker`](_autosummary/ir.html.md#ir.resolve_reranker)(spec)                             | The reranker `spec` names, or `None` when there is none to apply.                                                                          |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| [`calibration_key`](_autosummary/ir.html.md#ir.calibration_key)(mode[, tag])                       | The key an abstention floor is stored and loaded under.                                                                                    |
+| [`search_tool`](_autosummary/ir.html.md#ir.search_tool)(query, \*, corpus[, k, mode, filter])  | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                     |
+| [`make_search`](_autosummary/ir.html.md#ir.make_search)(corpus, \*[, name, description, ...])  | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                             |
+| [`with_synopsis`](_autosummary/ir.html.md#ir.with_synopsis)(strategy, \*[, synthesize, ...])     | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                    |
+| [`make_thin_description_predicate`](_autosummary/ir.html.md#ir.make_thin_description_predicate)(\*[, ...])         | A `Predicate` true when the artifact's `field` is empty or thin.                                                                           |
+| `thin_description_predicate`(artifact)                                                              | Ready-made gate: synthesize only for packages with an empty / short description.                                                           |
+| [`make_llm_synthesizer`](_autosummary/ir.html.md#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...]) | An LLM-backed `Synthesizer` ([`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → synopsis).                       |
+| [`build`](_autosummary/ir.html.md#ir.build)(source, \*[, store, embedder, full, ...])    | Build or incrementally update *source* into a [`Corpus`](_autosummary/ir.html.md#ir.Corpus).                                     |
+| [`open_corpus`](_autosummary/ir.html.md#ir.open_corpus)(name, \*[, embedder])                  | Reopen a previously built corpus by name.                                                                                                  |
+| [`reports_coverage`](_autosummary/ir.html.md#ir.reports_coverage)([name, projects_root, ...])       | Diff the reports docs tree on disk against the built `name` corpus.                                                                        |
+| [`search`](_autosummary/ir.html.md#ir.search)(corpus, query, \*\*kwargs)                  | Search a [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus) (or a corpus *name*, reopened lazily).                    |
+| [`as_retriever`](_autosummary/ir.html.md#ir.as_retriever)(corpus_or_name, \*\*search_defaults)  | Bind ONE corpus to the uniform `Retriever` contract.                                                                                       |
+| [`retrievers`](_autosummary/ir.html.md#ir.retrievers)(\*\*search_defaults)                    | A lazy `Mapping[name, Retriever]` view over the registry (ir_09 §8).                                                                       |
+| [`retriever_for`](_autosummary/ir.html.md#ir.retriever_for)(name, \*\*search_defaults)           | A [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.                  |
+| [`fuse_hits`](_autosummary/ir.html.md#ir.fuse_hits)(hits_by_source, \*[, rrf_k, ...])        | Merge per-source ranked hit lists into one ranking — by rank, not score.                                                                   |
+| [`records_for_artifact`](_autosummary/ir.html.md#ir.records_for_artifact)(store_or_corpus, ...[, ...])  | All stored records of *artifact_id*, ordered by `surface_index`.                                                                           |
+| [`default_edge_extractor`](_autosummary/ir.html.md#ir.default_edge_extractor)(artifact_id, ...)           | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.                                                               |
+| [`canonical_node_id`](_autosummary/ir.html.md#ir.canonical_node_id)(target, \*, source)              | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.                                                                     |
+| [`traverse`](_autosummary/ir.html.md#ir.traverse)(query, store, \*, policy[, ...])          | Walk *store* from *query* under *policy*, returning the top-*k* hits.                                                                      |
+| [`collapsed_tree_policy`](_autosummary/ir.html.md#ir.collapsed_tree_policy)(\*[, summary_kinds, ...])    | The pure-vector summary-routing / collapsed-tree [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy).                              |
+| [`expand`](_autosummary/ir.html.md#ir.expand)(hit, corpus, \*[, policy])                  | Expand *hit* into a [`Passage`](_autosummary/ir.html.md#ir.Passage) of its neighborhood in *corpus*.                              |
+| [`sentence_window_policy`](_autosummary/ir.html.md#ir.sentence_window_policy)([k])                        | ±\*k\* same-kind neighbors around the seed (NEXT/PREV expansion).                                                                          |
+| [`parent_policy`](_autosummary/ir.html.md#ir.parent_policy)()                                    | The whole artifact (small-to-big): every stored surface, plan order.                                                                       |
+| [`tag_source`](_autosummary/ir.html.md#ir.tag_source)(hits, source)                           | Stamp *source* on every hit that doesn't already carry one.                                                                                |
+| [`make_llm_formulator`](_autosummary/ir.html.md#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                               |
+| [`select`](_autosummary/ir.html.md#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                 |
+| [`disclose`](_autosummary/ir.html.md#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                    |
+| [`discover`](_autosummary/ir.html.md#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                     |
+| [`register`](_autosummary/ir.html.md#ir.register)(name, kind, \*[, embedder, ...])          | Register (or overwrite) a named corpus definition.                                                                                         |
+| [`corpora`](_autosummary/ir.html.md#ir.corpora)()                                          | All registered corpus definitions, keyed by name.                                                                                          |
+| [`build_corpus`](_autosummary/ir.html.md#ir.build_corpus)(name, \*\*kwargs)                     | Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus). |
+| [`maintain`](_autosummary/ir.html.md#ir.maintain)([name, all, now, dry_run])                | Run due background work for one corpus (*name*) or every registered one (*all*).                                                           |
+| [`maintain_corpus`](_autosummary/ir.html.md#ir.maintain_corpus)(name, \*[, now, dry_run, full])    | Do the due background work for one corpus (idempotent).                                                                                    |
+| [`resolve_policy`](_autosummary/ir.html.md#ir.resolve_policy)(entry)                              | The effective policy for a registry `entry`: entry over kind over global.                                                                  |
+| [`default_policy_for_kind`](_autosummary/ir.html.md#ir.default_policy_for_kind)(kind)                      | The smart-default [`MaintenancePolicy`](_autosummary/ir.html.md#ir.MaintenancePolicy) for a corpus `kind`.                                  |
+| [`policy_for`](_autosummary/ir.html.md#ir.policy_for)(name)                                   | The effective [`ir.policy.MaintenancePolicy`](_autosummary/ir.policy.html.md#ir.policy.MaintenancePolicy) for corpus *name*.  |
 
 ### Classes
 
@@ -3674,6 +3699,23 @@ Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](_au
 `embedder` (e.g. `"light"` for the numpy-only hashing embedder),
 `full` (prune artifacts no longer in the source), and `batch_size`.
 
+### ir.calibration_key(mode, tag=None)
+
+The key an abstention floor is stored and loaded under.
+
+`mode` alone for a first-stage ranking (today’s behaviour, so existing floors keep
+working); `"<mode>+<tag>"` for a reranked one.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> calibration_key("hybrid")
+'hybrid'
+>>> calibration_key("hybrid", "rerank-m+artifact")
+'hybrid+rerank-m+artifact'
+```
+
 ### ir.canonical_node_id(target, , source)
 
 Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.
@@ -4202,6 +4244,29 @@ existing corpora gain a sensible policy without a migration.
 * **Return type:**
   [`MaintenancePolicy`](_autosummary/ir.policy.html.md#ir.policy.MaintenancePolicy)
 
+### ir.resolve_reranker(spec)
+
+The reranker `spec` names, or `None` when there is none to apply.
+
+`spec` is `None` (no rerank), any `ef.Reranker` callable (returned as is), or the
+string `"cross-encoder"` / `"cross-encoder:<model>"` – ef’s sentence-transformers
+cross-encoder, built lazily and cached per model name (loading one is the expensive
+part). If its optional dependency is absent this warns once and returns `None`, so
+the caller degrades to first-stage ranking; resolve *before* deriving a calibration key
+so the degraded run uses the plain key.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+```pycon
+>>> resolve_reranker(len) is len
+True
+>>> resolve_reranker("nope")
+Traceback (most recent call last):
+    ...
+ValueError: unknown rerank spec 'nope'; expected a callable, 'cross-encoder' or 'cross-encoder:<model>'.
+```
+
 ### ir.retriever_for(name, \*\*search_defaults)
 
 A [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.
@@ -4374,6 +4439,7 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 | [`policy`](_autosummary/ir.policy.html.md#module-ir.policy)             | Per-corpus policy — how a corpus is segmented/stored and what background work it gets.                                 |
 | [`registry`](_autosummary/ir.registry.html.md#module-ir.registry)         | Named-corpus registry — persistent, reusable corpus definitions.                                                       |
 | [`requirements`](_autosummary/ir.requirements.html.md#module-ir.requirements) | Dependency check for `ir`: name what is missing and how to install it.                                                 |
+| [`rerank`](_autosummary/ir.rerank.html.md#module-ir.rerank)             | The precision stage: a cross-encoder rerank over the first-stage candidates.                                           |
 | [`retrieve`](_autosummary/ir.retrieve.html.md#module-ir.retrieve)         | Retrieval — hard metadata filtering + dense / lexical / hybrid ranking.                                                |
 | [`schedule`](_autosummary/ir.schedule.html.md#module-ir.schedule)         | Install and operate the OS job that runs `ir maintain` — `ir schedule` (issue #75).                                    |
 | [`sources`](_autosummary/ir.sources.html.md#module-ir.sources)           | Defining a corpus source — an abstract strategy plus parameters.                                                       |
@@ -5011,6 +5077,175 @@ to hold: this check must never block `import ir` on a doubt.
 ```
 
 
+# _autosummary/ir.rerank.html.md
+
+# ir.rerank
+
+The precision stage: a cross-encoder rerank over the first-stage candidates.
+
+First-stage retrieval (dense / lexical / hybrid) is tuned for *recall*; many of its worst
+false positives are artefacts a joint `(query, passage)` scorer catches – a package
+whose single “DAG” bullet inflates its pooled-vector cosine, or a pair of siblings that
+share jargon rather than topic. [`ir.search()`](_autosummary/ir.html.md#ir.search) therefore takes `rerank=`: it
+over-fetches `fetch_k` candidates, hands them to the reranker, and keeps the top `k`.
+This is single-shot and agent-free: a better *one* search, not the evaluator back-edge
+(that belongs to `raglab`).
+
+`ir` composes `ef` here and adds no reranker class. `ef.cross_encoder_reranker` is the
+implementation; this module adds the three things `ef` cannot know about an `ir` corpus:
+
+- **What the reranker reads.** `rerank_text="surface"` (default) scores the matched
+  surface, exactly as before. `"artifact"` scores the artifact’s *whole* stored text –
+  its sibling surfaces (name + description + README chunks) joined in plan order – so a
+  thin description is judged against the full README. A callable
+  `(corpus, meta) -> str` replaces both.
+- **Opt-in, with a graceful fallback.** `rerank="cross-encoder"` (or
+  `"cross-encoder:<model>"`) names the ef cross-encoder without importing it, so
+  `import ir` needs no torch. When `sentence-transformers` (the `ir[rerank]` extra) is
+  missing, the search warns once and returns the first-stage ranking rather than failing.
+- **Calibration that stays honest.** A reranked hit’s score is the reranker’s, on a scale
+  unrelated to cosine / RRF / BM25, so an abstention floor calibrated for `hybrid` would
+  be mis-scaled if applied to it. [`calibration_key()`](_autosummary/ir.rerank.html.md#ir.rerank.calibration_key) gives a reranked configuration its
+  own key (`hybrid+rerank-<model>+artifact`), so `calibrate_min_score(...,
+  rerank=...)` and `discover(..., min_score="auto", rerank=...)` read and write a floor
+  for *that* configuration, and fall back to “no floor” (with the usual warning) rather
+  than a wrong one. The fallback to first-stage ranking maps back to the plain key.
+
+Relative selection strategies (`rel_threshold`, `score_gap`…) compare score *ratios*,
+so a reranker used with them must return non-negative scores. The `"cross-encoder"` spec
+guarantees that: most cross-encoders (including ef’s default ms-marco model) return raw
+logits that run negative, so ir passes them through a sigmoid into `(0, 1)`. (A model that already applies a sigmoid would be squashed a second time, which keeps the
+order but compresses the scale until relative selectors can no longer tell hits apart: use
+such a model as a callable, `ef.cross_encoder_reranker(model)` with a `rerank_id`.) A callable you pass yourself is used as is: keep it in
+`[0, 1]`, or give it a stable `rerank_id` attribute so its calibrated floor is kept apart.
+
+```pycon
+>>> resolve_reranker(None) is None
+True
+>>> calibration_key("hybrid", None)
+'hybrid'
+>>> calibration_key("hybrid", rerank_tag(lambda q, s: [], "artifact"))
+'hybrid+rerank-~anonymous+artifact'
+```
+
+### Module Attributes
+
+| [`RERANK_TEXTS`](_autosummary/ir.rerank.html.md#ir.rerank.RERANK_TEXTS)          | The built-in `rerank_text` choices (a callable is also accepted).      |
+|------------------------------------------------------------------------|------------------------------------------------------------------------|
+| [`DFLT_RERANK_MODEL`](_autosummary/ir.rerank.html.md#ir.rerank.DFLT_RERANK_MODEL)     | The cross-encoder `rerank="cross-encoder"` resolves to (ef's default). |
+| [`DFLT_RERANK_MAX_CHARS`](_autosummary/ir.rerank.html.md#ir.rerank.DFLT_RERANK_MAX_CHARS) | Cap on the characters of one `rerank_text="artifact"` passage.         |
+| [`CROSS_ENCODER`](_autosummary/ir.rerank.html.md#ir.rerank.CROSS_ENCODER)         | The `rerank=` string that names ef's cross-encoder.                    |
+
+### Functions
+
+| [`resolve_reranker`](_autosummary/ir.rerank.html.md#ir.rerank.resolve_reranker)(spec)                         | The reranker `spec` names, or `None` when there is none to apply.                                                                                         |
+|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`rerank_tag`](_autosummary/ir.rerank.html.md#ir.rerank.rerank_tag)(reranker[, rerank_text, max_chars]) | A short, key-safe identity for one reranked configuration (`None` if no rerank).                                                                          |
+| [`is_anonymous`](_autosummary/ir.rerank.html.md#ir.rerank.is_anonymous)(tag)                              | Does `tag` rest on an unnamed callable (so its calibration key may collide)?                                                                              |
+| [`spec_tag`](_autosummary/ir.rerank.html.md#ir.rerank.spec_tag)(spec[, rerank_text, max_chars])       | The tag a `rerank` spec *would* get, without loading a model; `None` if the spec cannot run here (a `"cross-encoder"` spec whose extra is not installed). |
+| [`calibration_key`](_autosummary/ir.rerank.html.md#ir.rerank.calibration_key)(mode[, tag])                   | The key an abstention floor is stored and loaded under.                                                                                                   |
+| [`passage_texts`](_autosummary/ir.rerank.html.md#ir.rerank.passage_texts)(corpus, candidates[, ...])       | The text the reranker scores for each candidate's store `meta` row.                                                                                       |
+
+### ir.rerank.CROSS_ENCODER *= 'cross-encoder'*
+
+The `rerank=` string that names ef’s cross-encoder.
+
+### ir.rerank.DFLT_RERANK_MAX_CHARS *= 2000*
+
+Cap on the characters of one `rerank_text="artifact"` passage. Cross-encoders truncate
+at ~512 tokens anyway; the cap keeps the pair list cheap to build and the cut at a
+surface boundary-agnostic, front-loaded point (name + description come first).
+
+### ir.rerank.DFLT_RERANK_MODEL *= 'cross-encoder/ms-marco-MiniLM-L-6-v2'*
+
+The cross-encoder `rerank="cross-encoder"` resolves to (ef’s default).
+
+### ir.rerank.RERANK_TEXTS *= ('surface', 'artifact')*
+
+The built-in `rerank_text` choices (a callable is also accepted).
+
+### ir.rerank.calibration_key(mode, tag=None)
+
+The key an abstention floor is stored and loaded under.
+
+`mode` alone for a first-stage ranking (today’s behaviour, so existing floors keep
+working); `"<mode>+<tag>"` for a reranked one.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> calibration_key("hybrid")
+'hybrid'
+>>> calibration_key("hybrid", "rerank-m+artifact")
+'hybrid+rerank-m+artifact'
+```
+
+### ir.rerank.is_anonymous(tag)
+
+Does `tag` rest on an unnamed callable (so its calibration key may collide)?
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### ir.rerank.passage_texts(corpus, candidates, rerank_text='surface', , max_chars=2000)
+
+The text the reranker scores for each candidate’s store `meta` row.
+
+`"surface"` is the matched surface’s own text. `"artifact"` stitches every stored
+surface of the candidate’s artifact in plan order (chunk overlap deduped, as in
+[`ir.expand`](_autosummary/ir.html.md#ir.expand)) (siblings looked up once per
+artifact, through the ledger) and cuts at `max_chars`; an artifact the ledger does not
+know falls back to its matched surface. A callable is called as `rerank_text(corpus,
+meta)`.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.rerank.rerank_tag(reranker, rerank_text='surface', , max_chars=2000)
+
+A short, key-safe identity for one reranked configuration (`None` if no rerank).
+
+Built from the reranker’s identity (see `_identity()`), the `rerank_text` choice
+and, for `"artifact"`, a non-default `max_chars` – everything that changes the
+score scale. An unnamed reranker or text callable puts `~anonymous` in its tag, which
+ir refuses to persist a floor under ([`is_anonymous()`](_autosummary/ir.rerank.html.md#ir.rerank.is_anonymous)). A tag longer than
+`MAX_TAG_CHARS` is shortened with a hash of the whole, so it stays a usable file name.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### ir.rerank.resolve_reranker(spec)
+
+The reranker `spec` names, or `None` when there is none to apply.
+
+`spec` is `None` (no rerank), any `ef.Reranker` callable (returned as is), or the
+string `"cross-encoder"` / `"cross-encoder:<model>"` – ef’s sentence-transformers
+cross-encoder, built lazily and cached per model name (loading one is the expensive
+part). If its optional dependency is absent this warns once and returns `None`, so
+the caller degrades to first-stage ranking; resolve *before* deriving a calibration key
+so the degraded run uses the plain key.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+```pycon
+>>> resolve_reranker(len) is len
+True
+>>> resolve_reranker("nope")
+Traceback (most recent call last):
+    ...
+ValueError: unknown rerank spec 'nope'; expected a callable, 'cross-encoder' or 'cross-encoder:<model>'.
+```
+
+### ir.rerank.spec_tag(spec, rerank_text='surface', , max_chars=2000)
+
+The tag a `rerank` spec *would* get, without loading a model; `None` if the
+spec cannot run here (a `"cross-encoder"` spec whose extra is not installed).
+
+For lookups such as [`ir.eval.load_calibration()`](_autosummary/ir.eval.html.md#ir.eval.load_calibration), which need the key, not the model.
+
+
 # _autosummary/ir.retrieve.html.md
 
 # ir.retrieve
@@ -5251,7 +5486,7 @@ siblings.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Record`](_autosummary/ir.base.html.md#ir.base.Record)]
 
-### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, bm25=None, formulate=None)
+### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None)
 
 Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit) for *query*.
 
@@ -5269,10 +5504,20 @@ Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)
   * **rrf_k** ([`int`](https://docs.python.org/3/builtins/functions.html#int))
   * **alpha** ([`float`](https://docs.python.org/3/builtins/functions.html#float))
   * **bm25_sat_k** ([`float`](https://docs.python.org/3/builtins/functions.html#float))
-  * **fetch_k** ([`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – (default `max(k*5, 50)` when collapsing per artifact, else `k`).
-  * **rerank** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – that re-scores the ranked candidates after fusion. The reranker sees
-    the full candidate list (up to `fetch_k` items) and may reorder it.
-    Default `None` keeps retrieval offline (no model download / API call).
+  * **fetch_k** ([`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – (default `max(k*5, 50)` when collapsing per artifact or reranking, else `k`).
+  * **rerank** (`Union`[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – that re-scores the ranked candidates after fusion – the precision stage.
+    The reranker sees the full candidate list (up to `fetch_k` items) and may
+    reorder it; reranked hits carry the *reranker’s* score, which is on its own
+    scale (see [`ir.rerank`](_autosummary/ir.rerank.html.md#module-ir.rerank), and [`ir.rerank.calibration_key()`](_autosummary/ir.rerank.html.md#ir.rerank.calibration_key) for
+    abstention floors). Pass `"cross-encoder"` (or `"cross-encoder:<model>"`)
+    for ef’s sentence-transformers cross-encoder, imported lazily; when that
+    extra (`ir[rerank]`) is missing the search warns once and keeps the
+    first-stage ranking. Default `None` keeps retrieval offline (no model
+    download / API call).
+  * **rerank_text** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – (default; the matched surface’s text), `"artifact"` (the artifact’s
+    sibling surfaces joined in plan order, so a thin description is judged
+    against its full README), or a callable `(corpus, meta) -> str`.
+  * **rerank_max_chars** ([`int`](https://docs.python.org/3/builtins/functions.html#int))
   * **bm25** ([`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – (e.g. `{"k1": 1.5, "b": 0.75}`).
   * **formulate** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – [str, …]\`\`) applied *before* retrieval — rewrite / expand / HyDE
     (ir_09 §3). Identity by default (embed the query verbatim). When it
@@ -6619,16 +6864,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-13 17:21 UTC** from commit <a href="https://github.com/i2mint/ir/commit/3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a"><code>3bd14f6</code></a> on branch <code>master</code>, for **ir 0.1.45** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 23:15 UTC** from commit <a href="https://github.com/i2mint/ir/commit/4683d7eb0d9e1dddb46c34b249b8aa14b5891149"><code>4683d7e</code></a> on branch <code>master</code>, for **ir 0.1.46** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.46) is behind the latest release on PyPI (0.1.47): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a"><code>3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/4683d7eb0d9e1dddb46c34b249b8aa14b5891149"><code>4683d7eb0d9e1dddb46c34b249b8aa14b5891149</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6639,9 +6886,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38437724360">38437724360</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38482883628">38482883628</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a</code> (in the history of the built commit) |
+| Event commit | <code>4683d7eb0d9e1dddb46c34b249b8aa14b5891149</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -6666,13 +6913,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.45/">0.1.45</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.47/">0.1.47</a>, newer than the documented version (0.1.46).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a
+git checkout 4683d7eb0d9e1dddb46c34b249b8aa14b5891149
 pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

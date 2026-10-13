@@ -40,42 +40,44 @@ the reviewing search subagent shipped under `.claude/`.
 
 ### Functions
 
-| [`search_tool`](#ir.search_tool)(query, \*, corpus[, k, mode, filter])   | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                     |
-|------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| [`make_search`](#ir.make_search)(corpus, \*[, name, description, ...])   | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                             |
-| [`with_synopsis`](#ir.with_synopsis)(strategy, \*[, synthesize, ...])      | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                    |
-| [`make_thin_description_predicate`](#ir.make_thin_description_predicate)(\*[, ...])          | A `Predicate` true when the artifact's `field` is empty or thin.                                                                           |
-| `thin_description_predicate`(artifact)                                                               | Ready-made gate: synthesize only for packages with an empty / short description.                                                           |
-| [`make_llm_synthesizer`](#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...])  | An LLM-backed `Synthesizer` ([`Artifact`](ir.base.html.md#ir.base.Artifact) → synopsis).                       |
-| [`build`](#ir.build)(source, \*[, store, embedder, full, ...])     | Build or incrementally update *source* into a [`Corpus`](#ir.Corpus).                                     |
-| [`open_corpus`](#ir.open_corpus)(name, \*[, embedder])                   | Reopen a previously built corpus by name.                                                                                                  |
-| [`reports_coverage`](#ir.reports_coverage)([name, projects_root, ...])        | Diff the reports docs tree on disk against the built `name` corpus.                                                                        |
-| [`search`](#ir.search)(corpus, query, \*\*kwargs)                   | Search a [`Corpus`](ir.index.html.md#ir.index.Corpus) (or a corpus *name*, reopened lazily).                    |
-| [`as_retriever`](#ir.as_retriever)(corpus_or_name, \*\*search_defaults)   | Bind ONE corpus to the uniform `Retriever` contract.                                                                                       |
-| [`retrievers`](#ir.retrievers)(\*\*search_defaults)                     | A lazy `Mapping[name, Retriever]` view over the registry (ir_09 §8).                                                                       |
-| [`retriever_for`](#ir.retriever_for)(name, \*\*search_defaults)            | A [`Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.                  |
-| [`fuse_hits`](#ir.fuse_hits)(hits_by_source, \*[, rrf_k, ...])         | Merge per-source ranked hit lists into one ranking — by rank, not score.                                                                   |
-| [`records_for_artifact`](#ir.records_for_artifact)(store_or_corpus, ...[, ...])   | All stored records of *artifact_id*, ordered by `surface_index`.                                                                           |
-| [`default_edge_extractor`](#ir.default_edge_extractor)(artifact_id, ...)            | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.                                                               |
-| [`canonical_node_id`](#ir.canonical_node_id)(target, \*, source)               | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.                                                                     |
-| [`traverse`](#ir.traverse)(query, store, \*, policy[, ...])           | Walk *store* from *query* under *policy*, returning the top-*k* hits.                                                                      |
-| [`collapsed_tree_policy`](#ir.collapsed_tree_policy)(\*[, summary_kinds, ...])     | The pure-vector summary-routing / collapsed-tree [`WalkPolicy`](#ir.WalkPolicy).                              |
-| [`expand`](#ir.expand)(hit, corpus, \*[, policy])                   | Expand *hit* into a [`Passage`](#ir.Passage) of its neighborhood in *corpus*.                              |
-| [`sentence_window_policy`](#ir.sentence_window_policy)([k])                         | ±\*k\* same-kind neighbors around the seed (NEXT/PREV expansion).                                                                          |
-| [`parent_policy`](#ir.parent_policy)()                                     | The whole artifact (small-to-big): every stored surface, plan order.                                                                       |
-| [`tag_source`](#ir.tag_source)(hits, source)                            | Stamp *source* on every hit that doesn't already carry one.                                                                                |
-| [`make_llm_formulator`](#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])    | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                               |
-| [`select`](#ir.select)(hits, \*[, strategy, max_k, rel, ...])       | Commit to a subset of ranked `hits` — the selection stage.                                                                                 |
-| [`disclose`](#ir.disclose)(selection, \*[, level, loader, ...])       | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                    |
-| [`discover`](#ir.discover)(corpus, query, \*[, k, mode, ...])         | Find and commit to the capabilities for `query` — the one search tool.                                                                     |
-| [`register`](#ir.register)(name, kind, \*[, embedder, ...])           | Register (or overwrite) a named corpus definition.                                                                                         |
-| [`corpora`](#ir.corpora)()                                           | All registered corpus definitions, keyed by name.                                                                                          |
-| [`build_corpus`](#ir.build_corpus)(name, \*\*kwargs)                      | Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](ir.index.html.md#ir.index.Corpus). |
-| [`maintain`](#ir.maintain)([name, all, now, dry_run])                 | Run due background work for one corpus (*name*) or every registered one (*all*).                                                           |
-| [`maintain_corpus`](#ir.maintain_corpus)(name, \*[, now, dry_run, full])     | Do the due background work for one corpus (idempotent).                                                                                    |
-| [`resolve_policy`](#ir.resolve_policy)(entry)                               | The effective policy for a registry `entry`: entry over kind over global.                                                                  |
-| [`default_policy_for_kind`](#ir.default_policy_for_kind)(kind)                       | The smart-default [`MaintenancePolicy`](#ir.MaintenancePolicy) for a corpus `kind`.                                  |
-| [`policy_for`](#ir.policy_for)(name)                                    | The effective [`ir.policy.MaintenancePolicy`](ir.policy.html.md#ir.policy.MaintenancePolicy) for corpus *name*.  |
+| [`resolve_reranker`](#ir.resolve_reranker)(spec)                             | The reranker `spec` names, or `None` when there is none to apply.                                                                          |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| [`calibration_key`](#ir.calibration_key)(mode[, tag])                       | The key an abstention floor is stored and loaded under.                                                                                    |
+| [`search_tool`](#ir.search_tool)(query, \*, corpus[, k, mode, filter])  | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                     |
+| [`make_search`](#ir.make_search)(corpus, \*[, name, description, ...])  | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                             |
+| [`with_synopsis`](#ir.with_synopsis)(strategy, \*[, synthesize, ...])     | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                    |
+| [`make_thin_description_predicate`](#ir.make_thin_description_predicate)(\*[, ...])         | A `Predicate` true when the artifact's `field` is empty or thin.                                                                           |
+| `thin_description_predicate`(artifact)                                                              | Ready-made gate: synthesize only for packages with an empty / short description.                                                           |
+| [`make_llm_synthesizer`](#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...]) | An LLM-backed `Synthesizer` ([`Artifact`](ir.base.html.md#ir.base.Artifact) → synopsis).                       |
+| [`build`](#ir.build)(source, \*[, store, embedder, full, ...])    | Build or incrementally update *source* into a [`Corpus`](#ir.Corpus).                                     |
+| [`open_corpus`](#ir.open_corpus)(name, \*[, embedder])                  | Reopen a previously built corpus by name.                                                                                                  |
+| [`reports_coverage`](#ir.reports_coverage)([name, projects_root, ...])       | Diff the reports docs tree on disk against the built `name` corpus.                                                                        |
+| [`search`](#ir.search)(corpus, query, \*\*kwargs)                  | Search a [`Corpus`](ir.index.html.md#ir.index.Corpus) (or a corpus *name*, reopened lazily).                    |
+| [`as_retriever`](#ir.as_retriever)(corpus_or_name, \*\*search_defaults)  | Bind ONE corpus to the uniform `Retriever` contract.                                                                                       |
+| [`retrievers`](#ir.retrievers)(\*\*search_defaults)                    | A lazy `Mapping[name, Retriever]` view over the registry (ir_09 §8).                                                                       |
+| [`retriever_for`](#ir.retriever_for)(name, \*\*search_defaults)           | A [`Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.                  |
+| [`fuse_hits`](#ir.fuse_hits)(hits_by_source, \*[, rrf_k, ...])        | Merge per-source ranked hit lists into one ranking — by rank, not score.                                                                   |
+| [`records_for_artifact`](#ir.records_for_artifact)(store_or_corpus, ...[, ...])  | All stored records of *artifact_id*, ordered by `surface_index`.                                                                           |
+| [`default_edge_extractor`](#ir.default_edge_extractor)(artifact_id, ...)           | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.                                                               |
+| [`canonical_node_id`](#ir.canonical_node_id)(target, \*, source)              | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.                                                                     |
+| [`traverse`](#ir.traverse)(query, store, \*, policy[, ...])          | Walk *store* from *query* under *policy*, returning the top-*k* hits.                                                                      |
+| [`collapsed_tree_policy`](#ir.collapsed_tree_policy)(\*[, summary_kinds, ...])    | The pure-vector summary-routing / collapsed-tree [`WalkPolicy`](#ir.WalkPolicy).                              |
+| [`expand`](#ir.expand)(hit, corpus, \*[, policy])                  | Expand *hit* into a [`Passage`](#ir.Passage) of its neighborhood in *corpus*.                              |
+| [`sentence_window_policy`](#ir.sentence_window_policy)([k])                        | ±\*k\* same-kind neighbors around the seed (NEXT/PREV expansion).                                                                          |
+| [`parent_policy`](#ir.parent_policy)()                                    | The whole artifact (small-to-big): every stored surface, plan order.                                                                       |
+| [`tag_source`](#ir.tag_source)(hits, source)                           | Stamp *source* on every hit that doesn't already carry one.                                                                                |
+| [`make_llm_formulator`](#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                               |
+| [`select`](#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                 |
+| [`disclose`](#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                    |
+| [`discover`](#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                     |
+| [`register`](#ir.register)(name, kind, \*[, embedder, ...])          | Register (or overwrite) a named corpus definition.                                                                                         |
+| [`corpora`](#ir.corpora)()                                          | All registered corpus definitions, keyed by name.                                                                                          |
+| [`build_corpus`](#ir.build_corpus)(name, \*\*kwargs)                     | Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](ir.index.html.md#ir.index.Corpus). |
+| [`maintain`](#ir.maintain)([name, all, now, dry_run])                | Run due background work for one corpus (*name*) or every registered one (*all*).                                                           |
+| [`maintain_corpus`](#ir.maintain_corpus)(name, \*[, now, dry_run, full])    | Do the due background work for one corpus (idempotent).                                                                                    |
+| [`resolve_policy`](#ir.resolve_policy)(entry)                              | The effective policy for a registry `entry`: entry over kind over global.                                                                  |
+| [`default_policy_for_kind`](#ir.default_policy_for_kind)(kind)                      | The smart-default [`MaintenancePolicy`](#ir.MaintenancePolicy) for a corpus `kind`.                                  |
+| [`policy_for`](#ir.policy_for)(name)                                   | The effective [`ir.policy.MaintenancePolicy`](ir.policy.html.md#ir.policy.MaintenancePolicy) for corpus *name*.  |
 
 ### Classes
 
@@ -992,6 +994,23 @@ Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](ir.
 `embedder` (e.g. `"light"` for the numpy-only hashing embedder),
 `full` (prune artifacts no longer in the source), and `batch_size`.
 
+### ir.calibration_key(mode, tag=None)
+
+The key an abstention floor is stored and loaded under.
+
+`mode` alone for a first-stage ranking (today’s behaviour, so existing floors keep
+working); `"<mode>+<tag>"` for a reranked one.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> calibration_key("hybrid")
+'hybrid'
+>>> calibration_key("hybrid", "rerank-m+artifact")
+'hybrid+rerank-m+artifact'
+```
+
 ### ir.canonical_node_id(target, , source)
 
 Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.
@@ -1520,6 +1539,29 @@ existing corpora gain a sensible policy without a migration.
 * **Return type:**
   [`MaintenancePolicy`](ir.policy.html.md#ir.policy.MaintenancePolicy)
 
+### ir.resolve_reranker(spec)
+
+The reranker `spec` names, or `None` when there is none to apply.
+
+`spec` is `None` (no rerank), any `ef.Reranker` callable (returned as is), or the
+string `"cross-encoder"` / `"cross-encoder:<model>"` – ef’s sentence-transformers
+cross-encoder, built lazily and cached per model name (loading one is the expensive
+part). If its optional dependency is absent this warns once and returns `None`, so
+the caller degrades to first-stage ranking; resolve *before* deriving a calibration key
+so the degraded run uses the plain key.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+```pycon
+>>> resolve_reranker(len) is len
+True
+>>> resolve_reranker("nope")
+Traceback (most recent call last):
+    ...
+ValueError: unknown rerank spec 'nope'; expected a callable, 'cross-encoder' or 'cross-encoder:<model>'.
+```
+
 ### ir.retriever_for(name, \*\*search_defaults)
 
 A [`Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.
@@ -1692,6 +1734,7 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 | [`policy`](ir.policy.html.md#module-ir.policy)             | Per-corpus policy — how a corpus is segmented/stored and what background work it gets.                                 |
 | [`registry`](ir.registry.html.md#module-ir.registry)         | Named-corpus registry — persistent, reusable corpus definitions.                                                       |
 | [`requirements`](ir.requirements.html.md#module-ir.requirements) | Dependency check for `ir`: name what is missing and how to install it.                                                 |
+| [`rerank`](ir.rerank.html.md#module-ir.rerank)             | The precision stage: a cross-encoder rerank over the first-stage candidates.                                           |
 | [`retrieve`](ir.retrieve.html.md#module-ir.retrieve)         | Retrieval — hard metadata filtering + dense / lexical / hybrid ranking.                                                |
 | [`schedule`](ir.schedule.html.md#module-ir.schedule)         | Install and operate the OS job that runs `ir maintain` — `ir schedule` (issue #75).                                    |
 | [`sources`](ir.sources.html.md#module-ir.sources)           | Defining a corpus source — an abstract strategy plus parameters.                                                       |
