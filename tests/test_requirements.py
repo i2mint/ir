@@ -30,3 +30,19 @@ def test_message_names_the_interpreter_and_leads_with_uv_tool():
     message = requirements_message(["numpy"])
     assert sys.executable in message
     assert message.index("uv tool install") < message.index("uv pip install")
+
+
+def test_required_matches_the_declared_dependencies():
+    """REQUIRED is a hand copy of [project].dependencies; it must not drift from it."""
+    import re
+    import tomllib
+    from pathlib import Path
+
+    from ir.requirements import REQUIRED
+
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    declared = tomllib.loads(pyproject.read_text())["project"]["dependencies"]
+    names = {
+        re.split(r"[<>=!~;\[ ]", d, maxsplit=1)[0].strip().lower() for d in declared
+    }
+    assert set(REQUIRED.values()) == names
