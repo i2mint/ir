@@ -35,8 +35,9 @@ def test_message_names_the_interpreter_and_leads_with_uv_tool():
 def test_required_matches_the_declared_dependencies():
     """REQUIRED is a hand copy of [project].dependencies; it must not drift from it."""
     import re
-    import tomllib
     from pathlib import Path
+
+    tomllib = pytest.importorskip("tomllib")  # Python 3.11+; 3.12 CI covers it
 
     from ir.requirements import REQUIRED
 
