@@ -150,9 +150,13 @@ candidates against the query *jointly*, which suppresses jargon-sharing distract
 Single-shot and agent-free (the evaluator back-edge stays in `raglab`):
 
 ```python
-hits = ir.search(corpus, "audio DAG pipelines", mode="hybrid",
-                 rerank="cross-encoder",       # ef's cross-encoder, loaded lazily
-                 rerank_text="artifact")       # read the whole artifact, not the matched surface
+hits = ir.search(
+    corpus,
+    "audio DAG pipelines",
+    mode="hybrid",
+    rerank="cross-encoder",  # ef's cross-encoder, loaded lazily
+    rerank_text="artifact",
+)  # read the whole artifact, not the matched surface
 ```
 
 `pip install 'ir[rerank]'` brings `sentence-transformers`; without it the search warns once
