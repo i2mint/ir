@@ -129,7 +129,8 @@ def _dense_ranked(
             f"Query embedding dim {qv.shape[0]} != index dim {mat.shape[1]}: "
             f"corpus {name!r} was built with embedder {built_with!r} but is "
             f"being queried with a different embedder. Rebuild it with the embedder "
-            f"you query with: `ir build {name}`; or query without embeddings: "
+            f"you query with (registered corpora: `ir build {name}`; corpora built "
+            f"from Python: `ir.build(...)` again); or query without embeddings: "
             f"`ir search {name} <query> --mode lexical`."
         )
     sub = mat[candidates]

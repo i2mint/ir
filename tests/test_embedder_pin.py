@@ -59,7 +59,7 @@ def test_mismatch_message_names_corpus_and_fix(dirs):
         corpus.search("alpha", mode="dense")
 
 
-def test_cli_search_reports_mismatch_instead_of_crashing(dirs, monkeypatch):
+def test_cli_search_reports_mismatch_instead_of_crashing(dirs, monkeypatch, capsys):
     _build()
     import numpy as np
 
@@ -71,7 +71,8 @@ def test_cli_search_reports_mismatch_instead_of_crashing(dirs, monkeypatch):
         return c
 
     monkeypatch.setattr(cli, "open_corpus", open_mismatched)
-    out = cli.search("pin", "alpha", mode="dense")
-    assert out.startswith("ERROR") and "ir build pin" in out
-    out = cli.discover("pin", "alpha", mode="dense")
-    assert out.startswith("ERROR") and "ir build pin" in out
+    for command in (cli.search, cli.discover):
+        with pytest.raises(SystemExit) as exit_info:
+            command("pin", "alpha", mode="dense")
+        assert exit_info.value.code == 2
+        assert "ir build pin" in capsys.readouterr().err

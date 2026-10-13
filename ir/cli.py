@@ -25,6 +25,7 @@ Commands operate on **named** corpora from the registry (see
 from __future__ import annotations
 
 import functools
+import sys
 
 from . import registry
 from .embed import EmbedderError
@@ -65,7 +66,10 @@ def _report_embedder_errors(func):
         try:
             return func(*args, **kwargs)
         except EmbedderError as error:
-            return f"ERROR (index/embedder mismatch, not an empty result): {error}"
+            # stderr + nonzero exit: a failed index is not an empty result, and
+            # `&&` chains / agents must not read it as success.
+            print(f"ir: error (broken index, not an empty result): {error}", file=sys.stderr)
+            raise SystemExit(2) from error
 
     return wrapper
 
@@ -359,6 +363,7 @@ def rm(name):
     return f"unregistered {name!r}"
 
 
+@_report_embedder_errors
 def eval(name, cases, *, mode="hybrid", k=10):
     """Score a built corpus's retrieval against a DiscoveryCase JSONL file.
 
@@ -414,6 +419,7 @@ def eval_gen(name, out, *, k=5, abstention_frac=0.15, max_artifacts=None):
     )
 
 
+@_report_embedder_errors
 def eval_select(
     name,
     cases,
@@ -457,6 +463,7 @@ def eval_select(
     return out
 
 
+@_report_embedder_errors
 def sweep_select(
     name,
     cases,
@@ -491,6 +498,7 @@ def sweep_select(
     return out
 
 
+@_report_embedder_errors
 def calibrate_min_score(
     name,
     cases,

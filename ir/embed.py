@@ -119,9 +119,9 @@ def make_embedder(
         if strict:
             raise EmbedderUnavailable(
                 f"Embedder {model_name!r} cannot be loaded ({e}). Install it "
-                f"(`uv pip install sentence-transformers`) or rebuild the corpus "
-                f"with an embedder available here (`ir build <name> --embedder "
-                f"light`)."
+                f"(`uv pip install sentence-transformers`), or re-embed the corpus "
+                f"with an embedder available here (`ir build <corpus>`), or "
+                f"query without embeddings (`--mode lexical`)."
             ) from e
         warnings.warn(
             f"Local embedder {model_name!r} unavailable ({e}); "
