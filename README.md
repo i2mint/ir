@@ -143,6 +143,25 @@ queries far better (and even beats dense); the tradeoff is lower lexical recall
 on terse corpora, so RRF stays the default. Use `blend` when abstention matters
 — see [`ir_08`](misc/docs/ir_08%20--%20Magnitude-Preserving%20Hybrid%20Fusion%20--%20Trading%20rank-RRF%20for%20abstention%20separability.md).
 
+#### Precision stage: cross-encoder rerank (opt-in)
+
+First-stage retrieval is tuned for recall; a cross-encoder re-scores the top `fetch_k`
+candidates against the query *jointly*, which suppresses jargon-sharing distractors.
+Single-shot and agent-free (the evaluator back-edge stays in `raglab`):
+
+```python
+hits = ir.search(corpus, "audio DAG pipelines", mode="hybrid",
+                 rerank="cross-encoder",       # ef's cross-encoder, loaded lazily
+                 rerank_text="artifact")       # read the whole artifact, not the matched surface
+```
+
+`pip install 'ir[rerank]'` brings `sentence-transformers`; without it the search warns once
+and returns the first-stage ranking. `rerank=` also takes any `ef.Reranker` callable (a
+stub, a hosted model), and `rerank_text=` a `(corpus, meta) -> str` callable. A reranked
+hit's score is the reranker's, on its own scale, so its abstention floor is calibrated and
+stored separately: pass the same `rerank=` / `rerank_text=` to `ir.eval.calibrate_min_score`
+and `ir.discover(..., min_score="auto")` (see `ir.rerank`).
+
 ### Expand
 
 ```python

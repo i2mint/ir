@@ -71,6 +71,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .base import SearchHit
+from .rerank import calibration_key, rerank_tag, resolve_reranker
 from .retrieve import search as _search
 from .select import DFLT_GAP_RATIO, DFLT_MAX_K, DFLT_REL_THRESHOLD
 
@@ -1426,6 +1427,7 @@ class MinScoreCalibration:
     embedder_id: str | None = None
     strategy: str = "conservative"
     vd_degraded: bool = False
+    rerank: str | None = None
 
     def to_dict(self) -> dict:
         """JSON-serializable form (for persistence and the qh / HTTP surface)."""
@@ -1450,6 +1452,7 @@ class MinScoreCalibration:
             "embedder_id": self.embedder_id,
             "strategy": self.strategy,
             "vd_degraded": self.vd_degraded,
+            "rerank": self.rerank,
         }
 
     @classmethod
@@ -1478,6 +1481,7 @@ class MinScoreCalibration:
             embedder_id=d.get("embedder_id"),
             strategy=d.get("strategy", "conservative"),
             vd_degraded=bool(d.get("vd_degraded", False)),
+            rerank=d.get("rerank"),
         )
 
     def save(self, corpus: Any) -> "MinScoreCalibration":
@@ -1489,7 +1493,9 @@ class MinScoreCalibration:
         never committed to source control.
         """
         corpus = _as_corpus(corpus)
-        corpus.store.set_calibration(self.mode, self.to_dict())
+        corpus.store.set_calibration(
+            calibration_key(self.mode, self.rerank), self.to_dict()
+        )
         return self
 
     def __str__(self) -> str:
@@ -1587,6 +1593,14 @@ def calibrate_min_score(
     # scale, not the requested mode's. Flag it so the calibration is auditable
     # and a consumer can recalibrate once vd is installed.
     vd_degraded = mode in ("hybrid", "lexical") and not _vd_available()
+    # A reranked search scores on the reranker's scale, so its floor is a separate
+    # calibration (ir.rerank.calibration_key); resolve once so a degraded
+    # "cross-encoder" spec lands on the plain key.
+    if "rerank" in search_kw:
+        search_kw["rerank"] = resolve_reranker(search_kw["rerank"])
+    rerank_id = rerank_tag(
+        search_kw.get("rerank"), search_kw.get("rerank_text", "surface")
+    )
     scored = _retrieve_for_cases(
         corpus, cases, mode=mode, k=k, surfaces=surfaces, **search_kw
     )
@@ -1645,6 +1659,7 @@ def calibrate_min_score(
             reason=reason,
             embedder_id=getattr(corpus, "embedder_id", None),
             vd_degraded=vd_degraded,
+            rerank=rerank_id,
         )
 
     floors = (
@@ -1674,14 +1689,20 @@ def calibrate_min_score(
         reason=reason,
         embedder_id=getattr(corpus, "embedder_id", None),
         vd_degraded=vd_degraded,
+        rerank=rerank_id,
     )
     if persist:
         calib.save(corpus)
     return calib
 
 
-def load_calibration(corpus: Any, mode: str) -> MinScoreCalibration | None:
+def load_calibration(
+    corpus: Any, mode: str, *, rerank: Any = None, rerank_text: Any = "surface"
+) -> MinScoreCalibration | None:
     """Load a persisted :class:`MinScoreCalibration` for ``(corpus, mode)``.
+
+    ``rerank`` / ``rerank_text`` select the floor calibrated for a reranked search
+    (same values as :func:`ir.search`); the default is the first-stage floor.
 
     Returns ``None`` when no calibration has been stored for that mode. Does not
     validate the embedder stamp — that staleness check lives at the
@@ -1689,7 +1710,8 @@ def load_calibration(corpus: Any, mode: str) -> MinScoreCalibration | None:
     embedder id.
     """
     corpus = _as_corpus(corpus)
-    rec = corpus.store.get_calibration(mode)
+    tag = rerank_tag(resolve_reranker(rerank), rerank_text)
+    rec = corpus.store.get_calibration(calibration_key(mode, tag))
     return MinScoreCalibration.from_dict(rec) if rec else None
 
 
