@@ -392,3 +392,134 @@ def test_file_backed_incremental_round_trip(tmp_path, monkeypatch):
     assert calls == []  # unchanged rebuild through a fresh handle -> no synthesis
     ir.build(source("v2"), store=CorpusStore.local("syn_fb"), embedder="light")
     assert sorted(calls) == ["A", "B"]  # synthesizer identity changed -> all
+
+
+# --------------------------------------------------------------------------- #
+# Conditional synopsis (#63): synthesize only where a predicate says so
+# --------------------------------------------------------------------------- #
+
+_PKGS = {
+    "empty": {"name": "empty", "description": "", "readme": "Does audio things."},
+    "short": {"name": "short", "description": "dates", "readme": "Parses dates."},
+    "rich": {
+        "name": "rich",
+        "description": "A thorough toolkit for parsing and formatting calendar dates",
+        "readme": "Parses dates.",
+    },
+}
+
+
+def _counting_synth():
+    calls = []
+
+    def synth(artifact):
+        calls.append(artifact.id)
+        return f"synopsis of {artifact.id}"
+
+    return synth, calls
+
+
+def _build_pkgs(strat, store=None):
+    src = ir.CorpusSource.from_mapping(_PKGS, name="p", strategy=strat)
+    return ir.build(src, store=store or CorpusStore.memory(), embedder="light")
+
+
+def test_thin_description_predicate_selects_empty_and_short_only():
+    pred = ir.thin_description_predicate
+    flags = {k: pred(Artifact(id=k, raw=v)) for k, v in _PKGS.items()}
+    assert flags == {"empty": True, "short": True, "rich": False}
+    assert ir.make_thin_description_predicate(min_chars=3)(
+        Artifact(id="s", raw=_PKGS["short"])
+    ) is False
+    # whitespace-only is thin; a non-mapping raw is judged by its own text
+    assert pred(Artifact(id="w", raw={"description": "   \n"}))
+    assert not pred(Artifact(id="t", raw="x" * 100))
+
+
+def test_when_gates_synthesis_calls_and_surfaces():
+    synth, calls = _counting_synth()
+    strat = ir.with_synopsis(
+        ir.Package(),
+        synthesize=synth,
+        synthesizer_id="v1",
+        when=ir.thin_description_predicate,
+    )
+    corpus = _build_pkgs(strat)
+    assert sorted(calls) == ["empty", "short"]  # the rich one is never synthesized
+    kinds = {
+        a: [r.surface_kind for r in records_for_artifact(corpus, a)] for a in _PKGS
+    }
+    assert kinds["empty"][0] == "synopsis" and kinds["short"][0] == "synopsis"
+    assert "synopsis" not in kinds["rich"] and "description" in kinds["rich"]
+
+
+def test_when_always_is_default_and_matches_ungated_behaviour():
+    synth, calls = _counting_synth()
+    gated = ir.with_synopsis(ir.Package(), synthesize=synth, synthesizer_id="v1")
+    explicit = ir.with_synopsis(
+        ir.Package(), synthesize=synth, synthesizer_id="v1", when="always"
+    )
+    _build_pkgs(gated)
+    assert sorted(calls) == sorted(_PKGS)  # every artifact
+    # an ungated wrapper keeps its pre-`when` strategy id (no forced re-synthesis)
+    assert _strategy_id(gated) == _strategy_id(explicit)
+    assert "when" not in _strategy_id(gated)
+
+
+def test_when_identity_folds_into_strategy_id_and_triggers_resynthesis():
+    synth, calls = _counting_synth()
+    store = CorpusStore.memory()
+    thin3 = ir.with_synopsis(
+        ir.Package(),
+        synthesize=synth,
+        synthesizer_id="v1",
+        when=ir.make_thin_description_predicate(min_chars=3),
+    )
+    thin99 = ir.with_synopsis(
+        ir.Package(),
+        synthesize=synth,
+        synthesizer_id="v1",
+        when=ir.make_thin_description_predicate(min_chars=99),
+    )
+    assert _strategy_id(thin3) != _strategy_id(thin99)
+    _build_pkgs(thin3, store)
+    assert calls == ["empty"]  # "dates" (5 chars) is not thin at min_chars=3
+    calls.clear()
+    _build_pkgs(thin99, store)  # threshold change re-decomposes: all three now thin
+    assert sorted(calls) == sorted(_PKGS)
+
+
+def test_when_rejects_bad_values_and_warns_on_unnamed_predicate():
+    with pytest.raises(ValueError):
+        ir.with_synopsis(ir.Package(), synthesize=lambda a: "", synthesizer_id="v", when="never")
+    with pytest.raises(TypeError):
+        ir.with_synopsis(ir.Package(), synthesize=lambda a: "", synthesizer_id="v", when=3)
+    with pytest.warns(UserWarning, match="when"):
+        ir.with_synopsis(
+            ir.Package(),
+            synthesize=lambda a: "",
+            synthesizer_id="v",
+            when=lambda a: True,
+        )
+    # an explicit when_id silences it and is part of the id
+    s = ir.with_synopsis(
+        ir.Package(), synthesize=lambda a: "", synthesizer_id="v",
+        when=lambda a: True, when_id="all-v1",
+    )
+    assert "all-v1" in _strategy_id(s)
+
+
+def test_description_gain_drops_stale_synopsis_on_incremental_rebuild():
+    synth, calls = _counting_synth()
+    store = CorpusStore.memory()
+    strat = ir.with_synopsis(
+        ir.Package(), synthesize=synth, synthesizer_id="v1",
+        when=ir.thin_description_predicate,
+    )
+    _build_pkgs(strat, store)
+    docs = dict(_PKGS)
+    docs["empty"] = {**_PKGS["empty"], "description": "x" * 60}
+    src = ir.CorpusSource.from_mapping(docs, name="p", strategy=strat)
+    corpus = ir.build(src, store=store, embedder="light")
+    kinds = [r.surface_kind for r in records_for_artifact(corpus, "empty")]
+    assert "synopsis" not in kinds
