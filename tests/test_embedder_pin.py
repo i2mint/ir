@@ -76,3 +76,13 @@ def test_cli_search_reports_mismatch_instead_of_crashing(dirs, monkeypatch, caps
             command("pin", "alpha", mode="dense")
         assert exit_info.value.code == 2
         assert "ir build pin" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "bad", ["hashing__dimXYZ", "hashing__dim", "hashing__dim0", "hashing__dim-3"]
+)
+def test_a_malformed_hashing_id_raises_rather_than_falling_back(bad):
+    from ir.embed import EmbedderError
+
+    with pytest.raises(EmbedderError, match="malformed"):
+        make_embedder_for_id(bad)

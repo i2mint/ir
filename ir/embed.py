@@ -140,17 +140,22 @@ def make_embedder_for_id(embedder_id: str, *, cache: bool = True):
     """Re-create the embedder a corpus was built with, from its stored id.
 
     The ids :func:`make_embedder` emits are invertible: ``hashing__dim<N>`` and
-    ``st__<model>``. Returns ``None`` for an id that cannot be inverted (e.g.
+    ``st__<model>``. Returns ``None`` for an id that is not one of those forms (e.g.
     ``"custom"``, or empty), so the caller falls back to the stored spec. Never
-    degrades silently: an unavailable model raises :class:`EmbedderUnavailable`.
+    degrades silently: an unavailable model raises :class:`EmbedderUnavailable`, and
+    an id of one of those forms that does not parse raises :class:`EmbedderError`
+    (falling back to the spec there is the drift this exists to prevent).
     This is what pins a corpus to its own embedder, so the *machine* querying it
     (with or without ``sentence-transformers``) cannot change the vector space.
     """
     if embedder_id.startswith(_HASHING_ID_PREFIX):
-        try:
-            return _hashing(int(embedder_id[len(_HASHING_ID_PREFIX) :]))
-        except ValueError:
-            return None
+        dim = embedder_id[len(_HASHING_ID_PREFIX) :]
+        if not dim.isdigit() or int(dim) <= 0:
+            raise EmbedderError(
+                f"Corpus embedder id {embedder_id!r} is malformed: expected "
+                f"{_HASHING_ID_PREFIX}<positive int>. The index metadata may be corrupt."
+            )
+        return _hashing(int(dim))
     if embedder_id.startswith(_ST_ID_PREFIX):
         return make_embedder(
             embedder_id[len(_ST_ID_PREFIX) :], cache=cache, strict=True
