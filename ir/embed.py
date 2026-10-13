@@ -40,10 +40,32 @@ _LIGHT = {"light", "hashing", "hash"}
 _LOCAL = {"default", "local", "minilm", "st", "sentence-transformers"}
 
 
-def _hashing():
+class EmbedderError(ValueError):
+    """A corpus cannot be queried with the embedder at hand.
+
+    Subclasses :class:`ValueError` (the type earlier versions raised) so existing
+    ``except ValueError`` callers keep working. The message is always actionable:
+    it says what is wrong and the command that fixes it.
+    """
+
+
+class EmbedderMismatch(EmbedderError):
+    """The query embedding's dimension differs from the index's."""
+
+
+class EmbedderUnavailable(EmbedderError):
+    """The embedder a corpus was built with cannot be loaded here."""
+
+
+_HASHING_ID_PREFIX = "hashing__dim"
+_ST_ID_PREFIX = "st__"
+DFLT_HASHING_DIM = 512
+
+
+def _hashing(dim: int = DFLT_HASHING_DIM):
     import ef
 
-    return ef.HashingEmbedder(), "hashing__dim512"
+    return ef.HashingEmbedder(dim=dim), f"{_HASHING_ID_PREFIX}{dim}"
 
 
 def _sentence_transformers(model_name: str):
@@ -64,11 +86,17 @@ def _with_cache(emb, model_id: str):
     return ef.CachedEmbedder(emb, store)
 
 
-def make_embedder(spec: Any = "default", *, cache: bool = True) -> tuple[Callable, str]:
+def make_embedder(
+    spec: Any = "default", *, cache: bool = True, strict: bool = False
+) -> tuple[Callable, str]:
     """Resolve *spec* to ``(embedder, embedder_id)``.
 
     ``embedder`` is a batch callable ``Iterable[str] -> ndarray(n, dim)`` that
     also accepts ``input_type=`` (``"query"`` / ``"document"``).
+
+    With ``strict=True`` a local model that cannot be loaded raises
+    :class:`EmbedderUnavailable` instead of degrading to the hashing embedder
+    (used when reopening a corpus, whose vectors only match its own model).
     """
     import ef
 
@@ -88,6 +116,13 @@ def make_embedder(spec: Any = "default", *, cache: bool = True) -> tuple[Callabl
     try:
         emb, model_id = _sentence_transformers(model_name)
     except Exception as e:  # ImportError or model-load failure
+        if strict:
+            raise EmbedderUnavailable(
+                f"Embedder {model_name!r} cannot be loaded ({e}). Install it "
+                f"(`uv pip install sentence-transformers`), or re-embed the corpus "
+                f"with an embedder available here (`ir build <corpus>`), or "
+                f"query without embeddings (`--mode lexical`)."
+            ) from e
         warnings.warn(
             f"Local embedder {model_name!r} unavailable ({e}); "
             f"falling back to the light hashing embedder. "
@@ -99,3 +134,25 @@ def make_embedder(spec: Any = "default", *, cache: bool = True) -> tuple[Callabl
     if cache:
         emb = _with_cache(emb, model_id)
     return emb, model_id
+
+
+def make_embedder_for_id(embedder_id: str, *, cache: bool = True):
+    """Re-create the embedder a corpus was built with, from its stored id.
+
+    The ids :func:`make_embedder` emits are invertible: ``hashing__dim<N>`` and
+    ``st__<model>``. Returns ``None`` for an id that cannot be inverted (e.g.
+    ``"custom"``, or empty), so the caller falls back to the stored spec. Never
+    degrades silently: an unavailable model raises :class:`EmbedderUnavailable`.
+    This is what pins a corpus to its own embedder, so the *machine* querying it
+    (with or without ``sentence-transformers``) cannot change the vector space.
+    """
+    if embedder_id.startswith(_HASHING_ID_PREFIX):
+        try:
+            return _hashing(int(embedder_id[len(_HASHING_ID_PREFIX) :]))
+        except ValueError:
+            return None
+    if embedder_id.startswith(_ST_ID_PREFIX):
+        return make_embedder(
+            embedder_id[len(_ST_ID_PREFIX) :], cache=cache, strict=True
+        )
+    return None

@@ -24,7 +24,7 @@ from typing import Any, Callable
 import numpy as np
 
 from .base import Record, ledger_key
-from .embed import make_embedder
+from .embed import make_embedder, make_embedder_for_id
 from .sources import CorpusSource
 from .store import CorpusStore
 
@@ -85,14 +85,18 @@ class _LazyEmbedder:
     site (``_embed`` and its ``TypeError`` fallback) works unchanged.
     """
 
-    def __init__(self, spec: Any):
+    def __init__(self, spec: Any, *, pinned_id: str = ""):
         self._spec = spec
+        self._pinned_id = pinned_id
         self._resolved: Callable | None = None
         self._resolved_id: str | None = None
 
     def _resolve(self) -> Callable:
         if self._resolved is None:
-            self._resolved, self._resolved_id = make_embedder(self._spec)
+            pinned = (
+                make_embedder_for_id(self._pinned_id) if self._pinned_id else None
+            )
+            self._resolved, self._resolved_id = pinned or make_embedder(self._spec)
         return self._resolved
 
     def __call__(self, texts, **kwargs):
@@ -260,9 +264,16 @@ def open_corpus(name: str, *, embedder: Any = None) -> Corpus:
     only loads the model when a dense/hybrid query actually embeds. So ``ir ls``,
     ``ir info``, and lexical-only search open a corpus without the model-load
     cost. Pass ``embedder=`` to override the stored spec.
+
+    Without an override the corpus is **pinned to the embedder it was built
+    with** (its stored ``embedder_id``), not re-resolved from the spec: a spec
+    like ``"default"`` means different models on machines with and without
+    ``sentence-transformers``, which would make the query vectors incompatible
+    with the index.
     """
     store = CorpusStore.local(name)
     cfg = store.get_config()
     spec = embedder if embedder is not None else cfg.get("embedder_spec", "default")
     emb_id = cfg.get("embedder_id") or ""
-    return Corpus(name, store, _LazyEmbedder(spec), emb_id)
+    pinned_id = "" if embedder is not None else emb_id
+    return Corpus(name, store, _LazyEmbedder(spec, pinned_id=pinned_id), emb_id)

@@ -24,7 +24,11 @@ Commands operate on **named** corpora from the registry (see
 
 from __future__ import annotations
 
+import functools
+import sys
+
 from . import registry
+from .embed import EmbedderError
 from .eval import DFLT_CALIB_SENSITIVITY_WEIGHT
 from .index import build as _build
 from .index import open_corpus
@@ -47,6 +51,27 @@ def _drift_warning(drift, name) -> str:
         f"\n  WARNING: {len(drift)} case(s) reference gold ids absent from "
         f"corpus {name!r} (stale fixture?); their misses are not real."
     )
+
+
+def _report_embedder_errors(func):
+    """Turn an :class:`~ir.embed.EmbedderError` into its actionable message.
+
+    An agent cannot tell "no component found" from "broken index" behind a
+    traceback; the message (what is wrong + the command that fixes it) is the
+    command's output instead.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except EmbedderError as error:
+            # stderr + nonzero exit: a failed index is not an empty result, and
+            # `&&` chains / agents must not read it as success.
+            print(f"ir: error (broken index, not an empty result): {error}", file=sys.stderr)
+            raise SystemExit(2) from error
+
+    return wrapper
 
 
 def ls():
@@ -108,6 +133,7 @@ def build(name, *, embedder=None, full=True):
     return f"built {name!r}: {len(corpus)} records (embedder {corpus.embedder_id})"
 
 
+@_report_embedder_errors
 def search(name, query, *, k=10, mode="dense", fusion="rrf"):
     """Search a built corpus and print the top-k hits.
 
@@ -126,6 +152,7 @@ def search(name, query, *, k=10, mode="dense", fusion="rrf"):
     return "\n".join(lines) or "(no matches)"
 
 
+@_report_embedder_errors
 def discover(
     name,
     query,
@@ -336,6 +363,7 @@ def rm(name):
     return f"unregistered {name!r}"
 
 
+@_report_embedder_errors
 def eval(name, cases, *, mode="hybrid", k=10):
     """Score a built corpus's retrieval against a DiscoveryCase JSONL file.
 
@@ -391,6 +419,7 @@ def eval_gen(name, out, *, k=5, abstention_frac=0.15, max_artifacts=None):
     )
 
 
+@_report_embedder_errors
 def eval_select(
     name,
     cases,
@@ -434,6 +463,7 @@ def eval_select(
     return out
 
 
+@_report_embedder_errors
 def sweep_select(
     name,
     cases,
@@ -468,6 +498,7 @@ def sweep_select(
     return out
 
 
+@_report_embedder_errors
 def calibrate_min_score(
     name,
     cases,
