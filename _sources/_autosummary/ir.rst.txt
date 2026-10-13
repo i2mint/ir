@@ -11,6 +11,8 @@
       search_tool
       make_search
       with_synopsis
+      make_thin_description_predicate
+      thin_description_predicate
       make_llm_synthesizer
       build
       open_corpus

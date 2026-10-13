@@ -1,4 +1,4 @@
-> built 2026-10-13 14:58 UTC from 549617f (master) · ir 0.1.43. Details: build_info.json
+> built 2026-10-13 16:38 UTC from 8f0ce5c (master) · ir 0.1.44. Details: build_info.json
 
 # index.html.md
 
@@ -268,6 +268,19 @@ built lazily on [`aix`](https://github.com/thorwhalen/aix) so `import ir` stays
 offline. Synopses are derived state with a stamped synthesizer identity, so a
 prompt/model change re-synthesizes only the affected artifacts on the next
 incremental `build` — no silent staleness.
+
+**Pay only where it helps.** `when=` gates synthesis per artifact (default
+`"always"`). `ir.thin_description_predicate` selects packages whose description is
+empty or short — their README is the only topical signal — so the LLM runs on those
+few and is never called for the well-described rest:
+
+```python
+strat = ir.with_synopsis(ir.Package(), when=ir.thin_description_predicate)
+# threshold: when=ir.make_thin_description_predicate(min_chars=80)
+```
+
+The predicate’s identity (`when_id`) is part of the strategy id, so changing it
+re-processes the corpus and re-synthesizes every artifact the new gate selects.
 
 **Flat top-k stays the default** — `traverse` is opt-in, and a policy earns its
 keep only by beating flat+rerank on your eval set (a strong flat retriever wins
@@ -2713,6 +2726,8 @@ the reviewing search subagent shipped under `.claude/`.
 |------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
 | [`make_search`](_autosummary/ir.html.md#ir.make_search)(corpus, \*[, name, description, ...])   | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                             |
 | [`with_synopsis`](_autosummary/ir.html.md#ir.with_synopsis)(strategy, \*[, synthesize, ...])      | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                    |
+| [`make_thin_description_predicate`](_autosummary/ir.html.md#ir.make_thin_description_predicate)(\*[, ...])          | A `Predicate` true when the artifact's `field` is empty or thin.                                                                           |
+| `thin_description_predicate`(artifact)                                                               | Ready-made gate: synthesize only for packages with an empty / short description.                                                           |
 | [`make_llm_synthesizer`](_autosummary/ir.html.md#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...])  | An LLM-backed `Synthesizer` ([`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → synopsis).                       |
 | [`build`](_autosummary/ir.html.md#ir.build)(source, \*[, store, embedder, full, ...])     | Build or incrementally update *source* into a [`Corpus`](_autosummary/ir.html.md#ir.Corpus).                                     |
 | [`open_corpus`](_autosummary/ir.html.md#ir.open_corpus)(name, \*[, embedder])                   | Reopen a previously built corpus by name.                                                                                                  |
@@ -4031,6 +4046,26 @@ name and description. Use this when wiring a single-corpus connector; use
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
+### ir.make_thin_description_predicate(, min_chars=40, field='description')
+
+A `Predicate` true when the artifact’s `field` is empty or thin.
+
+Reads `artifact.raw[field]` (a [`Package`](_autosummary/ir.strategy.html.md#ir.strategy.Package) record’s
+`description`); a raw that is not a mapping is a thin source when its text
+is shorter than `min_chars`. Whitespace is ignored. The returned callable
+carries a `when_id` stamp so the threshold folds into `strategy_id`.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
+
+```pycon
+>>> thin = make_thin_description_predicate(min_chars=10)
+>>> thin(Artifact(id="a", raw={"name": "a", "description": ""}))
+True
+>>> thin(Artifact(id="b", raw={"name": "b", "description": "Tools to parse dates"}))
+False
+```
+
 ### ir.open_corpus(name, , embedder=None)
 
 Reopen a previously built corpus by name.
@@ -4277,7 +4312,7 @@ still terminates.
   the committed hits, best-first, top-*k* — each a
   [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit) with `metadata["walk_depth"]` / `["seed"]`.
 
-### ir.with_synopsis(strategy, , synthesize=None, synthesizer_id=None, synopsis_kind='synopsis')
+### ir.with_synopsis(strategy, , synthesize=None, synthesizer_id=None, synopsis_kind='synopsis', when='always', when_id=None)
 
 Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 
@@ -4290,6 +4325,13 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
     injecting an unnamed callable / lambda). Omitted → the synthesizer’s
     own `synthesizer_id` / `__qualname__`.
   * **synopsis_kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – the surface kind (default `"synopsis"`, a summary kind).
+  * **when** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]) – `"always"` (default: every artifact) or a predicate
+    `Artifact -> bool`; the synthesizer is called, and a synopsis
+    surface added, only where it returns true (e.g.
+    `thin_description_predicate`). A predicate that raises
+    propagates.
+  * **when_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – explicit identity stamp for an unnamed predicate (staleness);
+    omitted → the predicate’s `when_id` / `__qualname__`.
 * **Return type:**
   [`IndexingStrategy`](_autosummary/ir.strategy.html.md#ir.strategy.IndexingStrategy)
 * **Returns:**
@@ -6329,6 +6371,15 @@ synopsis routing works with no entries in the [`ir.graph`](_autosummary/ir.graph
 that view models *cross-artifact* edges (REF / PARENT between artifacts), a
 different grain than surface→surface within one artifact.
 
+**Conditional synopsis.** `when=` (default `"always"`) restricts synthesis to the
+artifacts a predicate selects, so LLM cost is paid only where a synopsis helps —
+e.g. `with_synopsis(ir.Package(), when=thin_description_predicate)` synthesizes
+only for packages whose `[project].description` is empty or short (their
+README is the only topical signal), and skips the rest \*without calling the
+synthesizer\*. The predicate’s identity folds into `strategy_id` (`when_id`)
+like the synthesizer’s, so changing it re-processes the corpus (`strategy_id` is
+corpus-wide) and re-synthesizes every artifact the new gate selects.
+
 \*\*Caveat — `edge_extractor`.\*\* Eager edge ingest (`build(edge_extractor=...)`)
 calls `decompose` for *every* artifact each build, and synthesis lives in
 `decompose`; so combining [`with_synopsis()`](_autosummary/ir.synopsis.html.md#ir.synopsis.with_synopsis) with an `edge_extractor`
@@ -6337,16 +6388,40 @@ re-runs synthesis on every rebuild. The common path — synopsis routing with no
 
 ### Module Attributes
 
-| [`Synthesizer`](_autosummary/ir.synopsis.html.md#ir.synopsis.Synthesizer)     | an [`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → its synopsis text (`""` to skip — no synopsis surface is added for that artifact).   |
-|------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`SYNOPSIS_KIND`](_autosummary/ir.synopsis.html.md#ir.synopsis.SYNOPSIS_KIND)   | The surface kind a synopsis is indexed under — a member of `ir.traverse.DFLT_SUMMARY_KINDS`, so collapsed-tree routes from it.                                       |
-| [`SYNOPSIS_PROMPT`](_autosummary/ir.synopsis.html.md#ir.synopsis.SYNOPSIS_PROMPT) | Default prompt for [`make_llm_synthesizer()`](_autosummary/ir.synopsis.html.md#ir.synopsis.make_llm_synthesizer) (a routing-oriented summary).                                             |
+| [`Synthesizer`](_autosummary/ir.synopsis.html.md#ir.synopsis.Synthesizer)                          | an [`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → its synopsis text (`""` to skip — no synopsis surface is added for that artifact).                                     |
+|---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`Predicate`](_autosummary/ir.synopsis.html.md#ir.synopsis.Predicate)                            | an [`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → whether to synthesize for it.                                                                                          |
+| [`ALWAYS`](_autosummary/ir.synopsis.html.md#ir.synopsis.ALWAYS)                               | `when` value meaning "synthesize for every artifact" (the default).                                                                                                                                    |
+| [`DFLT_THIN_DESCRIPTION_CHARS`](_autosummary/ir.synopsis.html.md#ir.synopsis.DFLT_THIN_DESCRIPTION_CHARS)          | Descriptions shorter than this many characters count as thin by default.                                                                                                                               |
+| [`SYNOPSIS_KIND`](_autosummary/ir.synopsis.html.md#ir.synopsis.SYNOPSIS_KIND)                        | The surface kind a synopsis is indexed under — a member of `ir.traverse.DFLT_SUMMARY_KINDS`, so collapsed-tree routes from it.                                                                         |
+| [`SYNOPSIS_PROMPT`](_autosummary/ir.synopsis.html.md#ir.synopsis.SYNOPSIS_PROMPT)                      | Default prompt for [`make_llm_synthesizer()`](_autosummary/ir.synopsis.html.md#ir.synopsis.make_llm_synthesizer) (a routing-oriented summary).                                                                               |
+| [`TOPICAL_SYNOPSIS_PROMPT`](_autosummary/ir.synopsis.html.md#ir.synopsis.TOPICAL_SYNOPSIS_PROMPT)              | A topical / classification-oriented alternative to [`SYNOPSIS_PROMPT`](_autosummary/ir.synopsis.html.md#ir.synopsis.SYNOPSIS_PROMPT), suited to thin-description packages (opt-in: `make_llm_synthesizer(prompt=...)`). |
+| [`thin_description_predicate`](_autosummary/ir.synopsis.html.md#ir.synopsis.thin_description_predicate)(artifact) | Ready-made gate: synthesize only for packages with an empty / short description.                                                                                                                       |
 
 ### Functions
 
 | [`make_llm_synthesizer`](_autosummary/ir.synopsis.html.md#ir.synopsis.make_llm_synthesizer)(\*[, summarize, prompt, ...])   | An LLM-backed [`Synthesizer`](_autosummary/ir.synopsis.html.md#ir.synopsis.Synthesizer) ([`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → synopsis).   |
 |-------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`make_thin_description_predicate`](_autosummary/ir.synopsis.html.md#ir.synopsis.make_thin_description_predicate)(\*[, ...])           | A [`Predicate`](_autosummary/ir.synopsis.html.md#ir.synopsis.Predicate) true when the artifact's `field` is empty or thin.                                                       |
+| [`thin_description_predicate`](_autosummary/ir.synopsis.html.md#ir.synopsis.thin_description_predicate)(artifact)                 | Ready-made gate: synthesize only for packages with an empty / short description.                                                                                      |
 | [`with_synopsis`](_autosummary/ir.synopsis.html.md#ir.synopsis.with_synopsis)(strategy, \*[, synthesize, ...])       | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                                               |
+
+### ir.synopsis.ALWAYS *= 'always'*
+
+`when` value meaning “synthesize for every artifact” (the default).
+
+### ir.synopsis.DFLT_THIN_DESCRIPTION_CHARS *= 40*
+
+Descriptions shorter than this many characters count as thin by default.
+
+### ir.synopsis.Predicate
+
+an [`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → whether to synthesize for it.
+
+* **Type:**
+  A synthesis gate
+
+alias of `Callable`[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
 
 ### ir.synopsis.SYNOPSIS_KIND *= 'synopsis'*
 
@@ -6366,6 +6441,11 @@ skip — no synopsis surface is added for that artifact).
   A synthesizer
 
 alias of `Callable`[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.synopsis.TOPICAL_SYNOPSIS_PROMPT *= 'Write a concise synopsis (2-3 sentences) of the software package described below: which domain or problem class it belongs to (e.g. audio, graphs, http clients, data validation) and what it is used for, so that a search for that domain finds it. Output only the synopsis, no preamble.\\n\\nPackage:\\n{text}'*
+
+A topical / classification-oriented alternative to [`SYNOPSIS_PROMPT`](_autosummary/ir.synopsis.html.md#ir.synopsis.SYNOPSIS_PROMPT),
+suited to thin-description packages (opt-in: `make_llm_synthesizer(prompt=...)`).
 
 ### ir.synopsis.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, \*\*prompt_function_kwargs)
 
@@ -6388,7 +6468,34 @@ corpus’s `strategy_id` for staleness — a prompt or model change re-synthesiz
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### ir.synopsis.with_synopsis(strategy, , synthesize=None, synthesizer_id=None, synopsis_kind='synopsis')
+### ir.synopsis.make_thin_description_predicate(, min_chars=40, field='description')
+
+A [`Predicate`](_autosummary/ir.synopsis.html.md#ir.synopsis.Predicate) true when the artifact’s `field` is empty or thin.
+
+Reads `artifact.raw[field]` (a [`Package`](_autosummary/ir.strategy.html.md#ir.strategy.Package) record’s
+`description`); a raw that is not a mapping is a thin source when its text
+is shorter than `min_chars`. Whitespace is ignored. The returned callable
+carries a `when_id` stamp so the threshold folds into `strategy_id`.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
+
+```pycon
+>>> thin = make_thin_description_predicate(min_chars=10)
+>>> thin(Artifact(id="a", raw={"name": "a", "description": ""}))
+True
+>>> thin(Artifact(id="b", raw={"name": "b", "description": "Tools to parse dates"}))
+False
+```
+
+### ir.synopsis.thin_description_predicate(artifact)
+
+Ready-made gate: synthesize only for packages with an empty / short description.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### ir.synopsis.with_synopsis(strategy, , synthesize=None, synthesizer_id=None, synopsis_kind='synopsis', when='always', when_id=None)
 
 Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 
@@ -6401,6 +6508,13 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
     injecting an unnamed callable / lambda). Omitted → the synthesizer’s
     own `synthesizer_id` / `__qualname__`.
   * **synopsis_kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – the surface kind (default `"synopsis"`, a summary kind).
+  * **when** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]) – `"always"` (default: every artifact) or a predicate
+    `Artifact -> bool`; the synthesizer is called, and a synopsis
+    surface added, only where it returns true (e.g.
+    [`thin_description_predicate`](_autosummary/ir.synopsis.html.md#ir.synopsis.thin_description_predicate)). A predicate that raises
+    propagates.
+  * **when_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – explicit identity stamp for an unnamed predicate (staleness);
+    omitted → the predicate’s `when_id` / `__qualname__`.
 * **Return type:**
   [`IndexingStrategy`](_autosummary/ir.strategy.html.md#ir.strategy.IndexingStrategy)
 * **Returns:**
@@ -6475,18 +6589,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-13 14:58 UTC** from commit <a href="https://github.com/i2mint/ir/commit/549617f491378fe7ac9fd005317e789ae484e552"><code>549617f</code></a> on branch <code>master</code>, for **ir 0.1.43** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 16:38 UTC** from commit <a href="https://github.com/i2mint/ir/commit/8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5"><code>8f0ce5c</code></a> on branch <code>master</code>, for **ir 0.1.44** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.1.43) is behind the latest release on PyPI (0.1.44): `pip install ir` gives newer code than these docs describe.
+- The documented version (0.1.44) is behind the latest release on PyPI (0.1.45): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/549617f491378fe7ac9fd005317e789ae484e552"><code>549617f491378fe7ac9fd005317e789ae484e552</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5"><code>8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6497,15 +6611,15 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38417763986">38417763986</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38431889233">38431889233</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>549617f491378fe7ac9fd005317e789ae484e552</code> (in the history of the built commit) |
+| Event commit | <code>8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5</code> (in the history of the built commit) |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.16  |
+| epythet  | 0.2.17  |
 | Sphinx   | 9.1.0   |
 | docutils | 0.22.4  |
 | Python   | 3.12.15 |
@@ -6524,14 +6638,14 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.44/">0.1.44</a>, newer than the documented version (0.1.43).
+Latest release: <a href="https://pypi.org/project/ir/0.1.45/">0.1.45</a>, newer than the documented version (0.1.44).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 549617f491378fe7ac9fd005317e789ae484e552
-pip install "epythet==0.2.16"
+git checkout 8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5
+pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 

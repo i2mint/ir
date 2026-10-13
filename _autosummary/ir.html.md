@@ -44,6 +44,8 @@ the reviewing search subagent shipped under `.claude/`.
 |------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
 | [`make_search`](#ir.make_search)(corpus, \*[, name, description, ...])   | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                             |
 | [`with_synopsis`](#ir.with_synopsis)(strategy, \*[, synthesize, ...])      | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                    |
+| [`make_thin_description_predicate`](#ir.make_thin_description_predicate)(\*[, ...])          | A `Predicate` true when the artifact's `field` is empty or thin.                                                                           |
+| `thin_description_predicate`(artifact)                                                               | Ready-made gate: synthesize only for packages with an empty / short description.                                                           |
 | [`make_llm_synthesizer`](#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...])  | An LLM-backed `Synthesizer` ([`Artifact`](ir.base.html.md#ir.base.Artifact) → synopsis).                       |
 | [`build`](#ir.build)(source, \*[, store, embedder, full, ...])     | Build or incrementally update *source* into a [`Corpus`](#ir.Corpus).                                     |
 | [`open_corpus`](#ir.open_corpus)(name, \*[, embedder])                   | Reopen a previously built corpus by name.                                                                                                  |
@@ -1362,6 +1364,26 @@ name and description. Use this when wiring a single-corpus connector; use
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
+### ir.make_thin_description_predicate(, min_chars=40, field='description')
+
+A `Predicate` true when the artifact’s `field` is empty or thin.
+
+Reads `artifact.raw[field]` (a [`Package`](ir.strategy.html.md#ir.strategy.Package) record’s
+`description`); a raw that is not a mapping is a thin source when its text
+is shorter than `min_chars`. Whitespace is ignored. The returned callable
+carries a `when_id` stamp so the threshold folds into `strategy_id`.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
+
+```pycon
+>>> thin = make_thin_description_predicate(min_chars=10)
+>>> thin(Artifact(id="a", raw={"name": "a", "description": ""}))
+True
+>>> thin(Artifact(id="b", raw={"name": "b", "description": "Tools to parse dates"}))
+False
+```
+
 ### ir.open_corpus(name, , embedder=None)
 
 Reopen a previously built corpus by name.
@@ -1608,7 +1630,7 @@ still terminates.
   the committed hits, best-first, top-*k* — each a
   [`SearchHit`](ir.base.html.md#ir.base.SearchHit) with `metadata["walk_depth"]` / `["seed"]`.
 
-### ir.with_synopsis(strategy, , synthesize=None, synthesizer_id=None, synopsis_kind='synopsis')
+### ir.with_synopsis(strategy, , synthesize=None, synthesizer_id=None, synopsis_kind='synopsis', when='always', when_id=None)
 
 Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 
@@ -1621,6 +1643,13 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
     injecting an unnamed callable / lambda). Omitted → the synthesizer’s
     own `synthesizer_id` / `__qualname__`.
   * **synopsis_kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – the surface kind (default `"synopsis"`, a summary kind).
+  * **when** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]) – `"always"` (default: every artifact) or a predicate
+    `Artifact -> bool`; the synthesizer is called, and a synopsis
+    surface added, only where it returns true (e.g.
+    `thin_description_predicate`). A predicate that raises
+    propagates.
+  * **when_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – explicit identity stamp for an unnamed predicate (staleness);
+    omitted → the predicate’s `when_id` / `__qualname__`.
 * **Return type:**
   [`IndexingStrategy`](ir.strategy.html.md#ir.strategy.IndexingStrategy)
 * **Returns:**

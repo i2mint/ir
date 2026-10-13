@@ -265,6 +265,19 @@ offline. Synopses are derived state with a stamped synthesizer identity, so a
 prompt/model change re-synthesizes only the affected artifacts on the next
 incremental `build` — no silent staleness.
 
+**Pay only where it helps.** `when=` gates synthesis per artifact (default
+`"always"`). `ir.thin_description_predicate` selects packages whose description is
+empty or short — their README is the only topical signal — so the LLM runs on those
+few and is never called for the well-described rest:
+
+```python
+strat = ir.with_synopsis(ir.Package(), when=ir.thin_description_predicate)
+# threshold: when=ir.make_thin_description_predicate(min_chars=80)
+```
+
+The predicate’s identity (`when_id`) is part of the strategy id, so changing it
+re-processes the corpus and re-synthesizes every artifact the new gate selects.
+
 **Flat top-k stays the default** — `traverse` is opt-in, and a policy earns its
 keep only by beating flat+rerank on your eval set (a strong flat retriever wins
 simple lookup; graph methods cost far more). Results are ordinary `SearchHit`s

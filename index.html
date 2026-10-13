@@ -380,6 +380,16 @@ built lazily on <a class="reference external" href="https://github.com/thorwhale
 offline. Synopses are derived state with a stamped synthesizer identity, so a
 prompt/model change re-synthesizes only the affected artifacts on the next
 incremental <code class="docutils literal notranslate"><span class="pre">build</span></code> — no silent staleness.</p>
+<p><strong>Pay only where it helps.</strong> <code class="docutils literal notranslate"><span class="pre">when=</span></code> gates synthesis per artifact (default
+<code class="docutils literal notranslate"><span class="pre">"always"</span></code>). <code class="docutils literal notranslate"><span class="pre">ir.thin_description_predicate</span></code> selects packages whose description is
+empty or short — their README is the only topical signal — so the LLM runs on those
+few and is never called for the well-described rest:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">strat</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">with_synopsis</span><span class="p">(</span><span class="n">ir</span><span class="o">.</span><span class="n">Package</span><span class="p">(),</span> <span class="n">when</span><span class="o">=</span><span class="n">ir</span><span class="o">.</span><span class="n">thin_description_predicate</span><span class="p">)</span>
+</span><span id="line-2"><span class="c1"># threshold: when=ir.make_thin_description_predicate(min_chars=80)</span>
+</span></code></pre></div>
+</div>
+<p>The predicate’s identity (<code class="docutils literal notranslate"><span class="pre">when_id</span></code>) is part of the strategy id, so changing it
+re-processes the corpus and re-synthesizes every artifact the new gate selects.</p>
 <p><strong>Flat top-k stays the default</strong> — <code class="docutils literal notranslate"><span class="pre">traverse</span></code> is opt-in, and a policy earns its
 keep only by beating flat+rerank on your eval set (a strong flat retriever wins
 simple lookup; graph methods cost far more). Results are ordinary <code class="docutils literal notranslate"><span class="pre">SearchHit</span></code>s
@@ -490,7 +500,7 @@ calibration, and magnitude-preserving fusion. <code class="docutils literal notr
 
 </section>
 </section>
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-13 14:58 UTC from <a href="https://github.com/i2mint/ir/commit/549617f491378fe7ac9fd005317e789ae484e552">549617f</a> (master) · ir 0.1.43 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-13 16:38 UTC from <a href="https://github.com/i2mint/ir/commit/8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5">8f0ce5c</a> (master) · ir 0.1.44 · <a href="about-this-build.html">about this build</a></p>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
@@ -521,7 +531,7 @@ calibration, and magnitude-preserving fusion. <code class="docutils literal notr
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=a183c34f"></script>
+<script src="_static/documentation_options.js?v=6a0a5382"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>

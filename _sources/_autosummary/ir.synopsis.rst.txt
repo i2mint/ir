@@ -9,13 +9,20 @@ ir.synopsis
    .. autosummary::
    
       Synthesizer
+      Predicate
+      ALWAYS
+      DFLT_THIN_DESCRIPTION_CHARS
       SYNOPSIS_KIND
       SYNOPSIS_PROMPT
+      TOPICAL_SYNOPSIS_PROMPT
+      thin_description_predicate
    
    .. rubric:: Functions
 
    .. autosummary::
    
       make_llm_synthesizer
+      make_thin_description_predicate
+      thin_description_predicate
       with_synopsis
    

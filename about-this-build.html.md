@@ -2,18 +2,18 @@
 
 # About this build
 
-This documentation was built on **2026-10-13 14:58 UTC** from commit <a href="https://github.com/i2mint/ir/commit/549617f491378fe7ac9fd005317e789ae484e552"><code>549617f</code></a> on branch <code>master</code>, for **ir 0.1.43** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 16:38 UTC** from commit <a href="https://github.com/i2mint/ir/commit/8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5"><code>8f0ce5c</code></a> on branch <code>master</code>, for **ir 0.1.44** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.1.43) is behind the latest release on PyPI (0.1.44): `pip install ir` gives newer code than these docs describe.
+- The documented version (0.1.44) is behind the latest release on PyPI (0.1.45): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/549617f491378fe7ac9fd005317e789ae484e552"><code>549617f491378fe7ac9fd005317e789ae484e552</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5"><code>8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -24,15 +24,15 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38417763986">38417763986</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38431889233">38431889233</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>549617f491378fe7ac9fd005317e789ae484e552</code> (in the history of the built commit) |
+| Event commit | <code>8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5</code> (in the history of the built commit) |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.16  |
+| epythet  | 0.2.17  |
 | Sphinx   | 9.1.0   |
 | docutils | 0.22.4  |
 | Python   | 3.12.15 |
@@ -51,14 +51,14 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.44/">0.1.44</a>, newer than the documented version (0.1.43).
+Latest release: <a href="https://pypi.org/project/ir/0.1.45/">0.1.45</a>, newer than the documented version (0.1.44).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 549617f491378fe7ac9fd005317e789ae484e552
-pip install "epythet==0.2.16"
+git checkout 8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5
+pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 
