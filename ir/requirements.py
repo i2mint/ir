@@ -66,7 +66,9 @@ def requirements_message(missing: Iterable[str]) -> str:
     )
 
 
-_REQUIREMENT = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*([^;]*)")
+_REQUIREMENT = re.compile(
+    r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*([^;]*)"
+)
 _CLAUSE = re.compile(r"^\s*(===|==|!=|~=|>=|<=|>|<)\s*([A-Za-z0-9.*+!_-]+)\s*$")
 _PLAIN_RELEASE = re.compile(r"^\d+(\.\d+)*$")
 _RELEASE = re.compile(r"^v?(?:\d+!)?(\d+(?:\.\d+)*)")
@@ -96,7 +98,9 @@ def _clause_holds(op: str, bound: str, installed: str) -> bool:
     if op in ("==", "!=") and bound.endswith(".*"):
         same = have[: len(want)] == want
         return same if op == "==" else not same
-    if op == "~=":  # compatible release: >= bound, and == bound with its last part dropped
+    if (
+        op == "~="
+    ):  # compatible release: >= bound, and == bound with its last part dropped
         keep = max(len(want) - 1, 1)
         have, want = _padded(have, want)
         return have >= want and have[:keep] == want[:keep]
@@ -176,7 +180,9 @@ def declared_bounds(dist: str = DIST) -> dict[str, str]:
         parsed = _REQUIREMENT.match(requirement)
         if parsed and parsed.group(2).strip():
             name = _normalize(parsed.group(1))
-            bounds[name] = ",".join(filter(None, (bounds.get(name), parsed.group(2).strip())))
+            bounds[name] = ",".join(
+                filter(None, (bounds.get(name), parsed.group(2).strip()))
+            )
     return bounds
 
 
