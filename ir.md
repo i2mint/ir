@@ -1,4 +1,4 @@
-> built 2026-10-13 16:38 UTC from 8f0ce5c (master) · ir 0.1.44. Details: build_info.json
+> built 2026-10-13 17:21 UTC from 3bd14f6 (master) · ir 0.1.45. Details: build_info.json
 
 # index.html.md
 
@@ -3417,6 +3417,11 @@ readme chunks at decompose time, but corpora built before the stamp keep
 records without it until the artifact re-indexes (content / embedder /
 strategy change) — read it with `metadata.get("n_chunks")`.
 
+#### synopsis_fields *= ('name', 'description', 'readme')*
+
+The record fields a synopsis is written from (see [`ir.synopsis.with_synopsis()`](_autosummary/ir.synopsis.html.md#ir.synopsis.with_synopsis)):
+prose only. The record’s `path` (a local absolute path) and `deps` never go to an LLM.
+
 ### *class* ir.Passage(artifact_id, surface_kind, score, text, record_ids=(), source=None, surface_index=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -4012,7 +4017,7 @@ multi-query fan-out width. Any error or empty reply falls back to `fallback`
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### ir.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, \*\*prompt_function_kwargs)
+### ir.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, text_fields=None, \*\*prompt_function_kwargs)
 
 An LLM-backed `Synthesizer` ([`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → synopsis).
 
@@ -4022,7 +4027,17 @@ your own summarizer); when omitted it is built lazily on `aix`
 this module, and even constructing the synthesizer, stays offline. The
 artifact’s text is extracted with [`ir.strategy.text_of()`](_autosummary/ir.strategy.html.md#ir.strategy.text_of) using
 `text_key` — which [`with_synopsis()`](_autosummary/ir.html.md#ir.with_synopsis) threads from the inner strategy, so
-the synopsis summarizes the *same* field the strategy indexes. An empty text,
+the synopsis summarizes the *same* field the strategy indexes.
+
+`text_fields` (mutually exclusive with `text_key`) names the fields of a
+mapping artifact whose text is sent to the LLM, and **only those**: without it,
+a mapping with no `text` / `text_key` has *every* string field joined and
+sent (see [`ir.strategy.text_of()`](_autosummary/ir.strategy.html.md#ir.strategy.text_of)) — including, for a
+[`Package`](_autosummary/ir.strategy.html.md#ir.strategy.Package) record, its local `path`. `with_synopsis`
+threads the inner strategy’s `synopsis_fields` (`Package` declares
+`("name", "description", "readme")`), so the Package default never leaks the
+path. The fields fold into the default `synthesizer_id`, so changing them
+re-synthesizes. An empty text,
 or any synthesis error, yields `""` (the surface is then skipped, never a
 fabricated summary).
 
@@ -6264,6 +6279,11 @@ readme chunks at decompose time, but corpora built before the stamp keep
 records without it until the artifact re-indexes (content / embedder /
 strategy change) — read it with `metadata.get("n_chunks")`.
 
+#### synopsis_fields *= ('name', 'description', 'readme')*
+
+The record fields a synopsis is written from (see [`ir.synopsis.with_synopsis()`](_autosummary/ir.synopsis.html.md#ir.synopsis.with_synopsis)):
+prose only. The record’s `path` (a local absolute path) and `deps` never go to an LLM.
+
 ### ir.strategy.STRATEGY_REGISTRY *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [type](https://docs.python.org/3/builtins/functions.html#type)]* *= {'Chunked': <class 'ir.strategy.Chunked'>, 'ClaudeTurn': <class 'ir.strategy.ClaudeTurn'>, 'Package': <class 'ir.strategy.Package'>, 'Skill': <class 'ir.strategy.Skill'>, 'WholeText': <class 'ir.strategy.WholeText'>}*
 
 Shipped strategies addressable by name, for persisting an
@@ -6447,7 +6467,7 @@ alias of `Callable`[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)
 A topical / classification-oriented alternative to [`SYNOPSIS_PROMPT`](_autosummary/ir.synopsis.html.md#ir.synopsis.SYNOPSIS_PROMPT),
 suited to thin-description packages (opt-in: `make_llm_synthesizer(prompt=...)`).
 
-### ir.synopsis.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, \*\*prompt_function_kwargs)
+### ir.synopsis.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, text_fields=None, \*\*prompt_function_kwargs)
 
 An LLM-backed [`Synthesizer`](_autosummary/ir.synopsis.html.md#ir.synopsis.Synthesizer) ([`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → synopsis).
 
@@ -6457,7 +6477,17 @@ your own summarizer); when omitted it is built lazily on `aix`
 this module, and even constructing the synthesizer, stays offline. The
 artifact’s text is extracted with [`ir.strategy.text_of()`](_autosummary/ir.strategy.html.md#ir.strategy.text_of) using
 `text_key` — which [`with_synopsis()`](_autosummary/ir.synopsis.html.md#ir.synopsis.with_synopsis) threads from the inner strategy, so
-the synopsis summarizes the *same* field the strategy indexes. An empty text,
+the synopsis summarizes the *same* field the strategy indexes.
+
+`text_fields` (mutually exclusive with `text_key`) names the fields of a
+mapping artifact whose text is sent to the LLM, and **only those**: without it,
+a mapping with no `text` / `text_key` has *every* string field joined and
+sent (see [`ir.strategy.text_of()`](_autosummary/ir.strategy.html.md#ir.strategy.text_of)) — including, for a
+[`Package`](_autosummary/ir.strategy.html.md#ir.strategy.Package) record, its local `path`. `with_synopsis`
+threads the inner strategy’s `synopsis_fields` (`Package` declares
+`("name", "description", "readme")`), so the Package default never leaks the
+path. The fields fold into the default `synthesizer_id`, so changing them
+re-synthesizes. An empty text,
 or any synthesis error, yields `""` (the surface is then skipped, never a
 fabricated summary).
 
@@ -6589,18 +6619,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-13 16:38 UTC** from commit <a href="https://github.com/i2mint/ir/commit/8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5"><code>8f0ce5c</code></a> on branch <code>master</code>, for **ir 0.1.44** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 17:21 UTC** from commit <a href="https://github.com/i2mint/ir/commit/3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a"><code>3bd14f6</code></a> on branch <code>master</code>, for **ir 0.1.45** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.44) is behind the latest release on PyPI (0.1.45): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5"><code>8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a"><code>3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6611,9 +6639,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38431889233">38431889233</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38437724360">38437724360</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5</code> (in the history of the built commit) |
+| Event commit | <code>3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -6638,13 +6666,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.45/">0.1.45</a>, newer than the documented version (0.1.44).
+Latest release: <a href="https://pypi.org/project/ir/0.1.45/">0.1.45</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 8f0ce5cb5998a8a27a93d4d3a905123dcfac50f5
+git checkout 3bd14f6c79a74b7b0595d38c188eef1ceef7cf9a
 pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

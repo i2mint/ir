@@ -284,6 +284,12 @@ records without it until the artifact re-indexes (content / embedder /
 strategy change) — read it with <code class="docutils literal notranslate"><span class="pre">metadata.get("n_chunks")</span></code>.</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.strategy.Package.synopsis_fields">
+<span class="sig-name descname"><span class="pre">synopsis_fields</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('name',</span> <span class="pre">'description',</span> <span class="pre">'readme')</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.strategy.Package.synopsis_fields" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.strategy.Package.synopsis_fields'">¶</a></dt>
+<dd><p>The record fields a synopsis is written from (see <a class="reference internal" href="ir.synopsis.html#ir.synopsis.with_synopsis" title="ir.synopsis.with_synopsis"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.synopsis.with_synopsis()</span></code></a>):
+prose only. The record’s <code class="docutils literal notranslate"><span class="pre">path</span></code> (a local absolute path) and <code class="docutils literal notranslate"><span class="pre">deps</span></code> never go to an LLM.</p>
+</dd></dl>
 </dd></dl>
 <dl class="py data">
 <dt class="sig sig-object py" id="ir.strategy.STRATEGY_REGISTRY">
@@ -359,7 +365,10 @@ so an injected-free synopsis summarizes the same text a strategy would index.</p
 <li><a :data-current="activeSection === '#ir.strategy.ClaudeTurn'" class="reference internal" href="#ir.strategy.ClaudeTurn"><code class="docutils literal notranslate"><span class="pre">ClaudeTurn</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.strategy.DFLT_CHUNK_MAX_TOKENS'" class="reference internal" href="#ir.strategy.DFLT_CHUNK_MAX_TOKENS"><code class="docutils literal notranslate"><span class="pre">DFLT_CHUNK_MAX_TOKENS</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.strategy.IndexingStrategy'" class="reference internal" href="#ir.strategy.IndexingStrategy"><code class="docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a></li>
-<li><a :data-current="activeSection === '#ir.strategy.Package'" class="reference internal" href="#ir.strategy.Package"><code class="docutils literal notranslate"><span class="pre">Package</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.strategy.Package'" class="reference internal" href="#ir.strategy.Package"><code class="docutils literal notranslate"><span class="pre">Package</span></code></a><ul>
+<li><a :data-current="activeSection === '#ir.strategy.Package.synopsis_fields'" class="reference internal" href="#ir.strategy.Package.synopsis_fields"><code class="docutils literal notranslate"><span class="pre">Package.synopsis_fields</span></code></a></li>
+</ul>
+</li>
 <li><a :data-current="activeSection === '#ir.strategy.STRATEGY_REGISTRY'" class="reference internal" href="#ir.strategy.STRATEGY_REGISTRY"><code class="docutils literal notranslate"><span class="pre">STRATEGY_REGISTRY</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.strategy.Skill'" class="reference internal" href="#ir.strategy.Skill"><code class="docutils literal notranslate"><span class="pre">Skill</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.strategy.WholeText'" class="reference internal" href="#ir.strategy.WholeText"><code class="docutils literal notranslate"><span class="pre">WholeText</span></code></a></li>
@@ -379,7 +388,7 @@ so an injected-free synopsis summarizes the same text a strategy would index.</p
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=6a0a5382"></script>
+<script src="../_static/documentation_options.js?v=ce72d79b"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

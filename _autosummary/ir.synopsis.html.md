@@ -120,7 +120,7 @@ alias of `Callable`[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`str`](ht
 A topical / classification-oriented alternative to [`SYNOPSIS_PROMPT`](#ir.synopsis.SYNOPSIS_PROMPT),
 suited to thin-description packages (opt-in: `make_llm_synthesizer(prompt=...)`).
 
-### ir.synopsis.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, \*\*prompt_function_kwargs)
+### ir.synopsis.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, text_fields=None, \*\*prompt_function_kwargs)
 
 An LLM-backed [`Synthesizer`](#ir.synopsis.Synthesizer) ([`Artifact`](ir.base.html.md#ir.base.Artifact) → synopsis).
 
@@ -130,7 +130,17 @@ your own summarizer); when omitted it is built lazily on `aix`
 this module, and even constructing the synthesizer, stays offline. The
 artifact’s text is extracted with [`ir.strategy.text_of()`](ir.strategy.html.md#ir.strategy.text_of) using
 `text_key` — which [`with_synopsis()`](#ir.synopsis.with_synopsis) threads from the inner strategy, so
-the synopsis summarizes the *same* field the strategy indexes. An empty text,
+the synopsis summarizes the *same* field the strategy indexes.
+
+`text_fields` (mutually exclusive with `text_key`) names the fields of a
+mapping artifact whose text is sent to the LLM, and **only those**: without it,
+a mapping with no `text` / `text_key` has *every* string field joined and
+sent (see [`ir.strategy.text_of()`](ir.strategy.html.md#ir.strategy.text_of)) — including, for a
+[`Package`](ir.strategy.html.md#ir.strategy.Package) record, its local `path`. `with_synopsis`
+threads the inner strategy’s `synopsis_fields` (`Package` declares
+`("name", "description", "readme")`), so the Package default never leaks the
+path. The fields fold into the default `synthesizer_id`, so changing them
+re-synthesizes. An empty text,
 or any synthesis error, yields `""` (the surface is then skipped, never a
 fabricated summary).
 

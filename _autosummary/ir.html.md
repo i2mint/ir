@@ -735,6 +735,11 @@ readme chunks at decompose time, but corpora built before the stamp keep
 records without it until the artifact re-indexes (content / embedder /
 strategy change) — read it with `metadata.get("n_chunks")`.
 
+#### synopsis_fields *= ('name', 'description', 'readme')*
+
+The record fields a synopsis is written from (see [`ir.synopsis.with_synopsis()`](ir.synopsis.html.md#ir.synopsis.with_synopsis)):
+prose only. The record’s `path` (a local absolute path) and `deps` never go to an LLM.
+
 ### *class* ir.Passage(artifact_id, surface_kind, score, text, record_ids=(), source=None, surface_index=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -1330,7 +1335,7 @@ multi-query fan-out width. Any error or empty reply falls back to `fallback`
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### ir.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, \*\*prompt_function_kwargs)
+### ir.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, text_fields=None, \*\*prompt_function_kwargs)
 
 An LLM-backed `Synthesizer` ([`Artifact`](ir.base.html.md#ir.base.Artifact) → synopsis).
 
@@ -1340,7 +1345,17 @@ your own summarizer); when omitted it is built lazily on `aix`
 this module, and even constructing the synthesizer, stays offline. The
 artifact’s text is extracted with [`ir.strategy.text_of()`](ir.strategy.html.md#ir.strategy.text_of) using
 `text_key` — which [`with_synopsis()`](#ir.with_synopsis) threads from the inner strategy, so
-the synopsis summarizes the *same* field the strategy indexes. An empty text,
+the synopsis summarizes the *same* field the strategy indexes.
+
+`text_fields` (mutually exclusive with `text_key`) names the fields of a
+mapping artifact whose text is sent to the LLM, and **only those**: without it,
+a mapping with no `text` / `text_key` has *every* string field joined and
+sent (see [`ir.strategy.text_of()`](ir.strategy.html.md#ir.strategy.text_of)) — including, for a
+[`Package`](ir.strategy.html.md#ir.strategy.Package) record, its local `path`. `with_synopsis`
+threads the inner strategy’s `synopsis_fields` (`Package` declares
+`("name", "description", "readme")`), so the Package default never leaks the
+path. The fields fold into the default `synthesizer_id`, so changing them
+re-synthesizes. An empty text,
 or any synthesis error, yields `""` (the surface is then skipped, never a
 fabricated summary).
 

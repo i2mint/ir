@@ -127,6 +127,11 @@ readme chunks at decompose time, but corpora built before the stamp keep
 records without it until the artifact re-indexes (content / embedder /
 strategy change) — read it with `metadata.get("n_chunks")`.
 
+#### synopsis_fields *= ('name', 'description', 'readme')*
+
+The record fields a synopsis is written from (see [`ir.synopsis.with_synopsis()`](ir.synopsis.html.md#ir.synopsis.with_synopsis)):
+prose only. The record’s `path` (a local absolute path) and `deps` never go to an LLM.
+
 ### ir.strategy.STRATEGY_REGISTRY *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [type](https://docs.python.org/3/builtins/functions.html#type)]* *= {'Chunked': <class 'ir.strategy.Chunked'>, 'ClaudeTurn': <class 'ir.strategy.ClaudeTurn'>, 'Package': <class 'ir.strategy.Package'>, 'Skill': <class 'ir.strategy.Skill'>, 'WholeText': <class 'ir.strategy.WholeText'>}*
 
 Shipped strategies addressable by name, for persisting an
