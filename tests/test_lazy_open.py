@@ -58,6 +58,14 @@ def test_open_corpus_does_not_load_model_for_len_or_lexical(tmp_path, monkeypatc
         return real(spec, **kw)
 
     monkeypatch.setattr(idx, "make_embedder", counting)
+    # A reopened corpus resolves its pinned id (see test_embedder_pin).
+    real_for_id = idx.make_embedder_for_id
+
+    def counting_for_id(embedder_id, **kw):
+        calls.append(embedder_id)
+        return real_for_id(embedder_id, **kw)
+
+    monkeypatch.setattr(idx, "make_embedder_for_id", counting_for_id)
 
     corpus = ir.open_corpus("lz")
     assert corpus.embedder_id  # known from config without resolving the model

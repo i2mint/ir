@@ -52,6 +52,7 @@ from typing import Any, Callable
 import numpy as np
 
 from .base import Record, SearchHit, best_per_artifact, ledger_key, tag_source
+from .embed import EmbedderMismatch
 from .formulate import Formulator
 
 #: Ranking modes accepted by :func:`search`.
@@ -122,10 +123,14 @@ def _dense_ranked(
     """Top-*fetch* ``(record_id, cosine)`` pairs by exact brute-force cosine."""
     qv = _embed_query(corpus.embedder, query)
     if qv.shape[0] != mat.shape[1]:
-        raise ValueError(
-            f"Query embedding dim {qv.shape[0]} != index dim {mat.shape[1]}. "
-            f"The corpus was built with a different embedder than the one "
-            f"querying it; rebuild the corpus or use its original embedder."
+        name = getattr(corpus, "name", "<name>")
+        built_with = getattr(corpus, "embedder_id", "") or "unknown"
+        raise EmbedderMismatch(
+            f"Query embedding dim {qv.shape[0]} != index dim {mat.shape[1]}: "
+            f"corpus {name!r} was built with embedder {built_with!r} but is "
+            f"being queried with a different embedder. Rebuild it with the embedder "
+            f"you query with: `ir build {name}`; or query without embeddings: "
+            f"`ir search {name} <query> --mode lexical`."
         )
     sub = mat[candidates]
     scores = sub @ qv
