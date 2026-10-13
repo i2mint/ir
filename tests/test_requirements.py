@@ -65,7 +65,6 @@ from ir.requirements import UnsatisfiedRequirements  # noqa: E402
         ("0.2", ">=0.1.1,<0.2", False),
         ("0.2.0", ">=0.1.1,<0.2", False),
         ("0.1.0", ">=0.1.1,<0.2", False),
-        ("0.2.0rc1", "<0.2", False),  # PEP 440: a pre-release of 0.2 is not < 0.2
         ("1.4", "~=1.2", True),
         ("2.0", "~=1.2", False),
         ("1.2.5", "==1.2.*", True),
@@ -83,6 +82,35 @@ def test_version_satisfies(monkeypatch, use_packaging, installed, specifier, ok)
     if use_packaging and specifier in ("@weird",):
         pytest.skip("packaging rejects it; covered by the fallback")
     assert _req.version_satisfies(installed, specifier) is ok
+
+
+def test_non_plain_versions_are_judged_by_packaging_or_hold(monkeypatch):
+    monkeypatch.setitem(sys.modules, "packaging.specifiers", None)  # stdlib path
+    for installed in ("0.2.0rc1", "0.2.dev0", "0.1.post1", "1!0.1", "1.0+local"):
+        assert _req.version_satisfies(installed, "<0.2") is True  # never blocks on a doubt
+    pytest.importorskip("packaging")
+    monkeypatch.undo()
+    assert _req.version_satisfies("0.2.0rc1", "<0.2") is False  # PEP 440
+
+
+def test_markers_and_repeated_names_in_the_declared_bounds(monkeypatch):
+    lines = [
+        'cw>=0.3; python_version >= "3.0"',
+        'cw<0.9; python_version >= "3.0"',
+        'cw<0.2; python_version < "3.0"',
+        "dol>=1; extra == 'dev'",
+        "vd",
+    ]
+    monkeypatch.setattr(_req.importlib.metadata, "requires", lambda dist: lines)
+    pytest.importorskip("packaging")
+    assert _req.declared_bounds() == {"cw": ">=0.3,<0.9"}
+    monkeypatch.setitem(sys.modules, "packaging.markers", None)  # cannot evaluate
+    assert _req.declared_bounds() == {}
+
+
+def test_a_dist_without_a_version_is_skipped(monkeypatch):
+    monkeypatch.setattr(_req.importlib.metadata, "version", lambda dist: None)
+    assert _req.unsatisfied_requirements(bounds={"cw": "<0.2"}) == []
 
 
 def test_installed_dependency_outside_the_bounds_is_named(monkeypatch):

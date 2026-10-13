@@ -68,6 +68,7 @@ def requirements_message(missing: Iterable[str]) -> str:
 
 _REQUIREMENT = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*([^;]*)")
 _CLAUSE = re.compile(r"^\s*(===|==|!=|~=|>=|<=|>|<)\s*([A-Za-z0-9.*+!_-]+)\s*$")
+_PLAIN_RELEASE = re.compile(r"^\d+(\.\d+)*$")
 _RELEASE = re.compile(r"^v?(?:\d+!)?(\d+(?:\.\d+)*)")
 
 
@@ -114,14 +115,17 @@ def _clause_holds(op: str, bound: str, installed: str) -> bool:
 def version_satisfies(installed: str, specifier: str) -> bool:
     """Whether *installed* meets *specifier* (``'>=0.1.1,<0.2'``).
 
-    Uses ``packaging`` when it is installed, else compares numeric releases with the
-    standard library alone; a specifier it cannot read is taken to hold.
+    Uses ``packaging`` when it is installed. Without it, plain releases (``1.2.3``)
+    are compared with the standard library, and anything it cannot judge (a
+    pre-release, ``dev``, ``post`` or local version, an unreadable specifier) is taken
+    to hold: this check must never block ``import ir`` on a doubt.
 
     >>> version_satisfies("0.1.6", ">=0.1.1,<0.2"), version_satisfies("0.2.0", "<0.2")
     (True, False)
     >>> version_satisfies("1.4", "~=1.2"), version_satisfies("2.0", "~=1.2")
     (True, False)
     """
+    specifier = specifier.strip().strip("()").strip()
     try:
         from packaging.specifiers import InvalidSpecifier, SpecifierSet
         from packaging.version import InvalidVersion
@@ -132,27 +136,47 @@ def version_satisfies(installed: str, specifier: str) -> bool:
             return SpecifierSet(specifier).contains(installed, prereleases=True)
         except (InvalidSpecifier, InvalidVersion):
             return True
-    for clause in filter(None, (c.strip() for c in specifier.strip("() ").split(","))):
+    if not _PLAIN_RELEASE.match(installed.strip()):
+        return True  # a pre/dev/post/local/epoch version is for packaging to judge
+    for clause in filter(None, (c.strip() for c in specifier.split(","))):
         parsed = _CLAUSE.match(clause)
         if parsed and not _clause_holds(parsed.group(1), parsed.group(2), installed):
             return False
     return True
 
 
+def _marker_applies(marker: str) -> bool:
+    """Whether a requirement's environment *marker* holds here; without ``packaging``
+    to evaluate it, it does not (a bound that may not apply is not enforced)."""
+    try:
+        from packaging.markers import Marker
+    except ImportError:
+        return False
+    try:
+        return Marker(marker).evaluate()
+    except Exception:  # an unreadable marker: skip the line
+        return False
+
+
 def declared_bounds(dist: str = DIST) -> dict[str, str]:
     """``{normalized dependency name: specifier}`` that *dist*'s installed metadata
-    declares (extras excluded); empty when *dist* is not installed or has none."""
+    declares for this environment (extras excluded; the specifiers of repeated names
+    are joined); empty when *dist* is not installed or has none."""
     try:
         lines = importlib.metadata.requires(dist) or []
     except importlib.metadata.PackageNotFoundError:
         return {}
-    bounds = {}
+    bounds: dict[str, str] = {}
     for line in lines:
-        if "extra ==" in line or "extra==" in line:
+        requirement, _, marker = line.partition(";")
+        if "extra" in marker:
             continue
-        parsed = _REQUIREMENT.match(line)
+        if marker.strip() and not _marker_applies(marker.strip()):
+            continue
+        parsed = _REQUIREMENT.match(requirement)
         if parsed and parsed.group(2).strip():
-            bounds[_normalize(parsed.group(1))] = parsed.group(2).strip()
+            name = _normalize(parsed.group(1))
+            bounds[name] = ",".join(filter(None, (bounds.get(name), parsed.group(2).strip())))
     return bounds
 
 
@@ -170,6 +194,8 @@ def unsatisfied_requirements(
         try:
             installed = importlib.metadata.version(dist)
         except importlib.metadata.PackageNotFoundError:
+            continue
+        if not installed:  # broken metadata without a Version
             continue
         if not version_satisfies(installed, specifier):
             found.append((dist, installed, specifier))
