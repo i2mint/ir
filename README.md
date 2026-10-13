@@ -157,9 +157,10 @@ hits = ir.search(corpus, "audio DAG pipelines", mode="hybrid",
 
 `pip install 'ir[rerank]'` brings `sentence-transformers`; without it the search warns once
 and returns the first-stage ranking. `rerank=` also takes any `ef.Reranker` callable (a
-stub, a hosted model), and `rerank_text=` a `(corpus, meta) -> str` callable. A reranked
-hit's score is the reranker's, on its own scale, so its abstention floor is calibrated and
-stored separately: pass the same `rerank=` / `rerank_text=` to `ir.eval.calibrate_min_score`
+stub, a hosted model), and `rerank_text=` a `(corpus, meta) -> str` callable. The `"cross-encoder"` spec squashes the model's raw logits through a sigmoid into (0, 1), so
+relative selectors keep working. A reranked hit's score is the reranker's, on its own scale,
+so its abstention floor is calibrated and stored separately (a callable you pass needs a stable
+`rerank_id` attribute for that): pass the same `rerank=` / `rerank_text=` to `ir.eval.calibrate_min_score`
 and `ir.discover(..., min_score="auto")` (see `ir.rerank`).
 
 ### Expand

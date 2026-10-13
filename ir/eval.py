@@ -71,7 +71,13 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .base import SearchHit
-from .rerank import calibration_key, rerank_tag, resolve_reranker
+from .rerank import (
+    DFLT_RERANK_MAX_CHARS,
+    calibration_key,
+    is_anonymous,
+    rerank_tag,
+    resolve_reranker,
+)
 from .retrieve import search as _search
 from .select import DFLT_GAP_RATIO, DFLT_MAX_K, DFLT_REL_THRESHOLD
 
@@ -1599,8 +1605,16 @@ def calibrate_min_score(
     if "rerank" in search_kw:
         search_kw["rerank"] = resolve_reranker(search_kw["rerank"])
     rerank_id = rerank_tag(
-        search_kw.get("rerank"), search_kw.get("rerank_text", "surface")
+        search_kw.get("rerank"),
+        search_kw.get("rerank_text", "surface"),
+        max_chars=search_kw.get("rerank_max_chars", DFLT_RERANK_MAX_CHARS),
     )
+    if persist and is_anonymous(rerank_id):
+        raise ValueError(
+            "cannot persist a floor for a reranker without a stable identity (a lambda, "
+            "functools.partial or bare instance would collide with any other): set a "
+            "`rerank_id` attribute on it, e.g. `reranker.rerank_id = 'my-model-v1'`."
+        )
     scored = _retrieve_for_cases(
         corpus, cases, mode=mode, k=k, surfaces=surfaces, **search_kw
     )
@@ -1697,7 +1711,12 @@ def calibrate_min_score(
 
 
 def load_calibration(
-    corpus: Any, mode: str, *, rerank: Any = None, rerank_text: Any = "surface"
+    corpus: Any,
+    mode: str,
+    *,
+    rerank: Any = None,
+    rerank_text: Any = "surface",
+    rerank_max_chars: int = DFLT_RERANK_MAX_CHARS,
 ) -> MinScoreCalibration | None:
     """Load a persisted :class:`MinScoreCalibration` for ``(corpus, mode)``.
 
@@ -1710,7 +1729,7 @@ def load_calibration(
     embedder id.
     """
     corpus = _as_corpus(corpus)
-    tag = rerank_tag(resolve_reranker(rerank), rerank_text)
+    tag = rerank_tag(resolve_reranker(rerank), rerank_text, max_chars=rerank_max_chars)
     rec = corpus.store.get_calibration(calibration_key(mode, tag))
     return MinScoreCalibration.from_dict(rec) if rec else None
 

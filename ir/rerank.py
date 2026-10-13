@@ -23,25 +23,32 @@ implementation; this module adds the three things ``ef`` cannot know about an ``
 - **Calibration that stays honest.** A reranked hit's score is the reranker's, on a scale
   unrelated to cosine / RRF / BM25, so an abstention floor calibrated for ``hybrid`` would
   be mis-scaled if applied to it. :func:`calibration_key` gives a reranked configuration its
-  own key (``hybrid+rerank:<model>+artifact``), so ``calibrate_min_score(...,
+  own key (``hybrid+rerank-<model>+artifact``), so ``calibrate_min_score(...,
   rerank=...)`` and ``discover(..., min_score="auto", rerank=...)`` read and write a floor
   for *that* configuration, and fall back to "no floor" (with the usual warning) rather
   than a wrong one. The fallback to first-stage ranking maps back to the plain key.
 
-Rerankers used with relative selection strategies should return scores in ``[0, 1]`` (the
-sentence-transformers cross-encoder applies a sigmoid for single-label models).
+Relative selection strategies (``rel_threshold``, ``score_gap``...) compare score *ratios*,
+so a reranker used with them must return non-negative scores. The ``"cross-encoder"`` spec
+guarantees that: most cross-encoders (including ef's default ms-marco model) return raw
+logits that run negative, so ir passes them through a sigmoid into ``(0, 1)``. (A model that
+already applies a sigmoid is squashed a second time -- monotone, so the order is unchanged,
+only the scale is compressed.) A callable you pass yourself is used as is: keep it in
+``[0, 1]``, or give it a stable ``rerank_id`` attribute so its calibrated floor is kept apart.
 
 >>> resolve_reranker(None) is None
 True
 >>> calibration_key("hybrid", None)
 'hybrid'
 >>> calibration_key("hybrid", rerank_tag(lambda q, s: [], "artifact"))
-'hybrid+rerank:<lambda>+artifact'
+'hybrid+rerank-anonymous+artifact'
 """
 
 from __future__ import annotations
 
+import math
 import re
+import sys
 import threading
 import warnings
 from collections.abc import Callable, Mapping, Sequence
@@ -54,6 +61,7 @@ __all__ = [
     "CROSS_ENCODER",
     "resolve_reranker",
     "rerank_tag",
+    "is_anonymous",
     "calibration_key",
     "passage_texts",
 ]
@@ -77,10 +85,19 @@ _cache_lock = threading.Lock()
 _warned: set[str] = set()
 
 
+def _external_stacklevel() -> int:
+    """The ``stacklevel`` that attributes a warning to the first frame outside ``ir``."""
+    package = __file__.rsplit("ir", 1)[0] + "ir"
+    level, frame = 1, sys._getframe(1)
+    while frame is not None and frame.f_code.co_filename.startswith(package):
+        frame, level = frame.f_back, level + 1
+    return level
+
+
 def _warn_once(key: str, message: str) -> None:
     if key not in _warned:
         _warned.add(key)
-        warnings.warn(message, stacklevel=4)
+        warnings.warn(message, stacklevel=_external_stacklevel())
 
 
 def resolve_reranker(spec: Any) -> Callable | None:
@@ -114,10 +131,12 @@ def resolve_reranker(spec: Any) -> Callable | None:
     with _cache_lock:
         if model in _model_cache:
             return _model_cache[model]
+        if model in _warned:  # the extra is missing: do not retry the import per search
+            return None
         try:
             from ef import cross_encoder_reranker
 
-            reranker = cross_encoder_reranker(model)
+            raw = cross_encoder_reranker(model)
         except ImportError as exc:
             _warn_once(
                 model,
@@ -126,31 +145,75 @@ def resolve_reranker(spec: Any) -> Callable | None:
                 f"first-stage ranking (no rerank).",
             )
             return None
+        reranker = _sigmoid_scores(raw, model)
         _model_cache[model] = reranker
         return reranker
 
 
+def _sigmoid_scores(raw: Callable, model: str) -> Callable:
+    """``raw`` with its logits squashed into ``(0, 1)`` (see the module docstring)."""
+
+    def reranker(query, segments):
+        return [_sigmoid(score) for score in raw(query, segments)]
+
+    reranker.model_name = model  # type: ignore[attr-defined]
+    reranker.rerank_id = f"{model}+sigmoid"  # type: ignore[attr-defined]
+    return reranker
+
+
+def _sigmoid(x: float) -> float:
+    x = max(-60.0, min(60.0, float(x)))
+    return 1.0 / (1.0 + math.exp(-x))
+
+
+ANONYMOUS = "anonymous"
+
+
 def _slug(text: str) -> str:
-    return re.sub(r"[^A-Za-z0-9_.<>-]+", "-", text).strip("-")
+    return re.sub(r"[^A-Za-z0-9_.]+", "-", text).strip("-") or ANONYMOUS
 
 
-def rerank_tag(reranker: Callable | None, rerank_text: Any = "surface") -> str | None:
+def _identity(obj: Any) -> str:
+    """A stable name for a reranker / text callable, or ``ANONYMOUS``.
+
+    ``rerank_id`` (set it on your callable) beats ``model_name`` beats ``__name__``.
+    Lambdas, ``functools.partial`` and bare instances have no stable name: two of them
+    would otherwise collide on one calibration key.
+    """
+    for attr in ("rerank_id", "model_name", "__name__"):
+        value = getattr(obj, attr, None)
+        if value and value not in ("<lambda>", "partial"):
+            return _slug(str(value))
+    return ANONYMOUS
+
+
+def rerank_tag(
+    reranker: Callable | None,
+    rerank_text: Any = "surface",
+    *,
+    max_chars: int = DFLT_RERANK_MAX_CHARS,
+) -> str | None:
     """A short, key-safe identity for one reranked configuration (``None`` if no rerank).
 
-    Built from the reranker's ``model_name`` (ef's cross-encoder sets it) or ``__name__``,
-    plus the ``rerank_text`` choice, because both change the score scale.
+    Built from the reranker's identity (see :func:`_identity`), the ``rerank_text`` choice
+    and, for ``"artifact"``, a non-default ``max_chars`` -- everything that changes the
+    score scale. An anonymous reranker or text callable gets ``anonymous`` in its tag, which
+    ir refuses to persist a floor under (:func:`is_anonymous`).
     """
     if reranker is None:
         return None
-    ident = getattr(reranker, "model_name", None) or getattr(
-        reranker, "__name__", type(reranker).__name__
-    )
-    text = (
-        rerank_text
-        if isinstance(rerank_text, str)
-        else getattr(rerank_text, "__name__", "custom")
-    )
-    return f"rerank:{_slug(str(ident))}+{_slug(text)}"
+    if isinstance(rerank_text, str):
+        text = rerank_text
+        if text == "artifact" and max_chars != DFLT_RERANK_MAX_CHARS:
+            text += f"@{max_chars}"
+    else:
+        text = f"fn-{_identity(rerank_text)}"
+    return f"rerank-{_identity(reranker)}+{text}"
+
+
+def is_anonymous(tag: str | None) -> bool:
+    """Does ``tag`` rest on an unnamed callable (so its calibration key may collide)?"""
+    return bool(tag) and (f"-{ANONYMOUS}+" in tag or tag.endswith(f"-{ANONYMOUS}"))
 
 
 def calibration_key(mode: str, tag: str | None = None) -> str:
@@ -161,8 +224,8 @@ def calibration_key(mode: str, tag: str | None = None) -> str:
 
     >>> calibration_key("hybrid")
     'hybrid'
-    >>> calibration_key("hybrid", "rerank:m+artifact")
-    'hybrid+rerank:m+artifact'
+    >>> calibration_key("hybrid", "rerank-m+artifact")
+    'hybrid+rerank-m+artifact'
     """
     return mode if not tag else f"{mode}+{tag}"
 
@@ -193,7 +256,7 @@ def passage_texts(
             f"or a callable (corpus, meta) -> str."
         )
     from .expand import _stitch
-    from .retrieve import NoLedgerEntry, records_for_artifact
+    from .retrieve import records_for_artifact
 
     whole: dict[str, str] = {}
 
@@ -202,7 +265,9 @@ def passage_texts(
         if artifact_id not in whole:
             try:
                 records = records_for_artifact(corpus, artifact_id)
-            except NoLedgerEntry:
+            except (
+                KeyError
+            ):  # no ledger entry, or a stale one: fall back to the surface
                 records = []
             records = [r for r in records if r.text]
             stitched = _stitch(records) if records else ""

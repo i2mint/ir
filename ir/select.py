@@ -69,7 +69,13 @@ from typing import Any, Callable
 from .base import POINTER_KEYS, SearchHit, best_per_artifact
 from .expand import NeighborhoodPolicy, SeedNotFound
 from .expand import expand as _expand
-from .rerank import calibration_key, rerank_tag, resolve_reranker
+from .rerank import (
+    DFLT_RERANK_MAX_CHARS,
+    calibration_key,
+    is_anonymous,
+    rerank_tag,
+    resolve_reranker,
+)
 from .retrieve import NoLedgerEntry
 from .retrieve import search as _search
 
@@ -846,7 +852,11 @@ def _rerank_tag_of(search_kw: dict) -> str | None:
     """
     if "rerank" in search_kw:
         search_kw["rerank"] = resolve_reranker(search_kw["rerank"])
-    return rerank_tag(search_kw.get("rerank"), search_kw.get("rerank_text", "surface"))
+    return rerank_tag(
+        search_kw.get("rerank"),
+        search_kw.get("rerank_text", "surface"),
+        max_chars=search_kw.get("rerank_max_chars", DFLT_RERANK_MAX_CHARS),
+    )
 
 
 def _resolve_auto_min_score(
@@ -870,8 +880,16 @@ def _resolve_auto_min_score(
     store = getattr(corpus, "store", None)
     get = getattr(store, "get_calibration", None)
     key = calibration_key(mode, rerank)
-    rec = get(key) if callable(get) else None
     name = getattr(corpus, "name", "?")
+    if is_anonymous(rerank):
+        warnings.warn(
+            "discover(min_score='auto'): the reranker (or rerank_text) has no stable "
+            "identity, so no calibrated floor can be matched to it; not abstaining by "
+            "absolute score. Set a `rerank_id` attribute on it.",
+            stacklevel=3,
+        )
+        return None
+    rec = get(key) if callable(get) else None
     if not rec:
         warnings.warn(
             f"discover(min_score='auto'): no calibration stored for corpus "

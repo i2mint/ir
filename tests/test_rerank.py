@@ -58,7 +58,7 @@ class FakeCrossEncoder:
         out = []
         for query, passage in pairs:
             hit = len(set(query.lower().split()) & set(passage.lower().split()))
-            out.append(hit / (hit + 2.0))  # in [0, 1), like a sigmoid
+            out.append(2.0 * hit - 3.0)  # raw logits: negative when off-topic
         return out
 
 
@@ -110,6 +110,16 @@ def test_artifact_text_feeds_the_whole_readme_and_scores_each_artifact_once():
     ir.search(corpus, QUERY, k=3, mode="hybrid", rerank=spy, rerank_text="artifact")
     assert any("directed acyclic graph" in t and "a toolkit" in t for t in seen)
     assert len(seen) == len(set(seen)) == len(PKG)  # one passage per artifact
+
+
+def test_artifact_text_scores_each_passage_once_even_without_collapse():
+    corpus = _corpus()
+    spy, seen = _seen_passages(lambda q, segs: [0.0] * len(segs))
+    hits = ir.search(
+        corpus, QUERY, k=10, rerank=spy, rerank_text="artifact", per_artifact=False
+    )
+    assert len(seen) == len(set(seen)) == len(PKG)
+    assert len(hits) > len(PKG)  # every surface is still returned
 
 
 def test_artifact_text_is_capped_and_overlap_is_not_repeated():
@@ -190,7 +200,8 @@ def test_cross_encoder_spec_runs_efs_reranker_over_the_stub_model(fake_st):
     (model,) = FakeCrossEncoder.instances
     assert model.model_name == rr.DFLT_RERANK_MODEL
     assert _ids(hits)[0] == "thin"
-    assert all(0.0 <= h.score < 1.0 for h in hits)
+    # raw logits are squashed into (0, 1): relative selectors compare ratios
+    assert all(0.0 < h.score < 1.0 for h in hits)
     assert all(q == QUERY for q, _ in model.pairs_seen)
 
 
@@ -222,12 +233,38 @@ def test_unknown_rerank_spec_is_rejected():
         ir.search(_corpus(), QUERY, rerank=3)
 
 
-def test_formulated_queries_rerank_each_sub_search(fake_st):
+def test_formulated_queries_are_reranked_once_against_the_original_query(fake_st):
     corpus = _corpus()
+    queries, sizes = [], []
+
+    def spy(query, segments):
+        queries.append(query)
+        sizes.append(len(segments))
+        return [1.0] * len(segments)
+
     hits = ir.search(
-        corpus, "x", k=3, rerank="cross-encoder", formulate=lambda q: [QUERY, "pdf"]
+        corpus, "x", k=3, rerank=spy, formulate=lambda q: [QUERY, "pdf merge tools"]
     )
-    assert hits and len(FakeCrossEncoder.instances) == 1
+    assert hits and queries == ["x"]  # one call, against what the caller asked
+    assert sizes[0] > 3  # over-fetched candidates, not just k per sub-query
+
+
+def test_a_single_rewritten_query_is_also_judged_against_the_original(fake_st):
+    queries = []
+
+    def spy(query, segments):
+        queries.append(query)
+        return [0.0] * len(segments)
+
+    ir.search(_corpus(), "orig", rerank=spy, formulate=lambda q: "rewritten " + QUERY)
+    assert queries == ["orig"]
+
+
+def test_the_cross_encoder_model_is_shared_across_fanout(fake_st):
+    ir.search(
+        _corpus(), "x", rerank="cross-encoder", formulate=lambda q: [QUERY, "pdf"]
+    )
+    assert len(FakeCrossEncoder.instances) == 1
 
 
 # ------------------------------------------------------------------- calibration
@@ -236,8 +273,28 @@ def test_formulated_queries_rerank_each_sub_search(fake_st):
 def test_calibration_key_separates_reranked_from_first_stage():
     plain = ir.calibration_key("hybrid")
     tagged = ir.calibration_key("hybrid", rr.rerank_tag(len, "artifact"))
-    assert plain == "hybrid" and tagged == "hybrid+rerank:len+artifact"
+    assert plain == "hybrid" and tagged == "hybrid+rerank-len+artifact"
     assert "/" not in ir.calibration_key("h", rr.rerank_tag(_named("a/b"), "surface"))
+
+
+def test_tags_do_not_collide_across_configurations():
+    import functools
+
+    tag = rr.rerank_tag
+    assert tag(_named("m"), "artifact") != tag(_named("m"), "surface")
+    assert tag(_named("m"), "artifact", max_chars=500) != tag(_named("m"), "artifact")
+
+    def artifact(corpus, meta):  # a callable that merely shares a built-in's name
+        return ""
+
+    assert tag(_named("m"), artifact) != tag(_named("m"), "artifact")
+    assert rr.is_anonymous(tag(lambda q, s: [], "surface"))
+    assert rr.is_anonymous(tag(functools.partial(len), "surface"))
+    assert rr.is_anonymous(tag(_named("m"), lambda corpus, meta: ""))
+    assert not rr.is_anonymous(tag(_named("m"), "surface"))
+    stable = lambda q, s: []  # noqa: E731
+    stable.rerank_id = "v1"
+    assert not rr.is_anonymous(tag(stable, "surface"))
 
 
 def _named(name):
@@ -246,6 +303,45 @@ def _named(name):
 
     fn.model_name = name
     return fn
+
+
+def test_persisting_a_floor_for_an_anonymous_reranker_is_refused():
+    with pytest.raises(ValueError, match="stable identity"):
+        ev.calibrate_min_score(
+            _corpus(),
+            _cases(),
+            mode="hybrid",
+            k=3,
+            persist=True,
+            rerank=lambda q, segs: [0.0] * len(segs),
+        )
+
+
+def test_discover_auto_with_an_anonymous_reranker_does_not_borrow_a_floor():
+    corpus = _corpus()
+    ev.calibrate_min_score(corpus, _cases(), mode="hybrid", k=3, persist=True)
+    with pytest.warns(UserWarning, match="stable identity"):
+        ir.discover(
+            corpus,
+            QUERY,
+            mode="hybrid",
+            min_score="auto",
+            rerank=lambda q, segs: [1.0] * len(segs),
+        )
+
+
+def test_missing_extra_warning_points_at_the_caller(no_st):
+    with pytest.warns(UserWarning) as record:
+        ir.search(_corpus(), QUERY, rerank="cross-encoder")
+    assert record[0].filename == __file__
+
+
+def test_a_stale_ledger_degrades_the_passage_not_the_search():
+    corpus = _corpus()
+    spy, seen = _seen_passages(lambda q, segs: [0.0] * len(segs))
+    corpus.store.get_ledger_entry = lambda key: {"record_ids": ["ghost"]}
+    assert ir.search(corpus, QUERY, k=3, rerank=spy, rerank_text="artifact")
+    assert seen
 
 
 def _cases():
@@ -270,7 +366,7 @@ def test_a_reranked_floor_is_stored_apart_and_not_applied_to_first_stage(fake_st
         rerank_text="artifact",
     )
     assert plain.rerank is None and ce.rerank == (
-        f"rerank:{rr.DFLT_RERANK_MODEL.replace('/', '-')}+artifact"
+        f"rerank-{rr.DFLT_RERANK_MODEL.replace('/', '-')}-sigmoid+artifact"
     )
     keys = set(corpus.store.calibration)
     assert keys == {"hybrid", f"hybrid+{ce.rerank}"}
@@ -287,7 +383,7 @@ def test_discover_auto_floor_uses_the_reranked_calibration(fake_st):
     corpus = _corpus()
     ev.calibrate_min_score(corpus, _cases(), mode="hybrid", k=3, persist=True)
     # No reranked floor stored: auto must warn and not borrow the first-stage floor.
-    with pytest.warns(UserWarning, match=r"hybrid\+rerank:"):
+    with pytest.warns(UserWarning, match=r"hybrid\+rerank-"):
         ir.discover(
             corpus,
             QUERY,
