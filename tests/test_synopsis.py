@@ -535,3 +535,94 @@ def test_gate_is_not_disabled_by_an_id_named_always():
     assert calls == []  # the gate is honoured whatever its id is called
     with pytest.raises(ValueError, match="when_id"):
         ir.with_synopsis(ir.Package(), synthesize=synth, synthesizer_id="v1", when_id="x")
+
+
+# --------------------------------------------------------------------------- #
+# Package records: the default synopsis never sends the local path (#101)
+# --------------------------------------------------------------------------- #
+
+_PACKAGE_RAW = {
+    "name": "pkg",
+    "description": "Parses dates",
+    "readme": "# pkg\nlong readme",
+    "owner": "ours",
+    "deps": ["numpy>=1"],
+    "path": "/home/someone/secret/pkg",
+}
+
+
+def test_synthesizer_with_text_fields_sends_only_those_fields():
+    seen = []
+    synth = make_llm_synthesizer(
+        summarize=lambda t: seen.append(t) or "S",
+        text_fields=("name", "description", "readme"),
+    )
+    assert synth(Artifact("pkg", _PACKAGE_RAW)) == "S"
+    (text,) = seen
+    assert text == "pkg\n\nParses dates\n\n# pkg\nlong readme"
+    assert "/home" not in text and "numpy" not in text and "ours" not in text
+
+
+def test_text_fields_and_text_key_are_exclusive():
+    with pytest.raises(ValueError, match="not both"):
+        make_llm_synthesizer(text_key="a", text_fields=("b",))
+
+
+def test_text_fields_fold_into_the_default_id_only():
+    plain = make_llm_synthesizer().synthesizer_id
+    fielded = make_llm_synthesizer(text_fields=("name",)).synthesizer_id
+    other = make_llm_synthesizer(text_fields=("name", "readme")).synthesizer_id
+    assert len({plain, fielded, other}) == 3
+    assert (
+        make_llm_synthesizer(
+            text_fields=("name",), synthesizer_id="mine"
+        ).synthesizer_id
+        == "mine"
+    )
+
+
+def test_text_fields_with_a_non_mapping_raw_falls_back_to_the_text():
+    synth = make_llm_synthesizer(summarize=lambda t: "S:" + t, text_fields=("name",))
+    assert synth(Artifact("x", "plain text")) == "S:plain text"
+    assert synth(Artifact("y", {"name": "", "description": "d"})) == ""
+
+
+def test_with_synopsis_on_package_never_sends_path_or_deps(monkeypatch):
+    seen = []
+    import ir.synopsis as _syn
+
+    monkeypatch.setattr(
+        _syn,
+        "_default_llm_summarizer",
+        lambda prompt, model, **kw: lambda text: seen.append(text) or "a synopsis",
+    )
+    strat = with_synopsis(ir.Package())
+    assert strat.synthesize(Artifact("pkg", _PACKAGE_RAW)) == "a synopsis"
+    (text,) = seen
+    assert "Parses dates" in text and "long readme" in text
+    assert "/home/someone" not in text and "numpy" not in text
+    # ... and through the whole decompose path, not just the synthesizer
+    plan = strat.decompose("pkg", _PACKAGE_RAW)
+    assert plan.surfaces[0].kind == "synopsis"
+    assert "/home/someone" not in "".join(s.text for s in plan.surfaces)
+
+
+def test_package_synopsis_identity_differs_from_the_all_fields_default():
+    # Corpora synthesized before #101 (path included) are stale and re-synthesize.
+    assert (
+        with_synopsis(ir.Package()).synthesizer_id
+        != with_synopsis(ir.Chunked()).synthesizer_id
+    )
+
+
+def test_text_key_strategy_still_wins_over_synopsis_fields():
+    class Both:
+        text_key = "body"
+        synopsis_fields = ("name",)
+
+        def decompose(self, artifact_id, raw, metadata=None):
+            return ir.Chunked(text_key="body").decompose(artifact_id, raw, metadata)
+
+    assert with_synopsis(Both()).synthesizer_id.endswith(
+        make_llm_synthesizer().synthesizer_id.split(":", 2)[2]
+    )

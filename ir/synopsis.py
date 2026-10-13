@@ -60,7 +60,7 @@ from __future__ import annotations
 
 import hashlib
 import warnings
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any, Callable, Union
 
 from .base import Artifact, IndexPlan, Surface
@@ -130,6 +130,7 @@ def make_llm_synthesizer(
     model: str | None = None,
     synthesizer_id: str | None = None,
     text_key: str | None = None,
+    text_fields: Sequence[str] | None = None,
     **prompt_function_kwargs: Any,
 ) -> Synthesizer:
     """An LLM-backed :data:`Synthesizer` (:class:`~ir.base.Artifact` → synopsis).
@@ -140,7 +141,17 @@ def make_llm_synthesizer(
     this module, and even constructing the synthesizer, stays offline. The
     artifact's text is extracted with :func:`ir.strategy.text_of` using
     ``text_key`` — which :func:`with_synopsis` threads from the inner strategy, so
-    the synopsis summarizes the *same* field the strategy indexes. An empty text,
+    the synopsis summarizes the *same* field the strategy indexes.
+
+    ``text_fields`` (mutually exclusive with ``text_key``) names the fields of a
+    mapping artifact whose text is sent to the LLM, and **only those**: without it,
+    a mapping with no ``text`` / ``text_key`` has *every* string field joined and
+    sent (see :func:`ir.strategy.text_of`) — including, for a
+    :class:`~ir.strategy.Package` record, its local ``path``. ``with_synopsis``
+    threads the inner strategy's ``synopsis_fields`` (``Package`` declares
+    ``("name", "description", "readme")``), so the Package default never leaks the
+    path. The fields fold into the default ``synthesizer_id``, so changing them
+    re-synthesizes. An empty text,
     or any synthesis error, yields ``""`` (the surface is then skipped, never a
     fabricated summary).
 
@@ -148,6 +159,9 @@ def make_llm_synthesizer(
     ``"aix:{model}:{sha(prompt)[:12]}"``) that :func:`with_synopsis` reads into the
     corpus's ``strategy_id`` for staleness — a prompt or model change re-synthesizes.
     """
+    if text_fields is not None and text_key is not None:
+        raise ValueError("make_llm_synthesizer: pass text_key or text_fields, not both")
+    fields = tuple(text_fields) if text_fields is not None else None
     cache: dict[str, Callable[[str], str]] = {}
 
     def _summarizer() -> Callable[[str], str]:
@@ -160,7 +174,12 @@ def make_llm_synthesizer(
         return cache["fn"]
 
     def synthesize(artifact: Artifact) -> str:
-        text = text_of(artifact.raw, text_key).strip()
+        raw = artifact.raw
+        if fields is not None and isinstance(raw, Mapping):
+            parts = (str(raw.get(f) or "").strip() for f in fields)
+            text = "\n\n".join(p for p in parts if p)
+        else:
+            text = text_of(raw, text_key).strip()
         if not text:
             return ""
         try:
@@ -169,9 +188,10 @@ def make_llm_synthesizer(
             out = ""
         return out.strip() if isinstance(out, str) else ""
 
-    synthesize.synthesizer_id = (
-        synthesizer_id or f"aix:{model or 'default'}:{_prompt_hash(prompt)}"
-    )
+    default_id = f"aix:{model or 'default'}:{_prompt_hash(prompt)}"
+    if fields is not None:
+        default_id += ":" + ",".join(fields)
+    synthesize.synthesizer_id = synthesizer_id or default_id
     return synthesize
 
 
@@ -203,6 +223,15 @@ def make_thin_description_predicate(
 
 #: Ready-made gate: synthesize only for packages with an empty / short description.
 thin_description_predicate = make_thin_description_predicate()
+
+
+def _default_synthesizer(strategy: IndexingStrategy) -> Synthesizer:
+    """The LLM synthesizer for ``strategy``: its ``text_key``, else its ``synopsis_fields``."""
+    text_key = getattr(strategy, "text_key", None)
+    fields = (
+        None if text_key is not None else getattr(strategy, "synopsis_fields", None)
+    )
+    return make_llm_synthesizer(text_key=text_key, text_fields=fields)
 
 
 class _SynopsisStrategy:
@@ -237,9 +266,7 @@ class _SynopsisStrategy:
         # The default synthesizer summarizes the same field the inner strategy
         # indexes (thread its text_key, if any), so synopsis routing matches.
         self.synthesize: Synthesizer = (
-            synthesize
-            if synthesize is not None
-            else make_llm_synthesizer(text_key=getattr(strategy, "text_key", None))
+            synthesize if synthesize is not None else _default_synthesizer(strategy)
         )
         self.synthesizer_id = self._resolve_synthesizer_id(synthesizer_id)
         self.synopsis_kind = synopsis_kind
