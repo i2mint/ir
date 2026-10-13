@@ -37,6 +37,7 @@ the reviewing search subagent shipped under ``.claude/``.
 
 from __future__ import annotations
 
+from . import _precheck  # noqa: F401  (names missing deps before any heavy import)
 from . import embed as _embed  # noqa: F401  (sets USE_TF=0 before transformers)
 from . import registry
 from .base import Artifact, IndexPlan, Record, SearchHit, Surface, tag_source
