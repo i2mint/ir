@@ -626,3 +626,22 @@ def test_text_key_strategy_still_wins_over_synopsis_fields():
     assert with_synopsis(Both()).synthesizer_id.endswith(
         make_llm_synthesizer().synthesizer_id.split(":", 2)[2]
     )
+
+
+def test_nested_with_synopsis_still_sends_only_the_fields(monkeypatch):
+    seen = []
+    import ir.synopsis as _syn
+
+    monkeypatch.setattr(
+        _syn,
+        "_default_llm_summarizer",
+        lambda prompt, model, **kw: (lambda text: seen.append(text) or "s"),
+    )
+    outer = with_synopsis(with_synopsis(ir.Package(), synthesize=lambda a: "inner"))
+    outer.synthesize(Artifact("pkg", _PACKAGE_RAW))
+    assert "/home/someone" not in seen[0] and "Parses dates" in seen[0]
+
+
+def test_text_fields_must_be_a_sequence_not_a_string():
+    with pytest.raises(TypeError, match="sequence of names"):
+        make_llm_synthesizer(text_fields="readme")

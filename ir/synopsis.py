@@ -161,6 +161,10 @@ def make_llm_synthesizer(
     """
     if text_fields is not None and text_key is not None:
         raise ValueError("make_llm_synthesizer: pass text_key or text_fields, not both")
+    if isinstance(text_fields, str):
+        raise TypeError(
+            f"make_llm_synthesizer: text_fields must be a sequence of names, not {text_fields!r}"
+        )
     fields = tuple(text_fields) if text_fields is not None else None
     cache: dict[str, Callable[[str], str]] = {}
 
@@ -227,6 +231,10 @@ thin_description_predicate = make_thin_description_predicate()
 
 def _default_synthesizer(strategy: IndexingStrategy) -> Synthesizer:
     """The LLM synthesizer for ``strategy``: its ``text_key``, else its ``synopsis_fields``."""
+    while isinstance(
+        strategy, _SynopsisStrategy
+    ):  # nested wrappers: read the real strategy
+        strategy = strategy.strategy
     text_key = getattr(strategy, "text_key", None)
     fields = (
         None if text_key is not None else getattr(strategy, "synopsis_fields", None)

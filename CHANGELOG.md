@@ -15,7 +15,7 @@ published to PyPI). Entries are commit subjects and PR titles, verbatim.
 
 ### Changed
 
-- `ir.with_synopsis(ir.Package())` no longer sends every string field of a Package record (including its local `path`) to the LLM: strategies declare `synopsis_fields` (`Package`: name, description, readme) and `make_llm_synthesizer(text_fields=...)` sends only those. The fields fold into the default `synthesizer_id`, so Package synopses built before this re-synthesize ([#101](https://github.com/i2mint/ir/issues/101))
+- `ir.with_synopsis(ir.Package())` no longer sends every string field of a Package record (including its local `path`) to the LLM: strategies declare `synopsis_fields` (`Package`: name, description, readme) and `make_llm_synthesizer(text_fields=...)` sends only those. The fields fold into the default `synthesizer_id`, so Package synopses built before this re-synthesize (unless you pass your own `synthesizer_id`) ([#101](https://github.com/i2mint/ir/issues/101))
 - `ir maintain --all` is fault-isolated per corpus and exits non-zero when any corpus fails; a named `ir.maintain(name)` still raises ([#75](https://github.com/i2mint/ir/issues/75))
 - `ir maintain` (CLI) takes a single-run lock so a scheduled sweep and a manual one cannot interleave writes to a corpus store ([#77](https://github.com/i2mint/ir/issues/77))
 
