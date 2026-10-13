@@ -67,6 +67,7 @@ from .policy import (
 )
 from .coverage import CoverageReport, reports_coverage
 from .registry import policy_for, retriever_for, retrievers
+from .rerank import calibration_key, resolve_reranker
 from .retrieve import Retriever, as_retriever, fuse_hits, records_for_artifact
 from .retrieve import search as _search
 from .select import (
@@ -99,6 +100,8 @@ from .tools import search as search_tool
 from .traverse import WalkPolicy, WalkState, collapsed_tree_policy, traverse
 
 __all__ = [
+    "resolve_reranker",
+    "calibration_key",
     "search_tool",
     "make_search",
     "Artifact",

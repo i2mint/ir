@@ -54,6 +54,7 @@ import numpy as np
 from .base import Record, SearchHit, best_per_artifact, ledger_key, tag_source
 from .embed import EmbedderMismatch
 from .formulate import Formulator
+from .rerank import DFLT_RERANK_MAX_CHARS, passage_texts, resolve_reranker
 
 #: Ranking modes accepted by :func:`search`.
 MODES = ("dense", "lexical", "hybrid")
@@ -295,27 +296,87 @@ def _blend_fuse(
 
 
 def _apply_rerank(
+    corpus,
     query: str,
     ranked: list[tuple[str, float]],
     meta_by_id: Mapping[str, dict],
     rerank: Callable,
     limit: int,
+    *,
+    rerank_text: Any = "surface",
+    max_chars: int = DFLT_RERANK_MAX_CHARS,
 ) -> list[tuple[str, float]]:
     """Re-score the ranked candidates with an :class:`ef.Reranker` via ``ef.rerank``.
 
-    The full candidate list is handed to the reranker; it may reorder freely
-    and the top ``limit`` are kept. The reranker score replaces the candidate
-    score, and ``_rid`` rides along on each segment so the reordered output
-    maps back to records.
+    The reranker reads :func:`ir.rerank.passage_texts` of each candidate (the matched
+    surface by default) and may reorder freely; the top ``limit`` are kept and its score
+    replaces the candidate score. Candidates that share a passage (every surface of one
+    artifact under ``rerank_text="artifact"``) are scored once and share the score, in
+    their first-stage order, so a cross-encoder is never run twice on the same text.
     """
     from ef import rerank as ef_rerank
 
-    segments = [{"text": meta_by_id[rid]["text"], "_rid": rid} for rid, _ in ranked]
-    reordered = ef_rerank(query, segments, rerank, limit=limit)
-    return [
-        (s["_rid"], float(s.get("metadata", {}).get("rerank_score", 0.0)))
-        for s in reordered
-    ]
+    texts = passage_texts(
+        corpus, [meta_by_id[rid] for rid, _ in ranked], rerank_text, max_chars=max_chars
+    )
+    groups: dict[str, list[str]] = {}
+    for text, (rid, _) in zip(texts, ranked, strict=True):
+        groups.setdefault(text, []).append(rid)
+    segments = [{"text": text, "_group": text} for text in groups]
+    reordered = ef_rerank(query, segments, rerank)
+    out: list[tuple[str, float]] = []
+    for segment in reordered:
+        score = float(segment.get("metadata", {}).get("rerank_score", 0.0))
+        out.extend((rid, score) for rid in groups[segment["_group"]])
+    return out[:limit]
+
+
+def _distinct_surfaces(hits: list[SearchHit]) -> list[SearchHit]:
+    """``hits`` with each ``(artifact, surface)`` once, at its best score, best first."""
+    best: dict[tuple, SearchHit] = {}
+    for hit in hits:
+        key = (hit.artifact_id, hit.surface_kind, hit.surface_index)
+        if key not in best or hit.score > best[key].score:
+            best[key] = hit
+    return sorted(best.values(), key=lambda h: h.score, reverse=True)
+
+
+def _rerank_hits(
+    corpus,
+    query: str,
+    hits: list[SearchHit],
+    rerank: Callable,
+    *,
+    rerank_text: Any,
+    max_chars: int,
+) -> list[SearchHit]:
+    """Rerank already-built hits (the multi-query merge) against ``query``.
+
+    Hits are keyed by position; the reranker sees the same passages
+    :func:`_apply_rerank` would give it, and each hit keeps its surface but takes the
+    reranker's score.
+    """
+    metas = {
+        str(i): {
+            "artifact_id": h.artifact_id,
+            "surface_kind": h.surface_kind,
+            "surface_index": h.surface_index,
+            "text": h.text,
+            "metadata": h.metadata,
+        }
+        for i, h in enumerate(hits)
+    }
+    ranked = _apply_rerank(
+        corpus,
+        query,
+        [(rid, h.score) for rid, h in zip(metas, hits, strict=True)],
+        metas,
+        rerank,
+        len(hits),
+        rerank_text=rerank_text,
+        max_chars=max_chars,
+    )
+    return [replace(hits[int(rid)], score=score) for rid, score in ranked]
 
 
 def search(
@@ -332,7 +393,9 @@ def search(
     alpha: float = DFLT_BLEND_ALPHA,
     bm25_sat_k: float = DFLT_BM25_SAT_K,
     fetch_k: int | None = None,
-    rerank: Callable | None = None,
+    rerank: Callable | str | None = None,
+    rerank_text: str | Callable = "surface",
+    rerank_max_chars: int = DFLT_RERANK_MAX_CHARS,
     bm25: Mapping[str, Any] | None = None,
     formulate: Formulator | None = None,
 ) -> list[SearchHit]:
@@ -356,11 +419,22 @@ def search(
     alpha : dense weight for ``fusion="blend"`` (``1-alpha`` on lexical).
     bm25_sat_k : BM25 saturation constant for ``fusion="blend"``.
     fetch_k : candidate depth before fusion / reranking / dedupe
-        (default ``max(k*5, 50)`` when collapsing per artifact, else ``k``).
+        (default ``max(k*5, 50)`` when collapsing per artifact or reranking, else ``k``).
     rerank : an optional :class:`ef.Reranker` (``(query, segments) -> scores``)
-        that re-scores the ranked candidates after fusion. The reranker sees
-        the full candidate list (up to ``fetch_k`` items) and may reorder it.
-        Default ``None`` keeps retrieval offline (no model download / API call).
+        that re-scores the ranked candidates after fusion -- the precision stage.
+        The reranker sees the full candidate list (up to ``fetch_k`` items) and may
+        reorder it; reranked hits carry the *reranker's* score, which is on its own
+        scale (see :mod:`ir.rerank`, and :func:`ir.rerank.calibration_key` for
+        abstention floors). Pass ``"cross-encoder"`` (or ``"cross-encoder:<model>"``)
+        for ef's sentence-transformers cross-encoder, imported lazily; when that
+        extra (``ir[rerank]``) is missing the search warns once and keeps the
+        first-stage ranking. Default ``None`` keeps retrieval offline (no model
+        download / API call).
+    rerank_text : what the reranker reads for each candidate -- ``"surface"``
+        (default; the matched surface's text), ``"artifact"`` (the artifact's
+        sibling surfaces joined in plan order, so a thin description is judged
+        against its full README), or a callable ``(corpus, meta) -> str``.
+    rerank_max_chars : cap on one ``"artifact"`` passage's length.
     bm25 : optional Okapi params forwarded to ``vd.bm25_lexical_search``
         (e.g. ``{"k1": 1.5, "b": 0.75}``).
     formulate : an optional :data:`~ir.formulate.Formulator` (``query -> str |
@@ -371,6 +445,8 @@ def search(
     """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
+    rerank = resolve_reranker(rerank)  # str -> callable | None (graceful fallback)
+    asked = query  # the reranker judges against what the caller asked, not a rewrite
     if fusion not in FUSIONS:
         raise ValueError(f"unknown fusion {fusion!r}; expected one of {FUSIONS}")
 
@@ -392,13 +468,20 @@ def search(
         if not queries:
             queries = [query]
         if len(queries) > 1:
+            # A reranker needs its candidate pool to over-fetch, and must judge the
+            # merged pool against the original query: the sub-searches run without it.
+            depth = (
+                (fetch_k if fetch_k is not None else max(k * 5, 50))
+                if rerank is not None
+                else k
+            )
             merged: list[SearchHit] = []
             for q in queries:
                 merged.extend(
                     search(
                         corpus,
                         q,
-                        k=k,
+                        k=depth,
                         filter=filter,
                         surfaces=surfaces,
                         per_artifact=False,
@@ -408,9 +491,17 @@ def search(
                         alpha=alpha,
                         bm25_sat_k=bm25_sat_k,
                         fetch_k=fetch_k,
-                        rerank=rerank,
                         bm25=bm25,
                     )
+                )
+            if rerank is not None and merged:
+                merged = _rerank_hits(
+                    corpus,
+                    asked,
+                    _distinct_surfaces(merged),
+                    rerank,
+                    rerank_text=rerank_text,
+                    max_chars=rerank_max_chars,
                 )
             merged = (
                 best_per_artifact(merged)
@@ -434,7 +525,10 @@ def search(
     if not candidates:
         return []
 
-    fetch = fetch_k if fetch_k is not None else (max(k * 5, 50) if per_artifact else k)
+    # A reranker can only promote what it is shown, so it over-fetches even when
+    # the surfaces are not collapsed per artifact (which alone would fetch just k).
+    over_fetch = per_artifact or rerank is not None
+    fetch = fetch_k if fetch_k is not None else (max(k * 5, 50) if over_fetch else k)
 
     if mode == "lexical":
         index = _bm25_index_for(
@@ -458,7 +552,16 @@ def search(
     meta_by_id = {ids[j]: metas[j] for j in candidates}
 
     if rerank is not None and ranked:
-        ranked = _apply_rerank(query, ranked, meta_by_id, rerank, fetch)
+        ranked = _apply_rerank(
+            corpus,
+            asked,
+            ranked,
+            meta_by_id,
+            rerank,
+            fetch,
+            rerank_text=rerank_text,
+            max_chars=rerank_max_chars,
+        )
 
     source = getattr(corpus, "name", None)
     hits = [

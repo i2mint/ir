@@ -69,6 +69,13 @@ from typing import Any, Callable
 from .base import POINTER_KEYS, SearchHit, best_per_artifact
 from .expand import NeighborhoodPolicy, SeedNotFound
 from .expand import expand as _expand
+from .rerank import (
+    DFLT_RERANK_MAX_CHARS,
+    calibration_key,
+    is_anonymous,
+    rerank_tag,
+    resolve_reranker,
+)
 from .retrieve import NoLedgerEntry
 from .retrieve import search as _search
 
@@ -836,7 +843,25 @@ class DiscoveryResult:
         }
 
 
-def _resolve_auto_min_score(corpus: Any, mode: str) -> float | None:
+def _rerank_tag_of(search_kw: dict) -> str | None:
+    """Resolve ``search_kw["rerank"]`` in place; return its calibration tag.
+
+    Resolving first means a ``"cross-encoder"`` spec that degrades (the extra is
+    missing) yields ``None`` -- the plain first-stage key -- not a key for a rerank that
+    never ran.
+    """
+    if "rerank" in search_kw:
+        search_kw["rerank"] = resolve_reranker(search_kw["rerank"])
+    return rerank_tag(
+        search_kw.get("rerank"),
+        search_kw.get("rerank_text", "surface"),
+        max_chars=search_kw.get("rerank_max_chars", DFLT_RERANK_MAX_CHARS),
+    )
+
+
+def _resolve_auto_min_score(
+    corpus: Any, mode: str, rerank: str | None = None
+) -> float | None:
     """Load the calibrated abstention floor for ``(corpus, mode)``, or ``None``.
 
     Reads the per-mode record persisted by :func:`ir.eval.calibrate_min_score`
@@ -844,20 +869,44 @@ def _resolve_auto_min_score(corpus: Any, mode: str) -> float | None:
     calibration is stored for the mode, or when the stored ``embedder_id`` no
     longer matches the live corpus (a stale floor after a rebuild) — so
     ``min_score="auto"`` degrades safely to "no absolute abstention" rather than
-    abstaining on a mis-scaled floor. Kept here (not in :mod:`ir.eval`) so the
-    common ``discover`` path stays free of the eval module's heavier imports.
+    abstaining on a mis-scaled floor. ``rerank`` is the :func:`ir.rerank.rerank_tag` of
+    a
+    reranked search: its scores are the reranker's, so its floor lives under its
+    own :func:`~ir.rerank.calibration_key`, never the plain ``mode``'s. Kept here (not in
+    :mod:`ir.eval`) so the common ``discover`` path stays free of the eval module's
+    heavier imports.
     """
     # stacklevel=3: warn → _resolve_auto_min_score → discover → the user's call.
     store = getattr(corpus, "store", None)
     get = getattr(store, "get_calibration", None)
-    rec = get(mode) if callable(get) else None
+    key = calibration_key(mode, rerank)
     name = getattr(corpus, "name", "?")
+    if is_anonymous(rerank):
+        warnings.warn(
+            "discover(min_score='auto'): the reranker (or rerank_text) has no stable "
+            "identity, so no calibrated floor can be matched to it; not abstaining by "
+            "absolute score. Set a `rerank_id` attribute on it.",
+            stacklevel=3,
+        )
+        return None
+    rec = get(key) if callable(get) else None
     if not rec:
         warnings.warn(
             f"discover(min_score='auto'): no calibration stored for corpus "
-            f"{name!r} mode {mode!r}; not abstaining by absolute score. Calibrate "
+            f"{name!r} mode {key!r}; not abstaining by absolute score. Calibrate "
             f"with ir.eval.calibrate_min_score(corpus, cases, mode={mode!r}, "
-            f"persist=True).",
+            f"persist=True"
+            f"{', with the same rerank=/rerank_text=' if rerank else ''}).",
+            stacklevel=3,
+        )
+        return None
+    # The key is a file name: make sure the record found there is really this
+    # configuration's (a case-insensitive file system folds distinct keys together).
+    if rec.get("rerank") != rerank or rec.get("mode", mode) != mode:
+        warnings.warn(
+            f"discover(min_score='auto'): the calibration stored for corpus {name!r} "
+            f"under {key!r} belongs to another configuration (mode "
+            f"{rec.get('mode')!r}, rerank {rec.get('rerank')!r}); ignoring it.",
             stacklevel=3,
         )
         return None
@@ -868,7 +917,7 @@ def _resolve_auto_min_score(corpus: Any, mode: str) -> float | None:
     if (stored_emb or live_emb) and stored_emb != live_emb:
         warnings.warn(
             f"discover(min_score='auto'): calibration for corpus {name!r} mode "
-            f"{mode!r} was made with embedder {stored_emb!r} but the corpus now "
+            f"{key!r} was made with embedder {stored_emb!r} but the corpus now "
             f"uses {live_emb!r}; ignoring the stale (possibly mis-scaled) floor. "
             f"Re-run ir.eval.calibrate_min_score(..., persist=True).",
             stacklevel=3,
@@ -883,7 +932,7 @@ def _resolve_auto_min_score(corpus: Any, mode: str) -> float | None:
         # everything; refuse it rather than silently breaking abstention.
         warnings.warn(
             f"discover(min_score='auto'): calibration for corpus {name!r} mode "
-            f"{mode!r} has a non-finite floor ({floor}); ignoring it. Re-run "
+            f"{key!r} has a non-finite floor ({floor}); ignoring it. Re-run "
             f"ir.eval.calibrate_min_score(..., persist=True).",
             stacklevel=3,
         )
@@ -979,6 +1028,7 @@ def discover(
         ``top_score`` / ``floor`` / ``abstained``) and each disclosure carries
         its ``source``.
     """
+    rerank_id = _rerank_tag_of(search_kw)
     if isinstance(corpus, (list, tuple)):
         return _discover_federated(
             list(corpus),
@@ -1022,7 +1072,7 @@ def discover(
                 f"invalid min_score {min_score!r}; expected a float, None, or the "
                 f"sentinel 'auto' (load the calibrated floor for this corpus/mode)."
             )
-        min_score = _resolve_auto_min_score(corpus, mode)
+        min_score = _resolve_auto_min_score(corpus, mode, rerank_id)
 
     hits = _search(
         corpus,
@@ -1067,6 +1117,7 @@ def _resolve_federated_floors(
     resolved: "list[tuple[str, Any]]",
     min_score: float | str | Mapping[str, float | str | None] | None,
     mode: str,
+    rerank: str | None = None,
 ) -> dict[str, float | None]:
     """Per-source abstention floors for federated :func:`discover`.
 
@@ -1090,7 +1141,7 @@ def _resolve_federated_floors(
                 f"invalid min_score {min_score!r}; expected None, 'auto', or a "
                 f"{{name: floor_or_'auto'}} mapping for federated discover."
             )
-        return {name: _resolve_auto_min_score(c, mode) for name, c in resolved}
+        return {name: _resolve_auto_min_score(c, mode, rerank) for name, c in resolved}
     if isinstance(min_score, Mapping):
         by_name = dict(resolved)
         unknown = sorted(set(min_score) - set(by_name))
@@ -1104,7 +1155,7 @@ def _resolve_federated_floors(
             if spec is None:
                 floors[name] = None
             elif spec == "auto":
-                floors[name] = _resolve_auto_min_score(by_name[name], mode)
+                floors[name] = _resolve_auto_min_score(by_name[name], mode, rerank)
             elif isinstance(spec, bool) or not isinstance(spec, (int, float)):
                 raise ValueError(
                     f"invalid min_score for source {name!r}: {spec!r}; expected "
@@ -1230,7 +1281,9 @@ def _discover_federated(
                 f"{unknown}; the call federates {sorted(names)}."
             )
 
-    floors = _resolve_federated_floors(resolved, min_score, mode)
+    floors = _resolve_federated_floors(
+        resolved, min_score, mode, _rerank_tag_of(search_kw)
+    )
 
     per_source: dict[str, dict] = {}
     surviving: dict[str, list[SearchHit]] = {}
