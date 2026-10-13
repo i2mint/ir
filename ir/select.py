@@ -900,6 +900,16 @@ def _resolve_auto_min_score(
             stacklevel=3,
         )
         return None
+    # The key is a file name: make sure the record found there is really this
+    # configuration's (a case-insensitive file system folds distinct keys together).
+    if rec.get("rerank") != rerank or rec.get("mode", mode) != mode:
+        warnings.warn(
+            f"discover(min_score='auto'): the calibration stored for corpus {name!r} "
+            f"under {key!r} belongs to another configuration (mode "
+            f"{rec.get('mode')!r}, rerank {rec.get('rerank')!r}); ignoring it.",
+            stacklevel=3,
+        )
+        return None
     stored_emb = rec.get("embedder_id")
     live_emb = getattr(corpus, "embedder_id", None)
     # Any presence/value mismatch is treated as stale: an unstamped or

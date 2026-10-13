@@ -209,7 +209,10 @@ def _identity(obj: Any) -> str:
         or "<locals>" in qualname
         or inspect.ismethod(obj)
     )
-    return ANONYMOUS if unstable else _slug(str(name))
+    if unstable:
+        return ANONYMOUS
+    module = getattr(obj, "__module__", None)
+    return _slug(f"{module}.{qualname or name}" if module else str(name))
 
 
 def rerank_tag(
@@ -237,7 +240,9 @@ def rerank_tag(
     tag = f"rerank-{_identity(reranker)}+{text}"
     if len(tag) > MAX_TAG_CHARS:
         digest = hashlib.sha1(tag.encode()).hexdigest()[:12]
-        tag = f"{tag[: MAX_TAG_CHARS - 13]}.{digest}"
+        # Keep the marker: anonymity must survive the cut.
+        head = f"rerank-{ANONYMOUS}" if ANONYMOUS in tag else tag[: MAX_TAG_CHARS - 13]
+        tag = f"{head}.{digest}"
     return tag
 
 

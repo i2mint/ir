@@ -277,7 +277,7 @@ def test_the_cross_encoder_model_is_shared_across_fanout(fake_st):
 def test_calibration_key_separates_reranked_from_first_stage():
     plain = ir.calibration_key("hybrid")
     tagged = ir.calibration_key("hybrid", rr.rerank_tag(len, "artifact"))
-    assert plain == "hybrid" and tagged == "hybrid+rerank-len+artifact"
+    assert plain == "hybrid" and tagged == "hybrid+rerank-builtins.len+artifact"
     assert "/" not in ir.calibration_key("h", rr.rerank_tag(_named("a/b"), "surface"))
 
 
@@ -541,4 +541,59 @@ def test_rerank_max_chars_must_be_positive():
             rerank=lambda q, s: [0.0] * len(s),
             rerank_text="artifact",
             rerank_max_chars=0,
+        )
+
+
+def test_anonymity_survives_the_shortening_of_a_long_tag():
+    long_name = _named("x" * 100)
+    tag = rr.rerank_tag(long_name, lambda c, m: "")
+    assert len(tag) <= rr.MAX_TAG_CHARS and rr.is_anonymous(tag)
+    with pytest.raises(ValueError, match="stable identity"):
+        ev.calibrate_min_score(
+            _corpus(),
+            _cases(),
+            mode="hybrid",
+            k=3,
+            persist=True,
+            rerank=_named("y" * 100),
+            rerank_text=lambda c, m: m["text"],
+        )
+
+
+def test_same_named_functions_in_different_modules_do_not_collide():
+    def score(query, segments):
+        return []
+
+    other = type(score)(score.__code__, {}, "score")
+    other.__module__ = "another.module"
+    other.__qualname__ = "score"
+    score.__qualname__ = "score"
+    a, b = rr.rerank_tag(score, "surface"), rr.rerank_tag(other, "surface")
+    assert a != b and not rr.is_anonymous(a)
+
+
+def test_an_anonymous_calibration_cannot_be_saved_or_loaded_by_hand():
+    corpus = _corpus()
+    calib = ev.calibrate_min_score(
+        corpus, _cases(), mode="hybrid", k=3, rerank=lambda q, s: [0.0] * len(s)
+    )
+    with pytest.raises(ValueError, match="stable identity"):
+        calib.save(corpus)
+    assert (
+        ev.load_calibration(corpus, "hybrid", rerank=lambda q, s: [0.0] * len(s))
+        is None
+    )
+
+
+def test_a_record_stored_under_the_wrong_key_is_not_used(fake_st):
+    corpus = _corpus()
+    calib = ev.calibrate_min_score(
+        corpus, _cases(), mode="hybrid", k=3, persist=True, rerank="cross-encoder"
+    )
+    key = ir.calibration_key("hybrid", calib.rerank)
+    record = corpus.store.get_calibration(key)
+    corpus.store.set_calibration(key, {**record, "rerank": "something-else"})
+    with pytest.warns(UserWarning, match="another configuration"):
+        ir.discover(
+            corpus, QUERY, mode="hybrid", min_score="auto", rerank="cross-encoder"
         )

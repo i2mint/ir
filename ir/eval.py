@@ -1500,6 +1500,11 @@ class MinScoreCalibration:
         never committed to source control.
         """
         corpus = _as_corpus(corpus)
+        if is_anonymous(self.rerank):
+            raise ValueError(
+                "cannot persist a floor for a reranker without a stable identity: "
+                "set a `rerank_id` attribute on it."
+            )
         corpus.store.set_calibration(
             calibration_key(self.mode, self.rerank), self.to_dict()
         )
@@ -1732,7 +1737,7 @@ def load_calibration(
     corpus = _as_corpus(corpus)
     if rerank is not None:
         tag = spec_tag(rerank, rerank_text, max_chars=rerank_max_chars)
-        if tag is None:  # a rerank that cannot run here has no floor to load
+        if tag is None or is_anonymous(tag):  # no stable floor to load
             return None
     else:
         tag = None
