@@ -40,6 +40,15 @@ synopsis routing works with no entries in the :mod:`ir.graph` ``links`` view —
 that view models *cross-artifact* edges (REF / PARENT between artifacts), a
 different grain than surface→surface within one artifact.
 
+**Conditional synopsis.** ``when=`` (default ``"always"``) restricts synthesis to the
+artifacts a predicate selects, so LLM cost is paid only where a synopsis helps —
+e.g. ``with_synopsis(ir.Package(), when=thin_description_predicate)`` synthesizes
+only for packages whose ``[project].description`` is empty or short (their
+README is the only topical signal), and skips the rest *without calling the
+synthesizer*. The predicate's identity folds into ``strategy_id`` (``when_id``)
+like the synthesizer's, so changing it re-processes the corpus (``strategy_id`` is
+corpus-wide) and re-synthesizes every artifact the new gate selects.
+
 **Caveat — ``edge_extractor``.** Eager edge ingest (``build(edge_extractor=...)``)
 calls ``decompose`` for *every* artifact each build, and synthesis lives in
 ``decompose``; so combining :func:`with_synopsis` with an ``edge_extractor``
@@ -51,7 +60,8 @@ from __future__ import annotations
 
 import hashlib
 import warnings
-from typing import Any, Callable
+from collections.abc import Mapping
+from typing import Any, Callable, Union
 
 from .base import Artifact, IndexPlan, Surface
 from .strategy import IndexingStrategy, text_of
@@ -59,6 +69,15 @@ from .strategy import IndexingStrategy, text_of
 #: A synthesizer: an :class:`~ir.base.Artifact` → its synopsis text (``""`` to
 #: skip — no synopsis surface is added for that artifact).
 Synthesizer = Callable[[Artifact], str]
+
+#: A synthesis gate: an :class:`~ir.base.Artifact` → whether to synthesize for it.
+Predicate = Callable[[Artifact], bool]
+
+#: ``when`` value meaning "synthesize for every artifact" (the default).
+ALWAYS = "always"
+
+#: Descriptions shorter than this many characters count as thin by default.
+DFLT_THIN_DESCRIPTION_CHARS = 40
 
 #: The surface kind a synopsis is indexed under — a member of
 #: :data:`ir.traverse.DFLT_SUMMARY_KINDS`, so collapsed-tree routes from it.
@@ -69,6 +88,16 @@ SYNOPSIS_PROMPT = (
     "Write a concise synopsis (2-4 sentences) of the document below: what it is "
     "about and what questions it answers, so that a search over synopses can route "
     "to it. Output only the synopsis, no preamble.\n\nDocument:\n{text}"
+)
+
+#: A topical / classification-oriented alternative to :data:`SYNOPSIS_PROMPT`,
+#: suited to thin-description packages (opt-in: ``make_llm_synthesizer(prompt=...)``).
+TOPICAL_SYNOPSIS_PROMPT = (
+    "Write a concise synopsis (2-3 sentences) of the software package described "
+    "below: which domain or problem class it belongs to (e.g. audio, graphs, "
+    "http clients, data validation) and what it is used for, so that a search "
+    "for that domain finds it. Output only the synopsis, no preamble.\n\n"
+    "Package:\n{text}"
 )
 
 
@@ -146,6 +175,36 @@ def make_llm_synthesizer(
     return synthesize
 
 
+def make_thin_description_predicate(
+    *, min_chars: int = DFLT_THIN_DESCRIPTION_CHARS, field: str = "description"
+) -> Predicate:
+    """A :data:`Predicate` true when the artifact's ``field`` is empty or thin.
+
+    Reads ``artifact.raw[field]`` (a :class:`~ir.strategy.Package` record's
+    ``description``); a raw that is not a mapping is a thin source when its text
+    is shorter than ``min_chars``. Whitespace is ignored. The returned callable
+    carries a ``when_id`` stamp so the threshold folds into ``strategy_id``.
+
+    >>> thin = make_thin_description_predicate(min_chars=10)
+    >>> thin(Artifact(id="a", raw={"name": "a", "description": ""}))
+    True
+    >>> thin(Artifact(id="b", raw={"name": "b", "description": "Tools to parse dates"}))
+    False
+    """
+
+    def thin(artifact: Artifact) -> bool:
+        raw = artifact.raw
+        value = raw.get(field) if isinstance(raw, Mapping) else raw
+        return len(str(value or "").strip()) < min_chars
+
+    thin.when_id = f"thin:{field}:{min_chars}"
+    return thin
+
+
+#: Ready-made gate: synthesize only for packages with an empty / short description.
+thin_description_predicate = make_thin_description_predicate()
+
+
 class _SynopsisStrategy:
     """An :class:`~ir.strategy.IndexingStrategy` that prepends a synopsis surface.
 
@@ -155,6 +214,8 @@ class _SynopsisStrategy:
     inner strategy, so :func:`ir.index._strategy_id` captures the full identity.
     """
 
+    when: Predicate | None = None  # class-level defaults: see __init__
+
     def __init__(
         self,
         strategy: IndexingStrategy,
@@ -162,8 +223,17 @@ class _SynopsisStrategy:
         synthesize: Synthesizer | None = None,
         synthesizer_id: str | None = None,
         synopsis_kind: str = SYNOPSIS_KIND,
+        when: Union[str, Predicate] = ALWAYS,
+        when_id: str | None = None,
     ):
         self.strategy = strategy
+        # Gate attributes are set only when a gate is given: ``_strategy_id`` reads
+        # instance attributes, so an ungated wrapper keeps its pre-``when`` id and
+        # existing synopsis corpora are not re-synthesized by this feature.
+        resolved = self._resolve_when_id(when, when_id)
+        if not isinstance(when, str):  # gated (decided on `when`, not its id)
+            self.when = when
+            self.when_id = resolved
         # The default synthesizer summarizes the same field the inner strategy
         # indexes (thread its text_key, if any), so synopsis routing matches.
         self.synthesize: Synthesizer = (
@@ -173,6 +243,34 @@ class _SynopsisStrategy:
         )
         self.synthesizer_id = self._resolve_synthesizer_id(synthesizer_id)
         self.synopsis_kind = synopsis_kind
+
+    @staticmethod
+    def _resolve_when_id(when: Union[str, Predicate], explicit: str | None) -> str:
+        """Identity of the gate for staleness (``"always"`` for no gate)."""
+        if isinstance(when, str):
+            if explicit is not None:
+                raise ValueError("with_synopsis: when_id requires a `when` predicate")
+            if when != ALWAYS:
+                raise ValueError(
+                    f"with_synopsis: when must be {ALWAYS!r} or a callable "
+                    f"Artifact -> bool, got {when!r}"
+                )
+            return ALWAYS
+        if not callable(when):
+            raise TypeError(f"with_synopsis: when must be callable, got {when!r}")
+        stamped = explicit or getattr(when, "when_id", None)
+        if stamped:
+            return stamped
+        qualname = getattr(when, "__qualname__", "") or ""
+        if qualname and "<lambda>" not in qualname and "<locals>" not in qualname:
+            return qualname
+        warnings.warn(
+            "with_synopsis: could not derive a stable identity for the `when` "
+            "predicate (an unnamed lambda or a local closure), so changing it will "
+            "not re-synthesize — pass when_id=... to track it.",
+            stacklevel=4,
+        )
+        return "custom"
 
     def _resolve_synthesizer_id(self, explicit: str | None) -> str:
         """Identity for staleness: explicit id, else a stamp, else a stable name.
@@ -203,6 +301,8 @@ class _SynopsisStrategy:
     def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
         plan = self.strategy.decompose(artifact_id, raw, metadata)
         artifact = Artifact(id=artifact_id, raw=raw, metadata=dict(metadata or {}))
+        if self.when is not None and not self.when(artifact):
+            return plan  # gated out: no synthesis call, no synopsis surface
         text = self.synthesize(artifact)
         text = text.strip() if isinstance(text, str) else ""
         if text:
@@ -223,6 +323,8 @@ def with_synopsis(
     synthesize: Synthesizer | None = None,
     synthesizer_id: str | None = None,
     synopsis_kind: str = SYNOPSIS_KIND,
+    when: Union[str, Predicate] = ALWAYS,
+    when_id: str | None = None,
 ) -> IndexingStrategy:
     """Wrap *strategy* to add one LLM-derived ``synopsis`` surface per artifact.
 
@@ -235,6 +337,13 @@ def with_synopsis(
             injecting an unnamed callable / lambda). Omitted → the synthesizer's
             own ``synthesizer_id`` / ``__qualname__``.
         synopsis_kind: the surface kind (default ``"synopsis"``, a summary kind).
+        when: ``"always"`` (default: every artifact) or a predicate
+            ``Artifact -> bool``; the synthesizer is called, and a synopsis
+            surface added, only where it returns true (e.g.
+            :data:`thin_description_predicate`). A predicate that raises
+            propagates.
+        when_id: explicit identity stamp for an unnamed predicate (staleness);
+            omitted → the predicate's ``when_id`` / ``__qualname__``.
 
     Returns:
         an :class:`~ir.strategy.IndexingStrategy` usable anywhere a strategy is —
@@ -247,4 +356,6 @@ def with_synopsis(
         synthesize=synthesize,
         synthesizer_id=synthesizer_id,
         synopsis_kind=synopsis_kind,
+        when=when,
+        when_id=when_id,
     )

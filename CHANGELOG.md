@@ -10,6 +10,7 @@ published to PyPI). Entries are commit subjects and PR titles, verbatim.
 
 ### Added
 
+- `ir.with_synopsis(..., when=...)` — conditional synopsis: synthesize only where a predicate holds; ships `ir.thin_description_predicate` / `ir.make_thin_description_predicate` and an opt-in `TOPICAL_SYNOPSIS_PROMPT` ([#63](https://github.com/i2mint/ir/issues/63))
 - `ir schedule` — install, inspect and operate the OS job that runs `ir maintain` (launchd on macOS, cron elsewhere) ([#75](https://github.com/i2mint/ir/issues/75))
 
 ### Changed

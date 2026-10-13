@@ -87,7 +87,13 @@ from .strategy import (
     Skill,
     WholeText,
 )
-from .synopsis import Synthesizer, make_llm_synthesizer, with_synopsis
+from .synopsis import (
+    Synthesizer,
+    make_llm_synthesizer,
+    make_thin_description_predicate,
+    thin_description_predicate,
+    with_synopsis,
+)
 from .tools import make_search
 from .tools import search as search_tool
 from .traverse import WalkPolicy, WalkState, collapsed_tree_policy, traverse
@@ -107,6 +113,8 @@ __all__ = [
     "Package",
     "ClaudeTurn",
     "with_synopsis",
+    "make_thin_description_predicate",
+    "thin_description_predicate",
     "make_llm_synthesizer",
     "Synthesizer",
     "CorpusSource",
