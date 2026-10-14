@@ -256,3 +256,45 @@ def test_dep_boost_must_return_a_finite_number():
     corpus = _corpus()
     with pytest.raises(ValueError, match="dep_boost"):
         ir.search(corpus, QUERY, dep_boost=lambda hit: math.nan)
+
+
+def test_library_names_match_the_same_way_in_walk_and_boost():
+    """``scikit_learn`` finds ``Scikit-Learn`` dependents in both mechanisms."""
+    docs = {
+        "fitter": {
+            "name": "fitter",
+            "description": "fit models",
+            "deps": ["Scikit-Learn>=1"],
+        },
+        "other": {"name": "other", "description": "fit nothing", "deps": ["numpy"]},
+    }
+    src = ir.CorpusSource.from_mapping(docs, name="sk", strategy=ir.Package())
+    corpus = ir.build(
+        src,
+        store=CorpusStore.memory(),
+        embedder="light",
+        edge_extractor=ir.default_edge_extractor,
+    )
+    graph = CorpusGraph(corpus)
+    for name in ("scikit_learn", "scikit-learn", "Scikit.Learn"):
+        assert graph.reverse_neighbors(name) == ["fitter"]
+    policy = ir.reverse_dependency_policy(seeds=["scikit_learn"])
+    assert [h.artifact_id for h in traverse("fit", corpus, policy=policy)] == ["fitter"]
+    boost = ir.dependency_evidence_boost({"scikit_learn"}, weight=1.0)
+    hits = {h.artifact_id: h for h in ir.search(corpus, "fit", dep_boost=boost)}
+    assert boost(hits["fitter"]) == 1.0 and boost(hits["other"]) == 0.0
+
+
+def test_a_bare_string_is_refused_as_a_set_of_names():
+    with pytest.raises(TypeError, match="not the string"):
+        ir.reverse_dependency_policy(seeds="networkx")
+    with pytest.raises(TypeError, match="not the string"):
+        ir.dependency_evidence_boost("networkx", weight=1.0)
+
+
+def test_numpy_boost_values_are_accepted():
+    import numpy as np
+
+    corpus = _corpus()
+    hits = ir.search(corpus, QUERY, dep_boost=lambda h: np.float32(0.5))
+    assert hits  # no ValueError for a numpy scalar

@@ -66,6 +66,7 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
+    "hatchling",
 ]
 docs = [
     "sphinx>=6.0",
@@ -135,6 +136,10 @@ doctest_optionflags = [
 
 [tool.wads.ci]
 project_name = "ir"
+
+[tool.wads.ci.install]
+# The dev extra brings hatchling, so the sdist-contents test runs in CI.
+extras = "dev"
 
 [tool.wads.ci.commands]
 pre_test = []

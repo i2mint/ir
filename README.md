@@ -14,11 +14,11 @@
 | `ir-dev-workflow` | work on `ir` itself: module map, tests, conventions, the ir/raglab boundary | `skills/ir-dev-workflow/` (repository only) |
 
 ```bash
-gh skill install i2mint/ir ir-search --agent claude-code
-gh skill install i2mint/ir ir-dev-workflow --agent claude-code
+gh skill install i2mint/ir ir-search --agent claude-code        # GitHub CLI with the `skill` command
+npx skills add i2mint/ir --skill ir-search                       # or the skills CLI
 ```
 
-The consumer skill also travels inside the installed package. Find it with `python -c "import ir, os; print(os.path.join(ir.__path__[0], 'data', 'skills'))"`, then link it with the [`skill`](https://github.com/thorwhalen/skill) package (`skill link-skills <that path>`) or copy the folder into `~/.claude/skills/`. In a clone of this repository, Claude Code finds both skills through the relative symlinks in `.claude/skills/`.
+The consumer skill also travels inside the installed package. Find it with `python -c "import ir, os; print(os.path.join(ir.__path__[0], 'data', 'skills'))"`, then link it with the [`skill`](https://github.com/thorwhalen/skill) package (`skill link-skills <that path>`) or copy the folder into `~/.claude/skills/`. In a clone of this repository, Claude Code finds both skills through the relative symlinks in `.claude/skills/` (on Windows, clone with `git config core.symlinks true` and symlink permission, or install the skills as above).
 
 **Subagent and instructions.** `.claude/agents/ir-discover-agent.md` is a reviewing search subagent: it writes several queries, reads and grades the candidates, reformulates, and returns only the verified few. `.claude/CLAUDE.md` holds the project instructions a coding agent needs, including the ir/raglab boundary.
 

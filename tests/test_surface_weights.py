@@ -130,3 +130,61 @@ def test_invalid_weights_raise(bad):
     corpus = _corpus()
     with pytest.raises(ValueError, match="surface_weights"):
         ir.search(corpus, QUERY, mode="hybrid", surface_weights=bad)
+
+
+@pytest.mark.parametrize("mode", ["dense", "lexical", "hybrid"])
+def test_weights_act_at_small_k_without_collapse(mode):
+    """Weights over-fetch: a boosted surface beyond k still wins (review finding)."""
+    corpus = _corpus()
+    top = ir.search(
+        corpus,
+        QUERY,
+        k=1,
+        mode=mode,
+        per_artifact=False,
+        surface_weights={"deps": 100.0},
+    )[0]
+    assert (top.artifact_id, top.surface_kind) == ("allude", "deps")
+
+
+@pytest.mark.parametrize("mode", ["dense", "hybrid"])
+def test_weights_act_at_small_k_through_formulate(mode):
+    corpus = _corpus()
+    top = ir.search(
+        corpus,
+        QUERY,
+        k=1,
+        mode=mode,
+        formulate=lambda q: [q, q + " edges"],
+        surface_weights={"deps": 100.0},
+    )[0]
+    assert top.artifact_id == "allude"
+
+
+def test_numpy_weights_are_accepted():
+    import numpy as np
+
+    corpus = _corpus()
+    as_float = ir.search(corpus, QUERY, mode="hybrid", surface_weights={"deps": 2.0})
+    as_numpy = ir.search(
+        corpus, QUERY, mode="hybrid", surface_weights={"deps": np.float32(2.0)}
+    )
+    assert [h.artifact_id for h in as_float] == [h.artifact_id for h in as_numpy]
+
+
+def test_discover_auto_floor_is_skipped_for_weighted_scores(recwarn):
+    corpus = _corpus()
+    corpus.store.set_calibration(
+        "hybrid", {"min_score": 99.0, "embedder_id": corpus.embedder_id}
+    )
+    plain = ir.discover(corpus, QUERY, mode="hybrid", min_score="auto")
+    assert plain.abstained  # the (absurd) calibrated floor applies to plain scores
+    weighted = ir.discover(
+        corpus,
+        QUERY,
+        mode="hybrid",
+        min_score="auto",
+        surface_weights={"deps": 2.0},
+    )
+    assert not weighted.abstained
+    assert any("rescale the scores" in str(w.message) for w in recwarn)

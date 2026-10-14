@@ -484,6 +484,11 @@ def reverse_dependency_policy(
     >>> policy = reverse_dependency_policy(seeds=["networkx"])   # doctest: +SKIP
     >>> hits = traverse(query, corpus, policy=policy)            # doctest: +SKIP
     """
+    if isinstance(seeds, str):
+        raise TypeError(
+            f"seeds must be a collection of ids, not the string {seeds!r} "
+            f"(write [{seeds!r}])."
+        )
     for label, weight in (
         ("fan_in_weight", fan_in_weight),
         ("proximity_weight", proximity_weight),

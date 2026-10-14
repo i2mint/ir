@@ -433,7 +433,8 @@ class CorpusSource:
         top-level argument names ride along as the ``param_names`` metadata of
         every hit, so a caller can see what a tool takes without loading it.
 
-        ``tools`` is an iterable of tool records, a ``{name: tool}`` mapping, or
+        ``tools`` is an iterable of tool records, a ``{name: tool}`` mapping (the
+        key names a record that has no ``name``; a record's own name wins), or
         a fetcher (a zero-argument callable or a ``"module:attr"`` reference,
         see :func:`resolve_fetcher`). A record is duck-typed (see
         :func:`mcp_tool_record`), so ``ir`` takes no MCP dependency; an adapter
@@ -453,7 +454,16 @@ class CorpusSource:
         if isinstance(tools, str) or callable(tools):
             tools = resolve_fetcher(tools)()
         if isinstance(tools, Mapping):
-            tools = tools.values()
+            # The key names a tool whose record carries no name of its own.
+            tools = [
+                tool
+                if _field(tool, "name")
+                else {
+                    **(tool if isinstance(tool, Mapping) else vars(tool)),
+                    "name": key,
+                }
+                for key, tool in tools.items()
+            ]
         scope: dict[str, dict] = {}
         for tool in tools:
             record = mcp_tool_record(tool)
@@ -472,7 +482,7 @@ class CorpusSource:
             scope=scope,
             indexing_strategy=strategy or Skill(),
             change_signal=kwargs.pop("change_signal", mcp_tool_signal),
-            metadata_of=metadata_of,
+            metadata_of=kwargs.pop("metadata_of", metadata_of),
             **kwargs,
         )
 

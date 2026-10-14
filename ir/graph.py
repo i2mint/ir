@@ -149,7 +149,7 @@ class CorpusGraph:
             link_items = getattr(self.store, "link_items", None)
             for artifact_id, edges in link_items() if callable(link_items) else ():
                 for target in edges.get(edge_type, []):
-                    key = tuple(target) if isinstance(target, list) else target
+                    key = _reverse_key(target)
                     sources = index.setdefault(key, [])
                     if artifact_id not in sources:
                         sources.append(artifact_id)
@@ -162,17 +162,13 @@ class CorpusGraph:
         The reverse of :meth:`neighbors`: with the default :data:`REF` edges of
         :func:`default_edge_extractor` (``package -> its deps``), this lists a
         library's dependents. *node_id* may name an artifact of this corpus or a
-        target outside it (a third-party dependency). ``REF`` targets are stored
-        as lower-cased bare names, so a string *node_id* also matches its
-        lower-cased form. A cross-corpus target is a ``(source, artifact_id)``
-        pair. Order is first-seen over the links view, de-duplicated.
+        target outside it (a third-party dependency). String ids match through
+        :func:`normalize_dist_name` (case, and ``-``/``_``/``.``, are ignored),
+        so ``"scikit_learn"`` finds the dependents of ``"scikit-learn"``. A
+        cross-corpus target is a ``(source, artifact_id)`` pair, matched
+        exactly. Order is first-seen over the links view, de-duplicated.
         """
-        index = self._reverse_index(edge_type)
-        key = tuple(node_id) if isinstance(node_id, list) else node_id
-        found = list(index.get(key, []))
-        if isinstance(key, str) and key.lower() != key:
-            found += [a for a in index.get(key.lower(), []) if a not in found]
-        return found
+        return list(self._reverse_index(edge_type).get(_reverse_key(node_id), []))
 
     def fan_in(self, node_id: Any, *, edge_type: str = REF) -> int:
         """How many artifacts point at *node_id* by *edge_type* (its in-degree).
@@ -186,6 +182,13 @@ class CorpusGraph:
     def max_fan_in(self, *, edge_type: str = REF) -> int:
         """The largest :meth:`fan_in` over all targets (``0`` without edges)."""
         return max(map(len, self._reverse_index(edge_type).values()), default=0)
+
+
+def _reverse_key(target: Any) -> Any:
+    """The reverse-index key of an edge target: normalized name, or exact pair."""
+    if isinstance(target, (list, tuple)):
+        return tuple(target)
+    return normalize_dist_name(target)
 
 
 def canonical_node_id(target: Any, *, source: str | None) -> tuple[str | None, str]:
@@ -226,6 +229,19 @@ _DEP_DELIM = re.compile(r"[<>=!~;@\[\s(]")
 def _dep_name(dep: str) -> str:
     """The bare distribution name of a dependency spec (lower-cased, stripped)."""
     return _DEP_DELIM.split(dep.strip(), 1)[0].strip().lower()
+
+
+def normalize_dist_name(name: str) -> str:
+    """A dependency spec's bare name, PEP 503-normalized (``-``/``_``/``.`` -> ``-``).
+
+    The one comparison key for library names: the reverse dependency index and
+    :func:`ir.dependency_evidence_boost` both match through it, so
+    ``"scikit_learn"`` finds a package that depends on ``"Scikit-Learn>=1"``.
+
+    >>> normalize_dist_name("Scikit_Learn[extra]>=1.2")
+    'scikit-learn'
+    """
+    return re.sub(r"[-_.]+", "-", _dep_name(str(name)))
 
 
 def default_edge_extractor(

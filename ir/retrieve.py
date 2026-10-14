@@ -50,7 +50,7 @@ from __future__ import annotations
 
 import json
 import math
-import re
+import numbers
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import replace
@@ -314,7 +314,7 @@ def _check_surface_weights(
     for kind, weight in surface_weights.items():
         if (
             isinstance(weight, bool)
-            or not isinstance(weight, (int, float))
+            or not isinstance(weight, numbers.Real)
             or not math.isfinite(weight)
             or weight < 0
         ):
@@ -356,7 +356,7 @@ def _boosted(hits: list[SearchHit], boost: ScoreBoost) -> list[SearchHit]:
         extra = boost(hit)
         if (
             isinstance(extra, bool)
-            or not isinstance(extra, (int, float))
+            or not isinstance(extra, numbers.Real)
             or not math.isfinite(extra)
         ):
             raise ValueError(
@@ -369,9 +369,9 @@ def _boosted(hits: list[SearchHit], boost: ScoreBoost) -> list[SearchHit]:
 
 def _norm_dist_name(name: str) -> str:
     """A bare distribution name, lower-cased and PEP 503-normalized."""
-    from .graph import _dep_name
+    from .graph import normalize_dist_name
 
-    return re.sub(r"[-_.]+", "-", _dep_name(str(name)))
+    return normalize_dist_name(name)
 
 
 def dependency_evidence_boost(
@@ -409,6 +409,11 @@ def dependency_evidence_boost(
         raise ValueError(f"weight must be a finite number, got {weight!r}")
     if not isinstance(saturate, int) or saturate < 1:
         raise ValueError(f"saturate must be a positive int, got {saturate!r}")
+    if isinstance(relevant_libs, str):
+        raise TypeError(
+            f"relevant_libs must be a collection of names, not the string "
+            f"{relevant_libs!r} (write {{{relevant_libs!r}}})."
+        )
     libs = frozenset(_norm_dist_name(lib) for lib in relevant_libs)
 
     def boost(hit: SearchHit) -> float:
@@ -574,13 +579,17 @@ def search(
     surface_weights : optional ``{surface_kind: weight}`` multipliers, e.g.
         ``{"deps": 2.0}`` to let a high-precision ``deps`` surface outrank prose
         chunks. Each surface-hit's first-stage score (the fused score in hybrid
-        mode) is multiplied by its kind's weight (default 1.0) before the
-        ``fetch_k`` cut, the reranker and the per-artifact collapse; kinds the
-        corpus lacks are ignored. Weights must be finite and non-negative. Meant
-        for the non-negative scores of hybrid fusion and BM25 (a negative dense
-        cosine moves *down* when multiplied by a weight above 1). Weighted scores
-        are on a different scale from unweighted ones, so an abstention floor
-        calibrated without the weights does not apply to them. Default ``None``
+        mode) is multiplied by its kind's weight (default 1.0). Each channel
+        still retrieves its own top ``fetch_k``; the weights reorder those
+        candidates (in hybrid mode, the whole fused union) before the cut to
+        ``fetch_k``, the reranker and the per-artifact collapse. Setting them
+        makes the search over-fetch like ``rerank`` does, and formulated
+        sub-searches inherit them. Kinds the corpus lacks are ignored; weights
+        must be finite and non-negative. Meant for the non-negative scores of
+        hybrid fusion and BM25 (a negative dense cosine moves *down* when
+        multiplied by a weight above 1). Weighted scores are on a different scale
+        from unweighted ones, so a calibrated floor does not apply to them
+        (``discover(min_score="auto")`` warns and skips it). Default ``None``
         weighs every surface equally, as before.
     dep_boost : an optional :data:`ScoreBoost` (``hit -> float``) whose value is
         added to each fetched candidate's score after fusion and the reranker,
@@ -588,7 +597,11 @@ def search(
         reranker's textual one. :func:`dependency_evidence_boost` builds one from
         a caller-supplied library set. It reorders the fetched candidates (raise
         ``fetch_k`` to show it more); boosted scores need their own abstention
-        floor. Default ``None``: no boost.
+        floor (``discover(min_score="auto")`` warns and skips it). Like
+        ``rerank`` and ``surface_weights``, it makes the search
+        over-fetch (``max(k*5, 50)``) even with ``per_artifact=False``, so pin
+        ``fetch_k`` when comparing runs with and without it. Default ``None``:
+        no boost.
     """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
@@ -620,7 +633,7 @@ def search(
             # merged pool against the original query: the sub-searches run without it.
             depth = (
                 (fetch_k if fetch_k is not None else max(k * 5, 50))
-                if rerank is not None or dep_boost is not None
+                if rerank is not None or weights or dep_boost is not None
                 else k
             )
             merged: list[SearchHit] = []
@@ -676,9 +689,11 @@ def search(
     if not candidates:
         return []
 
-    # A reranker can only promote what it is shown, so it over-fetches even when
-    # the surfaces are not collapsed per artifact (which alone would fetch just k).
-    over_fetch = per_artifact or rerank is not None or dep_boost is not None
+    # A reranker, surface weights and a boost can only promote what they are
+    # shown, so each over-fetches even when surfaces are not collapsed per artifact.
+    over_fetch = (
+        per_artifact or rerank is not None or bool(weights) or dep_boost is not None
+    )
     fetch = fetch_k if fetch_k is not None else (max(k * 5, 50) if over_fetch else k)
     # With surface weights, fusion keeps its whole union so the weights act
     # before the fetch cut: a boosted surface fused just below it still counts.

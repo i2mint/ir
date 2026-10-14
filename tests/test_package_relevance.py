@@ -360,3 +360,6 @@ def test_compare_indexings_per_label_search_kw_guards():
     with pytest.raises(ValueError, match="rank_depth"):
         ev.compare_indexings({"b": corpus}, cases, themes=THEMES, probes=_probes(),
                              k=5, search_kw_by_label={"b": {"k": 3}})
+    with pytest.raises(ValueError, match="per_artifact"):
+        ev.compare_indexings({"b": corpus}, cases, themes=THEMES, probes=_probes(),
+                             k=5, search_kw_by_label={"b": {"per_artifact": False}})

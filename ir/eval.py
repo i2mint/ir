@@ -2347,7 +2347,8 @@ def compare_indexings(
     shared ``mode`` / ``surfaces`` / ``**search_kw``: map one corpus under several
     labels to compare *search* configurations rather than indexings, e.g.
     ``{"deps x2": {"surface_weights": {"deps": 2.0}}}``. Any
-    :func:`ir.retrieve.search` keyword except ``k`` (the depth is ``rank_depth``).
+    :func:`ir.retrieve.search` keyword except ``k`` (the depth is ``rank_depth``)
+    and ``per_artifact`` (rankings are per artifact).
     """
     from ef.evaluation import ndcg_at_k
 
@@ -2363,9 +2364,11 @@ def compare_indexings(
     unknown = sorted(set(label_kw) - set(labels))
     if unknown:
         raise ValueError(f"search_kw_by_label names unknown label(s): {unknown}")
-    if any("k" in kw for kw in label_kw.values()):
+    reserved = {"k", "per_artifact"}
+    if any(reserved & set(kw) for kw in label_kw.values()):
         raise ValueError(
-            "search_kw_by_label cannot set k: every ranking is fetched to rank_depth"
+            "search_kw_by_label cannot set k or per_artifact: every ranking is "
+            "fetched per artifact to rank_depth"
         )
     metrics: dict[str, dict[str, dict[str, float]]] = {}
     deltas: dict[str, dict[str, dict]] = {theme: {} for theme in themes}

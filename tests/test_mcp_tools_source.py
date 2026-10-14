@@ -146,3 +146,18 @@ def test_bad_inputs_fail_loudly():
         ir.CorpusSource.from_mcp_tools([{"description": "anonymous"}])
     with pytest.raises(ValueError, match="duplicate tool name 'a'"):
         ir.CorpusSource.from_mcp_tools([{"name": "a"}, {"name": "a"}])
+
+
+def test_mapping_keys_name_records_without_a_name():
+    src = ir.CorpusSource.from_mcp_tools(
+        {"ping": {"description": "Check the server is up"}, "alias": {"name": "pong"}}
+    )
+    assert sorted(src.scope) == ["ping", "pong"]  # a record's own name wins
+    assert src.scope["ping"]["description"] == "Check the server is up"
+
+
+def test_metadata_of_can_be_overridden():
+    src = ir.CorpusSource.from_mcp_tools(
+        TOOLS, metadata_of=lambda aid, raw: {"server": "s1"}
+    )
+    assert src.metadata_of("fetch_url", src.scope["fetch_url"]) == {"server": "s1"}
