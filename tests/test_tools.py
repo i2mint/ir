@@ -37,3 +37,19 @@ def test_make_search_binds_corpus_and_names_the_tool():
 def test_top_level_aliases_exist():
     assert ir.search_tool is ir.tools.search
     assert ir.make_search is ir.tools.make_search
+
+
+def _rev_reranker(query, passages):
+    # prefers the last passage: proves the rerank hook is actually applied
+    return [float(i) for i, _ in enumerate(passages)]
+
+
+def test_search_rerank_is_forwarded_and_off_by_default():
+    c = _corpus()
+    base = ir.tools.search("deploy the app", corpus=c, k=3, mode="dense")
+    rr = ir.tools.search(
+        "deploy the app", corpus=c, k=3, mode="dense", rerank=_rev_reranker
+    )
+    assert base != rr
+    bound = ir.tools.make_search(c, mode="dense", rerank=_rev_reranker)
+    assert bound("deploy the app", k=3) == rr

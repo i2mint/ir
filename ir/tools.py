@@ -22,6 +22,11 @@ from .select import discover
 __all__ = ["search", "make_search"]
 
 
+def _rerank_kw(rerank: Any, rerank_text: Any) -> dict:
+    """Search kwargs for an optional rerank stage; empty when off."""
+    return {} if rerank is None else {"rerank": rerank, "rerank_text": rerank_text}
+
+
 def search(
     query: str,
     *,
@@ -29,6 +34,8 @@ def search(
     k: int = 8,
     mode: str = "hybrid",
     filter: dict | None = None,
+    rerank: Any = None,
+    rerank_text: Any = "surface",
 ) -> dict:
     """Search a named ``ir`` corpus and return a JSON-serializable result dict.
 
@@ -44,8 +51,12 @@ def search(
         k: maximum number of results.
         mode: ``"dense"`` | ``"lexical"`` | ``"hybrid"``.
         filter: optional ``vd`` Mongo-style metadata filter (hard pre-filter).
+        rerank: optional second-stage reranker (e.g. ``"cross-encoder"``); off by
+            default. ``rerank_text`` picks the text it reads.
     """
-    return discover(corpus, query, k=k, mode=mode, filter=filter).to_dict()
+    return discover(
+        corpus, query, k=k, mode=mode, filter=filter, **_rerank_kw(rerank, rerank_text)
+    ).to_dict()
 
 
 def make_search(
@@ -55,6 +66,8 @@ def make_search(
     description: str | None = None,
     k: int = 8,
     mode: str = "hybrid",
+    rerank: Any = None,
+    rerank_text: Any = "surface",
 ) -> Callable[..., dict]:
     """Return a **corpus-bound** ``search(query, k=...) -> dict`` tool.
 
@@ -68,7 +81,9 @@ def make_search(
     safe = "".join(c if c.isalnum() else "_" for c in str(label)).strip("_") or "corpus"
 
     def bound_search(query: str, k: int = k) -> dict:
-        return discover(corpus, query, k=k, mode=mode).to_dict()
+        return discover(
+            corpus, query, k=k, mode=mode, **_rerank_kw(rerank, rerank_text)
+        ).to_dict()
 
     bound_search.__name__ = f"search_{safe}"
     bound_search.__doc__ = description or (

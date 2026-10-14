@@ -155,6 +155,13 @@ def search(name, query, *, k=10, mode="dense", fusion="rrf"):
     return "\n".join(lines) or "(no matches)"
 
 
+def _rerank_kw(rerank, rerank_text):
+    """Search kwargs for an optional rerank stage; empty (today's behavior) when off."""
+    if not rerank:
+        return {}
+    return {"rerank": rerank, "rerank_text": rerank_text or "surface"}
+
+
 @_report_embedder_errors
 def discover(
     name,
@@ -166,6 +173,8 @@ def discover(
     disclose=False,
     min_score=None,
     fusion="rrf",
+    rerank=None,
+    rerank_text="surface",
 ):
     """Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -176,7 +185,10 @@ def discover(
     by ``ir calibrate-min-score`` (or pass a float). mode: dense | lexical |
     hybrid. fusion (hybrid only): rrf (default) | blend (magnitude-preserving;
     pair with --min-score for abstention — see ir_08). strategy: conservative |
-    top_k | rel_threshold | score_gap.
+    top_k | rel_threshold | score_gap. ``--rerank cross-encoder`` adds the
+    calibrated cross-encoder precision stage (``--rerank-text`` picks what it
+    reads); with ``--min-score auto`` it uses the floor calibrated under the same
+    ``--rerank`` / ``--rerank-text``.
     """
     from .select import discover as _discover
 
@@ -197,6 +209,7 @@ def discover(
         disclose_level="body" if disclose else "metadata",
         min_score=floor,
         fusion=fusion,
+        **_rerank_kw(rerank, rerank_text),
     )
     if result.abstained:
         return (
@@ -511,6 +524,8 @@ def calibrate_min_score(
     sensitivity_weight=DFLT_CALIB_SENSITIVITY_WEIGHT,
     persist=False,
     fusion="rrf",
+    rerank=None,
+    rerank_text="surface",
 ):
     """Calibrate the absolute abstention min_score floor for a corpus + mode.
 
@@ -523,7 +538,9 @@ def calibrate_min_score(
     lower it to abstain more readily (precision-leaning). For hybrid, calibrate
     with ``--fusion blend`` (rank-based RRF barely separates — see ir_08) and
     query under the same fusion. mode: dense | lexical | hybrid. fusion (hybrid
-    only): rrf | blend.
+    only): rrf | blend. ``--rerank cross-encoder`` calibrates the floor for a
+    reranked search (its own floor, stored apart from the plain one); query with
+    the same ``--rerank`` / ``--rerank-text``.
     """
     from .eval import calibrate_min_score as _calibrate
     from .eval import load_cases, validate_cases
@@ -543,12 +560,13 @@ def calibrate_min_score(
         sensitivity_weight=float(sensitivity_weight),
         persist=bool(persist),
         fusion=fusion,
+        **_rerank_kw(rerank, rerank_text),
     )
     out = str(calib)
     if persist and calib.min_score is not None:
         fusion_hint = (
             f" --fusion {fusion}" if mode == "hybrid" and fusion != "rrf" else ""
-        )
+        ) + (f" --rerank {rerank}" if rerank else "")
         out += (
             f"\n  persisted → ir discover {name} ... --mode {mode}{fusion_hint} "
             f"--min-score auto"
