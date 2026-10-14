@@ -98,6 +98,7 @@ class CorpusGraph:
         #: The corpus name, when known — the ``source`` half of this graph's
         #: node identities (``None`` for a bare store).
         self.source = getattr(store_or_corpus, "name", None)
+        self._reverse: dict[str, dict[Any, list[str]]] = {}
 
     def __getitem__(self, node_id: str) -> list[Record]:
         """The artifact's records, plan-ordered (``NoLedgerEntry`` if unknown)."""
@@ -134,6 +135,66 @@ class CorpusGraph:
     def edge_types(self, node_id: str) -> list[str]:
         """The edge types present on *node_id* (``[]`` if none)."""
         return list(self.store.get_links(node_id))
+
+    def _reverse_index(self, edge_type: str) -> dict[Any, list[str]]:
+        """``{target: [source artifact ids]}`` for one edge type, built once.
+
+        Derived from the ``links`` view on first use and kept for the life of
+        this graph instance (a snapshot, like the forward edges themselves):
+        build a fresh :class:`CorpusGraph` to see edges written since.
+        """
+        index = self._reverse.get(edge_type)
+        if index is None:
+            index = {}
+            link_items = getattr(self.store, "link_items", None)
+            for artifact_id, edges in link_items() if callable(link_items) else ():
+                for target in edges.get(edge_type, []):
+                    key = _reverse_key(target, edge_type)
+                    sources = index.setdefault(key, [])
+                    if artifact_id not in sources:
+                        sources.append(artifact_id)
+            self._reverse[edge_type] = index
+        return index
+
+    def reverse_neighbors(self, node_id: Any, *, edge_type: str = REF) -> list[str]:
+        """The artifact ids whose *edge_type* edges point **at** *node_id*.
+
+        The reverse of :meth:`neighbors`: with the default :data:`REF` edges of
+        :func:`default_edge_extractor` (``package -> its deps``), this lists a
+        library's dependents. *node_id* may name an artifact of this corpus or a
+        target outside it (a third-party dependency). For ``REF`` edges, string
+        ids match through :func:`normalize_dist_name` (case, and ``-``/``_``/``.``,
+        are ignored), so ``"scikit_learn"`` finds the dependents of
+        ``"scikit-learn"``; other edge types match ids exactly. A cross-corpus
+        target is a ``(source, artifact_id)`` pair, matched exactly. Order is first-seen over the links view, de-duplicated.
+        """
+        index = self._reverse_index(edge_type)
+        return list(index.get(_reverse_key(node_id, edge_type), []))
+
+    def fan_in(self, node_id: Any, *, edge_type: str = REF) -> int:
+        """How many artifacts point at *node_id* by *edge_type* (its in-degree).
+
+        With ``REF`` dependency edges this is the number of dependents, a
+        PageRank-style centrality prior: a widely depended-on library is central
+        to the corpus.
+        """
+        return len(self.reverse_neighbors(node_id, edge_type=edge_type))
+
+    def max_fan_in(self, *, edge_type: str = REF) -> int:
+        """The largest :meth:`fan_in` over all targets (``0`` without edges)."""
+        return max(map(len, self._reverse_index(edge_type).values()), default=0)
+
+
+def _reverse_key(target: Any, edge_type: str) -> Any:
+    """The reverse-index key of an edge target.
+
+    A cross-corpus pair matches exactly. A string target of a :data:`REF`
+    (dependency) edge matches through :func:`normalize_dist_name`; any other
+    edge type's ids (paths, ``name@parent``) match exactly.
+    """
+    if isinstance(target, (list, tuple)):
+        return tuple(target)
+    return normalize_dist_name(target) if edge_type == REF else target
 
 
 def canonical_node_id(target: Any, *, source: str | None) -> tuple[str | None, str]:
@@ -174,6 +235,19 @@ _DEP_DELIM = re.compile(r"[<>=!~;@\[\s(]")
 def _dep_name(dep: str) -> str:
     """The bare distribution name of a dependency spec (lower-cased, stripped)."""
     return _DEP_DELIM.split(dep.strip(), 1)[0].strip().lower()
+
+
+def normalize_dist_name(name: str) -> str:
+    """A dependency spec's bare name, PEP 503-normalized (``-``/``_``/``.`` -> ``-``).
+
+    The one comparison key for library names: the reverse dependency index and
+    :func:`ir.dependency_evidence_boost` both match through it, so
+    ``"scikit_learn"`` finds a package that depends on ``"Scikit-Learn>=1"``.
+
+    >>> normalize_dist_name("Scikit_Learn[extra]>=1.2")
+    'scikit-learn'
+    """
+    return re.sub(r"[-_.]+", "-", _dep_name(str(name)))
 
 
 def default_edge_extractor(

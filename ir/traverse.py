@@ -25,7 +25,9 @@ orders of magnitude more); :func:`traverse` is opt-in, and a policy earns
 promotion only by beating flat on the eval set. The shipped
 :func:`collapsed_tree_policy` is pure-vector (no LLM in the query loop): it
 routes a query that matches an artifact's *summary* surface down to that
-artifact's best *chunk*.
+artifact's best *chunk*. The shipped :func:`reverse_dependency_policy` walks
+dependency edges backwards from a caller-supplied set of libraries, surfacing
+the artifacts that depend on them even when their prose never says so.
 
 Returned :class:`~ir.base.SearchHit`\\s carry additive, JSON-clean walk
 provenance — ``metadata["walk_depth"]`` and ``metadata["seed"]`` (the routing
@@ -34,6 +36,7 @@ node) — and compose with :func:`ir.select` / :func:`ir.disclose` unchanged.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Hashable, Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
@@ -324,4 +327,177 @@ def collapsed_tree_policy(
     """
     return _CollapsedTreePolicy(
         summary_kinds=summary_kinds, leaf_kinds=leaf_kinds, seed_k=seed_k
+    )
+
+
+# =========================================================================== #
+# Reverse-dependency walk — seeded by the caller (pure-structural + cosine)
+# =========================================================================== #
+
+
+@dataclass(frozen=True)
+class _DepNode:
+    """An artifact reached by walking dependency edges backwards from a seed."""
+
+    artifact_id: str
+    seed: str
+    hops: int = 0
+
+
+class _ReverseDependencyPolicy:
+    """Walk reverse ``REF`` edges from caller-supplied seeds to their dependents.
+
+    Seeds are library ids (in the corpus or not); a seed outside the corpus only
+    routes. Each committed artifact scores ``cosine + fan_in_weight * fan_in /
+    max_fan_in + proximity_weight / (1 + hops)``, its cosine being its best
+    surface's against the query. The visited set keys on the artifact id.
+    """
+
+    def __init__(self, *, seeds, edge_type, fan_in_weight, proximity_weight):
+        self.seeds = tuple(dict.fromkeys(str(s) for s in seeds))
+        self.edge_type = edge_type
+        self.fan_in_weight = fan_in_weight
+        self.proximity_weight = proximity_weight
+
+    def _graph(self, state: WalkState, store: Any):
+        graph = state.cache.get("graph")
+        if graph is None:
+            from .graph import CorpusGraph
+
+            graph = state.cache["graph"] = CorpusGraph(store)
+            state.cache["source"] = getattr(store, "name", None)
+        return graph
+
+    def _best(self, state: WalkState, node: _DepNode, store: Any):
+        """``(record, cosine)`` of the artifact's best surface, or ``None``."""
+        best = state.cache.setdefault("best", {})
+        if node.artifact_id not in best:
+            from .retrieve import NoLedgerEntry, _embed_query
+
+            try:
+                records = records_for_artifact(store, node.artifact_id)
+            except NoLedgerEntry:
+                records = []  # a seed outside the corpus: it routes, nothing to score
+            if not records:
+                best[node.artifact_id] = None
+            else:
+                qv = state.cache.get("query_vec")
+                if qv is None:
+                    qv = _embed_query(getattr(store, "embedder", None), state.query)
+                    state.cache["query_vec"] = qv
+                best[node.artifact_id] = max(
+                    ((r, _cosine(qv, r.vector)) for r in records), key=lambda t: t[1]
+                )
+        return best[node.artifact_id]
+
+    def seed(self, state: WalkState, store: Any) -> list[_DepNode]:
+        self._graph(state, store)
+        return [_DepNode(artifact_id=s, seed=s) for s in self.seeds]
+
+    def score(self, state: WalkState, node: _DepNode, store: Any) -> float:
+        found = self._best(state, node, store)
+        if found is None:
+            return 0.0
+        graph = self._graph(state, store)
+        score = found[1]
+        if self.fan_in_weight:
+            top = graph.max_fan_in(edge_type=self.edge_type)
+            if top:
+                fan_in = graph.fan_in(node.artifact_id, edge_type=self.edge_type)
+                score += self.fan_in_weight * fan_in / top
+        if self.proximity_weight:
+            score += self.proximity_weight / (1 + node.hops)
+        return float(score)
+
+    def select(self, state: WalkState, scored: Sequence) -> list:
+        return sorted(scored, key=lambda t: t[2], reverse=True)
+
+    def expand(self, state: WalkState, node: _DepNode, store: Any) -> list[_DepNode]:
+        graph = self._graph(state, store)
+        return [
+            _DepNode(artifact_id=dependent, seed=node.seed, hops=node.hops + 1)
+            for dependent in graph.reverse_neighbors(
+                node.artifact_id, edge_type=self.edge_type
+            )
+        ]
+
+    def node_id(self, node: _DepNode) -> Hashable:
+        return node.artifact_id
+
+    def stop(self, state: WalkState) -> bool:
+        return False
+
+    def to_hit(
+        self, state: WalkState, node: _DepNode, score: float, depth: int
+    ) -> "SearchHit | None":
+        found = state.cache.get("best", {}).get(node.artifact_id)
+        if found is None:
+            return None  # a seed outside the corpus routes but is not a result
+        record = found[0]
+        graph = state.cache["graph"]
+        meta = dict(record.metadata)
+        meta["walk_depth"] = depth
+        meta["fan_in"] = graph.fan_in(node.artifact_id, edge_type=self.edge_type)
+        if node.hops:
+            meta["seed"] = node.seed
+        return SearchHit(
+            artifact_id=record.artifact_id,
+            surface_kind=record.surface_kind,
+            score=float(score),
+            text=record.text,
+            metadata=meta,
+            source=state.cache.get("source"),
+            surface_index=record.surface_index,
+        )
+
+
+def reverse_dependency_policy(
+    *,
+    seeds: Iterable[str],
+    edge_type: str = "REF",
+    fan_in_weight: float = 0.0,
+    proximity_weight: float = 0.0,
+) -> WalkPolicy:
+    """A :class:`WalkPolicy` that walks dependency edges backwards from *seeds*.
+
+    *seeds* are library ids the **caller** deems relevant to the query (ir never
+    chooses them: picking the domain libraries for a goal is the planner's job,
+    in the agent layer). The walk commits each seed that is an artifact of the
+    corpus, then its dependents (the artifacts whose ``edge_type`` edges point
+    at it), then theirs, up to :func:`traverse`'s ``max_depth``. A seed outside
+    the corpus (a third-party library) routes without being a result. So a
+    package that depends on a domain library but never says so in prose is
+    still found.
+
+    Each result scores its best surface's cosine to the query, plus
+    ``fan_in_weight`` times its normalized fan-in (its share of the most
+    depended-on target, a centrality prior), plus ``proximity_weight / (1 +
+    hops)`` (closer to a seed scores higher). Both weights default to ``0``, so
+    the score is plain cosine. Hits carry ``metadata["walk_depth"]``,
+    ``metadata["fan_in"]`` and, for dependents, ``metadata["seed"]``.
+
+    The store passed to :func:`traverse` is a :class:`~ir.index.Corpus` built
+    with an edge extractor (e.g. :func:`ir.default_edge_extractor`, whose
+    ``REF`` edges run from a package to its dependencies). Fuse the walk's hits
+    with flat search through :func:`ir.fuse_hits`.
+
+    >>> policy = reverse_dependency_policy(seeds=["networkx"])   # doctest: +SKIP
+    >>> hits = traverse(query, corpus, policy=policy)            # doctest: +SKIP
+    """
+    if isinstance(seeds, str):
+        raise TypeError(
+            f"seeds must be a collection of ids, not the string {seeds!r} "
+            f"(write [{seeds!r}])."
+        )
+    for label, weight in (
+        ("fan_in_weight", fan_in_weight),
+        ("proximity_weight", proximity_weight),
+    ):
+        if not math.isfinite(weight) or weight < 0:
+            raise ValueError(f"{label} must be finite and non-negative, got {weight!r}")
+    return _ReverseDependencyPolicy(
+        seeds=seeds,
+        edge_type=edge_type,
+        fan_in_weight=float(fan_in_weight),
+        proximity_weight=float(proximity_weight),
     )

@@ -3,12 +3,13 @@
 `ir` is an **information-retrieval substrate for agentic systems**: one uniform
 "find the relevant things in this corpus" contract (retrieve → select → disclose),
 built by composing the ecosystem — `ef` (embedders, content-hash, reranking,
-evaluation), `vd` (BM25, RRF, metadata filters), `dol` (persistence), `oa` (LLM
-ops, always lazy/opt-in). Retrieval-first; **RAG is layered on top, not here**.
+evaluation), `vd` (BM25, RRF, metadata filters), `dol` (persistence), `aix` (the
+LLM backend of the injectable seams, always lazy/opt-in). Retrieval-first;
+**RAG is layered on top, not here**.
 
 ## Where the design lives
 
-- `misc/docs/ir_01`…`ir_09` — the research + design + eval-run record (read the
+- `misc/docs/ir_01`…`ir_10` — the research + design + eval-run record (read the
   relevant one before non-trivial work). Notably `ir_07` (abstention
   calibration), `ir_08` (magnitude-preserving fusion), **`ir_09` (the Composable
   Search Agent reference architecture)**.
@@ -46,7 +47,8 @@ local `$PP/t/raglab`), **on top of ir**. The split (epic #38, decided 2026-06-11
 For driving `ir` agentically **without** putting an agent in the codebase, ir
 ships two Claude-Code-native artifacts (a lightweight "raglab-in-instructions"):
 
-- `.claude/skills/ir-search/SKILL.md` — the entry-point skill: when to search
+- `ir/data/skills/ir-search/SKILL.md` (symlinked from `.claude/skills/`, and
+  shipped in the wheel) — the entry-point skill: when to search
   `ir` corpora, the CLI cheat-sheet, the corpus map, and the mode/scoring/coverage
   gotchas.
 - `.claude/agents/ir-discover-agent.md` — a **reviewing search subagent**: it
@@ -59,11 +61,29 @@ These are the correct home for the *back-edge as instructions* — they don't
 violate the boundary above, because no loop or `refinement` directive enters the
 `ir` package code. The coded loop still belongs to `raglab`.
 
+## Working on ir
+
+The `ir-dev-workflow` skill (`skills/ir-dev-workflow/SKILL.md`, symlinked from
+`.claude/skills/`, not shipped) has the module map and the full contributor
+recipe. The short version, as CI runs it:
+
+```bash
+uv venv -q .venv && . .venv/bin/activate && uv pip install -q -e ".[dev]"
+python -m pytest -q --doctest-modules ir tests
+ruff check ir && ruff format --check ir
+```
+
+Adding a CLI flag changes the pinned grammar in `tests/cli_goldens/ir.json`.
+Don't edit the version: a merge to `master` bumps it and publishes to PyPI.
+Skill real files live in `ir/data/skills/` (consumer, pip-shipped) and
+`skills/` (developer); `.claude/skills/*` are relative symlinks, excluded from
+the sdist walk in `pyproject.toml` so the real files are packaged.
+
 ## House style (inherited)
 
 Functional > OOP; SOLID when OOP; facades, SSOT, dependency injection;
 progressive disclosure (a new arg must default to today's behavior); keyword-only
 beyond the 3rd positional; `collections.abc` + frozen `dataclass`es; every module
-has a top-level docstring (auto-extracted for docs). `oa` stays lazy/opt-in
-(`import ir` must not import `oa`). Tests hermetic with `embedder="light"`;
+has a top-level docstring (auto-extracted for docs). LLM backends (`aix`) stay
+lazy/opt-in (`import ir` must not import them). Tests hermetic with `embedder="light"`;
 `USE_TF=0` is set on import. Real ruff rules (F/E/W/B) are enforced on `ir/`.

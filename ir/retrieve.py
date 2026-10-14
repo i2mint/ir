@@ -33,6 +33,12 @@ do. It is the shared cross-source merge primitive consumed by federated
 Every search hit carries its corpus name as :attr:`~ir.base.SearchHit.source`
 and its surface's plan position as :attr:`~ir.base.SearchHit.surface_index`.
 
+Two optional ranking signals act inside :func:`search`: ``surface_weights``
+multiplies the first-stage score per surface kind, and ``dep_boost`` adds a
+structural score per candidate after the reranker (the shipped
+:func:`dependency_evidence_boost` rewards dependencies on a caller-supplied
+library set). Both default to off.
+
 :func:`records_for_artifact` is the hit-operation beneath retrieval-time
 context expansion: given a hit's ``artifact_id``, it returns *all* of that
 artifact's stored records (its sibling surfaces), ordered — resolved through
@@ -43,6 +49,8 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 from __future__ import annotations
 
 import json
+import math
+import numbers
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import replace
@@ -224,12 +232,13 @@ def _rrf_fuse(
     dense: list[tuple[str, float]],
     lexical: list[tuple[str, float]],
     rrf_k: int,
-    fetch: int,
+    fetch: int | None,
 ) -> list[tuple[str, float]]:
     """Fuse dense + lexical rankings via ``vd.reciprocal_rank_fusion``.
 
     Falls back to the dense ranking if ``vd`` is unavailable or lexical is
-    empty (RRF of a single non-empty list is just that list's order).
+    empty (RRF of a single non-empty list is just that list's order). A
+    ``fetch`` of ``None`` keeps the whole fused union.
     """
     if not lexical:
         return dense[:fetch]
@@ -258,7 +267,7 @@ def _blend_fuse(
     lexical: list[tuple[str, float]],
     alpha: float,
     bm25_sat_k: float,
-    fetch: int,
+    fetch: int | None,
 ) -> list[tuple[str, float]]:
     """Fuse dense + lexical by a magnitude-preserving convex blend.
 
@@ -293,6 +302,129 @@ def _blend_fuse(
         fused.append((rid, alpha * d + (1.0 - alpha) * b_sat))
     fused.sort(key=lambda kv: -kv[1])
     return fused[:fetch]
+
+
+def _check_surface_weights(
+    surface_weights: Mapping[str, float] | None,
+) -> dict[str, float]:
+    """Validate ``surface_weights``: finite, non-negative numbers keyed by kind."""
+    if not surface_weights:
+        return {}
+    checked = {}
+    for kind, weight in surface_weights.items():
+        if (
+            isinstance(weight, bool)
+            or not isinstance(weight, numbers.Real)
+            or not math.isfinite(weight)
+            or weight < 0
+        ):
+            raise ValueError(
+                f"surface_weights[{kind!r}] = {weight!r}; a surface weight must be a "
+                f"finite, non-negative number (use surfaces= to exclude a kind)."
+            )
+        checked[str(kind)] = float(weight)
+    return checked
+
+
+def _weight_surfaces(
+    ranked: list[tuple[str, float]],
+    meta_by_id: Mapping[str, dict],
+    weights: Mapping[str, float],
+) -> list[tuple[str, float]]:
+    """Multiply each score by its surface kind's weight (default 1), best first.
+
+    The sort is stable, so equally scored candidates keep their first-stage order.
+    """
+    weighted = [
+        (rid, score * weights.get(meta_by_id[rid]["surface_kind"], 1.0))
+        for rid, score in ranked
+    ]
+    weighted.sort(key=lambda kv: -kv[1])
+    return weighted
+
+
+#: A ranking-time score boost: ``hit -> float``, added to each candidate's score
+#: after fusion and the reranker, before the per-artifact collapse. See
+#: :func:`dependency_evidence_boost`.
+ScoreBoost = Callable[[SearchHit], float]
+
+
+def _boosted(hits: list[SearchHit], boost: ScoreBoost) -> list[SearchHit]:
+    """``hits`` with ``boost(hit)`` added to each score, best first (stable)."""
+    out = []
+    for hit in hits:
+        extra = boost(hit)
+        if (
+            isinstance(extra, bool)
+            or not isinstance(extra, numbers.Real)
+            or not math.isfinite(extra)
+        ):
+            raise ValueError(
+                f"dep_boost returned {extra!r} for {hit.artifact_id!r}; "
+                f"expected a finite number."
+            )
+        out.append(replace(hit, score=hit.score + float(extra)) if extra else hit)
+    return sorted(out, key=lambda h: h.score, reverse=True)
+
+
+def _norm_dist_name(name: str) -> str:
+    """A bare distribution name, lower-cased and PEP 503-normalized."""
+    from .graph import normalize_dist_name
+
+    return normalize_dist_name(name)
+
+
+def dependency_evidence_boost(
+    relevant_libs: Iterable[str],
+    *,
+    weight: float,
+    saturate: int = 1,
+    deps_field: str = "deps",
+) -> ScoreBoost:
+    """A ``dep_boost`` for :func:`search`: reward dependencies on *relevant_libs*.
+
+    Reads the candidate's ``deps`` filter field (as :class:`~ir.strategy.Package`
+    stores it), reduces each spec to its bare, PEP 503-normalized name, and
+    returns ``weight * min(n, saturate) / saturate`` where ``n`` counts the
+    dependencies found in *relevant_libs*. With the default ``saturate=1`` a
+    single relevant dependency earns the full ``weight``. A structural signal,
+    cheap and model-free, that a prose reranker cannot be fooled out of: an
+    async-task package whose README says "DAG" does not depend on graph
+    libraries.
+
+    *relevant_libs* is the **caller's** call: which libraries matter for a goal is
+    a planning decision that belongs to the agent layer, never to ``ir``.
+    ``weight`` is added to the score on the search's scale (an RRF fused score is
+    near ``0.03``, a cosine near ``0.5``, a sigmoid reranker in ``(0, 1)``), so
+    tune it per configuration.
+
+    >>> from ir.base import SearchHit
+    >>> boost = dependency_evidence_boost({"networkx"}, weight=0.1)
+    >>> boost(SearchHit("unbox", "description", 0.4, "", {"deps": ["networkx>=3"]}))
+    0.1
+    >>> boost(SearchHit("au", "description", 0.5, "", {"deps": ["anyio"]}))
+    0.0
+    """
+    if not math.isfinite(weight):
+        raise ValueError(f"weight must be a finite number, got {weight!r}")
+    if not isinstance(saturate, int) or saturate < 1:
+        raise ValueError(f"saturate must be a positive int, got {saturate!r}")
+    if isinstance(relevant_libs, str):
+        raise TypeError(
+            f"relevant_libs must be a collection of names, not the string "
+            f"{relevant_libs!r} (write {{{relevant_libs!r}}})."
+        )
+    libs = frozenset(_norm_dist_name(lib) for lib in relevant_libs)
+
+    def boost(hit: SearchHit) -> float:
+        deps = hit.metadata.get(deps_field) or ()
+        if isinstance(deps, str):
+            deps = [deps]
+        names = {_norm_dist_name(d) for d in deps}
+        n = len(names & libs)
+        return weight * min(n, saturate) / saturate if n else 0.0
+
+    return boost
 
 
 def _apply_rerank(
@@ -398,6 +530,8 @@ def search(
     rerank_max_chars: int = DFLT_RERANK_MAX_CHARS,
     bm25: Mapping[str, Any] | None = None,
     formulate: Formulator | None = None,
+    surface_weights: Mapping[str, float] | None = None,
+    dep_boost: ScoreBoost | None = None,
 ) -> list[SearchHit]:
     """Return the top-*k* :class:`~ir.base.SearchHit` for *query*.
 
@@ -442,6 +576,32 @@ def search(
         (ir_09 §3). Identity by default (embed the query verbatim). When it
         returns several queries, ir runs each and fuses the results (best surface
         per artifact). See :func:`ir.make_llm_formulator`.
+    surface_weights : optional ``{surface_kind: weight}`` multipliers, e.g.
+        ``{"deps": 2.0}`` to let a high-precision ``deps`` surface outrank prose
+        chunks. Each surface-hit's first-stage score (the fused score in hybrid
+        mode) is multiplied by its kind's weight (default 1.0). Each channel
+        still retrieves its own top ``fetch_k``; the weights reorder those
+        candidates (in hybrid mode, the whole fused union) before the cut to
+        ``fetch_k``, the reranker and the per-artifact collapse. Setting them
+        makes the search over-fetch like ``rerank`` does, and formulated
+        sub-searches inherit them. Kinds the corpus lacks are ignored; weights
+        must be finite and non-negative. Meant for the non-negative scores of
+        hybrid fusion and BM25 (a negative dense cosine moves *down* when
+        multiplied by a weight above 1). Weighted scores are on a different scale
+        from unweighted ones, so a calibrated floor does not apply to them
+        (``discover(min_score="auto")`` warns and skips it). Default ``None``
+        weighs every surface equally, as before.
+    dep_boost : an optional :data:`ScoreBoost` (``hit -> float``) whose value is
+        added to each fetched candidate's score after fusion and the reranker,
+        before the per-artifact collapse -- a structural signal next to the
+        reranker's textual one. :func:`dependency_evidence_boost` builds one from
+        a caller-supplied library set. It reorders the fetched candidates (raise
+        ``fetch_k`` to show it more); boosted scores need their own abstention
+        floor (``discover(min_score="auto")`` warns and skips it). Like
+        ``rerank`` and ``surface_weights``, it makes the search
+        over-fetch (``max(k*5, 50)``) even with ``per_artifact=False``, so pin
+        ``fetch_k`` when comparing runs with and without it. Default ``None``:
+        no boost.
     """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
@@ -449,6 +609,7 @@ def search(
     asked = query  # the reranker judges against what the caller asked, not a rewrite
     if fusion not in FUSIONS:
         raise ValueError(f"unknown fusion {fusion!r}; expected one of {FUSIONS}")
+    weights = _check_surface_weights(surface_weights)
 
     # Materialize once: surfaces may be a one-shot iterable, and it is both the
     # filter input and part of the BM25 cache key.
@@ -472,7 +633,7 @@ def search(
             # merged pool against the original query: the sub-searches run without it.
             depth = (
                 (fetch_k if fetch_k is not None else max(k * 5, 50))
-                if rerank is not None
+                if rerank is not None or weights or dep_boost is not None
                 else k
             )
             merged: list[SearchHit] = []
@@ -492,6 +653,7 @@ def search(
                         bm25_sat_k=bm25_sat_k,
                         fetch_k=fetch_k,
                         bm25=bm25,
+                        surface_weights=weights,
                     )
                 )
             if rerank is not None and merged:
@@ -503,6 +665,8 @@ def search(
                     rerank_text=rerank_text,
                     max_chars=rerank_max_chars,
                 )
+            if dep_boost is not None:
+                merged = _boosted(merged, dep_boost)
             merged = (
                 best_per_artifact(merged)
                 if per_artifact
@@ -525,10 +689,15 @@ def search(
     if not candidates:
         return []
 
-    # A reranker can only promote what it is shown, so it over-fetches even when
-    # the surfaces are not collapsed per artifact (which alone would fetch just k).
-    over_fetch = per_artifact or rerank is not None
+    # A reranker, surface weights and a boost can only promote what they are
+    # shown, so each over-fetches even when surfaces are not collapsed per artifact.
+    over_fetch = (
+        per_artifact or rerank is not None or bool(weights) or dep_boost is not None
+    )
     fetch = fetch_k if fetch_k is not None else (max(k * 5, 50) if over_fetch else k)
+    # With surface weights, fusion keeps its whole union so the weights act
+    # before the fetch cut: a boosted surface fused just below it still counts.
+    cut = None if weights else fetch
 
     if mode == "lexical":
         index = _bm25_index_for(
@@ -545,11 +714,14 @@ def search(
             )
             lexical = _lexical_ranked(index, query, fetch, bm25)
             if fusion == "blend":
-                ranked = _blend_fuse(dense, lexical, alpha, bm25_sat_k, fetch)
+                ranked = _blend_fuse(dense, lexical, alpha, bm25_sat_k, cut)
             else:
-                ranked = _rrf_fuse(dense, lexical, rrf_k, fetch)
+                ranked = _rrf_fuse(dense, lexical, rrf_k, cut)
 
     meta_by_id = {ids[j]: metas[j] for j in candidates}
+
+    if weights:
+        ranked = _weight_surfaces(ranked, meta_by_id, weights)[:fetch]
 
     if rerank is not None and ranked:
         ranked = _apply_rerank(
@@ -576,6 +748,8 @@ def search(
         )
         for rid, score in ranked
     ]
+    if dep_boost is not None:
+        hits = _boosted(hits, dep_boost)
     if per_artifact:
         hits = best_per_artifact(hits)
     return hits[:k]

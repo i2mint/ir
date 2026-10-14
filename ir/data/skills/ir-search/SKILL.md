@@ -13,6 +13,8 @@ description: >-
   substrate with no agent of its own; this skill + the subagent are the
   Claude-Code-native way to wrap it in agentic query→review→reformulate powers
   (the coded equivalent is `raglab`).
+metadata:
+  audience: users
 ---
 
 # ir-search — agentic lookup over your `ir` corpora
@@ -52,7 +54,12 @@ ir ls                                              # what corpora exist + how bi
 ir search reports "<intent, in natural language>" --k 15 --mode dense
 ir search reports "<exact terms / identifiers>"   --k 15 --mode lexical
 ir discover reports "<best query>" --disclose      # commit to a few + load their bodies
+ir search packages "<intent>" -k 15 --mode hybrid --rerank cross-encoder --rerank-text artifact
 ```
+
+`--rerank cross-encoder` re-scores the fetched candidates with a cross-encoder
+reading each artifact's full text (`--rerank-text artifact`). It needs the
+`ir[rerank]` extra; without it `ir` warns and keeps the first-stage ranking.
 
 Then **read** the top hits (`--disclose`, or `Read` the file at the hit's path)
 and judge relevance yourself before reporting — a title/score is not relevance.

@@ -859,6 +859,33 @@ def _rerank_tag_of(search_kw: dict) -> str | None:
     )
 
 
+def _drop_auto_floor_if_rescaled(min_score: Any, search_kw: Mapping) -> Any:
+    """``min_score`` without its ``"auto"`` floors when the search rescales scores.
+
+    Calibrated floors are stored per mode and reranker, never per
+    ``surface_weights`` / ``dep_boost``, so applying one to rescaled scores would
+    abstain on a mis-scaled floor. Like a stale floor, this warns and degrades to
+    no absolute abstention; explicit numeric floors are the caller's and stay.
+    """
+    rescaled = [kw for kw in ("surface_weights", "dep_boost") if search_kw.get(kw)]
+    if not rescaled:
+        return min_score
+    is_auto = min_score == "auto" if isinstance(min_score, str) else False
+    has_auto = isinstance(min_score, Mapping) and "auto" in min_score.values()
+    if not (is_auto or has_auto):
+        return min_score
+    # stacklevel=3: warn → this helper → discover → the user's call.
+    warnings.warn(
+        f"discover(min_score='auto'): {' and '.join(rescaled)} rescale the scores, "
+        f"and calibrated floors are stored without them; not abstaining by "
+        f"absolute score.",
+        stacklevel=3,
+    )
+    if is_auto:
+        return None
+    return {name: None if spec == "auto" else spec for name, spec in min_score.items()}
+
+
 def _resolve_auto_min_score(
     corpus: Any, mode: str, rerank: str | None = None
 ) -> float | None:
@@ -1029,6 +1056,7 @@ def discover(
         its ``source``.
     """
     rerank_id = _rerank_tag_of(search_kw)
+    min_score = _drop_auto_floor_if_rescaled(min_score, search_kw)
     if isinstance(corpus, (list, tuple)):
         return _discover_federated(
             list(corpus),

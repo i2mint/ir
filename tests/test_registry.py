@@ -70,3 +70,43 @@ def test_cli_commands_return_strings(tmp_path, monkeypatch):
         "notes", "widgets", k=3
     )
     assert "records:" in cli.info("notes")
+
+
+def _prefer_last(query, passages):
+    """A stub reranker that prefers the last passage (proves the hook ran)."""
+    return [float(i) for i, _ in enumerate(passages)]
+
+
+def test_cli_search_forwards_rerank_and_is_off_by_default(tmp_path, monkeypatch):
+    """`ir search --rerank/--rerank-text` reach the search call (#107)."""
+    _isolate(tmp_path, monkeypatch)
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "deploy.md").write_text("deploy the app to the server with systemd units")
+    (docs / "baking.md").write_text("bake a cake in the oven with flour and sugar")
+    cli.register("notes", "files", root=str(docs), pattern=r".*\.md$")
+    cli.build("notes", embedder="light")
+
+    seen = []
+    real_search = ir.retrieve.search
+
+    def spy(corpus, query, **kwargs):
+        seen.append(kwargs)
+        return real_search(corpus, query, **kwargs)
+
+    monkeypatch.setattr(ir.retrieve, "search", spy)
+
+    plain = cli.search("notes", "deploy app systemd", k=2, mode="dense")
+    assert "rerank" not in seen[-1]  # off by default: today's call, unchanged
+
+    reranked = cli.search(
+        "notes",
+        "deploy app systemd",
+        k=2,
+        mode="dense",
+        rerank=_prefer_last,
+        rerank_text="artifact",
+    )
+    assert seen[-1]["rerank"] is _prefer_last
+    assert seen[-1]["rerank_text"] == "artifact"
+    assert plain != reranked

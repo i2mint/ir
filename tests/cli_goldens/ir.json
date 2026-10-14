@@ -51,7 +51,7 @@
     "--help"
    ],
    "rc": 0,
-   "usage": "PROG search [-h] [-k K] [-m MODE] [-f FUSION] name query"
+   "usage": "PROG search [-h] [-k K] [-m MODE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] name query"
   },
   {
    "argv": [
@@ -195,7 +195,7 @@
     "onlyname"
    ],
    "rc": 2,
-   "usage": "PROG search [-h] [-k K] [-m MODE] [-f FUSION] name query"
+   "usage": "PROG search [-h] [-k K] [-m MODE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] name query"
   },
   {
    "argv": [
