@@ -59,7 +59,7 @@
     "--help"
    ],
    "rc": 0,
-   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [-f FUSION] name query"
+   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] name query"
   },
   {
    "argv": [
@@ -139,7 +139,7 @@
     "--help"
    ],
    "rc": 0,
-   "usage": "PROG calibrate-min-score [-h] [-m MODE] [-k K] [-s SENSITIVITY_WEIGHT] [-p] [-f FUSION] name cases"
+   "usage": "PROG calibrate-min-score [-h] [-m MODE] [-k K] [-s SENSITIVITY_WEIGHT] [-p] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] name cases"
   },
   {
    "argv": [
@@ -237,7 +237,7 @@
     "--k"
    ],
    "rc": 2,
-   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [-f FUSION] name query"
+   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] name query"
   },
   {
    "argv": [
@@ -245,7 +245,7 @@
     "--sensitivity-weight"
    ],
    "rc": 2,
-   "usage": "PROG calibrate-min-score [-h] [-m MODE] [-k K] [-s SENSITIVITY_WEIGHT] [-p] [-f FUSION] name cases"
+   "usage": "PROG calibrate-min-score [-h] [-m MODE] [-k K] [-s SENSITIVITY_WEIGHT] [-p] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] name cases"
   }
  ]
 }
