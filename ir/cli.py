@@ -137,18 +137,34 @@ def build(name, *, embedder=None, full=True):
 
 
 @_report_embedder_errors
-def search(name, query, *, k=10, mode="dense", fusion="rrf"):
+def search(
+    name,
+    query,
+    *,
+    k=10,
+    mode="dense",
+    fusion="rrf",
+    rerank=None,
+    rerank_text="surface",
+):
     """Search a built corpus and print the top-k hits.
 
     mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused). fusion
     (hybrid only): rrf (rank-based, default) | blend (magnitude-preserving;
-    better abstention separability — see ir_08).
+    better abstention separability — see ir_08). ``--rerank cross-encoder`` adds
+    the cross-encoder precision stage (needs the ``ir[rerank]`` extra; without it
+    the search warns and keeps the first-stage ranking); ``--rerank-text``
+    picks what it reads: surface (default) | artifact. Reranked scores are on the
+    reranker's own scale.
     """
     corpus = open_corpus(name)
     if len(corpus) == 0:
         return _empty_corpus_msg(name)
     lines = []
-    for h in corpus.search(query, k=k, mode=mode, fusion=fusion):
+    hits = corpus.search(
+        query, k=k, mode=mode, fusion=fusion, **_rerank_kw(rerank, rerank_text)
+    )
+    for h in hits:
         # artifact_id is the unique label across corpora (skill name[@parent],
         # package name, or a report's relative path).
         lines.append(f"{h.score:+.3f}  {h.artifact_id}  [{h.surface_kind}]")
