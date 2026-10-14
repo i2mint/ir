@@ -41,7 +41,7 @@ ir discover skills "deploy app" --min-score auto  # use the calibrated floor
 | [`register`](#ir.cli.register)(name, kind, \*[, root, pattern, ...])     | Register a named corpus.                                                       |
 | [`rm`](#ir.cli.rm)(name)                                           | Unregister a corpus (does not delete its built data).                          |
 | [`schedule`](#ir.cli.schedule)(\*[, every, status, restart, ...])        | Install, inspect, and operate the OS job that runs `ir maintain`.              |
-| [`search`](#ir.cli.search)(name, query, \*[, k, mode, fusion])         | Search a built corpus and print the top-k hits.                                |
+| [`search`](#ir.cli.search)(name, query, \*[, k, mode, fusion, ...])    | Search a built corpus and print the top-k hits.                                |
 | [`sweep_select`](#ir.cli.sweep_select)(name, cases, \*[, strategy, ...])     | Sweep selector knobs (max_k × rel) against a case file; print the grid + best. |
 
 ### ir.cli.build(name, , embedder=None, full=True)
@@ -168,13 +168,17 @@ remove: stop the schedule and delete its definition.
 dry_run: print the definition that would be written, and write nothing.
 backend: launchd | cron (default: whichever this machine provides).
 
-### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf')
+### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface')
 
 Search a built corpus and print the top-k hits.
 
 mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused). fusion
 (hybrid only): rrf (rank-based, default) | blend (magnitude-preserving;
-better abstention separability — see ir_08).
+better abstention separability — see ir_08). `--rerank cross-encoder` adds
+the cross-encoder precision stage (needs the `ir[rerank]` extra; without it
+the search warns and keeps the first-stage ranking); `--rerank-text`
+picks what it reads: surface (default) | artifact. Reranked scores are on the
+reranker’s own scale.
 
 ### ir.cli.sweep_select(name, cases, , strategy='conservative', mode='hybrid', k=10, objective='selection_f1')
 

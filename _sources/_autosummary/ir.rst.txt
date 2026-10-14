@@ -24,11 +24,13 @@
       retrievers
       retriever_for
       fuse_hits
+      dependency_evidence_boost
       records_for_artifact
       default_edge_extractor
       canonical_node_id
       traverse
       collapsed_tree_policy
+      reverse_dependency_policy
       expand
       sentence_window_policy
       parent_policy

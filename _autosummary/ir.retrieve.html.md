@@ -35,6 +35,12 @@ do. It is the shared cross-source merge primitive consumed by federated
 Every search hit carries its corpus name as `source`
 and its surface’s plan position as `surface_index`.
 
+Two optional ranking signals act inside [`search()`](#ir.retrieve.search): `surface_weights`
+multiplies the first-stage score per surface kind, and `dep_boost` adds a
+structural score per candidate after the reranker (the shipped
+[`dependency_evidence_boost()`](#ir.retrieve.dependency_evidence_boost) rewards dependencies on a caller-supplied
+library set). Both default to off.
+
 [`records_for_artifact()`](#ir.retrieve.records_for_artifact) is the hit-operation beneath retrieval-time
 context expansion: given a hit’s `artifact_id`, it returns *all* of that
 artifact’s stored records (its sibling surfaces), ordered — resolved through
@@ -49,16 +55,18 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 | [`DFLT_RRF_K`](#ir.retrieve.DFLT_RRF_K)       | RRF rank constant — the `k` of `1 / (k + rank)` (standard default 60).                                                                                                                                                                                                                                                                                                                       |
 | [`DFLT_BLEND_ALPHA`](#ir.retrieve.DFLT_BLEND_ALPHA) | Dense weight in the `"blend"` fusion convex combination (`1-alpha` on the bounded lexical term).                                                                                                                                                                                                                                                                                             |
 | [`DFLT_BM25_SAT_K`](#ir.retrieve.DFLT_BM25_SAT_K)  | `bm25 -> bm25/(bm25+k)`, a bounded squash to `[0, 1)` that needs no *per-query* normalization (which would erase the absolute-magnitude signal abstention calibration depends on).                                                                                                                                                                                                           |
+| [`ScoreBoost`](#ir.retrieve.ScoreBoost)       | `hit -> float`, added to each candidate's score after fusion and the reranker, before the per-artifact collapse.                                                                                                                                                                                                                                                                             |
 | [`Identity`](#ir.retrieve.Identity)         | `None` (default — hits from different sources never merge; same id, different corpus = different artifact), the string `"pointer"` (merge hits whose [`pointer`](ir.base.html.md#ir.base.SearchHit.pointer) match — opt-in, for corpora that genuinely index the same files), or any `hit -> hashable` callable (a falsy key falls back to per-source identity). |
 | [`Retriever`](#ir.retrieve.Retriever)        | `(query, **overrides) -> list[SearchHit]` — ir_09's Retriever leaf (one query, one corpus) as a swappable callable.                                                                                                                                                                                                                                                                          |
 
 ### Functions
 
-| [`as_retriever`](#ir.retrieve.as_retriever)(corpus_or_name, \*\*search_defaults)   | Bind ONE corpus to the uniform [`Retriever`](#ir.retrieve.Retriever) contract.          |
-|------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| [`fuse_hits`](#ir.retrieve.fuse_hits)(hits_by_source, \*[, rrf_k, ...])         | Merge per-source ranked hit lists into one ranking — by rank, not score.                                     |
-| [`records_for_artifact`](#ir.retrieve.records_for_artifact)(store_or_corpus, ...[, ...])   | All stored records of *artifact_id*, ordered by `surface_index`.                                             |
-| [`search`](#ir.retrieve.search)(corpus, query, \*[, k, filter, ...])         | Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*. |
+| [`as_retriever`](#ir.retrieve.as_retriever)(corpus_or_name, \*\*search_defaults)   | Bind ONE corpus to the uniform [`Retriever`](#ir.retrieve.Retriever) contract.                  |
+|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| [`dependency_evidence_boost`](#ir.retrieve.dependency_evidence_boost)(relevant_libs, \*, ...)   | A `dep_boost` for [`search()`](#ir.retrieve.search): reward dependencies on *relevant_libs*. |
+| [`fuse_hits`](#ir.retrieve.fuse_hits)(hits_by_source, \*[, rrf_k, ...])         | Merge per-source ranked hit lists into one ranking — by rank, not score.                                             |
+| [`records_for_artifact`](#ir.retrieve.records_for_artifact)(store_or_corpus, ...[, ...])   | All stored records of *artifact_id*, ordered by `surface_index`.                                                     |
+| [`search`](#ir.retrieve.search)(corpus, query, \*[, k, filter, ...])         | Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.         |
 
 ### Exceptions
 
@@ -131,6 +139,17 @@ can register an ir corpus as one source key without importing ir internals.
 
 alias of `Callable`[[…], `list[SearchHit]`]
 
+### ir.retrieve.ScoreBoost
+
+`hit -> float`, added to each candidate’s score
+after fusion and the reranker, before the per-artifact collapse. See
+[`dependency_evidence_boost()`](#ir.retrieve.dependency_evidence_boost).
+
+* **Type:**
+  A ranking-time score boost
+
+alias of `Callable`[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
 ### ir.retrieve.as_retriever(corpus_or_name, \*\*search_defaults)
 
 Bind ONE corpus to the uniform [`Retriever`](#ir.retrieve.Retriever) contract.
@@ -148,6 +167,37 @@ the bound corpus on `.corpus` for introspection.
 >>> retr = as_retriever(corpus, mode="hybrid", k=20)
 >>> hits = retr("how do I deploy the app")
 >>> hits = retr("deploy", filter={"owner": "me"})
+```
+
+### ir.retrieve.dependency_evidence_boost(relevant_libs, , weight, saturate=1, deps_field='deps')
+
+A `dep_boost` for [`search()`](#ir.retrieve.search): reward dependencies on *relevant_libs*.
+
+Reads the candidate’s `deps` filter field (as [`Package`](ir.strategy.html.md#ir.strategy.Package)
+stores it), reduces each spec to its bare, PEP 503-normalized name, and
+returns `weight * min(n, saturate) / saturate` where `n` counts the
+dependencies found in *relevant_libs*. With the default `saturate=1` a
+single relevant dependency earns the full `weight`. A structural signal,
+cheap and model-free, that a prose reranker cannot be fooled out of: an
+async-task package whose README says “DAG” does not depend on graph
+libraries.
+
+*relevant_libs* is the **caller’s** call: which libraries matter for a goal is
+a planning decision that belongs to the agent layer, never to `ir`.
+`weight` is added to the score on the search’s scale (an RRF fused score is
+near `0.03`, a cosine near `0.5`, a sigmoid reranker in `(0, 1)`), so
+tune it per configuration.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+```pycon
+>>> from ir.base import SearchHit
+>>> boost = dependency_evidence_boost({"networkx"}, weight=0.1)
+>>> boost(SearchHit("unbox", "description", 0.4, "", {"deps": ["networkx>=3"]}))
+0.1
+>>> boost(SearchHit("au", "description", 0.5, "", {"deps": ["anyio"]}))
+0.0
 ```
 
 ### ir.retrieve.fuse_hits(hits_by_source, , rrf_k=60, weights=None, identity=None, k=None)
@@ -236,7 +286,7 @@ siblings.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Record`](ir.base.html.md#ir.base.Record)]
 
-### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None)
+### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None, surface_weights=None, dep_boost=None)
 
 Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
 
@@ -273,5 +323,29 @@ Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
     (ir_09 §3). Identity by default (embed the query verbatim). When it
     returns several queries, ir runs each and fuses the results (best surface
     per artifact). See [`ir.make_llm_formulator()`](ir.html.md#ir.make_llm_formulator).
+  * **surface_weights** ([`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – `{"deps": 2.0}` to let a high-precision `deps` surface outrank prose
+    chunks. Each surface-hit’s first-stage score (the fused score in hybrid
+    mode) is multiplied by its kind’s weight (default 1.0). Each channel
+    still retrieves its own top `fetch_k`; the weights reorder those
+    candidates (in hybrid mode, the whole fused union) before the cut to
+    `fetch_k`, the reranker and the per-artifact collapse. Setting them
+    makes the search over-fetch like `rerank` does, and formulated
+    sub-searches inherit them. Kinds the corpus lacks are ignored; weights
+    must be finite and non-negative. Meant for the non-negative scores of
+    hybrid fusion and BM25 (a negative dense cosine moves *down* when
+    multiplied by a weight above 1). Weighted scores are on a different scale
+    from unweighted ones, so a calibrated floor does not apply to them
+    (`discover(min_score="auto")` warns and skips it). Default `None`
+    weighs every surface equally, as before.
+  * **dep_boost** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – added to each fetched candidate’s score after fusion and the reranker,
+    before the per-artifact collapse – a structural signal next to the
+    reranker’s textual one. [`dependency_evidence_boost()`](#ir.retrieve.dependency_evidence_boost) builds one from
+    a caller-supplied library set. It reorders the fetched candidates (raise
+    `fetch_k` to show it more); boosted scores need their own abstention
+    floor (`discover(min_score="auto")` warns and skips it). Like
+    `rerank` and `surface_weights`, it makes the search
+    over-fetch (`max(k*5, 50)`) even with `per_artifact=False`, so pin
+    `fetch_k` when comparing runs with and without it. Default `None`:
+    no boost.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]

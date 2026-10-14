@@ -1,4 +1,4 @@
-> built 2026-10-14 01:56 UTC from 85d5292 (master) · ir 0.1.47. Details: build_info.json
+> built 2026-10-14 21:13 UTC from 537ca94 (master) · ir 0.1.48. Details: build_info.json
 
 # index.html.md
 
@@ -6,41 +6,75 @@
 
 # ir
 
-**An information-retrieval substrate for agentic systems** — one uniform
-“find the relevant things in this corpus” contract that scales from an ad-hoc
-search over an ephemeral list to a maintained capability-discovery engine.
+`ir` is an information-retrieval substrate for agentic systems: one “find the relevant things in this corpus” contract over skills, packages, documents, sessions, MCP tools or any mapping. It retrieves candidates, commits to a small high-precision subset (or abstains), and loads each committed item’s payload only when asked.
 
-Give an agent *one* search tool, not fifty tool schemas. `ir` retrieves
-candidates, **commits to a small high-precision subset** (the distractor problem
-is the central selection risk — fewer, better candidates beat more), and
-**discloses** each committed item’s payload only when asked.
+[For developers with a pulse →]()
+
+## For agents: the agentic layer
+
+**Skills.** `ir` ships two [Agent Skills](https://agentskills.io):
+
+| Skill             | Use it to                                                                   | Real files                                                |
+|-------------------|-----------------------------------------------------------------------------|-----------------------------------------------------------|
+| `ir-search`       | search a user’s `ir` corpora and review the hits for real relevance         | `ir/data/skills/ir-search/` (ships with `pip install ir`) |
+| `ir-dev-workflow` | work on `ir` itself: module map, tests, conventions, the ir/raglab boundary | `skills/ir-dev-workflow/` (repository only)               |
+```bash
+gh skill install i2mint/ir ir-search --agent claude-code        # GitHub CLI with the `skill` command
+npx skills add i2mint/ir --skill ir-search                       # or the skills CLI
+```
+
+The consumer skill also travels inside the installed package. Find it with `python -c "import ir, os; print(os.path.join(ir.__path__[0], 'data', 'skills'))"`, then link it with the [`skill`](https://github.com/thorwhalen/skill) package (`skill link-skills <that path>`) or copy the folder into `~/.claude/skills/`. In a clone of this repository, Claude Code finds both skills through the relative symlinks in `.claude/skills/` (on Windows, clone with `git config core.symlinks true` and symlink permission, or install the skills as above).
+
+**Subagent and instructions.** `.claude/agents/ir-discover-agent.md` is a reviewing search subagent: it writes several queries, reads and grades the candidates, reformulates, and returns only the verified few. `.claude/CLAUDE.md` holds the project instructions a coding agent needs, including the ir/raglab boundary.
+
+**What an agent can do with `ir`:**
+
+- Give itself one search tool over a large catalogue (skills, MCP tools, packages, documents) instead of loading every schema into context.
+- Commit to the few results worth acting on, or abstain when nothing fits (`min_score=`, or `min_score="auto"` with a calibrated floor).
+- Search several corpora in one call (`ir.discover(["skills", "packages"], query)`) and get JSON-ready results (`.to_dict()`, `ir.tools.search`).
+
+A minimal runnable example, offline and with no model download (the `light` embedder is a numpy-only hashing embedder):
+
+```python
+import ir
+from ir.store import CorpusStore
+
+tools = [
+    {"name": "fetch_url", "description": "Fetch a web page over HTTP and return its text"},
+    {"name": "send_email", "description": "Send an email message to a recipient"},
+    {"name": "list_files", "description": "List the files in a directory"},
+]
+source = ir.CorpusSource.from_mcp_tools(tools)  # embeds name + description only
+corpus = ir.build(source, store=CorpusStore.memory(), embedder="light")
+
+result = ir.discover(corpus, "fetch the text of a web page", mode="dense")
+assert [item.name for item in result.results] == ["fetch_url"]
+
+nothing = ir.discover(corpus, "bake a chocolate cake", mode="dense", min_score=0.3)
+assert nothing.abstained  # no tool clears the floor, so the agent is told so
+```
 
 > ### Looking for a search *agent*?
 
-> **`ir` is a retrieval *substrate*, not a search agent — it has no agent of its
-> own.** `ir.discover` is a deterministic, single-shot `retrieve → select → disclose` pipeline: it embeds your query *verbatim* (no LLM query rewriting)
-> and commits via a score rule (no LLM reviewing the results). There is no
-> planner and no *back-edge* (evaluate → reformulate → search again) — and that
-> back-edge is precisely what makes a system an agent.
+> **`ir` is a retrieval *substrate*, not a search agent — it has no agent of its own.** `ir.discover` is a deterministic, single-shot `retrieve → select → disclose` pipeline: it embeds your query *verbatim* (no LLM query rewriting) and commits via a score rule (no LLM reviewing the results). There is no planner and no *back-edge* (evaluate → reformulate → search again) — and that back-edge is precisely what makes a system an agent.
 
-> If you want the **agent** — a planner, an LLM formulator that rewrites queries,
-> and the evaluator→reformulate loop over one or more `ir` corpora — reach for
-> **[`raglab`](https://github.com/thorwhalen/raglab)**, which is **built on top of
-> `ir`** (`raglab` imports `ir`; `ir` never imports `raglab`, so it stays
-> installable-light and offline-by-default).
+> If you want the **agent** — a planner, an LLM formulator that rewrites queries, and the evaluator→reformulate loop over one or more `ir` corpora — reach for **[`raglab`](https://github.com/thorwhalen/raglab)**, which is **built on top of `ir`** (`raglab` imports `ir`; `ir` never imports `raglab`, so it stays installable-light and offline-by-default).
 
-> Prefer to drive it from **Claude Code** instead of a coded agent? `ir` ships a
-> reviewing **search subagent** and an `ir-search` **skill** under
-> [`.claude/`]() — a lightweight “raglab-in-instructions” that formulates
-> queries, *reads and judges* candidates against your real intent, filters, and
-> reformulates, all on your Claude subscription (see
-> [`ir_10`]()).
+> Prefer to drive it from **Claude Code** instead of a coded agent? `ir` ships a reviewing **search subagent** and an `ir-search` **skill** (see [the agentic layer]()) — a lightweight “raglab-in-instructions” that formulates queries, *reads and judges* candidates against your real intent, filters, and reformulates, all on your Claude subscription (see [`ir_10`]()).
+
+## Quickstart
+
+```bash
+pip install ir
+```
+
 ```python
 import ir
 
-# Define a corpus, build the index (incremental), then discover:
-source = ir.CorpusSource.from_skills()  # or from_packages(), from_md_reports(),
-# from_claude_sessions(), from_files(...),
+# Define a corpus, build the index (incremental), then discover.
+source = ir.CorpusSource.from_skills()  # your agent skills (read through `priv`)
+# Other sources: from_packages(), from_md_reports(), from_claude_sessions(),
+# from_files(root), from_mapping(docs, name=...), from_mcp_tools(tools),
 # from_records(fetcher="mypkg.recall:records")  # records another package owns
 corpus = ir.build(source)  # embed + persist under XDG dirs
 result = ir.discover(corpus, "how do I deploy the app to the server")
@@ -52,32 +86,13 @@ print(result.to_dict())  # JSON-serializable (qh / HTTP ready)
 
 ## Install
 
-```bash
-pip install ir
-```
-
-`ir` is **light by default** — `numpy` + [`dol`](https://github.com/i2mint/dol)
-for storage, plus [`ef`](https://github.com/thorwhalen/ef) /
-[`vd`](https://github.com/i2mint/vd) for embedding and lexical/hybrid retrieval.
-Python ≥ 3.10.
+`ir` is **light by default** — `numpy` + [`dol`](https://github.com/i2mint/dol) for storage, plus [`ef`](https://github.com/thorwhalen/ef) / [`vd`](https://github.com/i2mint/vd) for embedding and lexical/hybrid retrieval. Python ≥ 3.10.
 
 Notes for the default (semantic) path:
 
-- The default embedder is `all-MiniLM-L6-v2` (384-dim, via
-  `sentence-transformers`), **downloaded on first build** (needs network) and
-  cached under `~/.cache/ir`. For a fast, offline, dependency-light run — tests,
-  CI, quick experiments — pass `embedder="light"` (a numpy-only hashing
-  embedder): `ir.build(source, embedder="light")`.
-- `ir` sets `USE_TF=0` on import so `transformers` does not pull in TensorFlow
-  (which crashes on some numpy ABIs); import `ir` before anything that imports
-  `transformers`.
-- Case generation (`ir.eval_gen`) and the optional LLM selector need an LLM via
-  [`aix`](https://github.com/thorwhalen/aix) — install the extra,
-  `pip install "ir[llm]"`. Scoring and evaluation themselves stay offline. The
-  LLM is an *injected callable* at every seam, so it can run on a Claude
-  subscription instead of a metered key — see
-  [`ir_10`]()
-  (MCP sampling for connectors / the Agent SDK for Claude Code).
+- The default embedder is `all-MiniLM-L6-v2` (384-dim, via `sentence-transformers`), **downloaded on first build** (needs network) and cached under `~/.cache/ir`. For a fast, offline, dependency-light run — tests, CI, quick experiments — pass `embedder="light"` (a numpy-only hashing embedder): `ir.build(source, embedder="light")`.
+- `ir` sets `USE_TF=0` on import so `transformers` does not pull in TensorFlow (which crashes on some numpy ABIs); import `ir` before anything that imports `transformers`.
+- Case generation (`ir.eval_gen`) and the optional LLM selector need an LLM via [`aix`](https://github.com/thorwhalen/aix) — install the extra, `pip install "ir[llm]"`. Scoring and evaluation themselves stay offline. The LLM is an *injected callable* at every seam, so it can run on a Claude subscription instead of a metered key — see [`ir_10`]() (MCP sampling for connectors / the Agent SDK for Claude Code).
 
 ## Install on a fresh server
 
@@ -109,9 +124,7 @@ A corpus is pinned to the embedder it was built with (its `embedder_id`, shown b
 | **select**   | `ir.select`    | commit to a distractor-robust subset, or abstain                                                                 |
 | **disclose** | `ir.disclose`  | load the heavy payload (SKILL.md body, package pointer, file text) for committed items — append-only             |
 
-`ir.discover` chains retrieve → select → disclose into the single agent-callable
-(and `qh`-exposable) tool. Pass a **list** of corpus names for single-shot
-*federated* discovery across several corpora:
+`ir.discover` chains retrieve → select → disclose into the single agent-callable (and `qh`-exposable) tool. Pass a **list** of corpus names for single-shot *federated* discovery across several corpora:
 
 ```python
 ir.discover(["skills", "packages"], "deploy the app")  # fan-out → fuse → select
@@ -120,14 +133,7 @@ ir.discover(
 )  # gate each source on its own floor
 ```
 
-Each source is searched and gated on its **own** calibrated abstention floor
-*before* any merging; the survivors then rank-fuse (weighted RRF via
-`ir.fuse_hits`) — raw scores never cross a source boundary, because scores from
-different corpora / embedders / modes live on incommensurable scales. Every hit
-carries its corpus name as `hit.source`, so same-id artifacts from different
-corpora stay distinct, attributable results. The caller names the sources;
-`ir` never chooses the set (source planning belongs to the agent layer —
-see [`raglab`](https://github.com/thorwhalen/raglab)).
+Each source is searched and gated on its **own** calibrated abstention floor *before* any merging; the survivors then rank-fuse (weighted RRF via `ir.fuse_hits`) — raw scores never cross a source boundary, because scores from different corpora / embedders / modes live on incommensurable scales. Every hit carries its corpus name as `hit.source`, so same-id artifacts from different corpora stay distinct, attributable results. The caller names the sources; `ir` never chooses the set (source planning belongs to the agent layer — see [`raglab`](https://github.com/thorwhalen/raglab)).
 
 ### Retrieve
 
@@ -135,23 +141,15 @@ see [`raglab`](https://github.com/thorwhalen/raglab)).
 hits = ir.search(corpus, "deploy app", mode="hybrid")  # dense | lexical | hybrid (RRF)
 ```
 
-Dense is exact brute-force cosine; `lexical` is Okapi BM25; `hybrid` fuses both
-by Reciprocal Rank Fusion (the strongest default for short, identifier-heavy
-capability text). Lexical/hybrid reuse [`vd`](https://github.com/i2mint/vd);
-dense needs only numpy.
+Dense is exact brute-force cosine; `lexical` is Okapi BM25; `hybrid` fuses both by Reciprocal Rank Fusion (the strongest default for short, identifier-heavy capability text). Lexical/hybrid reuse [`vd`](https://github.com/i2mint/vd); dense needs only numpy.
 
-Hybrid has a second fusion, `fusion="blend"` — a magnitude-preserving score
-blend instead of rank-RRF. RRF discards score magnitude, which is exactly what
-abstention calibration needs, so `blend` separates in-scope from out-of-scope
-queries far better (and even beats dense); the tradeoff is lower lexical recall
-on terse corpora, so RRF stays the default. Use `blend` when abstention matters
-— see [`ir_08`]().
+Hybrid has a second fusion, `fusion="blend"` — a magnitude-preserving score blend instead of rank-RRF. RRF discards score magnitude, which is exactly what abstention calibration needs, so `blend` separates in-scope from out-of-scope queries far better (and even beats dense); the tradeoff is lower lexical recall on terse corpora, so RRF stays the default. Use `blend` when abstention matters — see [`ir_08`]().
+
+`surface_weights={"deps": 2.0}` multiplies each surface-hit’s first-stage (fused) score by its kind’s weight before the per-artifact collapse, so a high-precision surface such as `Package(embed_deps=True)`’s `deps` can outrank prose chunks. The default weighs every surface equally. Weighted scores need their own abstention floor. To sweep weights on one corpus, map it under several labels in `ir.eval.compare_indexings(..., search_kw_by_label={"deps x2": {"surface_weights": {"deps": 2.0}}})`.
 
 #### Precision stage: cross-encoder rerank (opt-in)
 
-First-stage retrieval is tuned for recall; a cross-encoder re-scores the top `fetch_k`
-candidates against the query *jointly*, which suppresses jargon-sharing distractors.
-Single-shot and agent-free (the evaluator back-edge stays in `raglab`):
+First-stage retrieval is tuned for recall; a cross-encoder re-scores the top `fetch_k` candidates against the query *jointly*, which suppresses jargon-sharing distractors. Single-shot and agent-free (the evaluator back-edge stays in `raglab`):
 
 ```python
 hits = ir.search(
@@ -163,13 +161,7 @@ hits = ir.search(
 )  # read the whole artifact, not the matched surface
 ```
 
-`pip install 'ir[rerank]'` brings `sentence-transformers`; without it the search warns once
-and returns the first-stage ranking. `rerank=` also takes any `ef.Reranker` callable (a
-stub, a hosted model), and `rerank_text=` a `(corpus, meta) -> str` callable. The `"cross-encoder"` spec squashes the model’s raw logits through a sigmoid into (0, 1), so
-relative selectors keep working. A reranked hit’s score is the reranker’s, on its own scale,
-so its abstention floor is calibrated and stored separately (a callable you pass needs a stable
-`rerank_id` attribute for that): pass the same `rerank=` / `rerank_text=` to `ir.eval.calibrate_min_score`
-and `ir.discover(..., min_score="auto")` (see `ir.rerank`).
+`pip install 'ir[rerank]'` brings `sentence-transformers`; without it the search warns once and returns the first-stage ranking. `rerank=` also takes any `ef.Reranker` callable (a stub, a hosted model), and `rerank_text=` a `(corpus, meta) -> str` callable. The `"cross-encoder"` spec squashes the model’s raw logits through a sigmoid into (0, 1), so relative selectors keep working. A reranked hit’s score is the reranker’s, on its own scale, so its abstention floor is calibrated and stored separately (a callable you pass needs a stable `rerank_id` attribute for that): pass the same `rerank=` / `rerank_text=` to `ir.eval.calibrate_min_score` and `ir.discover(..., min_score="auto")` (see `ir.rerank`).
 
 ### Expand
 
@@ -178,12 +170,7 @@ passage = ir.expand(hit, corpus)  # ±1 chunk window (default)
 passage = ir.expand(hit, corpus, policy=ir.parent_policy())  # the whole artifact
 ```
 
-The matched chunk is rarely the unit you want to read, and the whole document
-is usually too much. `ir.expand` stitches a hit’s *stored sibling segments*
-into a mid-granularity `Passage` (retrieve → expand → rerank), with chunker
-overlap deduped and the hit’s identity and score untouched. Policies are
-injectable (`NeighborhoodPolicy`); `sentence_window_policy(k)` and
-`parent_policy()` ship. It also works through the disclosure seam:
+The matched chunk is rarely the unit you want to read, and the whole document is usually too much. `ir.expand` stitches a hit’s *stored sibling segments* into a mid-granularity `Passage` (retrieve → expand → rerank), with chunker overlap deduped and the hit’s identity and score untouched. Policies are injectable (`NeighborhoodPolicy`); `sentence_window_policy(k)` and `parent_policy()` ship. It also works through the disclosure seam:
 
 ```python
 ir.disclose(sel, expand=ir.sentence_window_policy(2), corpus=corpus)
@@ -192,8 +179,7 @@ ir.discover(
 )  # passages on committed items
 ```
 
-Each `Disclosure` then carries the stitched text as `.passage` (additive;
-`summary` stays the matched surface, `body` stays the pointer’s payload).
+Each `Disclosure` then carries the stitched text as `.passage` (additive; `summary` stays the matched surface, `body` stays the pointer’s payload).
 
 ### Select
 
@@ -205,9 +191,7 @@ sel = ir.select(
 )  # elbow cut, or "top_k" / "rel_threshold" / a callable
 ```
 
-The abstention floor is mode-specific (dense cosine, BM25, and RRF live on
-different scales), so rather than guess `min_score`, **calibrate** it from a case
-file and let `discover` load it:
+The abstention floor is mode-specific (dense cosine, BM25, and RRF live on different scales), so rather than guess `min_score`, **calibrate** it from a case file and let `discover` load it:
 
 ```python
 ev.calibrate_min_score(
@@ -218,22 +202,11 @@ ir.discover(
 )  # abstain by the calibrated floor
 ```
 
-Calibration separates in-scope from out-of-scope query top-scores and picks the
-floor that best splits them — see
-[`ir_07`]();
-it works best on `dense` / `lexical` (hybrid’s RRF scores barely separate).
-`min_score` defaults to `None` (never abstain), so abstention stays fully opt-in.
+Calibration separates in-scope from out-of-scope query top-scores and picks the floor that best splits them — see [`ir_07`](); it works best on `dense` / `lexical` (hybrid’s RRF scores barely separate). `min_score` defaults to `None` (never abstain), so abstention stays fully opt-in.
 
-The conservative defaults (`max_k=3`, `rel=0.9`) are tuned, not guessed — see
-[`ir_06`]();
-re-tune for your own corpus with `ev.sweep_selector` / `ir sweep-select`.
+The conservative defaults (`max_k=3`, `rel=0.9`) are tuned, not guessed — see [`ir_06`](); re-tune for your own corpus with `ev.sweep_selector` / `ir sweep-select`.
 
-Selection is *relative* (ratios to the top score), so one selector works across
-`dense` / `hybrid` / `lexical` whose absolute scales differ by orders of
-magnitude. The result carries auditable `signals` and a `reason` — no opaque
-“confidence” float. An optional LLM selector (`make_llm_selector`, lazy on
-[`aix`](https://github.com/thorwhalen/aix), injectable for tests) falls back to the
-heuristic on any failure.
+Selection is *relative* (ratios to the top score), so one selector works across `dense` / `hybrid` / `lexical` whose absolute scales differ by orders of magnitude. The result carries auditable `signals` and a `reason` — no opaque “confidence” float. An optional LLM selector (`make_llm_selector`, lazy on [`aix`](https://github.com/thorwhalen/aix), injectable for tests) falls back to the heuristic on any failure.
 
 ### Disclose
 
@@ -241,16 +214,11 @@ heuristic on any failure.
 payloads = ir.disclose(sel, level="body")  # "metadata" (no I/O) | "body" | "bundled"
 ```
 
-Disclosure is a *pure* read that follows the pointer already stored on each hit
-(`skill_path` / `path`); it never mutates the ranked hits and tolerates a stale
-pointer. Keeping the agent’s context append-only (to protect the prompt cache)
-is then the caller’s discipline — `ir` hands back additive payloads.
+Disclosure is a *pure* read that follows the pointer already stored on each hit (`skill_path` / `path`); it never mutates the ranked hits and tolerates a stale pointer. Keeping the agent’s context append-only (to protect the prompt cache) is then the caller’s discipline — `ir` hands back additive payloads.
 
 ### Graph & traverse (opt-in)
 
-Artifacts refer to each other — a package depends on packages, a skill has a
-parent. `ir` models those as a **semantic link graph**: a typed-edge `links`
-view on the store, populated at build time by an `EdgeExtractor`.
+Artifacts refer to each other — a package depends on packages, a skill has a parent. `ir` models those as a **semantic link graph**: a typed-edge `links` view on the store, populated at build time by an `EdgeExtractor`.
 
 ```python
 corpus = ir.build(
@@ -260,22 +228,21 @@ graph = ir.CorpusGraph(corpus)
 graph.neighbors("contaix", edge_type="REF")  # the package's dependencies
 ```
 
-`ir.traverse` walks that structure at query time under a pluggable `WalkPolicy`
-(*score frontier → select → expand → stop*). **Safety is the operator’s**: a
-visited-set, depth cap, and node budget live in `traverse` itself, so even a
-cyclic graph and a never-stopping policy terminate. The shipped
-`collapsed_tree_policy` is pure-vector — it routes a query that matches an
-artifact’s *summary* down to that artifact’s best *chunk*:
+`ir.traverse` walks that structure at query time under a pluggable `WalkPolicy` (*score frontier → select → expand → stop*). **Safety is the operator’s**: a visited-set, depth cap, and node budget live in `traverse` itself, so even a cyclic graph and a never-stopping policy terminate. The shipped `collapsed_tree_policy` is pure-vector — it routes a query that matches an artifact’s *summary* down to that artifact’s best *chunk*:
 
 ```python
 hits = ir.traverse(query, corpus, policy=ir.collapsed_tree_policy())
 ```
 
-The *summary* a query routes on can be an artifact’s own short field — or an
-**LLM-authored synopsis**. `ir.with_synopsis` wraps any indexing strategy to add
-one `synopsis` surface per artifact at build time (the document-summary-index
-pattern: build-time cost, ≈free at query time), and that synopsis becomes the
-collapsed-tree router:
+Dependencies are also a ranking signal, seeded by the caller. `graph.reverse_neighbors("networkx")` lists a library’s dependents and `graph.fan_in(...)` counts them. `ir.reverse_dependency_policy(seeds=[...])` walks those reverse edges, so a package that depends on a domain library but never says so in prose is still found. At ranking time, `ir.search(..., dep_boost=ir.dependency_evidence_boost({"networkx"}, weight=0.02))` adds score to candidates whose `deps` include a listed library. `ir` never chooses the libraries: that is the agent layer’s planning decision.
+
+```python
+policy = ir.reverse_dependency_policy(seeds=["networkx"], fan_in_weight=0.1)
+walked = ir.traverse(query, corpus, policy=policy)
+hits = ir.fuse_hits({"flat": ir.search(corpus, query, mode="hybrid"), "deps": walked})
+```
+
+The *summary* a query routes on can be an artifact’s own short field — or an **LLM-authored synopsis**. `ir.with_synopsis` wraps any indexing strategy to add one `synopsis` surface per artifact at build time (the document-summary-index pattern: build-time cost, ≈free at query time), and that synopsis becomes the collapsed-tree router:
 
 ```python
 strat = ir.with_synopsis(
@@ -287,37 +254,22 @@ hits = ir.traverse(
 )  # routes via the synopsis
 ```
 
-`synthesize` is injectable (a test double or your own summarizer); omitted, it is
-built lazily on [`aix`](https://github.com/thorwhalen/aix) so `import ir` stays
-offline. Synopses are derived state with a stamped synthesizer identity, so a
-prompt/model change re-synthesizes only the affected artifacts on the next
-incremental `build` — no silent staleness.
+`synthesize` is injectable (a test double or your own summarizer); omitted, it is built lazily on [`aix`](https://github.com/thorwhalen/aix) so `import ir` stays offline. Synopses are derived state with a stamped synthesizer identity, so a prompt/model change re-synthesizes only the affected artifacts on the next incremental `build` — no silent staleness.
 
-**Pay only where it helps.** `when=` gates synthesis per artifact (default
-`"always"`). `ir.thin_description_predicate` selects packages whose description is
-empty or short — their README is the only topical signal — so the LLM runs on those
-few and is never called for the well-described rest:
+**Pay only where it helps.** `when=` gates synthesis per artifact (default `"always"`). `ir.thin_description_predicate` selects packages whose description is empty or short — their README is the only topical signal — so the LLM runs on those few and is never called for the well-described rest:
 
 ```python
 strat = ir.with_synopsis(ir.Package(), when=ir.thin_description_predicate)
 # threshold: when=ir.make_thin_description_predicate(min_chars=80)
 ```
 
-The predicate’s identity (`when_id`) is part of the strategy id, so changing it
-re-processes the corpus and re-synthesizes every artifact the new gate selects.
+The predicate’s identity (`when_id`) is part of the strategy id, so changing it re-processes the corpus and re-synthesizes every artifact the new gate selects.
 
-**Flat top-k stays the default** — `traverse` is opt-in, and a policy earns its
-keep only by beating flat+rerank on your eval set (a strong flat retriever wins
-simple lookup; graph methods cost far more). Results are ordinary `SearchHit`s
-with additive `metadata["walk_depth"]` / `["seed"]` provenance, so `select` /
-`disclose` compose unchanged. This is the **semantic link graph** (cyclic,
-query-time) — distinct from `ef.artifact_graph` (the acyclic build-time
-derivation DAG).
+**Flat top-k stays the default** — `traverse` is opt-in, and a policy earns its keep only by beating flat+rerank on your eval set (a strong flat retriever wins simple lookup; graph methods cost far more). Results are ordinary `SearchHit`s with additive `metadata["walk_depth"]` / `["seed"]` provenance, so `select` / `disclose` compose unchanged. This is the **semantic link graph** (cyclic, query-time) — distinct from `ef.artifact_graph` (the acyclic build-time derivation DAG).
 
 ## Evaluation
 
-`ir.eval` scores discovery quality offline (reusing
-[`ef`](https://github.com/thorwhalen/ef)’s retrieval metrics):
+`ir.eval` scores discovery quality offline (reusing [`ef`](https://github.com/thorwhalen/ef)’s retrieval metrics):
 
 ```python
 from ir import eval as ev
@@ -333,18 +285,14 @@ ev.sweep_selector(corpus, cases)  # tune max_k × rel; .best() / .frontier() / .
 ev.distractor_robustness_curve(source.scope, probes)  # accuracy vs catalog size
 ```
 
-`evaluate_selection`’s headline is the **conditional commit rate** — the
-selection decision *isolated* from retrieval (did the selector keep the gold,
-*given* retrieval surfaced it?). `sweep_selector` scores a whole `max_k × rel`
-grid against the cases off **one** retrieval pass, so the selector defaults can
-be read off the data (`.best()`) rather than guessed. Generate cases by
-back-translation with `ir.eval_gen` (needs an LLM; scoring stays offline).
+`evaluate_selection`’s headline is the **conditional commit rate** — the selection decision *isolated* from retrieval (did the selector keep the gold, *given* retrieval surfaced it?). `sweep_selector` scores a whole `max_k × rel` grid against the cases off **one** retrieval pass, so the selector defaults can be read off the data (`.best()`) rather than guessed. Generate cases by back-translation with `ir.eval_gen` (needs an LLM; scoring stays offline).
 
 ## CLI
 
 ```bash
 ir build skills                          # build/update a preset corpus
 ir search skills "deploy the app"        # rank candidates (retrieval only)
+ir search skills "deploy the app" --rerank cross-encoder  # + cross-encoder precision stage (ir[rerank])
 ir discover skills "deploy the app"      # retrieve -> select
 ir discover skills "deploy the app" --disclose       # + load bodies
 ir discover skills "deploy the app" --min-score auto # + calibrated abstention
@@ -357,7 +305,7 @@ ir maintain --all                        # run due background work (idempotent; 
 ir schedule                              # install/inspect the OS job that runs it
 ir register notes files --root ~/notes --pattern '.*\.md$'  # register a custom corpus
 ir rm notes                              # unregister (keeps built data)
-ir eval-gen skills skills_eval.jsonl     # generate eval cases (needs oa/LLM)
+ir eval-gen skills skills_eval.jsonl     # generate eval cases (needs aix/LLM)
 ir eval skills skills_eval.jsonl         # score retrieval on a case file
 ir eval-select skills skills_eval.jsonl  # score the selection stage
 ir sweep-select skills skills_eval.jsonl # tune the selector (max_k × rel) on your corpus
@@ -366,15 +314,9 @@ ir calibrate-min-score skills skills_eval.jsonl --persist  # calibrate the abste
 
 ## Keeping an index fresh
 
-`ir maintain` does the work that a corpus’s policy says is due — an incremental
-rebuild when reindex is due, LLM synopses inside their downtime window — and
-no-ops everything that is not. It is idempotent, so it is safe to run as often as
-you like.
+`ir maintain` does the work that a corpus’s policy says is due — an incremental rebuild when reindex is due, LLM synopses inside their downtime window — and no-ops everything that is not. It is idempotent, so it is safe to run as often as you like.
 
-Something has to *call* it, though, and a corpus that nobody rebuilds keeps
-answering searches confidently from months-old content. `ir schedule` installs
-that caller — a launchd agent on macOS, a crontab block elsewhere — and then lets
-you operate it:
+Something has to *call* it, though, and a corpus that nobody rebuilds keeps answering searches confidently from months-old content. `ir schedule` installs that caller — a launchd agent on macOS, a crontab block elsewhere — and then lets you operate it:
 
 ```bash
 ir schedule                # ensure a schedule exists (creates one if there is none)
@@ -385,41 +327,33 @@ ir schedule --remove       # stop it and delete the definition
 ir schedule --dry-run      # print the plist/crontab that would be written
 ```
 
-Bare `ir schedule` is idempotent in the way that matters: it creates a schedule
-when there is none, and when one already exists it reports it and the commands
-above rather than silently reinstalling over an interval you tuned.
+Bare `ir schedule` is idempotent in the way that matters: it creates a schedule when there is none, and when one already exists it reports it and the commands above rather than silently reinstalling over an interval you tuned.
 
-The job is pinned to the absolute interpreter that installed it, because neither
-launchd nor cron resolves `ir` on your shell’s `PATH`, and it carries the
-environment ir reads (`$PP`, `$PTH_FILEPATH`, `IR_*`, `XDG_*`) — launchd starts
-jobs with a near-empty environment, and without those the `packages` and
-`reports` corpora fail every time the job fires while it still exits 0.
+The job is pinned to the absolute interpreter that installed it, because neither launchd nor cron resolves `ir` on your shell’s `PATH`, and it carries the environment ir reads (`$PP`, `$PTH_FILEPATH`, `IR_*`, `XDG_*`) — launchd starts jobs with a near-empty environment, and without those the `packages` and `reports` corpora fail every time the job fires while it still exits 0.
 
-**An existing definition is data, not a template.** Only a fresh install
-snapshots your shell; `--every` and `--restart` carry the stored environment
-forward untouched, so operating a working schedule from a shell that happens to
-lack `$PP` never silently re-points it at a different corpus store. To
-re-snapshot deliberately: `ir schedule --remove && ir schedule`.
+**An existing definition is data, not a template.** Only a fresh install snapshots your shell; `--every` and `--restart` carry the stored environment forward untouched, so operating a working schedule from a shell that happens to lack `$PP` never silently re-points it at a different corpus store. To re-snapshot deliberately: `ir schedule --remove && ir schedule`.
 
-`--status` is the health check. It reports the last run and the last log line,
-and flags three failures that otherwise look like success: an interpreter that no
-longer exists (a rebuilt pyenv version or recreated venv leaves a job that fires
-on time and does nothing), a job whose environment is missing something your
-shell has, and a non-zero exit status from the last run. `--restart` re-pins the
-interpreter.
+`--status` is the health check. It reports the last run and the last log line, and flags three failures that otherwise look like success: an interpreter that no longer exists (a rebuilt pyenv version or recreated venv leaves a job that fires on time and does nothing), a job whose environment is missing something your shell has, and a non-zero exit status from the last run. `--restart` re-pins the interpreter.
 
-**`ir` still does not run a scheduler.** It writes a definition, hands it to the
-OS, and exits: no daemon, no in-process timer. launchd/cron remain the executor,
-exactly as `ir.policy` describes.
+**`ir` still does not run a scheduler.** It writes a definition, hands it to the OS, and exits: no daemon, no in-process timer. launchd/cron remain the executor, exactly as `ir.policy` describes.
 
-## Design
+## For developers with a pulse
 
-The design is grounded in a set of capability-discovery research reports and
-eval-run findings under `misc/docs/` (`ir_01`–`ir_08`): the single-search-tool
-pattern, indexing & embedding strategy, evaluation, the `ef` + `vd` reuse
-analysis, the dense-vs-lexical-vs-hybrid eval, selector tuning, abstention-floor
-calibration, and magnitude-preserving fusion. `ir` is light by default (numpy /
-`dol`) and reuses the ecosystem (`ef`, `vd`, `oa`) only where it composes cleanly.
+**Set up and run the tests.** The suite is hermetic (light embedder, in-memory stores, no network) and doctests count:
+
+```bash
+git clone https://github.com/i2mint/ir && cd ir
+uv venv -q .venv && . .venv/bin/activate
+uv pip install -q -e ".[dev]"
+python -m pytest -q --doctest-modules ir tests
+ruff check ir && ruff format --check ir
+```
+
+**Contributing.** The `ir-dev-workflow` skill (`skills/ir-dev-workflow/SKILL.md`) is also the human contributor guide: the module map, the CLI grammar golden, the conventions review enforces, and the ir/raglab boundary. New arguments default to today’s behaviour. Don’t bump the version: CI does that when a pull request merges to `master`, and the merge publishes to PyPI. `thorwhalen/raglab` depends on `ir`, so keep its tests green.
+
+**Design.** The design is grounded in a set of capability-discovery research reports and eval-run findings under `misc/docs/` (`ir_01`–`ir_10`): the single-search-tool pattern, indexing & embedding strategy, evaluation, the `ef` + `vd` reuse analysis, the dense-vs-lexical-vs-hybrid eval, selector tuning, abstention-floor calibration, magnitude-preserving fusion, the composable search-agent architecture (`ir_09`) and LLM routing (`ir_10`). `ir` is light by default (numpy / `dol`) and reuses the ecosystem (`ef`, `vd`, and `aix` for the opt-in LLM seams) only where it composes cleanly.
+
+**Where to ask.** Open an issue on [i2mint/ir](https://github.com/i2mint/ir/issues). Issue #1 is the roadmap and epic #38 tracks the agentic-search direction.
 
 <p class="epythet-aggregates">This documentation as a single file: <a href="ir.md">ir.md</a> (Markdown, for agents).</p>
 
@@ -668,7 +602,7 @@ ir discover skills "deploy app" --min-score auto  # use the calibrated floor
 | [`register`](_autosummary/ir.cli.html.md#ir.cli.register)(name, kind, \*[, root, pattern, ...])     | Register a named corpus.                                                       |
 | [`rm`](_autosummary/ir.cli.html.md#ir.cli.rm)(name)                                           | Unregister a corpus (does not delete its built data).                          |
 | [`schedule`](_autosummary/ir.cli.html.md#ir.cli.schedule)(\*[, every, status, restart, ...])        | Install, inspect, and operate the OS job that runs `ir maintain`.              |
-| [`search`](_autosummary/ir.cli.html.md#ir.cli.search)(name, query, \*[, k, mode, fusion])         | Search a built corpus and print the top-k hits.                                |
+| [`search`](_autosummary/ir.cli.html.md#ir.cli.search)(name, query, \*[, k, mode, fusion, ...])    | Search a built corpus and print the top-k hits.                                |
 | [`sweep_select`](_autosummary/ir.cli.html.md#ir.cli.sweep_select)(name, cases, \*[, strategy, ...])     | Sweep selector knobs (max_k × rel) against a case file; print the grid + best. |
 
 ### ir.cli.build(name, , embedder=None, full=True)
@@ -795,13 +729,17 @@ remove: stop the schedule and delete its definition.
 dry_run: print the definition that would be written, and write nothing.
 backend: launchd | cron (default: whichever this machine provides).
 
-### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf')
+### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface')
 
 Search a built corpus and print the top-k hits.
 
 mode: dense (cosine) | lexical (BM25) | hybrid (dense + BM25 fused). fusion
 (hybrid only): rrf (rank-based, default) | blend (magnitude-preserving;
-better abstention separability — see ir_08).
+better abstention separability — see ir_08). `--rerank cross-encoder` adds
+the cross-encoder precision stage (needs the `ir[rerank]` extra; without it
+the search warns and keeps the first-stage ranking); `--rerank-text`
+picks what it reads: surface (default) | artifact. Reranked scores are on the
+reranker’s own scale.
 
 ### ir.cli.sweep_select(name, cases, , strategy='conservative', mode='hybrid', k=10, objective='selection_f1')
 
@@ -1873,7 +1811,7 @@ class was missing). Generate abstention cases with [`ir.eval_gen`](_autosummary/
 * **Returns:**
   a [`MinScoreCalibration`](_autosummary/ir.eval.html.md#ir.eval.MinScoreCalibration).
 
-### ir.eval.compare_indexings(corpora, cases, , themes, probes, k=20, named_sets=None, mode='hybrid', rank_depth=1000, gains={'core': 3.0, 'none': 0.0, 'strong': 2.0, 'tangential': 0.0, 'uses-tools': 1.0}, surfaces=None, \*\*search_kw)
+### ir.eval.compare_indexings(corpora, cases, , themes, probes, k=20, named_sets=None, mode='hybrid', rank_depth=1000, gains={'core': 3.0, 'none': 0.0, 'strong': 2.0, 'tangential': 0.0, 'uses-tools': 1.0}, surfaces=None, search_kw_by_label=None, \*\*search_kw)
 
 A/B (or N-way) regression gate over indexing / embedder configurations.
 
@@ -1888,6 +1826,13 @@ every named FP/FN id — so a change’s effect is quantified *per package*.
 that [`ComparisonReport.regressions()`](_autosummary/ir.eval.html.md#ir.eval.ComparisonReport.regressions) compares against. Each ranking is
 fetched once to depth `rank_depth` (deep enough that even a buried named id
 gets a real rank) and sliced at `k` for the `@k` metrics.
+
+`search_kw_by_label` overrides search settings per label, on top of the
+shared `mode` / `surfaces` / `**search_kw`: map one corpus under several
+labels to compare *search* configurations rather than indexings, e.g.
+`{"deps x2": {"surface_weights": {"deps": 2.0}}}`. Any
+[`ir.retrieve.search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search) keyword except `k` (the depth is `rank_depth`)
+and `per_artifact` (rankings are per artifact).
 
 * **Return type:**
   [`ComparisonReport`](_autosummary/ir.eval.html.md#ir.eval.ComparisonReport)
@@ -2549,6 +2494,7 @@ unification stays open, but the two are distinct substrates.
 | [`canonical_node_id`](_autosummary/ir.graph.html.md#ir.graph.canonical_node_id)(target, \*, source)    | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.       |
 |-------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
 | [`default_edge_extractor`](_autosummary/ir.graph.html.md#ir.graph.default_edge_extractor)(artifact_id, ...) | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT. |
+| [`normalize_dist_name`](_autosummary/ir.graph.html.md#ir.graph.normalize_dist_name)(name)                | A dependency spec's bare name, PEP 503-normalized (`-`/`_`/`.` -> `-`).      |
 
 ### Classes
 
@@ -2583,6 +2529,24 @@ The edge types present on *node_id* (`[]` if none).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+#### fan_in(node_id, , edge_type='REF')
+
+How many artifacts point at *node_id* by *edge_type* (its in-degree).
+
+With `REF` dependency edges this is the number of dependents, a
+PageRank-style centrality prior: a widely depended-on library is central
+to the corpus.
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+#### max_fan_in(, edge_type='REF')
+
+The largest [`fan_in()`](_autosummary/ir.graph.html.md#ir.graph.CorpusGraph.fan_in) over all targets (`0` without edges).
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
 #### neighbors(node_id, , edge_type=None)
 
 Outgoing neighbor ids of *node_id*, optionally of one *edge_type*.
@@ -2600,6 +2564,22 @@ edges *in this corpus*).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+#### reverse_neighbors(node_id, , edge_type='REF')
+
+The artifact ids whose *edge_type* edges point **at** *node_id*.
+
+The reverse of [`neighbors()`](_autosummary/ir.graph.html.md#ir.graph.CorpusGraph.neighbors): with the default [`REF`](_autosummary/ir.graph.html.md#ir.graph.REF) edges of
+[`default_edge_extractor()`](_autosummary/ir.graph.html.md#ir.graph.default_edge_extractor) (`package -> its deps`), this lists a
+library’s dependents. *node_id* may name an artifact of this corpus or a
+target outside it (a third-party dependency). For `REF` edges, string
+ids match through [`normalize_dist_name()`](_autosummary/ir.graph.html.md#ir.graph.normalize_dist_name) (case, and `-`/`_`/`.`,
+are ignored), so `"scikit_learn"` finds the dependents of
+`"scikit-learn"`; other edge types match ids exactly. A cross-corpus
+target is a `(source, artifact_id)` pair, matched exactly. Order is first-seen over the links view, de-duplicated.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 #### source
 
@@ -2709,6 +2689,22 @@ package `"AA"` depending on `"aa"` is recognized as a self-reference).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]
 
+### ir.graph.normalize_dist_name(name)
+
+A dependency spec’s bare name, PEP 503-normalized (`-`/`_`/`.` -> `-`).
+
+The one comparison key for library names: the reverse dependency index and
+[`ir.dependency_evidence_boost()`](_autosummary/ir.html.md#ir.dependency_evidence_boost) both match through it, so
+`"scikit_learn"` finds a package that depends on `"Scikit-Learn>=1"`.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> normalize_dist_name("Scikit_Learn[extra]>=1.2")
+'scikit-learn'
+```
+
 
 # _autosummary/ir.html.md
 
@@ -2771,11 +2767,13 @@ the reviewing search subagent shipped under `.claude/`.
 | [`retrievers`](_autosummary/ir.html.md#ir.retrievers)(\*\*search_defaults)                    | A lazy `Mapping[name, Retriever]` view over the registry (ir_09 §8).                                                                       |
 | [`retriever_for`](_autosummary/ir.html.md#ir.retriever_for)(name, \*\*search_defaults)           | A [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.                  |
 | [`fuse_hits`](_autosummary/ir.html.md#ir.fuse_hits)(hits_by_source, \*[, rrf_k, ...])        | Merge per-source ranked hit lists into one ranking — by rank, not score.                                                                   |
+| [`dependency_evidence_boost`](_autosummary/ir.html.md#ir.dependency_evidence_boost)(relevant_libs, \*, ...)  | A `dep_boost` for [`search()`](_autosummary/ir.html.md#ir.search): reward dependencies on *relevant_libs*.                       |
 | [`records_for_artifact`](_autosummary/ir.html.md#ir.records_for_artifact)(store_or_corpus, ...[, ...])  | All stored records of *artifact_id*, ordered by `surface_index`.                                                                           |
 | [`default_edge_extractor`](_autosummary/ir.html.md#ir.default_edge_extractor)(artifact_id, ...)           | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.                                                               |
 | [`canonical_node_id`](_autosummary/ir.html.md#ir.canonical_node_id)(target, \*, source)              | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.                                                                     |
 | [`traverse`](_autosummary/ir.html.md#ir.traverse)(query, store, \*, policy[, ...])          | Walk *store* from *query* under *policy*, returning the top-*k* hits.                                                                      |
 | [`collapsed_tree_policy`](_autosummary/ir.html.md#ir.collapsed_tree_policy)(\*[, summary_kinds, ...])    | The pure-vector summary-routing / collapsed-tree [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy).                              |
+| [`reverse_dependency_policy`](_autosummary/ir.html.md#ir.reverse_dependency_policy)(\*, seeds[, ...])        | A [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy) that walks dependency edges backwards from *seeds*.                          |
 | [`expand`](_autosummary/ir.html.md#ir.expand)(hit, corpus, \*[, policy])                  | Expand *hit* into a [`Passage`](_autosummary/ir.html.md#ir.Passage) of its neighborhood in *corpus*.                              |
 | [`sentence_window_policy`](_autosummary/ir.html.md#ir.sentence_window_policy)([k])                        | ±\*k\* same-kind neighbors around the seed (NEXT/PREV expansion).                                                                          |
 | [`parent_policy`](_autosummary/ir.html.md#ir.parent_policy)()                                    | The whole artifact (small-to-big): every stored surface, plan order.                                                                       |
@@ -2896,6 +2894,24 @@ The edge types present on *node_id* (`[]` if none).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+#### fan_in(node_id, , edge_type='REF')
+
+How many artifacts point at *node_id* by *edge_type* (its in-degree).
+
+With `REF` dependency edges this is the number of dependents, a
+PageRank-style centrality prior: a widely depended-on library is central
+to the corpus.
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+#### max_fan_in(, edge_type='REF')
+
+The largest [`fan_in()`](_autosummary/ir.html.md#ir.CorpusGraph.fan_in) over all targets (`0` without edges).
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
 #### neighbors(node_id, , edge_type=None)
 
 Outgoing neighbor ids of *node_id*, optionally of one *edge_type*.
@@ -2913,6 +2929,22 @@ edges *in this corpus*).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+#### reverse_neighbors(node_id, , edge_type='REF')
+
+The artifact ids whose *edge_type* edges point **at** *node_id*.
+
+The reverse of [`neighbors()`](_autosummary/ir.html.md#ir.CorpusGraph.neighbors): with the default `REF` edges of
+[`default_edge_extractor()`](_autosummary/ir.html.md#ir.default_edge_extractor) (`package -> its deps`), this lists a
+library’s dependents. *node_id* may name an artifact of this corpus or a
+target outside it (a third-party dependency). For `REF` edges, string
+ids match through `normalize_dist_name()` (case, and `-`/`_`/`.`,
+are ignored), so `"scikit_learn"` finds the dependents of
+`"scikit-learn"`; other edge types match ids exactly. A cross-corpus
+target is a `(source, artifact_id)` pair, matched exactly. Order is first-seen over the links view, de-duplicated.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 #### source
 
@@ -2970,6 +3002,41 @@ Any mapping `{id -> raw}` (dict, `dol` store) as a corpus.
 
 * **Return type:**
   [`CorpusSource`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource)
+
+#### *classmethod* from_mcp_tools(tools, , name='tools', strategy=None, \*\*kwargs)
+
+A catalogue of MCP tools as a corpus, for tool search.
+
+Each tool is indexed on `name + description` only, through the
+[`Skill`](_autosummary/ir.strategy.html.md#ir.strategy.Skill) strategy: its parameter schema never enters
+the embedded text (ir_02 §4, “the body carries no retrieval
+responsibility”). The schema still drives invalidation, through
+`mcp_tool_signal()`, so a changed schema re-embeds the tool. Its
+top-level argument names ride along as the `param_names` metadata of
+every hit, so a caller can see what a tool takes without loading it.
+
+`tools` is an iterable of tool records, a `{name: tool}` mapping (the
+key names a record that has no `name`; a record’s own name wins), or
+a fetcher (a zero-argument callable or a `"module:attr"` reference,
+see `resolve_fetcher()`). A record is duck-typed (see
+`mcp_tool_record()`), so `ir` takes no MCP dependency; an adapter
+for a specific client lives with the consumer. Tool names are the
+artifact ids and must be unique: namespace them (`"server.tool"`)
+before merging several servers’ catalogues.
+
+* **Return type:**
+  [`CorpusSource`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource)
+
+```pycon
+>>> src = CorpusSource.from_mcp_tools(
+...     [{"name": "ping", "description": "Check the server is up"}]
+... )
+>>> plan = src.indexing_strategy.decompose("ping", src.scope["ping"])
+>>> print(plan.surfaces[0].text)
+ping
+
+Check the server is up
+```
 
 #### *classmethod* from_md_reports(, name='reports', projects_root=None, strategy=None, recursive=True, exclude_dirs=None, \*\*kwargs)
 
@@ -3804,6 +3871,37 @@ The smart-default [`MaintenancePolicy`](_autosummary/ir.html.md#ir.MaintenancePo
 * **Return type:**
   [`MaintenancePolicy`](_autosummary/ir.policy.html.md#ir.policy.MaintenancePolicy)
 
+### ir.dependency_evidence_boost(relevant_libs, , weight, saturate=1, deps_field='deps')
+
+A `dep_boost` for [`search()`](_autosummary/ir.html.md#ir.search): reward dependencies on *relevant_libs*.
+
+Reads the candidate’s `deps` filter field (as [`Package`](_autosummary/ir.strategy.html.md#ir.strategy.Package)
+stores it), reduces each spec to its bare, PEP 503-normalized name, and
+returns `weight * min(n, saturate) / saturate` where `n` counts the
+dependencies found in *relevant_libs*. With the default `saturate=1` a
+single relevant dependency earns the full `weight`. A structural signal,
+cheap and model-free, that a prose reranker cannot be fooled out of: an
+async-task package whose README says “DAG” does not depend on graph
+libraries.
+
+*relevant_libs* is the **caller’s** call: which libraries matter for a goal is
+a planning decision that belongs to the agent layer, never to `ir`.
+`weight` is added to the score on the search’s scale (an RRF fused score is
+near `0.03`, a cosine near `0.5`, a sigmoid reranker in `(0, 1)`), so
+tune it per configuration.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+```pycon
+>>> from ir.base import SearchHit
+>>> boost = dependency_evidence_boost({"networkx"}, weight=0.1)
+>>> boost(SearchHit("unbox", "description", 0.4, "", {"deps": ["networkx>=3"]}))
+0.1
+>>> boost(SearchHit("au", "description", 0.5, "", {"deps": ["anyio"]}))
+0.0
+```
+
 ### ir.disclose(selection, , level='body', loader=None, store=None, expand=None, corpus=None)
 
 Reveal the payload of each selected hit at `level` — append-only, pure.
@@ -4296,6 +4394,39 @@ set. `search_defaults` apply to every source.
 
 * **Return type:**
   [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
+### ir.reverse_dependency_policy(, seeds, edge_type='REF', fan_in_weight=0.0, proximity_weight=0.0)
+
+A [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy) that walks dependency edges backwards from *seeds*.
+
+*seeds* are library ids the **caller** deems relevant to the query (ir never
+chooses them: picking the domain libraries for a goal is the planner’s job,
+in the agent layer). The walk commits each seed that is an artifact of the
+corpus, then its dependents (the artifacts whose `edge_type` edges point
+at it), then theirs, up to [`traverse()`](_autosummary/ir.html.md#ir.traverse)’s `max_depth`. A seed outside
+the corpus (a third-party library) routes without being a result. So a
+package that depends on a domain library but never says so in prose is
+still found.
+
+Each result scores its best surface’s cosine to the query, plus
+`fan_in_weight` times its normalized fan-in (its share of the most
+depended-on target, a centrality prior), plus `proximity_weight / (1 +
+hops)` (closer to a seed scores higher). Both weights default to `0`, so
+the score is plain cosine. Hits carry `metadata["walk_depth"]`,
+`metadata["fan_in"]` and, for dependents, `metadata["seed"]`.
+
+The store passed to [`traverse()`](_autosummary/ir.html.md#ir.traverse) is a [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus) built
+with an edge extractor (e.g. [`ir.default_edge_extractor()`](_autosummary/ir.html.md#ir.default_edge_extractor), whose
+`REF` edges run from a package to its dependencies). Fuse the walk’s hits
+with flat search through [`ir.fuse_hits()`](_autosummary/ir.html.md#ir.fuse_hits).
+
+* **Return type:**
+  [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy)
+
+```pycon
+>>> policy = reverse_dependency_policy(seeds=["networkx"])
+>>> hits = traverse(query, corpus, policy=policy)
+```
 
 ### ir.search(corpus, query, \*\*kwargs)
 
@@ -5296,6 +5427,12 @@ do. It is the shared cross-source merge primitive consumed by federated
 Every search hit carries its corpus name as `source`
 and its surface’s plan position as `surface_index`.
 
+Two optional ranking signals act inside [`search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search): `surface_weights`
+multiplies the first-stage score per surface kind, and `dep_boost` adds a
+structural score per candidate after the reranker (the shipped
+[`dependency_evidence_boost()`](_autosummary/ir.retrieve.html.md#ir.retrieve.dependency_evidence_boost) rewards dependencies on a caller-supplied
+library set). Both default to off.
+
 [`records_for_artifact()`](_autosummary/ir.retrieve.html.md#ir.retrieve.records_for_artifact) is the hit-operation beneath retrieval-time
 context expansion: given a hit’s `artifact_id`, it returns *all* of that
 artifact’s stored records (its sibling surfaces), ordered — resolved through
@@ -5310,16 +5447,18 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 | [`DFLT_RRF_K`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_RRF_K)       | RRF rank constant — the `k` of `1 / (k + rank)` (standard default 60).                                                                                                                                                                                                                                                                                                                       |
 | [`DFLT_BLEND_ALPHA`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_BLEND_ALPHA) | Dense weight in the `"blend"` fusion convex combination (`1-alpha` on the bounded lexical term).                                                                                                                                                                                                                                                                                             |
 | [`DFLT_BM25_SAT_K`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_BM25_SAT_K)  | `bm25 -> bm25/(bm25+k)`, a bounded squash to `[0, 1)` that needs no *per-query* normalization (which would erase the absolute-magnitude signal abstention calibration depends on).                                                                                                                                                                                                           |
+| [`ScoreBoost`](_autosummary/ir.retrieve.html.md#ir.retrieve.ScoreBoost)       | `hit -> float`, added to each candidate's score after fusion and the reranker, before the per-artifact collapse.                                                                                                                                                                                                                                                                             |
 | [`Identity`](_autosummary/ir.retrieve.html.md#ir.retrieve.Identity)         | `None` (default — hits from different sources never merge; same id, different corpus = different artifact), the string `"pointer"` (merge hits whose [`pointer`](_autosummary/ir.base.html.md#ir.base.SearchHit.pointer) match — opt-in, for corpora that genuinely index the same files), or any `hit -> hashable` callable (a falsy key falls back to per-source identity). |
 | [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever)        | `(query, **overrides) -> list[SearchHit]` — ir_09's Retriever leaf (one query, one corpus) as a swappable callable.                                                                                                                                                                                                                                                                          |
 
 ### Functions
 
-| [`as_retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.as_retriever)(corpus_or_name, \*\*search_defaults)   | Bind ONE corpus to the uniform [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract.          |
-|------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| [`fuse_hits`](_autosummary/ir.retrieve.html.md#ir.retrieve.fuse_hits)(hits_by_source, \*[, rrf_k, ...])         | Merge per-source ranked hit lists into one ranking — by rank, not score.                                     |
-| [`records_for_artifact`](_autosummary/ir.retrieve.html.md#ir.retrieve.records_for_artifact)(store_or_corpus, ...[, ...])   | All stored records of *artifact_id*, ordered by `surface_index`.                                             |
-| [`search`](_autosummary/ir.retrieve.html.md#ir.retrieve.search)(corpus, query, \*[, k, filter, ...])         | Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit) for *query*. |
+| [`as_retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.as_retriever)(corpus_or_name, \*\*search_defaults)   | Bind ONE corpus to the uniform [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract.                  |
+|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| [`dependency_evidence_boost`](_autosummary/ir.retrieve.html.md#ir.retrieve.dependency_evidence_boost)(relevant_libs, \*, ...)   | A `dep_boost` for [`search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search): reward dependencies on *relevant_libs*. |
+| [`fuse_hits`](_autosummary/ir.retrieve.html.md#ir.retrieve.fuse_hits)(hits_by_source, \*[, rrf_k, ...])         | Merge per-source ranked hit lists into one ranking — by rank, not score.                                             |
+| [`records_for_artifact`](_autosummary/ir.retrieve.html.md#ir.retrieve.records_for_artifact)(store_or_corpus, ...[, ...])   | All stored records of *artifact_id*, ordered by `surface_index`.                                                     |
+| [`search`](_autosummary/ir.retrieve.html.md#ir.retrieve.search)(corpus, query, \*[, k, filter, ...])         | Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit) for *query*.         |
 
 ### Exceptions
 
@@ -5392,6 +5531,17 @@ can register an ir corpus as one source key without importing ir internals.
 
 alias of `Callable`[[…], `list[SearchHit]`]
 
+### ir.retrieve.ScoreBoost
+
+`hit -> float`, added to each candidate’s score
+after fusion and the reranker, before the per-artifact collapse. See
+[`dependency_evidence_boost()`](_autosummary/ir.retrieve.html.md#ir.retrieve.dependency_evidence_boost).
+
+* **Type:**
+  A ranking-time score boost
+
+alias of `Callable`[[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
 ### ir.retrieve.as_retriever(corpus_or_name, \*\*search_defaults)
 
 Bind ONE corpus to the uniform [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract.
@@ -5409,6 +5559,37 @@ the bound corpus on `.corpus` for introspection.
 >>> retr = as_retriever(corpus, mode="hybrid", k=20)
 >>> hits = retr("how do I deploy the app")
 >>> hits = retr("deploy", filter={"owner": "me"})
+```
+
+### ir.retrieve.dependency_evidence_boost(relevant_libs, , weight, saturate=1, deps_field='deps')
+
+A `dep_boost` for [`search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search): reward dependencies on *relevant_libs*.
+
+Reads the candidate’s `deps` filter field (as [`Package`](_autosummary/ir.strategy.html.md#ir.strategy.Package)
+stores it), reduces each spec to its bare, PEP 503-normalized name, and
+returns `weight * min(n, saturate) / saturate` where `n` counts the
+dependencies found in *relevant_libs*. With the default `saturate=1` a
+single relevant dependency earns the full `weight`. A structural signal,
+cheap and model-free, that a prose reranker cannot be fooled out of: an
+async-task package whose README says “DAG” does not depend on graph
+libraries.
+
+*relevant_libs* is the **caller’s** call: which libraries matter for a goal is
+a planning decision that belongs to the agent layer, never to `ir`.
+`weight` is added to the score on the search’s scale (an RRF fused score is
+near `0.03`, a cosine near `0.5`, a sigmoid reranker in `(0, 1)`), so
+tune it per configuration.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+```pycon
+>>> from ir.base import SearchHit
+>>> boost = dependency_evidence_boost({"networkx"}, weight=0.1)
+>>> boost(SearchHit("unbox", "description", 0.4, "", {"deps": ["networkx>=3"]}))
+0.1
+>>> boost(SearchHit("au", "description", 0.5, "", {"deps": ["anyio"]}))
+0.0
 ```
 
 ### ir.retrieve.fuse_hits(hits_by_source, , rrf_k=60, weights=None, identity=None, k=None)
@@ -5497,7 +5678,7 @@ siblings.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Record`](_autosummary/ir.base.html.md#ir.base.Record)]
 
-### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None)
+### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None, surface_weights=None, dep_boost=None)
 
 Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit) for *query*.
 
@@ -5534,6 +5715,30 @@ Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)
     (ir_09 §3). Identity by default (embed the query verbatim). When it
     returns several queries, ir runs each and fuses the results (best surface
     per artifact). See [`ir.make_llm_formulator()`](_autosummary/ir.html.md#ir.make_llm_formulator).
+  * **surface_weights** ([`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – `{"deps": 2.0}` to let a high-precision `deps` surface outrank prose
+    chunks. Each surface-hit’s first-stage score (the fused score in hybrid
+    mode) is multiplied by its kind’s weight (default 1.0). Each channel
+    still retrieves its own top `fetch_k`; the weights reorder those
+    candidates (in hybrid mode, the whole fused union) before the cut to
+    `fetch_k`, the reranker and the per-artifact collapse. Setting them
+    makes the search over-fetch like `rerank` does, and formulated
+    sub-searches inherit them. Kinds the corpus lacks are ignored; weights
+    must be finite and non-negative. Meant for the non-negative scores of
+    hybrid fusion and BM25 (a negative dense cosine moves *down* when
+    multiplied by a weight above 1). Weighted scores are on a different scale
+    from unweighted ones, so a calibrated floor does not apply to them
+    (`discover(min_score="auto")` warns and skips it). Default `None`
+    weighs every surface equally, as before.
+  * **dep_boost** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – added to each fetched candidate’s score after fusion and the reranker,
+    before the per-artifact collapse – a structural signal next to the
+    reranker’s textual one. [`dependency_evidence_boost()`](_autosummary/ir.retrieve.html.md#ir.retrieve.dependency_evidence_boost) builds one from
+    a caller-supplied library set. It reorders the fetched candidates (raise
+    `fetch_k` to show it more); boosted scores need their own abstention
+    floor (`discover(min_score="auto")` warns and skips it). Like
+    `rerank` and `surface_weights`, it makes the search
+    over-fetch (`max(k*5, 50)`) even with `per_artifact=False`, so pin
+    `fetch_k` when comparing runs with and without it. Default `None`:
+    no boost.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)]
 
@@ -5920,24 +6125,28 @@ independent of how it is indexed or stored:
 
 Smart-default constructors cover the common ways to define a source:
 `from_mapping()`, `from_files()`, `from_md_reports()`,
-`from_skills()`, `from_packages()`, `from_records()`.
+`from_skills()`, `from_packages()`, `from_records()`,
+`from_mcp_tools()`.
 
 ### Module Attributes
 
-| [`DFLT_EXCLUDE_DIRS`](_autosummary/ir.sources.html.md#ir.sources.DFLT_EXCLUDE_DIRS)        | Directory names never descended into when walking a docs tree for reports.                                                |
-|---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| [`DFLT_SESSIONS_SINCE_DAYS`](_autosummary/ir.sources.html.md#ir.sources.DFLT_SESSIONS_SINCE_DAYS) | Default look-back window (days) for [`CorpusSource.from_claude_sessions()`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource.from_claude_sessions). |
-| [`REPORT_DOC_GLOBS`](_autosummary/ir.sources.html.md#ir.sources.REPORT_DOC_GLOBS)         | The two per-project doc-tree roots reports are drawn from (relative globs).                                               |
-| [`REPO_DOC_SUBDIRS`](_autosummary/ir.sources.html.md#ir.sources.REPO_DOC_SUBDIRS)         | The doc-tree roots inside a repo (relative to the repo folder).                                                           |
+| [`DFLT_EXCLUDE_DIRS`](_autosummary/ir.sources.html.md#ir.sources.DFLT_EXCLUDE_DIRS)        | Directory names never descended into when walking a docs tree for reports.                                                                                                       |
+|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DFLT_SESSIONS_SINCE_DAYS`](_autosummary/ir.sources.html.md#ir.sources.DFLT_SESSIONS_SINCE_DAYS) | Default look-back window (days) for [`CorpusSource.from_claude_sessions()`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource.from_claude_sessions).                                                        |
+| [`MCP_TOOL_PARAM_KEYS`](_autosummary/ir.sources.html.md#ir.sources.MCP_TOOL_PARAM_KEYS)      | Fields a tool record may carry its parameter schema under, in lookup order: fastmcp's `parameters`, the MCP wire format's `inputSchema`, and the Anthropic API's `input_schema`. |
+| [`REPORT_DOC_GLOBS`](_autosummary/ir.sources.html.md#ir.sources.REPORT_DOC_GLOBS)         | The two per-project doc-tree roots reports are drawn from (relative globs).                                                                                                      |
+| [`REPO_DOC_SUBDIRS`](_autosummary/ir.sources.html.md#ir.sources.REPO_DOC_SUBDIRS)         | The doc-tree roots inside a repo (relative to the repo folder).                                                                                                                  |
 
 ### Functions
 
-| [`content_hash_signal`](_autosummary/ir.sources.html.md#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.             |
-|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| [`iter_pocket_repos`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.  |
-| [`iter_report_doc_folders`](_autosummary/ir.sources.html.md#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                   |
-| [`report_exclude_reason`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.      |
-| [`resolve_fetcher`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records. |
+| [`content_hash_signal`](_autosummary/ir.sources.html.md#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                 |
+|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| [`iter_pocket_repos`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.      |
+| [`iter_report_doc_folders`](_autosummary/ir.sources.html.md#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                       |
+| [`mcp_tool_record`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.       |
+| [`mcp_tool_signal`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`. |
+| [`report_exclude_reason`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.          |
+| [`resolve_fetcher`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.     |
 
 ### Classes
 
@@ -5995,6 +6204,41 @@ Any mapping `{id -> raw}` (dict, `dol` store) as a corpus.
 
 * **Return type:**
   [`CorpusSource`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource)
+
+#### *classmethod* from_mcp_tools(tools, , name='tools', strategy=None, \*\*kwargs)
+
+A catalogue of MCP tools as a corpus, for tool search.
+
+Each tool is indexed on `name + description` only, through the
+[`Skill`](_autosummary/ir.strategy.html.md#ir.strategy.Skill) strategy: its parameter schema never enters
+the embedded text (ir_02 §4, “the body carries no retrieval
+responsibility”). The schema still drives invalidation, through
+[`mcp_tool_signal()`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_signal), so a changed schema re-embeds the tool. Its
+top-level argument names ride along as the `param_names` metadata of
+every hit, so a caller can see what a tool takes without loading it.
+
+`tools` is an iterable of tool records, a `{name: tool}` mapping (the
+key names a record that has no `name`; a record’s own name wins), or
+a fetcher (a zero-argument callable or a `"module:attr"` reference,
+see [`resolve_fetcher()`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)). A record is duck-typed (see
+[`mcp_tool_record()`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_record)), so `ir` takes no MCP dependency; an adapter
+for a specific client lives with the consumer. Tool names are the
+artifact ids and must be unique: namespace them (`"server.tool"`)
+before merging several servers’ catalogues.
+
+* **Return type:**
+  [`CorpusSource`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource)
+
+```pycon
+>>> src = CorpusSource.from_mcp_tools(
+...     [{"name": "ping", "description": "Check the server is up"}]
+... )
+>>> plan = src.indexing_strategy.decompose("ping", src.scope["ping"])
+>>> print(plan.surfaces[0].text)
+ping
+
+Check the server is up
+```
 
 #### *classmethod* from_md_reports(, name='reports', projects_root=None, strategy=None, recursive=True, exclude_dirs=None, \*\*kwargs)
 
@@ -6079,6 +6323,12 @@ coverage diagnostic exclude exactly the same set (see `_md_in()`).
 
 Default look-back window (days) for [`CorpusSource.from_claude_sessions()`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource.from_claude_sessions).
 
+### ir.sources.MCP_TOOL_PARAM_KEYS *= ('parameters', 'inputSchema', 'input_schema')*
+
+Fields a tool record may carry its parameter schema under, in lookup order:
+fastmcp’s `parameters`, the MCP wire format’s `inputSchema`, and the
+Anthropic API’s `input_schema`.
+
 ### ir.sources.REPORT_DOC_GLOBS *= ('\*/\*/docs', '\*/\*/misc/docs')*
 
 The two per-project doc-tree roots reports are drawn from (relative globs).
@@ -6110,6 +6360,41 @@ Yield each existing report doc folder under *root*.
 `*/*/docs` and `*/*/misc/docs` (a repo at `<letter>/<repo>`), plus the
 same two folders of every pocket repo ([`iter_pocket_repos()`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)). The single
 enumeration both ingestion and [`ir.coverage.reports_coverage()`](_autosummary/ir.coverage.html.md#ir.coverage.reports_coverage) use.
+
+### ir.sources.mcp_tool_record(tool)
+
+Normalize one duck-typed tool to `{name, description, parameters}`.
+
+`tool` is a mapping or an object (a fastmcp or `mcp.types` tool, say)
+with a `name`, an optional `description`, and an optional parameter
+schema under any of [`MCP_TOOL_PARAM_KEYS`](_autosummary/ir.sources.html.md#ir.sources.MCP_TOOL_PARAM_KEYS). Every other field is
+dropped, so it neither reaches the index nor invalidates it.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+```pycon
+>>> mcp_tool_record({"name": "ping", "inputSchema": {"type": "object"}})
+{'name': 'ping', 'description': '', 'parameters': {'type': 'object'}}
+```
+
+### ir.sources.mcp_tool_signal(artifact_id, raw)
+
+Change signal for a tool: SHA-256 over `(name, description, parameters)`.
+
+The parameter schema takes part in the hash even though it is never
+embedded, so a schema change re-embeds the tool on the next build (ir_02
+§6). The schema is serialized as canonical JSON (sorted keys), so key order
+does not count as a change. `raw` is a tool record in any form
+[`mcp_tool_record()`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_record) accepts.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> len(mcp_tool_signal("ping", {"name": "ping"}))
+64
+```
 
 ### ir.sources.report_exclude_reason(path, folder, , exclude_dirs=frozenset({'.git', '.hg', '.ipynb_checkpoints', '.obsidian', '.svn', '.tox', '.venv', '_\_pycache_\_', 'build', 'dist', 'node_modules', 'site-packages', 'venv'}))
 
@@ -6877,7 +7162,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-14 01:56 UTC** from commit <a href="https://github.com/i2mint/ir/commit/85d529236e55b8c5de9287ca88e63d345fb9240e"><code>85d5292</code></a> on branch <code>master</code>, for **ir 0.1.47** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-14 21:13 UTC** from commit <a href="https://github.com/i2mint/ir/commit/537ca94e8b0b5149b9bd28fb7d0a9cd62a35f9cd"><code>537ca94</code></a> on branch <code>master</code>, for **ir 0.1.48** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -6886,7 +7171,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/85d529236e55b8c5de9287ca88e63d345fb9240e"><code>85d529236e55b8c5de9287ca88e63d345fb9240e</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/537ca94e8b0b5149b9bd28fb7d0a9cd62a35f9cd"><code>537ca94e8b0b5149b9bd28fb7d0a9cd62a35f9cd</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6897,9 +7182,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38498229605">38498229605</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38638339403">38638339403</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>85d529236e55b8c5de9287ca88e63d345fb9240e</code> (in the history of the built commit) |
+| Event commit | <code>537ca94e8b0b5149b9bd28fb7d0a9cd62a35f9cd</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -6924,13 +7209,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.47/">0.1.47</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.48/">0.1.48</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 85d529236e55b8c5de9287ca88e63d345fb9240e
+git checkout 537ca94e8b0b5149b9bd28fb7d0a9cd62a35f9cd
 pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
@@ -6956,7 +7241,23 @@ Skills are folders holding a `SKILL.md` (the [Agent Skills](https://agentskills.
 
 Find specific documents, packages, skills, or past work with the `ir` retrieval engine — and have the results reviewed for real relevance before they come back. Use whenever the user wants to search/look-up over their own corpora: “find the docs/report about X”, “use ir (or ir discover) to find …”, “which of my packages does Y”, “search my reports/notes/sessions for Z”, “what do I have written about …”, “is there a doc on …”. Covers the `ir` CLI (build/search/discover), the corpus map, the mode/scoring gotchas, and when to delegate to the `ir-discover-agent` subagent for a reviewed, reformulated search vs. running a quick inline lookup. `ir` is a deterministic retrieval substrate with no agent of its own; this skill + the subagent are the Claude-Code-native way to wrap it in agentic query→review→reformulate powers (the coded equivalent is `raglab`).
 
-Source: [`.claude/skills/ir-search`](https://github.com/i2mint/ir/tree/HEAD/.claude/skills/ir-search).
+```bash
+gh skill install i2mint/ir ir-search --agent claude-code
+```
+
+Source: [`ir/data/skills/ir-search`](https://github.com/i2mint/ir/tree/HEAD/ir/data/skills/ir-search) (bundled with the pip package).
+
+### `ir-dev-workflow`
+
+How to work ON the `ir` package (i2mint/ir): the module map, the hermetic test recipe, the CLI grammar golden, the lint and doc rules CI enforces, the ir-vs-raglab boundary every change must respect, and how a merge publishes. Use when contributing to, fixing, reviewing, or extending `ir` itself: “add a search option to ir”, “fix this ir test”, “where does fusion happen in ir”, “update the ir CLI”, “review this ir PR”, “does this belong in ir or raglab”. Not for USING ir to search corpora (that is the `ir-search` skill).
+
+```bash
+gh skill install i2mint/ir ir-dev-workflow --agent claude-code
+```
+
+Source: [`skills/ir-dev-workflow`](https://github.com/i2mint/ir/tree/HEAD/skills/ir-dev-workflow).
+
+The bundled skills are also on disk after `pip install ir`, under the package’s `data/skills/` directory; link them into an agent without network access with `skill link-skills <that directory>`.
 
 ## Subagents
 

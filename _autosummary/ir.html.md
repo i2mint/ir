@@ -57,11 +57,13 @@ the reviewing search subagent shipped under `.claude/`.
 | [`retrievers`](#ir.retrievers)(\*\*search_defaults)                    | A lazy `Mapping[name, Retriever]` view over the registry (ir_09 §8).                                                                       |
 | [`retriever_for`](#ir.retriever_for)(name, \*\*search_defaults)           | A [`Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.                  |
 | [`fuse_hits`](#ir.fuse_hits)(hits_by_source, \*[, rrf_k, ...])        | Merge per-source ranked hit lists into one ranking — by rank, not score.                                                                   |
+| [`dependency_evidence_boost`](#ir.dependency_evidence_boost)(relevant_libs, \*, ...)  | A `dep_boost` for [`search()`](#ir.search): reward dependencies on *relevant_libs*.                       |
 | [`records_for_artifact`](#ir.records_for_artifact)(store_or_corpus, ...[, ...])  | All stored records of *artifact_id*, ordered by `surface_index`.                                                                           |
 | [`default_edge_extractor`](#ir.default_edge_extractor)(artifact_id, ...)           | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.                                                               |
 | [`canonical_node_id`](#ir.canonical_node_id)(target, \*, source)              | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.                                                                     |
 | [`traverse`](#ir.traverse)(query, store, \*, policy[, ...])          | Walk *store* from *query* under *policy*, returning the top-*k* hits.                                                                      |
 | [`collapsed_tree_policy`](#ir.collapsed_tree_policy)(\*[, summary_kinds, ...])    | The pure-vector summary-routing / collapsed-tree [`WalkPolicy`](#ir.WalkPolicy).                              |
+| [`reverse_dependency_policy`](#ir.reverse_dependency_policy)(\*, seeds[, ...])        | A [`WalkPolicy`](#ir.WalkPolicy) that walks dependency edges backwards from *seeds*.                          |
 | [`expand`](#ir.expand)(hit, corpus, \*[, policy])                  | Expand *hit* into a [`Passage`](#ir.Passage) of its neighborhood in *corpus*.                              |
 | [`sentence_window_policy`](#ir.sentence_window_policy)([k])                        | ±\*k\* same-kind neighbors around the seed (NEXT/PREV expansion).                                                                          |
 | [`parent_policy`](#ir.parent_policy)()                                    | The whole artifact (small-to-big): every stored surface, plan order.                                                                       |
@@ -182,6 +184,24 @@ The edge types present on *node_id* (`[]` if none).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+#### fan_in(node_id, , edge_type='REF')
+
+How many artifacts point at *node_id* by *edge_type* (its in-degree).
+
+With `REF` dependency edges this is the number of dependents, a
+PageRank-style centrality prior: a widely depended-on library is central
+to the corpus.
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+#### max_fan_in(, edge_type='REF')
+
+The largest [`fan_in()`](#ir.CorpusGraph.fan_in) over all targets (`0` without edges).
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
 #### neighbors(node_id, , edge_type=None)
 
 Outgoing neighbor ids of *node_id*, optionally of one *edge_type*.
@@ -199,6 +219,22 @@ edges *in this corpus*).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+#### reverse_neighbors(node_id, , edge_type='REF')
+
+The artifact ids whose *edge_type* edges point **at** *node_id*.
+
+The reverse of [`neighbors()`](#ir.CorpusGraph.neighbors): with the default `REF` edges of
+[`default_edge_extractor()`](#ir.default_edge_extractor) (`package -> its deps`), this lists a
+library’s dependents. *node_id* may name an artifact of this corpus or a
+target outside it (a third-party dependency). For `REF` edges, string
+ids match through `normalize_dist_name()` (case, and `-`/`_`/`.`,
+are ignored), so `"scikit_learn"` finds the dependents of
+`"scikit-learn"`; other edge types match ids exactly. A cross-corpus
+target is a `(source, artifact_id)` pair, matched exactly. Order is first-seen over the links view, de-duplicated.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 #### source
 
@@ -256,6 +292,41 @@ Any mapping `{id -> raw}` (dict, `dol` store) as a corpus.
 
 * **Return type:**
   [`CorpusSource`](ir.sources.html.md#ir.sources.CorpusSource)
+
+#### *classmethod* from_mcp_tools(tools, , name='tools', strategy=None, \*\*kwargs)
+
+A catalogue of MCP tools as a corpus, for tool search.
+
+Each tool is indexed on `name + description` only, through the
+[`Skill`](ir.strategy.html.md#ir.strategy.Skill) strategy: its parameter schema never enters
+the embedded text (ir_02 §4, “the body carries no retrieval
+responsibility”). The schema still drives invalidation, through
+`mcp_tool_signal()`, so a changed schema re-embeds the tool. Its
+top-level argument names ride along as the `param_names` metadata of
+every hit, so a caller can see what a tool takes without loading it.
+
+`tools` is an iterable of tool records, a `{name: tool}` mapping (the
+key names a record that has no `name`; a record’s own name wins), or
+a fetcher (a zero-argument callable or a `"module:attr"` reference,
+see `resolve_fetcher()`). A record is duck-typed (see
+`mcp_tool_record()`), so `ir` takes no MCP dependency; an adapter
+for a specific client lives with the consumer. Tool names are the
+artifact ids and must be unique: namespace them (`"server.tool"`)
+before merging several servers’ catalogues.
+
+* **Return type:**
+  [`CorpusSource`](ir.sources.html.md#ir.sources.CorpusSource)
+
+```pycon
+>>> src = CorpusSource.from_mcp_tools(
+...     [{"name": "ping", "description": "Check the server is up"}]
+... )
+>>> plan = src.indexing_strategy.decompose("ping", src.scope["ping"])
+>>> print(plan.surfaces[0].text)
+ping
+
+Check the server is up
+```
 
 #### *classmethod* from_md_reports(, name='reports', projects_root=None, strategy=None, recursive=True, exclude_dirs=None, \*\*kwargs)
 
@@ -1090,6 +1161,37 @@ The smart-default [`MaintenancePolicy`](#ir.MaintenancePolicy) for a corpus `kin
 * **Return type:**
   [`MaintenancePolicy`](ir.policy.html.md#ir.policy.MaintenancePolicy)
 
+### ir.dependency_evidence_boost(relevant_libs, , weight, saturate=1, deps_field='deps')
+
+A `dep_boost` for [`search()`](#ir.search): reward dependencies on *relevant_libs*.
+
+Reads the candidate’s `deps` filter field (as [`Package`](ir.strategy.html.md#ir.strategy.Package)
+stores it), reduces each spec to its bare, PEP 503-normalized name, and
+returns `weight * min(n, saturate) / saturate` where `n` counts the
+dependencies found in *relevant_libs*. With the default `saturate=1` a
+single relevant dependency earns the full `weight`. A structural signal,
+cheap and model-free, that a prose reranker cannot be fooled out of: an
+async-task package whose README says “DAG” does not depend on graph
+libraries.
+
+*relevant_libs* is the **caller’s** call: which libraries matter for a goal is
+a planning decision that belongs to the agent layer, never to `ir`.
+`weight` is added to the score on the search’s scale (an RRF fused score is
+near `0.03`, a cosine near `0.5`, a sigmoid reranker in `(0, 1)`), so
+tune it per configuration.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+```pycon
+>>> from ir.base import SearchHit
+>>> boost = dependency_evidence_boost({"networkx"}, weight=0.1)
+>>> boost(SearchHit("unbox", "description", 0.4, "", {"deps": ["networkx>=3"]}))
+0.1
+>>> boost(SearchHit("au", "description", 0.5, "", {"deps": ["anyio"]}))
+0.0
+```
+
 ### ir.disclose(selection, , level='body', loader=None, store=None, expand=None, corpus=None)
 
 Reveal the payload of each selected hit at `level` — append-only, pure.
@@ -1582,6 +1684,39 @@ set. `search_defaults` apply to every source.
 
 * **Return type:**
   [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
+### ir.reverse_dependency_policy(, seeds, edge_type='REF', fan_in_weight=0.0, proximity_weight=0.0)
+
+A [`WalkPolicy`](#ir.WalkPolicy) that walks dependency edges backwards from *seeds*.
+
+*seeds* are library ids the **caller** deems relevant to the query (ir never
+chooses them: picking the domain libraries for a goal is the planner’s job,
+in the agent layer). The walk commits each seed that is an artifact of the
+corpus, then its dependents (the artifacts whose `edge_type` edges point
+at it), then theirs, up to [`traverse()`](#ir.traverse)’s `max_depth`. A seed outside
+the corpus (a third-party library) routes without being a result. So a
+package that depends on a domain library but never says so in prose is
+still found.
+
+Each result scores its best surface’s cosine to the query, plus
+`fan_in_weight` times its normalized fan-in (its share of the most
+depended-on target, a centrality prior), plus `proximity_weight / (1 +
+hops)` (closer to a seed scores higher). Both weights default to `0`, so
+the score is plain cosine. Hits carry `metadata["walk_depth"]`,
+`metadata["fan_in"]` and, for dependents, `metadata["seed"]`.
+
+The store passed to [`traverse()`](#ir.traverse) is a [`Corpus`](ir.index.html.md#ir.index.Corpus) built
+with an edge extractor (e.g. [`ir.default_edge_extractor()`](#ir.default_edge_extractor), whose
+`REF` edges run from a package to its dependencies). Fuse the walk’s hits
+with flat search through [`ir.fuse_hits()`](#ir.fuse_hits).
+
+* **Return type:**
+  [`WalkPolicy`](#ir.WalkPolicy)
+
+```pycon
+>>> policy = reverse_dependency_policy(seeds=["networkx"])
+>>> hits = traverse(query, corpus, policy=policy)
+```
 
 ### ir.search(corpus, query, \*\*kwargs)
 

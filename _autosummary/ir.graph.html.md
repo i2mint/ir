@@ -51,6 +51,7 @@ unification stays open, but the two are distinct substrates.
 | [`canonical_node_id`](#ir.graph.canonical_node_id)(target, \*, source)    | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.       |
 |-------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
 | [`default_edge_extractor`](#ir.graph.default_edge_extractor)(artifact_id, ...) | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT. |
+| [`normalize_dist_name`](#ir.graph.normalize_dist_name)(name)                | A dependency spec's bare name, PEP 503-normalized (`-`/`_`/`.` -> `-`).      |
 
 ### Classes
 
@@ -85,6 +86,24 @@ The edge types present on *node_id* (`[]` if none).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+#### fan_in(node_id, , edge_type='REF')
+
+How many artifacts point at *node_id* by *edge_type* (its in-degree).
+
+With `REF` dependency edges this is the number of dependents, a
+PageRank-style centrality prior: a widely depended-on library is central
+to the corpus.
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+#### max_fan_in(, edge_type='REF')
+
+The largest [`fan_in()`](#ir.graph.CorpusGraph.fan_in) over all targets (`0` without edges).
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
 #### neighbors(node_id, , edge_type=None)
 
 Outgoing neighbor ids of *node_id*, optionally of one *edge_type*.
@@ -102,6 +121,22 @@ edges *in this corpus*).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+#### reverse_neighbors(node_id, , edge_type='REF')
+
+The artifact ids whose *edge_type* edges point **at** *node_id*.
+
+The reverse of [`neighbors()`](#ir.graph.CorpusGraph.neighbors): with the default [`REF`](#ir.graph.REF) edges of
+[`default_edge_extractor()`](#ir.graph.default_edge_extractor) (`package -> its deps`), this lists a
+library’s dependents. *node_id* may name an artifact of this corpus or a
+target outside it (a third-party dependency). For `REF` edges, string
+ids match through [`normalize_dist_name()`](#ir.graph.normalize_dist_name) (case, and `-`/`_`/`.`,
+are ignored), so `"scikit_learn"` finds the dependents of
+`"scikit-learn"`; other edge types match ids exactly. A cross-corpus
+target is a `(source, artifact_id)` pair, matched exactly. Order is first-seen over the links view, de-duplicated.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 #### source
 
@@ -210,3 +245,19 @@ package `"AA"` depending on `"aa"` is recognized as a self-reference).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]
+
+### ir.graph.normalize_dist_name(name)
+
+A dependency spec’s bare name, PEP 503-normalized (`-`/`_`/`.` -> `-`).
+
+The one comparison key for library names: the reverse dependency index and
+[`ir.dependency_evidence_boost()`](ir.html.md#ir.dependency_evidence_boost) both match through it, so
+`"scikit_learn"` finds a package that depends on `"Scikit-Learn>=1"`.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> normalize_dist_name("Scikit_Learn[extra]>=1.2")
+'scikit-learn'
+```

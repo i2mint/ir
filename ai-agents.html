@@ -143,7 +143,19 @@ machine-readable copies of this documentation.</p>
 <section id="ir-search">
 <h3><code class="docutils literal notranslate"><span class="pre">ir-search</span></code><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir-search" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir-search'">¶</a></h3>
 <p>Find specific documents, packages, skills, or past work with the <code class="docutils literal notranslate"><span class="pre">ir</span></code> retrieval engine — and have the results reviewed for real relevance before they come back. Use whenever the user wants to search/look-up over their own corpora: “find the docs/report about X”, “use ir (or ir discover) to find …”, “which of my packages does Y”, “search my reports/notes/sessions for Z”, “what do I have written about …”, “is there a doc on …”. Covers the <code class="docutils literal notranslate"><span class="pre">ir</span></code> CLI (build/search/discover), the corpus map, the mode/scoring gotchas, and when to delegate to the <code class="docutils literal notranslate"><span class="pre">ir-discover-agent</span></code> subagent for a reviewed, reformulated search vs. running a quick inline lookup. <code class="docutils literal notranslate"><span class="pre">ir</span></code> is a deterministic retrieval substrate with no agent of its own; this skill + the subagent are the Claude-Code-native way to wrap it in agentic query→review→reformulate powers (the coded equivalent is <code class="docutils literal notranslate"><span class="pre">raglab</span></code>).</p>
-<p>Source: <a class="reference external" href="https://github.com/i2mint/ir/tree/HEAD/.claude/skills/ir-search" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">.claude/skills/ir-search</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">gh<span class="w"> </span>skill<span class="w"> </span>install<span class="w"> </span>i2mint/ir<span class="w"> </span>ir-search<span class="w"> </span>--agent<span class="w"> </span>claude-code
+</span></code></pre></div>
+</div>
+<p>Source: <a class="reference external" href="https://github.com/i2mint/ir/tree/HEAD/ir/data/skills/ir-search" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">ir/data/skills/ir-search</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a> (bundled with the pip package).</p>
+</section>
+<section id="ir-dev-workflow">
+<h3><code class="docutils literal notranslate"><span class="pre">ir-dev-workflow</span></code><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir-dev-workflow" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir-dev-workflow'">¶</a></h3>
+<p>How to work ON the <code class="docutils literal notranslate"><span class="pre">ir</span></code> package (i2mint/ir): the module map, the hermetic test recipe, the CLI grammar golden, the lint and doc rules CI enforces, the ir-vs-raglab boundary every change must respect, and how a merge publishes. Use when contributing to, fixing, reviewing, or extending <code class="docutils literal notranslate"><span class="pre">ir</span></code> itself: “add a search option to ir”, “fix this ir test”, “where does fusion happen in ir”, “update the ir CLI”, “review this ir PR”, “does this belong in ir or raglab”. Not for USING ir to search corpora (that is the <code class="docutils literal notranslate"><span class="pre">ir-search</span></code> skill).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">gh<span class="w"> </span>skill<span class="w"> </span>install<span class="w"> </span>i2mint/ir<span class="w"> </span>ir-dev-workflow<span class="w"> </span>--agent<span class="w"> </span>claude-code
+</span></code></pre></div>
+</div>
+<p>Source: <a class="reference external" href="https://github.com/i2mint/ir/tree/HEAD/skills/ir-dev-workflow" rel="nofollow noopener"><code class="docutils literal notranslate"><span class="pre">skills/ir-dev-workflow</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>.</p>
+<p>The bundled skills are also on disk after <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">ir</span></code>, under the package’s <code class="docutils literal notranslate"><span class="pre">data/skills/</span></code> directory; link them into an agent without network access with <code class="docutils literal notranslate"><span class="pre">skill</span> <span class="pre">link-skills</span> <span class="pre">&lt;that</span> <span class="pre">directory&gt;</span></code>.</p>
 </section>
 </section>
 <section id="subagents">
@@ -178,6 +190,7 @@ machine-readable copies of this documentation.</p>
 <ul>
 <li><a :data-current="activeSection === '#skills'" class="reference internal" href="#skills">Skills</a><ul>
 <li><a :data-current="activeSection === '#ir-search'" class="reference internal" href="#ir-search"><code class="docutils literal notranslate"><span class="pre">ir-search</span></code></a></li>
+<li><a :data-current="activeSection === '#ir-dev-workflow'" class="reference internal" href="#ir-dev-workflow"><code class="docutils literal notranslate"><span class="pre">ir-dev-workflow</span></code></a></li>
 </ul>
 </li>
 <li><a :data-current="activeSection === '#subagents'" class="reference internal" href="#subagents">Subagents</a><ul>
@@ -199,7 +212,7 @@ machine-readable copies of this documentation.</p>
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=5df2d9e8"></script>
+<script src="_static/documentation_options.js?v=b5e87a2a"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>

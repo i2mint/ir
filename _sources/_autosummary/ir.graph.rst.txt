@@ -22,6 +22,7 @@ ir.graph
    
       canonical_node_id
       default_edge_extractor
+      normalize_dist_name
    
    .. rubric:: Classes
 

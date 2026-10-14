@@ -14,7 +14,23 @@ Skills are folders holding a `SKILL.md` (the [Agent Skills](https://agentskills.
 
 Find specific documents, packages, skills, or past work with the `ir` retrieval engine — and have the results reviewed for real relevance before they come back. Use whenever the user wants to search/look-up over their own corpora: “find the docs/report about X”, “use ir (or ir discover) to find …”, “which of my packages does Y”, “search my reports/notes/sessions for Z”, “what do I have written about …”, “is there a doc on …”. Covers the `ir` CLI (build/search/discover), the corpus map, the mode/scoring gotchas, and when to delegate to the `ir-discover-agent` subagent for a reviewed, reformulated search vs. running a quick inline lookup. `ir` is a deterministic retrieval substrate with no agent of its own; this skill + the subagent are the Claude-Code-native way to wrap it in agentic query→review→reformulate powers (the coded equivalent is `raglab`).
 
-Source: [`.claude/skills/ir-search`](https://github.com/i2mint/ir/tree/HEAD/.claude/skills/ir-search).
+```bash
+gh skill install i2mint/ir ir-search --agent claude-code
+```
+
+Source: [`ir/data/skills/ir-search`](https://github.com/i2mint/ir/tree/HEAD/ir/data/skills/ir-search) (bundled with the pip package).
+
+### `ir-dev-workflow`
+
+How to work ON the `ir` package (i2mint/ir): the module map, the hermetic test recipe, the CLI grammar golden, the lint and doc rules CI enforces, the ir-vs-raglab boundary every change must respect, and how a merge publishes. Use when contributing to, fixing, reviewing, or extending `ir` itself: “add a search option to ir”, “fix this ir test”, “where does fusion happen in ir”, “update the ir CLI”, “review this ir PR”, “does this belong in ir or raglab”. Not for USING ir to search corpora (that is the `ir-search` skill).
+
+```bash
+gh skill install i2mint/ir ir-dev-workflow --agent claude-code
+```
+
+Source: [`skills/ir-dev-workflow`](https://github.com/i2mint/ir/tree/HEAD/skills/ir-dev-workflow).
+
+The bundled skills are also on disk after `pip install ir`, under the package’s `data/skills/` directory; link them into an agent without network access with `skill link-skills <that directory>`.
 
 ## Subagents
 

@@ -822,7 +822,7 @@ class was missing). Generate abstention cases with [`ir.eval_gen`](ir.eval_gen.h
 * **Returns:**
   a [`MinScoreCalibration`](#ir.eval.MinScoreCalibration).
 
-### ir.eval.compare_indexings(corpora, cases, , themes, probes, k=20, named_sets=None, mode='hybrid', rank_depth=1000, gains={'core': 3.0, 'none': 0.0, 'strong': 2.0, 'tangential': 0.0, 'uses-tools': 1.0}, surfaces=None, \*\*search_kw)
+### ir.eval.compare_indexings(corpora, cases, , themes, probes, k=20, named_sets=None, mode='hybrid', rank_depth=1000, gains={'core': 3.0, 'none': 0.0, 'strong': 2.0, 'tangential': 0.0, 'uses-tools': 1.0}, surfaces=None, search_kw_by_label=None, \*\*search_kw)
 
 A/B (or N-way) regression gate over indexing / embedder configurations.
 
@@ -837,6 +837,13 @@ every named FP/FN id — so a change’s effect is quantified *per package*.
 that [`ComparisonReport.regressions()`](#ir.eval.ComparisonReport.regressions) compares against. Each ranking is
 fetched once to depth `rank_depth` (deep enough that even a buried named id
 gets a real rank) and sliced at `k` for the `@k` metrics.
+
+`search_kw_by_label` overrides search settings per label, on top of the
+shared `mode` / `surfaces` / `**search_kw`: map one corpus under several
+labels to compare *search* configurations rather than indexings, e.g.
+`{"deps x2": {"surface_weights": {"deps": 2.0}}}`. Any
+[`ir.retrieve.search()`](ir.retrieve.html.md#ir.retrieve.search) keyword except `k` (the depth is `rank_depth`)
+and `per_artifact` (rankings are per artifact).
 
 * **Return type:**
   [`ComparisonReport`](#ir.eval.ComparisonReport)

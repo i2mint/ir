@@ -150,7 +150,8 @@ hash. This is the “what counts as stale” slot, driving incremental reindex.<
 </ul>
 <p>Smart-default constructors cover the common ways to define a source:
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_mapping()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_files()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_md_reports()</span></code>,
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">from_skills()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_packages()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_records()</span></code>.</p>
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">from_skills()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_packages()</span></code>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_records()</span></code>,
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">from_mcp_tools()</span></code>.</p>
 <p class="rubric">Module Attributes</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
@@ -160,10 +161,13 @@ hash. This is the “what counts as stale” slot, driving incremental reindex.<
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.sources.DFLT_SESSIONS_SINCE_DAYS" title="ir.sources.DFLT_SESSIONS_SINCE_DAYS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DFLT_SESSIONS_SINCE_DAYS</span></code></a></p></td>
 <td><p>Default look-back window (days) for <a class="reference internal" href="#ir.sources.CorpusSource.from_claude_sessions" title="ir.sources.CorpusSource.from_claude_sessions"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusSource.from_claude_sessions()</span></code></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.sources.REPORT_DOC_GLOBS" title="ir.sources.REPORT_DOC_GLOBS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REPORT_DOC_GLOBS</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.sources.MCP_TOOL_PARAM_KEYS" title="ir.sources.MCP_TOOL_PARAM_KEYS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MCP_TOOL_PARAM_KEYS</span></code></a></p></td>
+<td><p>Fields a tool record may carry its parameter schema under, in lookup order: fastmcp's <code class="docutils literal notranslate"><span class="pre">parameters</span></code>, the MCP wire format's <code class="docutils literal notranslate"><span class="pre">inputSchema</span></code>, and the Anthropic API's <code class="docutils literal notranslate"><span class="pre">input_schema</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.sources.REPORT_DOC_GLOBS" title="ir.sources.REPORT_DOC_GLOBS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REPORT_DOC_GLOBS</span></code></a></p></td>
 <td><p>The two per-project doc-tree roots reports are drawn from (relative globs).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.sources.REPO_DOC_SUBDIRS" title="ir.sources.REPO_DOC_SUBDIRS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REPO_DOC_SUBDIRS</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.sources.REPO_DOC_SUBDIRS" title="ir.sources.REPO_DOC_SUBDIRS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REPO_DOC_SUBDIRS</span></code></a></p></td>
 <td><p>The doc-tree roots inside a repo (relative to the repo folder).</p></td>
 </tr>
 </tbody>
@@ -179,6 +183,12 @@ hash. This is the “what counts as stale” slot, driving incremental reindex.<
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.sources.iter_report_doc_folders" title="ir.sources.iter_report_doc_folders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">iter_report_doc_folders</span></code></a>(root)</p></td>
 <td><p>Yield each existing report doc folder under <em>root</em>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.sources.mcp_tool_record" title="ir.sources.mcp_tool_record"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mcp_tool_record</span></code></a>(tool)</p></td>
+<td><p>Normalize one duck-typed tool to <code class="docutils literal notranslate"><span class="pre">{name,</span> <span class="pre">description,</span> <span class="pre">parameters}</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.sources.mcp_tool_signal" title="ir.sources.mcp_tool_signal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mcp_tool_signal</span></code></a>(artifact_id, raw)</p></td>
+<td><p>Change signal for a tool: SHA-256 over <code class="docutils literal notranslate"><span class="pre">(name,</span> <span class="pre">description,</span> <span class="pre">parameters)</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.sources.report_exclude_reason" title="ir.sources.report_exclude_reason"><code class="xref py py-obj docutils literal notranslate"><span class="pre">report_exclude_reason</span></code></a>(path, folder, *[, ...])</p></td>
 <td><p>Why a <code class="docutils literal notranslate"><span class="pre">*.md</span></code> under <em>folder</em> is excluded from the reports corpus.</p></td>
@@ -258,6 +268,41 @@ records come from <code class="xref py py-func docutils literal notranslate"><sp
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusSource</span></code></a></span></p>
 </dd>
 </dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ir.sources.CorpusSource.from_mcp_tools">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_mcp_tools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tools</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tools'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/sources.html#CorpusSource.from_mcp_tools"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.CorpusSource.from_mcp_tools" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.CorpusSource.from_mcp_tools'">¶</a></dt>
+<dd><p>A catalogue of MCP tools as a corpus, for tool search.</p>
+<p>Each tool is indexed on <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">+</span> <span class="pre">description</span></code> only, through the
+<a class="reference internal" href="ir.strategy.html#ir.strategy.Skill" title="ir.strategy.Skill"><code class="xref py py-class docutils literal notranslate"><span class="pre">Skill</span></code></a> strategy: its parameter schema never enters
+the embedded text (ir_02 §4, “the body carries no retrieval
+responsibility”). The schema still drives invalidation, through
+<a class="reference internal" href="#ir.sources.mcp_tool_signal" title="ir.sources.mcp_tool_signal"><code class="xref py py-func docutils literal notranslate"><span class="pre">mcp_tool_signal()</span></code></a>, so a changed schema re-embeds the tool. Its
+top-level argument names ride along as the <code class="docutils literal notranslate"><span class="pre">param_names</span></code> metadata of
+every hit, so a caller can see what a tool takes without loading it.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tools</span></code> is an iterable of tool records, a <code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">tool}</span></code> mapping (the
+key names a record that has no <code class="docutils literal notranslate"><span class="pre">name</span></code>; a record’s own name wins), or
+a fetcher (a zero-argument callable or a <code class="docutils literal notranslate"><span class="pre">"module:attr"</span></code> reference,
+see <a class="reference internal" href="#ir.sources.resolve_fetcher" title="ir.sources.resolve_fetcher"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_fetcher()</span></code></a>). A record is duck-typed (see
+<a class="reference internal" href="#ir.sources.mcp_tool_record" title="ir.sources.mcp_tool_record"><code class="xref py py-func docutils literal notranslate"><span class="pre">mcp_tool_record()</span></code></a>), so <code class="docutils literal notranslate"><span class="pre">ir</span></code> takes no MCP dependency; an adapter
+for a specific client lives with the consumer. Tool names are the
+artifact ids and must be unique: namespace them (<code class="docutils literal notranslate"><span class="pre">"server.tool"</span></code>)
+before merging several servers’ catalogues.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#ir.sources.CorpusSource" title="ir.sources.CorpusSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusSource</span></code></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="gp">&gt;&gt;&gt; </span><span class="n">src</span> <span class="o">=</span> <span class="n">CorpusSource</span><span class="o">.</span><span class="n">from_mcp_tools</span><span class="p">(</span>
+</span><span id="line-2"><span class="gp">... </span>    <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"ping"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Check the server is up"</span><span class="p">}]</span>
+</span><span id="line-3"><span class="gp">... </span><span class="p">)</span>
+</span><span id="line-4"><span class="gp">&gt;&gt;&gt; </span><span class="n">plan</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">indexing_strategy</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="s2">"ping"</span><span class="p">,</span> <span class="n">src</span><span class="o">.</span><span class="n">scope</span><span class="p">[</span><span class="s2">"ping"</span><span class="p">])</span>
+</span><span id="line-5"><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">surfaces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+</span><span id="line-6"><span class="go">ping</span>
+</span><span id="line-7">
+</span><span id="line-8"><span class="go">Check the server is up</span>
+</span></code></pre></div>
+</div>
 </dd></dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="ir.sources.CorpusSource.from_md_reports">
@@ -353,6 +398,13 @@ coverage diagnostic exclude exactly the same set (see <code class="xref py py-fu
 <dd><p>Default look-back window (days) for <a class="reference internal" href="#ir.sources.CorpusSource.from_claude_sessions" title="ir.sources.CorpusSource.from_claude_sessions"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusSource.from_claude_sessions()</span></code></a>.</p>
 </dd></dl>
 <dl class="py data">
+<dt class="sig sig-object py" id="ir.sources.MCP_TOOL_PARAM_KEYS">
+<span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">MCP_TOOL_PARAM_KEYS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('parameters',</span> <span class="pre">'inputSchema',</span> <span class="pre">'input_schema')</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.MCP_TOOL_PARAM_KEYS" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.MCP_TOOL_PARAM_KEYS'">¶</a></dt>
+<dd><p>Fields a tool record may carry its parameter schema under, in lookup order:
+fastmcp’s <code class="docutils literal notranslate"><span class="pre">parameters</span></code>, the MCP wire format’s <code class="docutils literal notranslate"><span class="pre">inputSchema</span></code>, and the
+Anthropic API’s <code class="docutils literal notranslate"><span class="pre">input_schema</span></code>.</p>
+</dd></dl>
+<dl class="py data">
 <dt class="sig sig-object py" id="ir.sources.REPORT_DOC_GLOBS">
 <span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">REPORT_DOC_GLOBS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('*/*/docs',</span> <span class="pre">'*/*/misc/docs')</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.REPORT_DOC_GLOBS" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.REPORT_DOC_GLOBS'">¶</a></dt>
 <dd><p>The two per-project doc-tree roots reports are drawn from (relative globs).</p>
@@ -392,6 +444,43 @@ same two folders of every pocket repo (<a class="reference internal" href="#ir.s
 enumeration both ingestion and <a class="reference internal" href="ir.coverage.html#ir.coverage.reports_coverage" title="ir.coverage.reports_coverage"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.coverage.reports_coverage()</span></code></a> use.</p>
 <dl class="field-list simple">
 </dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.sources.mcp_tool_record">
+<span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">mcp_tool_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/sources.html#mcp_tool_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.mcp_tool_record" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.mcp_tool_record'">¶</a></dt>
+<dd><p>Normalize one duck-typed tool to <code class="docutils literal notranslate"><span class="pre">{name,</span> <span class="pre">description,</span> <span class="pre">parameters}</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tool</span></code> is a mapping or an object (a fastmcp or <code class="docutils literal notranslate"><span class="pre">mcp.types</span></code> tool, say)
+with a <code class="docutils literal notranslate"><span class="pre">name</span></code>, an optional <code class="docutils literal notranslate"><span class="pre">description</span></code>, and an optional parameter
+schema under any of <a class="reference internal" href="#ir.sources.MCP_TOOL_PARAM_KEYS" title="ir.sources.MCP_TOOL_PARAM_KEYS"><code class="xref py py-data docutils literal notranslate"><span class="pre">MCP_TOOL_PARAM_KEYS</span></code></a>. Every other field is
+dropped, so it neither reaches the index nor invalidates it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="gp">&gt;&gt;&gt; </span><span class="n">mcp_tool_record</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"ping"</span><span class="p">,</span> <span class="s2">"inputSchema"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"object"</span><span class="p">}})</span>
+</span><span id="line-2"><span class="go">{'name': 'ping', 'description': '', 'parameters': {'type': 'object'}}</span>
+</span></code></pre></div>
+</div>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.sources.mcp_tool_signal">
+<span class="sig-prename descclassname"><span class="pre">ir.sources.</span></span><span class="sig-name descname"><span class="pre">mcp_tool_signal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">artifact_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/sources.html#mcp_tool_signal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.sources.mcp_tool_signal" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.sources.mcp_tool_signal'">¶</a></dt>
+<dd><p>Change signal for a tool: SHA-256 over <code class="docutils literal notranslate"><span class="pre">(name,</span> <span class="pre">description,</span> <span class="pre">parameters)</span></code>.</p>
+<p>The parameter schema takes part in the hash even though it is never
+embedded, so a schema change re-embeds the tool on the next build (ir_02
+§6). The schema is serialized as canonical JSON (sorted keys), so key order
+does not count as a change. <code class="docutils literal notranslate"><span class="pre">raw</span></code> is a tool record in any form
+<a class="reference internal" href="#ir.sources.mcp_tool_record" title="ir.sources.mcp_tool_record"><code class="xref py py-func docutils literal notranslate"><span class="pre">mcp_tool_record()</span></code></a> accepts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">mcp_tool_signal</span><span class="p">(</span><span class="s2">"ping"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"ping"</span><span class="p">}))</span>
+</span><span id="line-2"><span class="go">64</span>
+</span></code></pre></div>
+</div>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.sources.report_exclude_reason">
@@ -441,6 +530,7 @@ seam accepts a name rather than an object.</p>
 <li><a :data-current="activeSection === '#ir.sources.CorpusSource.from_claude_sessions'" class="reference internal" href="#ir.sources.CorpusSource.from_claude_sessions"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_claude_sessions()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.CorpusSource.from_files'" class="reference internal" href="#ir.sources.CorpusSource.from_files"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_files()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.CorpusSource.from_mapping'" class="reference internal" href="#ir.sources.CorpusSource.from_mapping"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_mapping()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.sources.CorpusSource.from_mcp_tools'" class="reference internal" href="#ir.sources.CorpusSource.from_mcp_tools"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_mcp_tools()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.CorpusSource.from_md_reports'" class="reference internal" href="#ir.sources.CorpusSource.from_md_reports"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_md_reports()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.CorpusSource.from_packages'" class="reference internal" href="#ir.sources.CorpusSource.from_packages"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_packages()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.CorpusSource.from_records'" class="reference internal" href="#ir.sources.CorpusSource.from_records"><code class="docutils literal notranslate"><span class="pre">CorpusSource.from_records()</span></code></a></li>
@@ -450,11 +540,14 @@ seam accepts a name rather than an object.</p>
 </li>
 <li><a :data-current="activeSection === '#ir.sources.DFLT_EXCLUDE_DIRS'" class="reference internal" href="#ir.sources.DFLT_EXCLUDE_DIRS"><code class="docutils literal notranslate"><span class="pre">DFLT_EXCLUDE_DIRS</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.DFLT_SESSIONS_SINCE_DAYS'" class="reference internal" href="#ir.sources.DFLT_SESSIONS_SINCE_DAYS"><code class="docutils literal notranslate"><span class="pre">DFLT_SESSIONS_SINCE_DAYS</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.sources.MCP_TOOL_PARAM_KEYS'" class="reference internal" href="#ir.sources.MCP_TOOL_PARAM_KEYS"><code class="docutils literal notranslate"><span class="pre">MCP_TOOL_PARAM_KEYS</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.REPORT_DOC_GLOBS'" class="reference internal" href="#ir.sources.REPORT_DOC_GLOBS"><code class="docutils literal notranslate"><span class="pre">REPORT_DOC_GLOBS</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.REPO_DOC_SUBDIRS'" class="reference internal" href="#ir.sources.REPO_DOC_SUBDIRS"><code class="docutils literal notranslate"><span class="pre">REPO_DOC_SUBDIRS</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.content_hash_signal'" class="reference internal" href="#ir.sources.content_hash_signal"><code class="docutils literal notranslate"><span class="pre">content_hash_signal()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.iter_pocket_repos'" class="reference internal" href="#ir.sources.iter_pocket_repos"><code class="docutils literal notranslate"><span class="pre">iter_pocket_repos()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.iter_report_doc_folders'" class="reference internal" href="#ir.sources.iter_report_doc_folders"><code class="docutils literal notranslate"><span class="pre">iter_report_doc_folders()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.sources.mcp_tool_record'" class="reference internal" href="#ir.sources.mcp_tool_record"><code class="docutils literal notranslate"><span class="pre">mcp_tool_record()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.sources.mcp_tool_signal'" class="reference internal" href="#ir.sources.mcp_tool_signal"><code class="docutils literal notranslate"><span class="pre">mcp_tool_signal()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.report_exclude_reason'" class="reference internal" href="#ir.sources.report_exclude_reason"><code class="docutils literal notranslate"><span class="pre">report_exclude_reason()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.sources.resolve_fetcher'" class="reference internal" href="#ir.sources.resolve_fetcher"><code class="docutils literal notranslate"><span class="pre">resolve_fetcher()</span></code></a></li>
 </ul>
@@ -470,7 +563,7 @@ seam accepts a name rather than an object.</p>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=5df2d9e8"></script>
+<script src="../_static/documentation_options.js?v=b5e87a2a"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

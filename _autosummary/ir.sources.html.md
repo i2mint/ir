@@ -15,24 +15,28 @@ independent of how it is indexed or stored:
 
 Smart-default constructors cover the common ways to define a source:
 `from_mapping()`, `from_files()`, `from_md_reports()`,
-`from_skills()`, `from_packages()`, `from_records()`.
+`from_skills()`, `from_packages()`, `from_records()`,
+`from_mcp_tools()`.
 
 ### Module Attributes
 
-| [`DFLT_EXCLUDE_DIRS`](#ir.sources.DFLT_EXCLUDE_DIRS)        | Directory names never descended into when walking a docs tree for reports.                                                |
-|---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| [`DFLT_SESSIONS_SINCE_DAYS`](#ir.sources.DFLT_SESSIONS_SINCE_DAYS) | Default look-back window (days) for [`CorpusSource.from_claude_sessions()`](#ir.sources.CorpusSource.from_claude_sessions). |
-| [`REPORT_DOC_GLOBS`](#ir.sources.REPORT_DOC_GLOBS)         | The two per-project doc-tree roots reports are drawn from (relative globs).                                               |
-| [`REPO_DOC_SUBDIRS`](#ir.sources.REPO_DOC_SUBDIRS)         | The doc-tree roots inside a repo (relative to the repo folder).                                                           |
+| [`DFLT_EXCLUDE_DIRS`](#ir.sources.DFLT_EXCLUDE_DIRS)        | Directory names never descended into when walking a docs tree for reports.                                                                                                       |
+|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DFLT_SESSIONS_SINCE_DAYS`](#ir.sources.DFLT_SESSIONS_SINCE_DAYS) | Default look-back window (days) for [`CorpusSource.from_claude_sessions()`](#ir.sources.CorpusSource.from_claude_sessions).                                                        |
+| [`MCP_TOOL_PARAM_KEYS`](#ir.sources.MCP_TOOL_PARAM_KEYS)      | Fields a tool record may carry its parameter schema under, in lookup order: fastmcp's `parameters`, the MCP wire format's `inputSchema`, and the Anthropic API's `input_schema`. |
+| [`REPORT_DOC_GLOBS`](#ir.sources.REPORT_DOC_GLOBS)         | The two per-project doc-tree roots reports are drawn from (relative globs).                                                                                                      |
+| [`REPO_DOC_SUBDIRS`](#ir.sources.REPO_DOC_SUBDIRS)         | The doc-tree roots inside a repo (relative to the repo folder).                                                                                                                  |
 
 ### Functions
 
-| [`content_hash_signal`](#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.             |
-|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| [`iter_pocket_repos`](#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.  |
-| [`iter_report_doc_folders`](#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                   |
-| [`report_exclude_reason`](#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.      |
-| [`resolve_fetcher`](#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records. |
+| [`content_hash_signal`](#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                 |
+|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| [`iter_pocket_repos`](#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.      |
+| [`iter_report_doc_folders`](#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                       |
+| [`mcp_tool_record`](#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.       |
+| [`mcp_tool_signal`](#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`. |
+| [`report_exclude_reason`](#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.          |
+| [`resolve_fetcher`](#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.     |
 
 ### Classes
 
@@ -90,6 +94,41 @@ Any mapping `{id -> raw}` (dict, `dol` store) as a corpus.
 
 * **Return type:**
   [`CorpusSource`](#ir.sources.CorpusSource)
+
+#### *classmethod* from_mcp_tools(tools, , name='tools', strategy=None, \*\*kwargs)
+
+A catalogue of MCP tools as a corpus, for tool search.
+
+Each tool is indexed on `name + description` only, through the
+[`Skill`](ir.strategy.html.md#ir.strategy.Skill) strategy: its parameter schema never enters
+the embedded text (ir_02 §4, “the body carries no retrieval
+responsibility”). The schema still drives invalidation, through
+[`mcp_tool_signal()`](#ir.sources.mcp_tool_signal), so a changed schema re-embeds the tool. Its
+top-level argument names ride along as the `param_names` metadata of
+every hit, so a caller can see what a tool takes without loading it.
+
+`tools` is an iterable of tool records, a `{name: tool}` mapping (the
+key names a record that has no `name`; a record’s own name wins), or
+a fetcher (a zero-argument callable or a `"module:attr"` reference,
+see [`resolve_fetcher()`](#ir.sources.resolve_fetcher)). A record is duck-typed (see
+[`mcp_tool_record()`](#ir.sources.mcp_tool_record)), so `ir` takes no MCP dependency; an adapter
+for a specific client lives with the consumer. Tool names are the
+artifact ids and must be unique: namespace them (`"server.tool"`)
+before merging several servers’ catalogues.
+
+* **Return type:**
+  [`CorpusSource`](#ir.sources.CorpusSource)
+
+```pycon
+>>> src = CorpusSource.from_mcp_tools(
+...     [{"name": "ping", "description": "Check the server is up"}]
+... )
+>>> plan = src.indexing_strategy.decompose("ping", src.scope["ping"])
+>>> print(plan.surfaces[0].text)
+ping
+
+Check the server is up
+```
 
 #### *classmethod* from_md_reports(, name='reports', projects_root=None, strategy=None, recursive=True, exclude_dirs=None, \*\*kwargs)
 
@@ -174,6 +213,12 @@ coverage diagnostic exclude exactly the same set (see `_md_in()`).
 
 Default look-back window (days) for [`CorpusSource.from_claude_sessions()`](#ir.sources.CorpusSource.from_claude_sessions).
 
+### ir.sources.MCP_TOOL_PARAM_KEYS *= ('parameters', 'inputSchema', 'input_schema')*
+
+Fields a tool record may carry its parameter schema under, in lookup order:
+fastmcp’s `parameters`, the MCP wire format’s `inputSchema`, and the
+Anthropic API’s `input_schema`.
+
 ### ir.sources.REPORT_DOC_GLOBS *= ('\*/\*/docs', '\*/\*/misc/docs')*
 
 The two per-project doc-tree roots reports are drawn from (relative globs).
@@ -205,6 +250,41 @@ Yield each existing report doc folder under *root*.
 `*/*/docs` and `*/*/misc/docs` (a repo at `<letter>/<repo>`), plus the
 same two folders of every pocket repo ([`iter_pocket_repos()`](#ir.sources.iter_pocket_repos)). The single
 enumeration both ingestion and [`ir.coverage.reports_coverage()`](ir.coverage.html.md#ir.coverage.reports_coverage) use.
+
+### ir.sources.mcp_tool_record(tool)
+
+Normalize one duck-typed tool to `{name, description, parameters}`.
+
+`tool` is a mapping or an object (a fastmcp or `mcp.types` tool, say)
+with a `name`, an optional `description`, and an optional parameter
+schema under any of [`MCP_TOOL_PARAM_KEYS`](#ir.sources.MCP_TOOL_PARAM_KEYS). Every other field is
+dropped, so it neither reaches the index nor invalidates it.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+```pycon
+>>> mcp_tool_record({"name": "ping", "inputSchema": {"type": "object"}})
+{'name': 'ping', 'description': '', 'parameters': {'type': 'object'}}
+```
+
+### ir.sources.mcp_tool_signal(artifact_id, raw)
+
+Change signal for a tool: SHA-256 over `(name, description, parameters)`.
+
+The parameter schema takes part in the hash even though it is never
+embedded, so a schema change re-embeds the tool on the next build (ir_02
+§6). The schema is serialized as canonical JSON (sorted keys), so key order
+does not count as a change. `raw` is a tool record in any form
+[`mcp_tool_record()`](#ir.sources.mcp_tool_record) accepts.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> len(mcp_tool_signal("ping", {"name": "ping"}))
+64
+```
 
 ### ir.sources.report_exclude_reason(path, folder, , exclude_dirs=frozenset({'.git', '.hg', '.ipynb_checkpoints', '.obsidian', '.svn', '.tox', '.venv', '_\_pycache_\_', 'build', 'dist', 'node_modules', 'site-packages', 'venv'}))
 

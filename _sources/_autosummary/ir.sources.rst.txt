@@ -10,6 +10,7 @@ ir.sources
    
       DFLT_EXCLUDE_DIRS
       DFLT_SESSIONS_SINCE_DAYS
+      MCP_TOOL_PARAM_KEYS
       REPORT_DOC_GLOBS
       REPO_DOC_SUBDIRS
    
@@ -20,6 +21,8 @@ ir.sources
       content_hash_signal
       iter_pocket_repos
       iter_report_doc_folders
+      mcp_tool_record
+      mcp_tool_signal
       report_exclude_reason
       resolve_fetcher
    

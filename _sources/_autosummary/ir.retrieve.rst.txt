@@ -13,6 +13,7 @@ ir.retrieve
       DFLT_RRF_K
       DFLT_BLEND_ALPHA
       DFLT_BM25_SAT_K
+      ScoreBoost
       Identity
       Retriever
    
@@ -21,6 +22,7 @@ ir.retrieve
    .. autosummary::
    
       as_retriever
+      dependency_evidence_boost
       fuse_hits
       records_for_artifact
       search
