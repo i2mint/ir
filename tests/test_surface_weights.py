@@ -188,3 +188,20 @@ def test_discover_auto_floor_is_skipped_for_weighted_scores(recwarn):
     )
     assert not weighted.abstained
     assert any("rescale the scores" in str(w.message) for w in recwarn)
+
+
+def test_a_rescaled_calibration_cannot_overwrite_the_plain_floor():
+    from ir import eval as ev
+
+    corpus = _corpus()
+    cases = [
+        ev.DiscoveryCase(query=QUERY, gold=("allude",)),
+        ev.DiscoveryCase(query="bake bread", gold=()),
+    ]
+    with pytest.raises(ValueError, match="cannot persist"):
+        ev.calibrate_min_score(
+            corpus, cases, mode="hybrid", persist=True, surface_weights={"deps": 2.0}
+        )
+    assert corpus.store.calibration_modes() == []
+    # Without persist it still reports a floor for the caller to use.
+    ev.calibrate_min_score(corpus, cases, mode="hybrid", surface_weights={"deps": 2.0})

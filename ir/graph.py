@@ -149,7 +149,7 @@ class CorpusGraph:
             link_items = getattr(self.store, "link_items", None)
             for artifact_id, edges in link_items() if callable(link_items) else ():
                 for target in edges.get(edge_type, []):
-                    key = _reverse_key(target)
+                    key = _reverse_key(target, edge_type)
                     sources = index.setdefault(key, [])
                     if artifact_id not in sources:
                         sources.append(artifact_id)
@@ -162,13 +162,14 @@ class CorpusGraph:
         The reverse of :meth:`neighbors`: with the default :data:`REF` edges of
         :func:`default_edge_extractor` (``package -> its deps``), this lists a
         library's dependents. *node_id* may name an artifact of this corpus or a
-        target outside it (a third-party dependency). String ids match through
-        :func:`normalize_dist_name` (case, and ``-``/``_``/``.``, are ignored),
-        so ``"scikit_learn"`` finds the dependents of ``"scikit-learn"``. A
-        cross-corpus target is a ``(source, artifact_id)`` pair, matched
-        exactly. Order is first-seen over the links view, de-duplicated.
+        target outside it (a third-party dependency). For ``REF`` edges, string
+        ids match through :func:`normalize_dist_name` (case, and ``-``/``_``/``.``,
+        are ignored), so ``"scikit_learn"`` finds the dependents of
+        ``"scikit-learn"``; other edge types match ids exactly. A cross-corpus
+        target is a ``(source, artifact_id)`` pair, matched exactly. Order is first-seen over the links view, de-duplicated.
         """
-        return list(self._reverse_index(edge_type).get(_reverse_key(node_id), []))
+        index = self._reverse_index(edge_type)
+        return list(index.get(_reverse_key(node_id, edge_type), []))
 
     def fan_in(self, node_id: Any, *, edge_type: str = REF) -> int:
         """How many artifacts point at *node_id* by *edge_type* (its in-degree).
@@ -184,11 +185,16 @@ class CorpusGraph:
         return max(map(len, self._reverse_index(edge_type).values()), default=0)
 
 
-def _reverse_key(target: Any) -> Any:
-    """The reverse-index key of an edge target: normalized name, or exact pair."""
+def _reverse_key(target: Any, edge_type: str) -> Any:
+    """The reverse-index key of an edge target.
+
+    A cross-corpus pair matches exactly. A string target of a :data:`REF`
+    (dependency) edge matches through :func:`normalize_dist_name`; any other
+    edge type's ids (paths, ``name@parent``) match exactly.
+    """
     if isinstance(target, (list, tuple)):
         return tuple(target)
-    return normalize_dist_name(target)
+    return normalize_dist_name(target) if edge_type == REF else target
 
 
 def canonical_node_id(target: Any, *, source: str | None) -> tuple[str | None, str]:

@@ -161,3 +161,19 @@ def test_metadata_of_can_be_overridden():
         TOOLS, metadata_of=lambda aid, raw: {"server": "s1"}
     )
     assert src.metadata_of("fetch_url", src.scope["fetch_url"]) == {"server": "s1"}
+
+
+def test_mapping_values_may_be_slotted_objects():
+    class Tool:
+        __slots__ = ("description", "inputSchema")
+
+        def __init__(self, description, schema):
+            self.description = description
+            self.inputSchema = schema
+
+    src = ir.CorpusSource.from_mcp_tools({"fetch_url": Tool("Fetch it", {"a": 1})})
+    assert src.scope["fetch_url"] == {
+        "name": "fetch_url",
+        "description": "Fetch it",
+        "parameters": {"a": 1},
+    }

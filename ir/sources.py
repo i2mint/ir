@@ -179,6 +179,16 @@ def mcp_tool_signal(artifact_id: str, raw: Any) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _named(tool: Any, name: str) -> dict:
+    """A record of *tool*'s indexed fields under *name* (any object or mapping)."""
+    record = {"name": name, "description": _field(tool, "description")}
+    for key in MCP_TOOL_PARAM_KEYS:
+        value = _field(tool, key)
+        if value is not None:
+            record[key] = value
+    return record
+
+
 def _param_names(parameters: Any) -> list[str]:
     """The top-level argument names of a JSON-Schema ``parameters`` object."""
     props = parameters.get("properties") if isinstance(parameters, Mapping) else None
@@ -456,12 +466,7 @@ class CorpusSource:
         if isinstance(tools, Mapping):
             # The key names a tool whose record carries no name of its own.
             tools = [
-                tool
-                if _field(tool, "name")
-                else {
-                    **(tool if isinstance(tool, Mapping) else vars(tool)),
-                    "name": key,
-                }
+                tool if _field(tool, "name") else _named(tool, key)
                 for key, tool in tools.items()
             ]
         scope: dict[str, dict] = {}

@@ -298,3 +298,14 @@ def test_numpy_boost_values_are_accepted():
     corpus = _corpus()
     hits = ir.search(corpus, QUERY, dep_boost=lambda h: np.float32(0.5))
     assert hits  # no ValueError for a numpy scalar
+
+
+def test_other_edge_types_match_ids_exactly():
+    store = CorpusStore.memory()
+    store.set_links("x", {"CITES": ["notes/a b.md"]})
+    store.set_links("y", {"CITES": ["notes/a c.md"]})
+    store.set_links("z", {"PARENT": ["deploy@ops"]})
+    graph = CorpusGraph(store)
+    assert graph.reverse_neighbors("notes/a b.md", edge_type="CITES") == ["x"]
+    assert graph.reverse_neighbors("deploy@infra", edge_type="PARENT") == []
+    assert graph.reverse_neighbors("deploy@ops", edge_type="PARENT") == ["z"]

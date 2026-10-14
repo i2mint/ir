@@ -1615,6 +1615,14 @@ def calibrate_min_score(
         search_kw.get("rerank_text", "surface"),
         max_chars=search_kw.get("rerank_max_chars", DFLT_RERANK_MAX_CHARS),
     )
+    rescaled = [kw for kw in ("surface_weights", "dep_boost") if search_kw.get(kw)]
+    if persist and rescaled:
+        raise ValueError(
+            f"cannot persist a floor calibrated with {' and '.join(rescaled)}: floors "
+            f"are stored per mode and reranker only, so it would overwrite the plain "
+            f"{mode!r} floor. Calibrate without persist=True and pass the returned "
+            f"min_score to discover yourself."
+        )
     if persist and is_anonymous(rerank_id):
         raise ValueError(
             "cannot persist a floor for a reranker without a stable identity (a lambda, "
