@@ -51,7 +51,9 @@ def test_default_and_empty_weights_are_todays_behavior(mode, fusion):
     base = ir.search(corpus, QUERY, k=10, mode=mode, fusion=fusion)
     for weights in (None, {}, {"no_such_kind": 5.0}):
         assert (
-            ir.search(corpus, QUERY, k=10, mode=mode, fusion=fusion, surface_weights=weights)
+            ir.search(
+                corpus, QUERY, k=10, mode=mode, fusion=fusion, surface_weights=weights
+            )
             == base
         )
 
@@ -94,9 +96,7 @@ def test_weighting_happens_before_the_fetch_cut(monkeypatch):
     z = rid[("allude", "description")]
     w = rid[("allude", "deps")]
     # Dense top-2 = x, y; lexical top-2 = z, w. RRF over the union ranks w last.
-    monkeypatch.setattr(
-        retrieve, "_dense_ranked", lambda *a, **k: [(x, 0.9), (y, 0.8)]
-    )
+    monkeypatch.setattr(retrieve, "_dense_ranked", lambda *a, **k: [(x, 0.9), (y, 0.8)])
     monkeypatch.setattr(
         retrieve, "_lexical_ranked", lambda *a, **k: [(z, 5.0), (w, 4.0)]
     )

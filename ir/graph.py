@@ -98,6 +98,7 @@ class CorpusGraph:
         #: The corpus name, when known — the ``source`` half of this graph's
         #: node identities (``None`` for a bare store).
         self.source = getattr(store_or_corpus, "name", None)
+        self._reverse: dict[str, dict[Any, list[str]]] = {}
 
     def __getitem__(self, node_id: str) -> list[Record]:
         """The artifact's records, plan-ordered (``NoLedgerEntry`` if unknown)."""
@@ -134,6 +135,57 @@ class CorpusGraph:
     def edge_types(self, node_id: str) -> list[str]:
         """The edge types present on *node_id* (``[]`` if none)."""
         return list(self.store.get_links(node_id))
+
+    def _reverse_index(self, edge_type: str) -> dict[Any, list[str]]:
+        """``{target: [source artifact ids]}`` for one edge type, built once.
+
+        Derived from the ``links`` view on first use and kept for the life of
+        this graph instance (a snapshot, like the forward edges themselves):
+        build a fresh :class:`CorpusGraph` to see edges written since.
+        """
+        index = self._reverse.get(edge_type)
+        if index is None:
+            index = {}
+            link_items = getattr(self.store, "link_items", None)
+            for artifact_id, edges in link_items() if callable(link_items) else ():
+                for target in edges.get(edge_type, []):
+                    key = tuple(target) if isinstance(target, list) else target
+                    sources = index.setdefault(key, [])
+                    if artifact_id not in sources:
+                        sources.append(artifact_id)
+            self._reverse[edge_type] = index
+        return index
+
+    def reverse_neighbors(self, node_id: Any, *, edge_type: str = REF) -> list[str]:
+        """The artifact ids whose *edge_type* edges point **at** *node_id*.
+
+        The reverse of :meth:`neighbors`: with the default :data:`REF` edges of
+        :func:`default_edge_extractor` (``package -> its deps``), this lists a
+        library's dependents. *node_id* may name an artifact of this corpus or a
+        target outside it (a third-party dependency). ``REF`` targets are stored
+        as lower-cased bare names, so a string *node_id* also matches its
+        lower-cased form. A cross-corpus target is a ``(source, artifact_id)``
+        pair. Order is first-seen over the links view, de-duplicated.
+        """
+        index = self._reverse_index(edge_type)
+        key = tuple(node_id) if isinstance(node_id, list) else node_id
+        found = list(index.get(key, []))
+        if isinstance(key, str) and key.lower() != key:
+            found += [a for a in index.get(key.lower(), []) if a not in found]
+        return found
+
+    def fan_in(self, node_id: Any, *, edge_type: str = REF) -> int:
+        """How many artifacts point at *node_id* by *edge_type* (its in-degree).
+
+        With ``REF`` dependency edges this is the number of dependents, a
+        PageRank-style centrality prior: a widely depended-on library is central
+        to the corpus.
+        """
+        return len(self.reverse_neighbors(node_id, edge_type=edge_type))
+
+    def max_fan_in(self, *, edge_type: str = REF) -> int:
+        """The largest :meth:`fan_in` over all targets (``0`` without edges)."""
+        return max(map(len, self._reverse_index(edge_type).values()), default=0)
 
 
 def canonical_node_id(target: Any, *, source: str | None) -> tuple[str | None, str]:

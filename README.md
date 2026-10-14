@@ -270,6 +270,14 @@ artifact's *summary* down to that artifact's best *chunk*:
 hits = ir.traverse(query, corpus, policy=ir.collapsed_tree_policy())
 ```
 
+Dependencies are also a ranking signal, seeded by the caller. `graph.reverse_neighbors("networkx")` lists a library's dependents and `graph.fan_in(...)` counts them. `ir.reverse_dependency_policy(seeds=[...])` walks those reverse edges, so a package that depends on a domain library but never says so in prose is still found. At ranking time, `ir.search(..., dep_boost=ir.dependency_evidence_boost({"networkx"}, weight=0.02))` adds score to candidates whose `deps` include a listed library. `ir` never chooses the libraries: that is the agent layer's planning decision.
+
+```python
+policy = ir.reverse_dependency_policy(seeds=["networkx"], fan_in_weight=0.1)
+walked = ir.traverse(query, corpus, policy=policy)
+hits = ir.fuse_hits({"flat": ir.search(corpus, query, mode="hybrid"), "deps": walked})
+```
+
 The *summary* a query routes on can be an artifact's own short field — or an
 **LLM-authored synopsis**. `ir.with_synopsis` wraps any indexing strategy to add
 one `synopsis` surface per artifact at build time (the document-summary-index

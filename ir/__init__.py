@@ -68,7 +68,13 @@ from .policy import (
 from .coverage import CoverageReport, reports_coverage
 from .registry import policy_for, retriever_for, retrievers
 from .rerank import calibration_key, resolve_reranker
-from .retrieve import Retriever, as_retriever, fuse_hits, records_for_artifact
+from .retrieve import (
+    Retriever,
+    as_retriever,
+    dependency_evidence_boost,
+    fuse_hits,
+    records_for_artifact,
+)
 from .retrieve import search as _search
 from .select import (
     Disclosure,
@@ -97,7 +103,13 @@ from .synopsis import (
 )
 from .tools import make_search
 from .tools import search as search_tool
-from .traverse import WalkPolicy, WalkState, collapsed_tree_policy, traverse
+from .traverse import (
+    WalkPolicy,
+    WalkState,
+    collapsed_tree_policy,
+    reverse_dependency_policy,
+    traverse,
+)
 
 __all__ = [
     "resolve_reranker",
@@ -133,6 +145,7 @@ __all__ = [
     "retrievers",
     "retriever_for",
     "fuse_hits",
+    "dependency_evidence_boost",
     "records_for_artifact",
     "GraphStore",
     "CorpusGraph",
@@ -143,6 +156,7 @@ __all__ = [
     "WalkPolicy",
     "WalkState",
     "collapsed_tree_policy",
+    "reverse_dependency_policy",
     "expand",
     "Passage",
     "NeighborhoodPolicy",
