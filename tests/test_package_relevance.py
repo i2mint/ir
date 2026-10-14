@@ -314,3 +314,49 @@ def test_evaluate_named_sets_theme_defaults_to_named_sets_theme():
     report = ev.evaluate_named_sets(corpus, ns, probe=_probes()["graphs"],
                                     mode="dense", k=5)
     assert report.theme == "graphs"
+
+
+def _prefer_last(query, passages):
+    """A stub reranker that reverses the first-stage order."""
+    return [float(i) for i, _ in enumerate(passages)]
+
+
+def test_compare_indexings_per_label_search_kw():
+    """One corpus, several search settings: the sweep #68's experiment needs."""
+    corpus = _corpus()
+    cases = _cases()
+    report = ev.compare_indexings(
+        {"baseline": corpus, "reversed": corpus},
+        cases,
+        themes=THEMES,
+        probes=_probes(),
+        mode="dense",
+        k=5,
+        search_kw_by_label={"reversed": {"rerank": _prefer_last}},
+    )
+    ndcg = {
+        label: [report.metrics[label][t]["ndcg"] for t in THEMES]
+        for label in ("baseline", "reversed")
+    }
+    assert ndcg["baseline"] != ndcg["reversed"]
+    # Same corpus and same settings for both labels: identical metrics.
+    same = ev.compare_indexings(
+        {"baseline": corpus, "again": corpus},
+        cases,
+        themes=THEMES,
+        probes=_probes(),
+        mode="dense",
+        k=5,
+    )
+    assert same.metrics["baseline"] == same.metrics["again"]
+
+
+def test_compare_indexings_per_label_search_kw_guards():
+    corpus = _corpus()
+    cases = _cases()
+    with pytest.raises(ValueError, match="unknown label"):
+        ev.compare_indexings({"b": corpus}, cases, themes=THEMES, probes=_probes(),
+                             k=5, search_kw_by_label={"nope": {}})
+    with pytest.raises(ValueError, match="rank_depth"):
+        ev.compare_indexings({"b": corpus}, cases, themes=THEMES, probes=_probes(),
+                             k=5, search_kw_by_label={"b": {"k": 3}})

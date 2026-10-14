@@ -2326,6 +2326,7 @@ def compare_indexings(
     rank_depth: int = 1000,
     gains: Mapping[str, float] = LEVEL_GAINS,
     surfaces: Iterable[str] | None = None,
+    search_kw_by_label: Mapping[str, Mapping[str, Any]] | None = None,
     **search_kw: Any,
 ) -> ComparisonReport:
     """A/B (or N-way) regression gate over indexing / embedder configurations.
@@ -2341,6 +2342,12 @@ def compare_indexings(
     that :meth:`ComparisonReport.regressions` compares against. Each ranking is
     fetched once to depth ``rank_depth`` (deep enough that even a buried named id
     gets a real rank) and sliced at ``k`` for the ``@k`` metrics.
+
+    ``search_kw_by_label`` overrides search settings per label, on top of the
+    shared ``mode`` / ``surfaces`` / ``**search_kw``: map one corpus under several
+    labels to compare *search* configurations rather than indexings, e.g.
+    ``{"deps x2": {"surface_weights": {"deps": 2.0}}}``. Any
+    :func:`ir.retrieve.search` keyword except ``k`` (the depth is ``rank_depth``).
     """
     from ef.evaluation import ndcg_at_k
 
@@ -2352,20 +2359,27 @@ def compare_indexings(
     missing_probes = [theme for theme in themes if theme not in probes]
     if missing_probes:
         raise ValueError(f"no probe text for theme(s): {missing_probes}")
+    label_kw = dict(search_kw_by_label or {})
+    unknown = sorted(set(label_kw) - set(labels))
+    if unknown:
+        raise ValueError(f"search_kw_by_label names unknown label(s): {unknown}")
+    if any("k" in kw for kw in label_kw.values()):
+        raise ValueError(
+            "search_kw_by_label cannot set k: every ranking is fetched to rank_depth"
+        )
     metrics: dict[str, dict[str, dict[str, float]]] = {}
     deltas: dict[str, dict[str, dict]] = {theme: {} for theme in themes}
     for label in labels:
         corpus = _as_corpus(corpora[label])
         metrics[label] = {}
         for theme in themes:
-            hits = _probe_hits(
-                corpus,
-                probes[theme],
-                mode=mode,
-                k=rank_depth,
-                surfaces=surfaces,
+            settings = {
+                "mode": mode,
+                "surfaces": surfaces,
                 **search_kw,
-            )
+                **label_kw.get(label, {}),
+            }
+            hits = _probe_hits(corpus, probes[theme], k=rank_depth, **settings)
             ranking = [h.artifact_id for h in hits]
             score_by = {h.artifact_id: float(h.score) for h in hits}
             rank_by = {aid: i + 1 for i, aid in enumerate(ranking)}

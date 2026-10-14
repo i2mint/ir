@@ -144,6 +144,8 @@ queries far better (and even beats dense); the tradeoff is lower lexical recall
 on terse corpora, so RRF stays the default. Use `blend` when abstention matters
 — see [`ir_08`](misc/docs/ir_08%20--%20Magnitude-Preserving%20Hybrid%20Fusion%20--%20Trading%20rank-RRF%20for%20abstention%20separability.md).
 
+`surface_weights={"deps": 2.0}` multiplies each surface-hit's first-stage (fused) score by its kind's weight before the per-artifact collapse, so a high-precision surface such as `Package(embed_deps=True)`'s `deps` can outrank prose chunks. The default weighs every surface equally. Weighted scores need their own abstention floor. To sweep weights on one corpus, map it under several labels in `ir.eval.compare_indexings(..., search_kw_by_label={"deps x2": {"surface_weights": {"deps": 2.0}}})`.
+
 #### Precision stage: cross-encoder rerank (opt-in)
 
 First-stage retrieval is tuned for recall; a cross-encoder re-scores the top `fetch_k`

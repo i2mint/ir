@@ -43,6 +43,7 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 from __future__ import annotations
 
 import json
+import math
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import replace
@@ -224,12 +225,13 @@ def _rrf_fuse(
     dense: list[tuple[str, float]],
     lexical: list[tuple[str, float]],
     rrf_k: int,
-    fetch: int,
+    fetch: int | None,
 ) -> list[tuple[str, float]]:
     """Fuse dense + lexical rankings via ``vd.reciprocal_rank_fusion``.
 
     Falls back to the dense ranking if ``vd`` is unavailable or lexical is
-    empty (RRF of a single non-empty list is just that list's order).
+    empty (RRF of a single non-empty list is just that list's order). A
+    ``fetch`` of ``None`` keeps the whole fused union.
     """
     if not lexical:
         return dense[:fetch]
@@ -258,7 +260,7 @@ def _blend_fuse(
     lexical: list[tuple[str, float]],
     alpha: float,
     bm25_sat_k: float,
-    fetch: int,
+    fetch: int | None,
 ) -> list[tuple[str, float]]:
     """Fuse dense + lexical by a magnitude-preserving convex blend.
 
@@ -293,6 +295,45 @@ def _blend_fuse(
         fused.append((rid, alpha * d + (1.0 - alpha) * b_sat))
     fused.sort(key=lambda kv: -kv[1])
     return fused[:fetch]
+
+
+def _check_surface_weights(
+    surface_weights: Mapping[str, float] | None,
+) -> dict[str, float]:
+    """Validate ``surface_weights``: finite, non-negative numbers keyed by kind."""
+    if not surface_weights:
+        return {}
+    checked = {}
+    for kind, weight in surface_weights.items():
+        if (
+            isinstance(weight, bool)
+            or not isinstance(weight, (int, float))
+            or not math.isfinite(weight)
+            or weight < 0
+        ):
+            raise ValueError(
+                f"surface_weights[{kind!r}] = {weight!r}; a surface weight must be a "
+                f"finite, non-negative number (use surfaces= to exclude a kind)."
+            )
+        checked[str(kind)] = float(weight)
+    return checked
+
+
+def _weight_surfaces(
+    ranked: list[tuple[str, float]],
+    meta_by_id: Mapping[str, dict],
+    weights: Mapping[str, float],
+) -> list[tuple[str, float]]:
+    """Multiply each score by its surface kind's weight (default 1), best first.
+
+    The sort is stable, so equally scored candidates keep their first-stage order.
+    """
+    weighted = [
+        (rid, score * weights.get(meta_by_id[rid]["surface_kind"], 1.0))
+        for rid, score in ranked
+    ]
+    weighted.sort(key=lambda kv: -kv[1])
+    return weighted
 
 
 def _apply_rerank(
@@ -398,6 +439,7 @@ def search(
     rerank_max_chars: int = DFLT_RERANK_MAX_CHARS,
     bm25: Mapping[str, Any] | None = None,
     formulate: Formulator | None = None,
+    surface_weights: Mapping[str, float] | None = None,
 ) -> list[SearchHit]:
     """Return the top-*k* :class:`~ir.base.SearchHit` for *query*.
 
@@ -442,6 +484,17 @@ def search(
         (ir_09 §3). Identity by default (embed the query verbatim). When it
         returns several queries, ir runs each and fuses the results (best surface
         per artifact). See :func:`ir.make_llm_formulator`.
+    surface_weights : optional ``{surface_kind: weight}`` multipliers, e.g.
+        ``{"deps": 2.0}`` to let a high-precision ``deps`` surface outrank prose
+        chunks. Each surface-hit's first-stage score (the fused score in hybrid
+        mode) is multiplied by its kind's weight (default 1.0) before the
+        ``fetch_k`` cut, the reranker and the per-artifact collapse; kinds the
+        corpus lacks are ignored. Weights must be finite and non-negative. Meant
+        for the non-negative scores of hybrid fusion and BM25 (a negative dense
+        cosine moves *down* when multiplied by a weight above 1). Weighted scores
+        are on a different scale from unweighted ones, so an abstention floor
+        calibrated without the weights does not apply to them. Default ``None``
+        weighs every surface equally, as before.
     """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
@@ -449,6 +502,7 @@ def search(
     asked = query  # the reranker judges against what the caller asked, not a rewrite
     if fusion not in FUSIONS:
         raise ValueError(f"unknown fusion {fusion!r}; expected one of {FUSIONS}")
+    weights = _check_surface_weights(surface_weights)
 
     # Materialize once: surfaces may be a one-shot iterable, and it is both the
     # filter input and part of the BM25 cache key.
@@ -492,6 +546,7 @@ def search(
                         bm25_sat_k=bm25_sat_k,
                         fetch_k=fetch_k,
                         bm25=bm25,
+                        surface_weights=weights,
                     )
                 )
             if rerank is not None and merged:
@@ -529,6 +584,9 @@ def search(
     # the surfaces are not collapsed per artifact (which alone would fetch just k).
     over_fetch = per_artifact or rerank is not None
     fetch = fetch_k if fetch_k is not None else (max(k * 5, 50) if over_fetch else k)
+    # With surface weights, fusion keeps its whole union so the weights act
+    # before the fetch cut: a boosted surface fused just below it still counts.
+    cut = None if weights else fetch
 
     if mode == "lexical":
         index = _bm25_index_for(
@@ -545,11 +603,14 @@ def search(
             )
             lexical = _lexical_ranked(index, query, fetch, bm25)
             if fusion == "blend":
-                ranked = _blend_fuse(dense, lexical, alpha, bm25_sat_k, fetch)
+                ranked = _blend_fuse(dense, lexical, alpha, bm25_sat_k, cut)
             else:
-                ranked = _rrf_fuse(dense, lexical, rrf_k, fetch)
+                ranked = _rrf_fuse(dense, lexical, rrf_k, cut)
 
     meta_by_id = {ids[j]: metas[j] for j in candidates}
+
+    if weights:
+        ranked = _weight_surfaces(ranked, meta_by_id, weights)[:fetch]
 
     if rerank is not None and ranked:
         ranked = _apply_rerank(
