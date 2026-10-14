@@ -43,6 +43,14 @@ dependencies = [
     "cw>=0.1.1,<0.2",
 ]
 
+[tool.hatch.build.targets.sdist]
+# `.claude/skills/*` are symlinks into the real skill dirs (`ir/data/skills/`,
+# `skills/`). Hatchling's walk follows symlinks and skips a directory it has
+# already seen, and `.claude` sorts first, so walking the bridge would drop the
+# real files from the sdist and from any wheel built from it. Don't walk it.
+exclude = [".claude/skills"]
+skip-excluded-dirs = true
+
 [project.scripts]
 ir = "ir.__main__:main"
 
