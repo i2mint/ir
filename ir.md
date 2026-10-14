@@ -1,4 +1,4 @@
-> built 2026-10-13 23:15 UTC from 4683d7e (master) · ir 0.1.46. Details: build_info.json
+> built 2026-10-14 01:56 UTC from 85d5292 (master) · ir 0.1.47. Details: build_info.json
 
 # index.html.md
 
@@ -154,9 +154,13 @@ candidates against the query *jointly*, which suppresses jargon-sharing distract
 Single-shot and agent-free (the evaluator back-edge stays in `raglab`):
 
 ```python
-hits = ir.search(corpus, "audio DAG pipelines", mode="hybrid",
-                 rerank="cross-encoder",       # ef's cross-encoder, loaded lazily
-                 rerank_text="artifact")       # read the whole artifact, not the matched surface
+hits = ir.search(
+    corpus,
+    "audio DAG pipelines",
+    mode="hybrid",
+    rerank="cross-encoder",  # ef's cross-encoder, loaded lazily
+    rerank_text="artifact",
+)  # read the whole artifact, not the matched surface
 ```
 
 `pip install 'ir[rerank]'` brings `sentence-transformers`; without it the search warns once
@@ -671,7 +675,7 @@ ir discover skills "deploy app" --min-score auto  # use the calibrated floor
 
 Build or incrementally update a registered (or preset) corpus.
 
-### ir.cli.calibrate_min_score(name, cases, , mode='hybrid', k=10, sensitivity_weight=0.5, persist=False, fusion='rrf')
+### ir.cli.calibrate_min_score(name, cases, , mode='hybrid', k=10, sensitivity_weight=0.5, persist=False, fusion='rrf', rerank=None, rerank_text='surface')
 
 Calibrate the absolute abstention min_score floor for a corpus + mode.
 
@@ -684,7 +688,9 @@ will abstain by it. `--sensitivity-weight` (0..1, balanced default);
 lower it to abstain more readily (precision-leaning). For hybrid, calibrate
 with `--fusion blend` (rank-based RRF barely separates — see ir_08) and
 query under the same fusion. mode: dense | lexical | hybrid. fusion (hybrid
-only): rrf | blend.
+only): rrf | blend. `--rerank cross-encoder` calibrates the floor for a
+reranked search (its own floor, stored apart from the plain one); query with
+the same `--rerank` / `--rerank-text`.
 
 ### ir.cli.coverage(name='reports')
 
@@ -696,7 +702,7 @@ file that is on disk but missing from the index (rebuild with `ir build` to
 fix). Catches the ingestion gaps that back-translation evals structurally
 cannot — a doc that was never indexed can never be an eval gold id.
 
-### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf')
+### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface')
 
 Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -707,7 +713,10 @@ selected item’s body (SKILL.md / file text) via its stored pointer.
 by `ir calibrate-min-score` (or pass a float). mode: dense | lexical |
 hybrid. fusion (hybrid only): rrf (default) | blend (magnitude-preserving;
 pair with –min-score for abstention — see ir_08). strategy: conservative |
-top_k | rel_threshold | score_gap.
+top_k | rel_threshold | score_gap. `--rerank cross-encoder` adds the
+calibrated cross-encoder precision stage (`--rerank-text` picks what it
+reads); with `--min-score auto` it uses the floor calibrated under the same
+`--rerank` / `--rerank-text`.
 
 ### ir.cli.eval(name, cases, , mode='hybrid', k=10)
 
@@ -2748,7 +2757,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`resolve_reranker`](_autosummary/ir.html.md#ir.resolve_reranker)(spec)                             | The reranker `spec` names, or `None` when there is none to apply.                                                                          |
 |-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
 | [`calibration_key`](_autosummary/ir.html.md#ir.calibration_key)(mode[, tag])                       | The key an abstention floor is stored and loaded under.                                                                                    |
-| [`search_tool`](_autosummary/ir.html.md#ir.search_tool)(query, \*, corpus[, k, mode, filter])  | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                     |
+| [`search_tool`](_autosummary/ir.html.md#ir.search_tool)(query, \*, corpus[, k, mode, ...])     | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                     |
 | [`make_search`](_autosummary/ir.html.md#ir.make_search)(corpus, \*[, name, description, ...])  | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                             |
 | [`with_synopsis`](_autosummary/ir.html.md#ir.with_synopsis)(strategy, \*[, synthesize, ...])     | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                    |
 | [`make_thin_description_predicate`](_autosummary/ir.html.md#ir.make_thin_description_predicate)(\*[, ...])         | A `Predicate` true when the artifact's `field` is empty or thin.                                                                           |
@@ -4090,7 +4099,7 @@ corpus’s `strategy_id` for staleness — a prompt or model change re-synthesiz
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### ir.make_search(corpus, , name=None, description=None, k=8, mode='hybrid')
+### ir.make_search(corpus, , name=None, description=None, k=8, mode='hybrid', rerank=None, rerank_text='surface')
 
 Return a **corpus-bound** `search(query, k=...) -> dict` tool.
 
@@ -4299,7 +4308,7 @@ filter), `surfaces` (restrict to surface kinds), and `per_artifact`
 (collapse to the best surface per artifact). See [`ir.retrieve.search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search)
 for the full signature and defaults.
 
-### ir.search_tool(query, , corpus, k=8, mode='hybrid', filter=None)
+### ir.search_tool(query, , corpus, k=8, mode='hybrid', filter=None, rerank=None, rerank_text='surface')
 
 Search a named `ir` corpus and return a JSON-serializable result dict.
 
@@ -4315,6 +4324,8 @@ single function serves any corpus.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – maximum number of results.
   * **mode** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `"dense"` | `"lexical"` | `"hybrid"`.
   * **filter** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – optional `vd` Mongo-style metadata filter (hard pre-filter).
+  * **rerank** ([`Any`](https://docs.python.org/3/library/typing.html#typing.Any)) – optional second-stage reranker (e.g. `"cross-encoder"`); off by
+    default. `rerank_text` picks the text it reads.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
@@ -6821,11 +6832,11 @@ front door.
 
 ### Functions
 
-| [`search`](_autosummary/ir.tools.html.md#ir.tools.search)(query, \*, corpus[, k, mode, filter])      | Search a named `ir` corpus and return a JSON-serializable result dict.   |
-|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [`make_search`](_autosummary/ir.tools.html.md#ir.tools.make_search)(corpus, \*[, name, description, ...]) | Return a **corpus-bound** `search(query, k=...) -> dict` tool.           |
+| [`search`](_autosummary/ir.tools.html.md#ir.tools.search)(query, \*, corpus[, k, mode, filter, ...])   | Search a named `ir` corpus and return a JSON-serializable result dict.   |
+|------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| [`make_search`](_autosummary/ir.tools.html.md#ir.tools.make_search)(corpus, \*[, name, description, ...])   | Return a **corpus-bound** `search(query, k=...) -> dict` tool.           |
 
-### ir.tools.make_search(corpus, , name=None, description=None, k=8, mode='hybrid')
+### ir.tools.make_search(corpus, , name=None, description=None, k=8, mode='hybrid', rerank=None, rerank_text='surface')
 
 Return a **corpus-bound** `search(query, k=...) -> dict` tool.
 
@@ -6838,7 +6849,7 @@ name and description. Use this when wiring a single-corpus connector; use
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
-### ir.tools.search(query, , corpus, k=8, mode='hybrid', filter=None)
+### ir.tools.search(query, , corpus, k=8, mode='hybrid', filter=None, rerank=None, rerank_text='surface')
 
 Search a named `ir` corpus and return a JSON-serializable result dict.
 
@@ -6854,6 +6865,8 @@ single function serves any corpus.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – maximum number of results.
   * **mode** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `"dense"` | `"lexical"` | `"hybrid"`.
   * **filter** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – optional `vd` Mongo-style metadata filter (hard pre-filter).
+  * **rerank** ([`Any`](https://docs.python.org/3/library/typing.html#typing.Any)) – optional second-stage reranker (e.g. `"cross-encoder"`); off by
+    default. `rerank_text` picks the text it reads.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
@@ -6864,18 +6877,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-13 23:15 UTC** from commit <a href="https://github.com/i2mint/ir/commit/4683d7eb0d9e1dddb46c34b249b8aa14b5891149"><code>4683d7e</code></a> on branch <code>master</code>, for **ir 0.1.46** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-14 01:56 UTC** from commit <a href="https://github.com/i2mint/ir/commit/85d529236e55b8c5de9287ca88e63d345fb9240e"><code>85d5292</code></a> on branch <code>master</code>, for **ir 0.1.47** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.46) is behind the latest release on PyPI (0.1.47): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/4683d7eb0d9e1dddb46c34b249b8aa14b5891149"><code>4683d7eb0d9e1dddb46c34b249b8aa14b5891149</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/85d529236e55b8c5de9287ca88e63d345fb9240e"><code>85d529236e55b8c5de9287ca88e63d345fb9240e</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -6886,9 +6897,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38482883628">38482883628</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/38498229605">38498229605</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>4683d7eb0d9e1dddb46c34b249b8aa14b5891149</code> (in the history of the built commit) |
+| Event commit | <code>85d529236e55b8c5de9287ca88e63d345fb9240e</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -6913,13 +6924,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.47/">0.1.47</a>, newer than the documented version (0.1.46).
+Latest release: <a href="https://pypi.org/project/ir/0.1.47/">0.1.47</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 4683d7eb0d9e1dddb46c34b249b8aa14b5891149
+git checkout 85d529236e55b8c5de9287ca88e63d345fb9240e
 pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

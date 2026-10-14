@@ -48,7 +48,7 @@ ir discover skills "deploy app" --min-score auto  # use the calibrated floor
 
 Build or incrementally update a registered (or preset) corpus.
 
-### ir.cli.calibrate_min_score(name, cases, , mode='hybrid', k=10, sensitivity_weight=0.5, persist=False, fusion='rrf')
+### ir.cli.calibrate_min_score(name, cases, , mode='hybrid', k=10, sensitivity_weight=0.5, persist=False, fusion='rrf', rerank=None, rerank_text='surface')
 
 Calibrate the absolute abstention min_score floor for a corpus + mode.
 
@@ -61,7 +61,9 @@ will abstain by it. `--sensitivity-weight` (0..1, balanced default);
 lower it to abstain more readily (precision-leaning). For hybrid, calibrate
 with `--fusion blend` (rank-based RRF barely separates — see ir_08) and
 query under the same fusion. mode: dense | lexical | hybrid. fusion (hybrid
-only): rrf | blend.
+only): rrf | blend. `--rerank cross-encoder` calibrates the floor for a
+reranked search (its own floor, stored apart from the plain one); query with
+the same `--rerank` / `--rerank-text`.
 
 ### ir.cli.coverage(name='reports')
 
@@ -73,7 +75,7 @@ file that is on disk but missing from the index (rebuild with `ir build` to
 fix). Catches the ingestion gaps that back-translation evals structurally
 cannot — a doc that was never indexed can never be an eval gold id.
 
-### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf')
+### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface')
 
 Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -84,7 +86,10 @@ selected item’s body (SKILL.md / file text) via its stored pointer.
 by `ir calibrate-min-score` (or pass a float). mode: dense | lexical |
 hybrid. fusion (hybrid only): rrf (default) | blend (magnitude-preserving;
 pair with –min-score for abstention — see ir_08). strategy: conservative |
-top_k | rel_threshold | score_gap.
+top_k | rel_threshold | score_gap. `--rerank cross-encoder` adds the
+calibrated cross-encoder precision stage (`--rerank-text` picks what it
+reads); with `--min-score auto` it uses the floor calibrated under the same
+`--rerank` / `--rerank-text`.
 
 ### ir.cli.eval(name, cases, , mode='hybrid', k=10)
 

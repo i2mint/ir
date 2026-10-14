@@ -43,7 +43,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`resolve_reranker`](#ir.resolve_reranker)(spec)                             | The reranker `spec` names, or `None` when there is none to apply.                                                                          |
 |-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
 | [`calibration_key`](#ir.calibration_key)(mode[, tag])                       | The key an abstention floor is stored and loaded under.                                                                                    |
-| [`search_tool`](#ir.search_tool)(query, \*, corpus[, k, mode, filter])  | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                     |
+| [`search_tool`](#ir.search_tool)(query, \*, corpus[, k, mode, ...])     | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                     |
 | [`make_search`](#ir.make_search)(corpus, \*[, name, description, ...])  | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                             |
 | [`with_synopsis`](#ir.with_synopsis)(strategy, \*[, synthesize, ...])     | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                    |
 | [`make_thin_description_predicate`](#ir.make_thin_description_predicate)(\*[, ...])         | A `Predicate` true when the artifact's `field` is empty or thin.                                                                           |
@@ -1385,7 +1385,7 @@ corpus’s `strategy_id` for staleness — a prompt or model change re-synthesiz
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### ir.make_search(corpus, , name=None, description=None, k=8, mode='hybrid')
+### ir.make_search(corpus, , name=None, description=None, k=8, mode='hybrid', rerank=None, rerank_text='surface')
 
 Return a **corpus-bound** `search(query, k=...) -> dict` tool.
 
@@ -1594,7 +1594,7 @@ filter), `surfaces` (restrict to surface kinds), and `per_artifact`
 (collapse to the best surface per artifact). See [`ir.retrieve.search()`](ir.retrieve.html.md#ir.retrieve.search)
 for the full signature and defaults.
 
-### ir.search_tool(query, , corpus, k=8, mode='hybrid', filter=None)
+### ir.search_tool(query, , corpus, k=8, mode='hybrid', filter=None, rerank=None, rerank_text='surface')
 
 Search a named `ir` corpus and return a JSON-serializable result dict.
 
@@ -1610,6 +1610,8 @@ single function serves any corpus.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – maximum number of results.
   * **mode** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `"dense"` | `"lexical"` | `"hybrid"`.
   * **filter** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – optional `vd` Mongo-style metadata filter (hard pre-filter).
+  * **rerank** ([`Any`](https://docs.python.org/3/library/typing.html#typing.Any)) – optional second-stage reranker (e.g. `"cross-encoder"`); off by
+    default. `rerank_text` picks the text it reads.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 

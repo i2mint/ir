@@ -16,11 +16,11 @@ front door.
 
 ### Functions
 
-| [`search`](#ir.tools.search)(query, \*, corpus[, k, mode, filter])      | Search a named `ir` corpus and return a JSON-serializable result dict.   |
-|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| [`make_search`](#ir.tools.make_search)(corpus, \*[, name, description, ...]) | Return a **corpus-bound** `search(query, k=...) -> dict` tool.           |
+| [`search`](#ir.tools.search)(query, \*, corpus[, k, mode, filter, ...])   | Search a named `ir` corpus and return a JSON-serializable result dict.   |
+|------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| [`make_search`](#ir.tools.make_search)(corpus, \*[, name, description, ...])   | Return a **corpus-bound** `search(query, k=...) -> dict` tool.           |
 
-### ir.tools.make_search(corpus, , name=None, description=None, k=8, mode='hybrid')
+### ir.tools.make_search(corpus, , name=None, description=None, k=8, mode='hybrid', rerank=None, rerank_text='surface')
 
 Return a **corpus-bound** `search(query, k=...) -> dict` tool.
 
@@ -33,7 +33,7 @@ name and description. Use this when wiring a single-corpus connector; use
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
-### ir.tools.search(query, , corpus, k=8, mode='hybrid', filter=None)
+### ir.tools.search(query, , corpus, k=8, mode='hybrid', filter=None, rerank=None, rerank_text='surface')
 
 Search a named `ir` corpus and return a JSON-serializable result dict.
 
@@ -49,5 +49,7 @@ single function serves any corpus.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – maximum number of results.
   * **mode** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `"dense"` | `"lexical"` | `"hybrid"`.
   * **filter** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – optional `vd` Mongo-style metadata filter (hard pre-filter).
+  * **rerank** ([`Any`](https://docs.python.org/3/library/typing.html#typing.Any)) – optional second-stage reranker (e.g. `"cross-encoder"`); off by
+    default. `rerank_text` picks the text it reads.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

@@ -279,9 +279,13 @@ on terse corpora, so RRF stays the default. Use <code class="docutils literal no
 <p>First-stage retrieval is tuned for recall; a cross-encoder re-scores the top <code class="docutils literal notranslate"><span class="pre">fetch_k</span></code>
 candidates against the query <em>jointly</em>, which suppresses jargon-sharing distractors.
 Single-shot and agent-free (the evaluator back-edge stays in <code class="docutils literal notranslate"><span class="pre">raglab</span></code>):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">hits</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="s2">"audio DAG pipelines"</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">,</span>
-</span><span id="line-2">                 <span class="n">rerank</span><span class="o">=</span><span class="s2">"cross-encoder"</span><span class="p">,</span>       <span class="c1"># ef's cross-encoder, loaded lazily</span>
-</span><span id="line-3">                 <span class="n">rerank_text</span><span class="o">=</span><span class="s2">"artifact"</span><span class="p">)</span>       <span class="c1"># read the whole artifact, not the matched surface</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">hits</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+</span><span id="line-2">    <span class="n">corpus</span><span class="p">,</span>
+</span><span id="line-3">    <span class="s2">"audio DAG pipelines"</span><span class="p">,</span>
+</span><span id="line-4">    <span class="n">mode</span><span class="o">=</span><span class="s2">"hybrid"</span><span class="p">,</span>
+</span><span id="line-5">    <span class="n">rerank</span><span class="o">=</span><span class="s2">"cross-encoder"</span><span class="p">,</span>  <span class="c1"># ef's cross-encoder, loaded lazily</span>
+</span><span id="line-6">    <span class="n">rerank_text</span><span class="o">=</span><span class="s2">"artifact"</span><span class="p">,</span>
+</span><span id="line-7"><span class="p">)</span>  <span class="c1"># read the whole artifact, not the matched surface</span>
 </span></code></pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'ir[rerank]'</span></code> brings <code class="docutils literal notranslate"><span class="pre">sentence-transformers</span></code>; without it the search warns once
@@ -519,7 +523,7 @@ calibration, and magnitude-preserving fusion. <code class="docutils literal notr
 
 </section>
 </section>
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-13 23:15 UTC from <a href="https://github.com/i2mint/ir/commit/4683d7eb0d9e1dddb46c34b249b8aa14b5891149">4683d7e</a> (master) · ir 0.1.46 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-14 01:56 UTC from <a href="https://github.com/i2mint/ir/commit/85d529236e55b8c5de9287ca88e63d345fb9240e">85d5292</a> (master) · ir 0.1.47 · <a href="about-this-build.html">about this build</a></p>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
@@ -553,7 +557,7 @@ calibration, and magnitude-preserving fusion. <code class="docutils literal notr
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=f98a5df1"></script>
+<script src="_static/documentation_options.js?v=5df2d9e8"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>
