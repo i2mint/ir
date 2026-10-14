@@ -38,6 +38,7 @@ import ir
 source = ir.CorpusSource.from_skills()  # or from_packages(), from_md_reports(),
 # from_claude_sessions(), from_files(...),
 # from_records(fetcher="mypkg.recall:records")  # records another package owns
+# from_mcp_tools(tools)  # an MCP tool catalogue: name + description embedded
 corpus = ir.build(source)  # embed + persist under XDG dirs
 result = ir.discover(corpus, "how do I deploy the app to the server")
 

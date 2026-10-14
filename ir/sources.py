@@ -13,11 +13,14 @@ independent of how it is indexed or stored:
 
 Smart-default constructors cover the common ways to define a source:
 :meth:`from_mapping`, :meth:`from_files`, :meth:`from_md_reports`,
-:meth:`from_skills`, :meth:`from_packages`, :meth:`from_records`.
+:meth:`from_skills`, :meth:`from_packages`, :meth:`from_records`,
+:meth:`from_mcp_tools`.
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import re
 import warnings
@@ -114,6 +117,72 @@ def resolve_fetcher(fetcher: Any) -> Callable[[], list]:
         raise AttributeError(
             f"fetcher reference {fetcher!r}: {module_name!r} has no {attr!r}."
         ) from e
+
+
+#: Fields a tool record may carry its parameter schema under, in lookup order:
+#: fastmcp's ``parameters``, the MCP wire format's ``inputSchema``, and the
+#: Anthropic API's ``input_schema``.
+MCP_TOOL_PARAM_KEYS = ("parameters", "inputSchema", "input_schema")
+
+
+def _field(record: Any, key: str) -> Any:
+    """``record[key]`` for a mapping, ``record.key`` for any other object."""
+    if isinstance(record, Mapping):
+        return record.get(key)
+    return getattr(record, key, None)
+
+
+def mcp_tool_record(tool: Any) -> dict:
+    """Normalize one duck-typed tool to ``{name, description, parameters}``.
+
+    ``tool`` is a mapping or an object (a fastmcp or ``mcp.types`` tool, say)
+    with a ``name``, an optional ``description``, and an optional parameter
+    schema under any of :data:`MCP_TOOL_PARAM_KEYS`. Every other field is
+    dropped, so it neither reaches the index nor invalidates it.
+
+    >>> mcp_tool_record({"name": "ping", "inputSchema": {"type": "object"}})
+    {'name': 'ping', 'description': '', 'parameters': {'type': 'object'}}
+    """
+    name = _field(tool, "name")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError(f"tool record has no name: {tool!r}")
+    parameters = next(
+        (p for key in MCP_TOOL_PARAM_KEYS if (p := _field(tool, key)) is not None),
+        {},
+    )
+    return {
+        "name": name,
+        "description": str(_field(tool, "description") or ""),
+        "parameters": parameters,
+    }
+
+
+def mcp_tool_signal(artifact_id: str, raw: Any) -> str:
+    """Change signal for a tool: SHA-256 over ``(name, description, parameters)``.
+
+    The parameter schema takes part in the hash even though it is never
+    embedded, so a schema change re-embeds the tool on the next build (ir_02
+    §6). The schema is serialized as canonical JSON (sorted keys), so key order
+    does not count as a change. ``raw`` is a tool record in any form
+    :func:`mcp_tool_record` accepts.
+
+    >>> len(mcp_tool_signal("ping", {"name": "ping"}))
+    64
+    """
+    tool = mcp_tool_record(raw)
+    canonical = json.dumps(
+        [tool["name"], tool["description"], tool["parameters"]],
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _param_names(parameters: Any) -> list[str]:
+    """The top-level argument names of a JSON-Schema ``parameters`` object."""
+    props = parameters.get("properties") if isinstance(parameters, Mapping) else None
+    return [str(k) for k in props] if isinstance(props, Mapping) else []
 
 
 @dataclass
@@ -341,6 +410,68 @@ class CorpusSource:
             name=name,
             scope=scope,
             indexing_strategy=strategy or Skill(),
+            metadata_of=metadata_of,
+            **kwargs,
+        )
+
+    @classmethod
+    def from_mcp_tools(
+        cls,
+        tools: Any,
+        *,
+        name: str = "tools",
+        strategy: IndexingStrategy | None = None,
+        **kwargs,
+    ) -> "CorpusSource":
+        """A catalogue of MCP tools as a corpus, for tool search.
+
+        Each tool is indexed on ``name + description`` only, through the
+        :class:`~ir.strategy.Skill` strategy: its parameter schema never enters
+        the embedded text (ir_02 §4, "the body carries no retrieval
+        responsibility"). The schema still drives invalidation, through
+        :func:`mcp_tool_signal`, so a changed schema re-embeds the tool. Its
+        top-level argument names ride along as the ``param_names`` metadata of
+        every hit, so a caller can see what a tool takes without loading it.
+
+        ``tools`` is an iterable of tool records, a ``{name: tool}`` mapping, or
+        a fetcher (a zero-argument callable or a ``"module:attr"`` reference,
+        see :func:`resolve_fetcher`). A record is duck-typed (see
+        :func:`mcp_tool_record`), so ``ir`` takes no MCP dependency; an adapter
+        for a specific client lives with the consumer. Tool names are the
+        artifact ids and must be unique: namespace them (``"server.tool"``)
+        before merging several servers' catalogues.
+
+        >>> src = CorpusSource.from_mcp_tools(
+        ...     [{"name": "ping", "description": "Check the server is up"}]
+        ... )
+        >>> plan = src.indexing_strategy.decompose("ping", src.scope["ping"])
+        >>> print(plan.surfaces[0].text)
+        ping
+        <BLANKLINE>
+        Check the server is up
+        """
+        if isinstance(tools, str) or callable(tools):
+            tools = resolve_fetcher(tools)()
+        if isinstance(tools, Mapping):
+            tools = tools.values()
+        scope: dict[str, dict] = {}
+        for tool in tools:
+            record = mcp_tool_record(tool)
+            if record["name"] in scope:
+                raise ValueError(
+                    f"duplicate tool name {record['name']!r}: tool names are the "
+                    f"artifact ids; namespace them (e.g. 'server.tool') first."
+                )
+            scope[record["name"]] = record
+
+        def metadata_of(aid, raw):
+            return {"param_names": _param_names(raw.get("parameters"))}
+
+        return cls(
+            name=name,
+            scope=scope,
+            indexing_strategy=strategy or Skill(),
+            change_signal=kwargs.pop("change_signal", mcp_tool_signal),
             metadata_of=metadata_of,
             **kwargs,
         )
