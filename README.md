@@ -35,7 +35,10 @@ import ir
 from ir.store import CorpusStore
 
 tools = [
-    {"name": "fetch_url", "description": "Fetch a web page over HTTP and return its text"},
+    {
+        "name": "fetch_url",
+        "description": "Fetch a web page over HTTP and return its text",
+    },
     {"name": "send_email", "description": "Send an email message to a recipient"},
     {"name": "list_files", "description": "List the files in a directory"},
 ]
