@@ -940,6 +940,39 @@ def _resolve_auto_min_score(
     return floor
 
 
+#: Corpora whose records routinely exist in several copies, and the metadata key
+#: that identifies "the same thing" across them; :func:`discover` collapses on it
+#: by default (``dedup_by="auto"``). Skills are copied across repos
+#: (``branch-hygiene``, ``branch-hygiene@priv``), which makes the top-2 gap zero.
+DFLT_DEDUP_BY: Mapping[str, str] = {"skills": "name"}
+
+
+def _dedup_hits(
+    hits: Iterable[SearchHit], key: str | None, corpus: Any = None
+) -> list[SearchHit]:
+    """Keep only the best-scoring hit per ``metadata[key]``, preserving rank order.
+
+    ``key="auto"`` resolves through :data:`DFLT_DEDUP_BY` by the corpus's name
+    (no collapse for other corpora); ``None`` keeps every hit. Hits that lack the
+    key are never merged with each other.
+    """
+    hits = list(hits)
+    if key == "auto":
+        key = DFLT_DEDUP_BY.get(getattr(corpus, "name", None))
+    if not key:
+        return hits
+    seen: set = set()
+    out: list[SearchHit] = []
+    for h in hits:
+        val = h.metadata.get(key)
+        if val is not None:
+            if val in seen:
+                continue
+            seen.add(val)
+        out.append(h)
+    return out
+
+
 def discover(
     corpus: Any,
     query: str,
@@ -960,6 +993,7 @@ def discover(
     loader: BodyLoader | None = None,
     store: ResourceStore | None = None,
     expand: NeighborhoodPolicy | None = None,
+    dedup_by: str | None = "auto",
     **search_kw: Any,
 ) -> DiscoveryResult:
     """Find and commit to the capabilities for ``query`` — the one search tool.
@@ -1019,6 +1053,12 @@ def discover(
             :attr:`Disclosure.passage` (retrieval-time context expansion, see
             :mod:`ir.expand`). Works at any ``disclose_level``; the federated
             form resolves each hit's corpus via its ``source``.
+        dedup_by: collapse hits sharing this metadata key to the best-scoring
+            one *before* selection, so duplicate copies of one thing (a skill in
+            several repos) cannot make the top-2 gap zero. ``"auto"`` (default)
+            collapses by ``name`` for the ``skills`` corpus
+            (:data:`DFLT_DEDUP_BY`) and leaves other corpora alone; ``None``
+            keeps every hit; any other string names a metadata key.
         **search_kw: any other :func:`ir.retrieve.search` keyword (``rrf_k``,
             ``rerank``, ``bm25``, …).
 
@@ -1049,6 +1089,7 @@ def discover(
             loader=loader,
             store=store,
             expand=expand,
+            dedup_by=dedup_by,
             **search_kw,
         )
     if merge != "rrf" or merge_weights is not None or merge_rrf_k is not None:
@@ -1084,6 +1125,7 @@ def discover(
         per_artifact=True,
         **search_kw,
     )
+    hits = _dedup_hits(hits, dedup_by, corpus)
     selection = select(
         hits,
         strategy=strategy,
@@ -1233,6 +1275,7 @@ def _discover_federated(
     loader: BodyLoader | None,
     store: ResourceStore | None,
     expand: NeighborhoodPolicy | None = None,
+    dedup_by: str | None = "auto",
     **search_kw: Any,
 ) -> DiscoveryResult:
     """Single-shot federated discover: fan-out → gate → fuse → select → disclose.
@@ -1300,6 +1343,7 @@ def _discover_federated(
             per_artifact=True,
             **search_kw,
         )
+        hits = _dedup_hits(hits, dedup_by, c)
         n_retrieved += len(hits)
         floor = floors.get(name)
         top = float(hits[0].score) if hits else None
