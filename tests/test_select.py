@@ -441,3 +441,30 @@ def test_public_exports():
     ):
         assert hasattr(ir, name), name
     assert ir.Selection is Selection
+
+
+def test_dedup_hits_collapses_copies_to_best():
+    from ir.base import SearchHit
+    from ir.select import _dedup_hits
+
+    def hit(aid, score, name):
+        return SearchHit(aid, "s", score, "t", {"name": name} if name else {})
+
+    hits = [
+        hit("a", 3.0, "a"),
+        hit("a@x", 3.0, "a"),
+        hit("b", 2.0, "b"),
+        hit("n1", 1.0, None),
+        hit("n2", 0.5, None),
+    ]
+    assert [h.artifact_id for h in _dedup_hits(hits, "name")] == ["a", "b", "n1", "n2"]
+    assert _dedup_hits(hits, None) == hits
+    # "auto" only collapses for corpora listed in DFLT_DEDUP_BY
+    class C:
+        name = "skills"
+
+    class D:
+        name = "other"
+
+    assert len(_dedup_hits(hits, "auto", C())) == 4
+    assert _dedup_hits(hits, "auto", D()) == hits
