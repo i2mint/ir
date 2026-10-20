@@ -130,6 +130,9 @@ The outcome of [`compare_indexings()`](#ir.eval.compare_indexings) — an N-way 
 
 the rank cutoff all `@k` metrics use.
 
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
 ### themes / labels
 
 the themes scored and the corpus labels compared.
@@ -139,14 +142,23 @@ the themes scored and the corpus labels compared.
 the label every [`regressions()`](#ir.eval.ComparisonReport.regressions) check compares against
 (the first entry of `corpora`).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### metrics
 
 `{label: {theme: {"ndcg", "fp_rate"?, "hard_positive_recall"?}}}`.
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]]
 
 #### deltas
 
 `{theme: {artifact_id: {"role", "by_label": {label: {"rank",
 "score"}}}}}` for every named FP/FN id — the per-package effect.
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
 
 #### regressions(, threshold=0, baseline=None)
 
@@ -221,7 +233,7 @@ every other is maximized (see `_SWEEP_MINIMIZE`).
 
 `rel` values swept by [`sweep_selector()`](#ir.eval.sweep_selector) (relative-to-top keep band).
 
-### *class* ir.eval.DiscoveryCase(query, gold=(), corpus=None, source_id=None, metadata=<factory>)
+### *class* ir.eval.DiscoveryCase(query, gold=(), corpus=None, source_id=None, metadata=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -231,25 +243,40 @@ One discovery probe: an intent and the artifact(s) that should answer it.
 
 the user intent / search query.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### gold
 
 the `artifact_id`s that correctly answer `query` (one for a
 single-answer case, several when capabilities overlap). An **empty**
 tuple marks an *abstention* case — no artifact applies.
 
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
+
 #### corpus
 
 optional name of the corpus the case targets (provenance / for
 multi-corpus case files).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 #### source_id
 
 optional `artifact_id` the query was generated from
 (back-translation provenance).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### metadata
 
 free-form per-case metadata (difficulty, generator, …).
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
 #### *classmethod* from_dict(d)
 
@@ -282,12 +309,18 @@ Bundles the standard retrieval metrics with the capability-discovery extras:
 the `ef.evaluation.RetrievalEvalReport` over the
 gold-bearing cases.
 
+* **Type:**
+  [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
+
 #### failure_classes
 
 counts per failure class (`hit_rank_1` /
 `surfaced_low_rank` / `retrieval_miss` for gold cases;
 `abstention_ok` / `false_action` / `abstention_unscored` for
 abstention cases).
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`int`](https://docs.python.org/3/builtins/functions.html#int)]
 
 ### n_cases / n_gold / n_abstention
 
@@ -297,21 +330,33 @@ case counts.
 
 the cutoff `primary` reports at (default 10).
 
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
 #### abstention_accuracy
 
 accuracy on the abstention slice when an
 `abstain_threshold` was supplied, else `None`.
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 #### mode
 
 the ranking mode the report was produced with — recorded so a
 number is never mistaken for a different configuration’s.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### vd_degraded
 
 True when `mode` was `lexical` / `hybrid` but `vd`
 was unavailable, so ranking silently fell back to dense (the scores
 are *not* the requested configuration’s).
+
+* **Type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 #### *property* primary *: [float](https://docs.python.org/3/builtins/functions.html#float) | [None](https://docs.python.org/3/builtins/constants.html#None)*
 
@@ -346,46 +391,76 @@ queries:
 
 the calibrated floor (`None` if not calibratable).
 
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### sensitivity
 
 TPR — fraction of in-scope queries kept (`top ≥ floor`).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 #### specificity
 
 TNR — fraction of out-of-scope queries abstained
 (`top < floor`).
 
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### youden_j
 
 `sensitivity + specificity − 1` (0 = no separation, 1 = perfect).
 
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### balanced_accuracy
 
 `(sensitivity + specificity) / 2`.
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 #### separable
 
 whether the two score distributions are perfectly separable
 (some floor reaches `youden_j == 1`).
 
+* **Type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
 #### sensitivity_weight
 
 the `w` used to pick the floor (see
 [`DFLT_CALIB_SENSITIVITY_WEIGHT`](#ir.eval.DFLT_CALIB_SENSITIVITY_WEIGHT)).
 
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
 #### n_positive
 
 in-scope cases used (gold-bearing **and** gold-retrieved).
 
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
 #### n_abstention
 
 out-of-scope (empty-gold) cases used.
+
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 #### n_retrieval_miss
 
 gold-bearing cases whose gold never reached the `k`
 candidates — excluded (a *retrieval* failure, not an abstention
 signal), mirroring [`evaluate_selection()`](#ir.eval.evaluate_selection)’s conditioning.
+
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 ### positive_scores / abstention_scores
 
@@ -398,10 +473,16 @@ sits between them).
 every evaluated floor, `{min_score, sensitivity, specificity,
 youden_j, objective}` — the full sweep behind the choice.
 
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
 #### reason
 
 why `min_score` is what it is (`"calibrated"`,
 `"no_positive_cases"`, `"no_abstention_cases"`, `"no_cases"`).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### corpus_name / mode / k / embedder_id
 
@@ -415,6 +496,9 @@ True when `mode` was `lexical` / `hybrid` but `vd`
 was unavailable, so ranking fell back to dense and the floor is on the
 *dense* scale, not the requested mode’s — recalibrate once `vd` is
 installed.
+
+* **Type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 #### *classmethod* from_dict(d)
 
@@ -456,19 +540,31 @@ the theme and the rank cutoff scored.
 
 distractor false-positive rate at `k` (lower is better).
 
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
 #### hard_positive_recall
 
 recall over the hard-positive set at `k` (higher
 is better).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 #### distractors_seen
 
 the distractor ids actually in the top-`k` — so the
 `fp_rate` is auditable back to specific packages.
 
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
+
 #### hard_positives_missed
 
 the hard-positive ids NOT in the top-`k`.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
 
 #### to_dict()
 
@@ -487,16 +583,25 @@ The two named diagnostic sets for one theme.
 
 the theme these sets diagnose.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### distractors
 
 ids that are NOT relevant (`none`/`tangential`) yet rank
 prominently — every appearance in the top-`k` is a false positive.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
 
 #### hard_positives
 
 ids that ARE relevant (`core`/`strong`) but hard to
 rank (e.g. thin-description packages) — recall on these is the
 headline gap a fix must close.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
 
 #### *classmethod* from_dict(d)
 
@@ -512,7 +617,7 @@ JSON-serializable form.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* ir.eval.PackageRelevanceCase(artifact_id, labels=<factory>, evidence=<factory>, observed=<factory>, thin_description=False, is_distractor=<factory>, metadata=<factory>)
+### *class* ir.eval.PackageRelevanceCase(artifact_id, labels=dict(), evidence=dict(), observed=dict(), thin_description=False, is_distractor=dict(), metadata=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -530,32 +635,53 @@ corpus snapshot it was judged against.
 
 the package id (matches the corpus’ `artifact_id`).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### labels
 
 `{theme: level}` with each level in [`RELEVANCE_LEVELS`](#ir.eval.RELEVANCE_LEVELS).
 
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 #### evidence
 
 `{theme: short reason}` — the human-auditable *why*.
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 #### observed
 
 `{theme: score}` the ranking gave this artifact in the frozen
 run (optional; used to *derive* the named distractor set).
 
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
 #### thin_description
 
 True when the package had an empty/near-empty pyproject
 description (used to derive the hard-positive set).
+
+* **Type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 #### is_distractor
 
 optional cached `{theme: bool}`; when absent it is
 derived (see [`derive_named_sets()`](#ir.eval.derive_named_sets)).
 
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
+
 #### metadata
 
 free-form per-case metadata.
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
 #### *classmethod* from_dict(d)
 
@@ -612,6 +738,9 @@ the swept selection parameters at this cell.
 
 the [`SelectionReport`](#ir.eval.SelectionReport) for those parameters.
 
+* **Type:**
+  [`SelectionReport`](#ir.eval.SelectionReport)
+
 #### *property* params *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Any](https://docs.python.org/3/library/typing.html#typing.Any)]*
 
 The swept parameters as a plain dict (`max_k` / `rel` / `min_score`).
@@ -646,6 +775,9 @@ mean over committed gold-retrieved cases of
 `|selected ∩ gold| / |selected|` (`None` if nothing was ever
 committed) — how clean the committed sets are.
 
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### selection_recall
 
 mean over gold-retrieved cases of
@@ -653,10 +785,16 @@ mean over gold-retrieved cases of
 was actually shown, how much it kept (denominator is the *retrievable*
 gold, so retrieval misses do not depress it).
 
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### selection_f1
 
 mean per-case F1 over gold-retrieved cases (an empty commit
 scores 0).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 #### conditional_commit_rate
 
@@ -665,19 +803,31 @@ candidates, the fraction where the selector committed to ≥1 gold —
 the selection decision isolated from retrieval recall (`None` if
 retrieval never surfaced any gold).
 
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### n_gold_retrieved
 
 the shared denominator of every selection-quality
 metric above (cases whose gold reached the `k` candidates).
+
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 #### abstention_accuracy
 
 fraction of abstention cases (empty gold) the
 selector correctly committed nothing to (`None` if none).
 
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### mean_selected_size
 
 mean committed-set size over gold-retrieved cases.
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### n_cases / n_gold / n_abstention
 
@@ -711,9 +861,15 @@ trade-off view; [`table()`](#ir.eval.SelectionSweep.table) renders the whole gri
 
 one [`SelectionGridPoint`](#ir.eval.SelectionGridPoint) per grid cell (grid order).
 
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SelectionGridPoint`](#ir.eval.SelectionGridPoint)]
+
 #### objective
 
 the default metric [`best()`](#ir.eval.SelectionSweep.best) optimizes.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### strategy / mode / k
 

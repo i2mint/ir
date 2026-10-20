@@ -160,14 +160,14 @@ default). A corpus *name* is resolved once via [`ir.open_corpus()`](ir.html.md#i
 an open [`Corpus`](ir.index.html.md#ir.index.Corpus) to skip that. The returned callable carries
 the bound corpus on `.corpus` for introspection.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]]
-
 ```pycon
 >>> retr = as_retriever(corpus, mode="hybrid", k=20)
 >>> hits = retr("how do I deploy the app")
 >>> hits = retr("deploy", filter={"owner": "me"})
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]]
 
 ### ir.retrieve.dependency_evidence_boost(relevant_libs, , weight, saturate=1, deps_field='deps')
 
@@ -188,9 +188,6 @@ a planning decision that belongs to the agent layer, never to `ir`.
 near `0.03`, a cosine near `0.5`, a sigmoid reranker in `(0, 1)`), so
 tune it per configuration.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
-
 ```pycon
 >>> from ir.base import SearchHit
 >>> boost = dependency_evidence_boost({"networkx"}, weight=0.1)
@@ -199,6 +196,9 @@ tune it per configuration.
 >>> boost(SearchHit("au", "description", 0.5, "", {"deps": ["anyio"]}))
 0.0
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### ir.retrieve.fuse_hits(hits_by_source, , rrf_k=60, weights=None, identity=None, k=None)
 
@@ -229,7 +229,7 @@ interact, via weighted Reciprocal Rank Fusion: each hit contributes
     ignored (a per-round pool may legitimately lack a configured
     source); callers with a closed source set should validate keys
     upfront, as federated [`ir.discover()`](ir.html.md#ir.discover) does.
-  * **identity** (`Union`[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – how cross-source duplicates merge — see [`Identity`](#ir.retrieve.Identity).
+  * **identity** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – how cross-source duplicates merge — see [`Identity`](#ir.retrieve.Identity).
     Default `None`: never; each `(source, artifact_id)` stays a
     distinct result.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – truncate the fused ranking to this many hits.
@@ -305,7 +305,7 @@ Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
   * **alpha** ([`float`](https://docs.python.org/3/builtins/functions.html#float))
   * **bm25_sat_k** ([`float`](https://docs.python.org/3/builtins/functions.html#float))
   * **fetch_k** ([`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – (default `max(k*5, 50)` when collapsing per artifact or reranking, else `k`).
-  * **rerank** (`Union`[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – that re-scores the ranked candidates after fusion – the precision stage.
+  * **rerank** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – that re-scores the ranked candidates after fusion – the precision stage.
     The reranker sees the full candidate list (up to `fetch_k` items) and may
     reorder it; reranked hits carry the *reranker’s* score, which is on its own
     scale (see [`ir.rerank`](ir.rerank.html.md#module-ir.rerank), and [`ir.rerank.calibration_key()`](ir.rerank.html.md#ir.rerank.calibration_key) for
@@ -314,7 +314,7 @@ Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
     extra (`ir[rerank]`) is missing the search warns once and keeps the
     first-stage ranking. Default `None` keeps retrieval offline (no model
     download / API call).
-  * **rerank_text** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – (default; the matched surface’s text), `"artifact"` (the artifact’s
+  * **rerank_text** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – (default; the matched surface’s text), `"artifact"` (the artifact’s
     sibling surfaces joined in plan order, so a thin description is judged
     against its full README), or a callable `(corpus, meta) -> str`.
   * **rerank_max_chars** ([`int`](https://docs.python.org/3/builtins/functions.html#int))

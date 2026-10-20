@@ -137,7 +137,7 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 A schedule could not be read, written, or expressed on this platform.
 
-### *class* ir.schedule.ScheduleSpec(every_minutes=60, python=<factory>, args=('-u', '-m', 'ir', 'maintain', '--all'), label='com.i2mint.ir.maintain', log_path=<factory>, env=<factory>)
+### *class* ir.schedule.ScheduleSpec(every_minutes=60, python=<factory>, args=('-u', '-m', 'ir', 'maintain', '--all'), label='com.i2mint.ir.maintain', log_path=<factory>, env=\_job_env())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -193,13 +193,13 @@ cron restarts its `*/n` count each hour (and each day), so only intervals
 that divide evenly fire evenly. Rejecting the rest with the valid values named
 beats installing a job that quietly skips.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> cron_expression(15), cron_expression(60), cron_expression(360)
 ('*/15 * * * *', '0 * * * *', '0 */6 * * *')
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### ir.schedule.cron_line(spec)
 
@@ -280,13 +280,13 @@ path forward; pass `False` to re-snapshot them from this process.
 
 Minutes from `"30m"` / `"2h"` / `"1d"` / `"45"` (`None` passes through).
 
-* **Return type:**
-  [`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
 ```pycon
 >>> parse_every("30m"), parse_every("2h"), parse_every("1d"), parse_every(45)
 (30, 120, 1440, 45)
 ```
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### ir.schedule.plist_bytes(spec)
 

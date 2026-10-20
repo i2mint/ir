@@ -1,37 +1,37 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-14T21:13:28Z",
+  "built_at": "2026-10-20T02:37:19Z",
   "package": {
     "name": "ir",
-    "version": "0.1.48",
+    "version": "0.1.49",
     "display_name": "ir",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "537ca94e8b0b5149b9bd28fb7d0a9cd62a35f9cd",
-    "short_commit": "537ca94",
+    "commit": "dcb114eed78b5bc6bf55f6e7e25515c63e22d888",
+    "short_commit": "dcb114e",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/ir",
-    "commit_url": "https://github.com/i2mint/ir/commit/537ca94e8b0b5149b9bd28fb7d0a9cd62a35f9cd",
+    "commit_url": "https://github.com/i2mint/ir/commit/dcb114eed78b5bc6bf55f6e7e25515c63e22d888",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/ir",
-    "sha": "537ca94e8b0b5149b9bd28fb7d0a9cd62a35f9cd",
+    "sha": "dcb114eed78b5bc6bf55f6e7e25515c63e22d888",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "38638339403",
-    "run_url": "https://github.com/i2mint/ir/actions/runs/38638339403",
+    "run_id": "39359747418",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/39359747418",
     "server_url": "https://github.com"
   },
   "tools": {
-    "epythet": "0.2.17",
-    "sphinx": "9.1.0",
+    "epythet": "0.2.18",
+    "sphinx": "9.1.1",
     "docutils": "0.22.4",
     "python": "3.12.15"
   },
@@ -60,14 +60,16 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.1.48",
-    "relation": "same",
+    "latest": "0.1.50",
+    "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout 537ca94e8b0b5149b9bd28fb7d0a9cd62a35f9cd\npip install \"epythet==0.2.17\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout dcb114eed78b5bc6bf55f6e7e25515c63e22d888\npip install \"epythet==0.2.18\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": true,
-    "notes": []
+    "aligned": false,
+    "notes": [
+      "The documented version (0.1.49) is behind the latest release on PyPI (0.1.50): `pip install ir` gives newer code than these docs describe."
+    ]
   }
 }

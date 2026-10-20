@@ -57,7 +57,7 @@ The default formulator: return the query unchanged (embed it verbatim).
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
-### ir.formulate.make_llm_formulator(, rewriter=None, prompt='Rewrite the search query into {n} short, diverse alternative search queries that would retrieve the same target documents: fix typos, expand jargon, and add synonyms, but keep each a terse search phrase. One query per line, no numbering.\\\\n\\\\nQuery: {query}', n=3, fallback=None, \*\*prompt_function_kwargs)
+### ir.formulate.make_llm_formulator(, rewriter=None, prompt='Rewrite the search query into {n} short, diverse alternative search queries that would retrieve the same target documents: fix typos, expand jargon, and add synonyms, but keep each a terse search phrase. One query per line, no numbering.\\n\\nQuery: {query}', n=3, fallback=None, \*\*prompt_function_kwargs)
 
 An LLM-backed [`Formulator`](#ir.formulate.Formulator) (rewrite / expand / multi-query).
 

@@ -216,15 +216,15 @@ visited-set must use so the same id in two corpora stays two nodes.
 `[source, artifact_id]` cross-corpus pair. This resolves either to the
 canonical tuple.
 
-* **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
 ```pycon
 >>> canonical_node_id("dol", source="packages")
 ('packages', 'dol')
 >>> canonical_node_id(["skills", "deploy"], source="packages")
 ('skills', 'deploy')
 ```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### ir.graph.default_edge_extractor(artifact_id, filter_fields)
 
@@ -254,10 +254,10 @@ The one comparison key for library names: the reverse dependency index and
 [`ir.dependency_evidence_boost()`](ir.html.md#ir.dependency_evidence_boost) both match through it, so
 `"scikit_learn"` finds a package that depends on `"Scikit-Learn>=1"`.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> normalize_dist_name("Scikit_Learn[extra]>=1.2")
 'scikit-learn'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)

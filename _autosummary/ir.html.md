@@ -112,7 +112,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`ReindexPolicy`](#ir.ReindexPolicy)([on, every_hours])                  | When to (incrementally) rebuild a corpus.                                                                                    |
 | [`SynopsisPolicy`](#ir.SynopsisPolicy)([enabled, scope, ...])             | Whether/when to attach (expensive, LLM-generated) synopses.                                                                  |
 
-### *class* ir.Artifact(id, raw, metadata=<factory>)
+### *class* ir.Artifact(id, raw, metadata=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -241,7 +241,7 @@ target is a `(source, artifact_id)` pair, matched exactly. Order is first-seen o
 The corpus name, when known — the `source` half of this graph’s
 node identities (`None` for a bare store).
 
-### *class* ir.CorpusSource(name, scope, indexing_strategy=<factory>, change_signal=<function content_hash_signal>, embedder='default', metadata_of=None)
+### *class* ir.CorpusSource(name, scope, indexing_strategy=WholeText(), change_signal=<function content_hash_signal>, embedder='default', metadata_of=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -279,7 +279,7 @@ records come from `priv.claude_transcripts.turn_pair_records()`.
 * **Return type:**
   [`CorpusSource`](ir.sources.html.md#ir.sources.CorpusSource)
 
-#### *classmethod* from_files(root, , name=None, pattern='.\*\\\\\\\\.md$', exclude=None, strategy=None, \*\*kwargs)
+#### *classmethod* from_files(root, , name=None, pattern='.\*\\\\.md$', exclude=None, strategy=None, \*\*kwargs)
 
 A directory tree of text files as a corpus (lazy `dol` scope).
 
@@ -314,9 +314,6 @@ for a specific client lives with the consumer. Tool names are the
 artifact ids and must be unique: namespace them (`"server.tool"`)
 before merging several servers’ catalogues.
 
-* **Return type:**
-  [`CorpusSource`](ir.sources.html.md#ir.sources.CorpusSource)
-
 ```pycon
 >>> src = CorpusSource.from_mcp_tools(
 ...     [{"name": "ping", "description": "Check the server is up"}]
@@ -327,6 +324,9 @@ ping
 
 Check the server is up
 ```
+
+* **Return type:**
+  [`CorpusSource`](ir.sources.html.md#ir.sources.CorpusSource)
 
 #### *classmethod* from_md_reports(, name='reports', projects_root=None, strategy=None, recursive=True, exclude_dirs=None, \*\*kwargs)
 
@@ -372,9 +372,6 @@ names the record fields lifted into the strategy’s **filter fields** —
 the JSON-friendly stand-in for a `metadata_of` callable, which no
 registry entry could carry. The default strategy chunks `text_key`.
 
-* **Return type:**
-  [`CorpusSource`](ir.sources.html.md#ir.sources.CorpusSource)
-
 ```pycon
 >>> src = CorpusSource.from_records(
 ...     name="notes",
@@ -384,6 +381,9 @@ registry entry could carry. The default strategy chunks `text_key`.
 >>> src.scope["a"]["text"], src.metadata_of("a", src.scope["a"])
 ('hi', {'project': 'p'})
 ```
+
+* **Return type:**
+  [`CorpusSource`](ir.sources.html.md#ir.sources.CorpusSource)
 
 #### *classmethod* from_skills(, name='skills', filter=None, fetcher=None, strategy=None, \*\*kwargs)
 
@@ -620,7 +620,7 @@ Persist the maintenance bookkeeping for this corpus.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### *class* ir.CoverageReport(name, on_disk, indexed, excluded, missing=<factory>)
+### *class* ir.CoverageReport(name, on_disk, indexed, excluded, missing=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -634,7 +634,7 @@ Fraction of should-index files that are actually indexed (1.0 = full).
 
 On-disk files that pass the inclusion rule (indexed + missing).
 
-### *class* ir.Disclosure(artifact_id, level, name, score, summary, body=None, pointer=None, metadata=<factory>, source=None, passage=None)
+### *class* ir.Disclosure(artifact_id, level, name, score, summary, body=None, pointer=None, metadata=dict(), source=None, passage=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -644,32 +644,53 @@ The progressively-disclosed payload for one selected artifact.
 
 the artifact this payload belongs to.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### level
 
 how much was loaded — `"metadata"` (no I/O), `"body"` (the
 pointer’s full text), or `"bundled"` (body + extras).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### name
 
 a display name (the `name` filter field, else the id).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### score
 
 the selecting hit’s score.
 
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
 #### summary
 
 the matched surface text — always present, always cheap.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### body
 
 the full payload (SKILL.md / file text); `None` below
 `"body"` level or when the pointer could not be read.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### pointer
 
 the source pointer (`skill_path` / `path`) — the “package
 pointer” an agent follows to act; `None` if the hit has none.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 #### metadata
 
@@ -678,11 +699,17 @@ pointer was present but unreadable (stale/moved/deleted), and an
 `expansion` note when expansion was requested but not possible
 for this hit.
 
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
 #### source
 
 the corpus/source name the selecting hit came from (`None`
 when unattributed) — the attribution a federated caller needs to
 tell two same-id artifacts from different corpora apart.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 #### passage
 
@@ -693,6 +720,9 @@ expansion was not requested or not possible. Assembled from the
 corpus’s *stored records* (see [`ir.expand`](#ir.expand)), unlike `body`,
 which dereferences the pointer to an external resource.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### to_dict()
 
 JSON-serializable form (score cast to `float`).
@@ -700,7 +730,7 @@ JSON-serializable form (score cast to `float`).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* ir.DiscoveryResult(query, mode, strategy, disclose_level, results, abstained, reason, n_retrieved, signals=<factory>)
+### *class* ir.DiscoveryResult(query, mode, strategy, disclose_level, results, abstained, reason, n_retrieved, signals=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -744,7 +774,7 @@ check on attribute **names** only (not signatures) — enough to tell a
 conforming adapter from an arbitrary object, but it cannot validate that
 `neighbors` takes the right arguments; treat it as a smoke check.
 
-### *class* ir.IndexPlan(filter_fields=<factory>, surfaces=<factory>)
+### *class* ir.IndexPlan(filter_fields=dict(), surfaces=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -756,7 +786,7 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 Decompose one artifact into filter fields + embeddable surfaces.
 
-### *class* ir.MaintenancePolicy(reindex=<factory>, synopsis=<factory>)
+### *class* ir.MaintenancePolicy(reindex=ReindexPolicy(), synopsis=SynopsisPolicy())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -833,7 +863,7 @@ JSON-serializable form (`score` cast to `float`, ids as a list).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* ir.Record(id, artifact_id, surface_kind, surface_index, text, vector, metadata=<factory>)
+### *class* ir.Record(id, artifact_id, surface_kind, surface_index, text, vector, metadata=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -865,7 +895,7 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 When to (incrementally) rebuild a corpus.
 
-### *class* ir.SearchHit(artifact_id, surface_kind, score, text, metadata=<factory>, source=None, surface_index=None)
+### *class* ir.SearchHit(artifact_id, surface_kind, score, text, metadata=dict(), source=None, surface_index=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -902,7 +932,7 @@ JSON-serializable form (`score` cast to a Python `float`).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* ir.Selection(selected, candidates, abstained, reason, signals=<factory>)
+### *class* ir.Selection(selected, candidates, abstained, reason, signals=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -912,24 +942,39 @@ A selector’s commitment: the chosen subset of a ranked candidate list.
 
 the committed hits, best-first (empty iff `abstained`).
 
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]
+
 #### candidates
 
 the full ranked input, kept for provenance / audit.
 
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]
+
 #### abstained
 
 True iff the selector committed to nothing by policy.
+
+* **Type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 #### reason
 
 which rule ended the commit (e.g. `"rel_threshold"`,
 `"score_gap"`, `"max_k"`, `"abstain:below_floor"`).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### signals
 
 concrete, defined numbers behind the decision (`top_score`,
 `n_candidates`, `n_selected`, `min_ratio`) — the auditable
 replacement for an opaque “confidence” float.
+
+* **Type:**
+  [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
 #### *property* selected_ids *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]*
 
@@ -960,7 +1005,7 @@ Capability strategy: embed `name + description` only.
 The body (SKILL.md) is loaded post-selection and is *not* indexed; name and
 parent are filter fields.
 
-### *class* ir.Surface(artifact_id, kind, text, granularity='document', metadata=<factory>)
+### *class* ir.Surface(artifact_id, kind, text, granularity='document', metadata=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -997,7 +1042,7 @@ injected sufficiency check; `to_hit` materializes a committed node as a
 [`SearchHit`](ir.base.html.md#ir.base.SearchHit) — or `None` for a *router-only* node (a
 summary that routes but is not itself a result).
 
-### *class* ir.WalkState(query, max_depth, budget, visited=<factory>, results=<factory>, cache=<factory>)
+### *class* ir.WalkState(query, max_depth, budget, visited=set(), results=list(), cache=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -1025,14 +1070,14 @@ default). A corpus *name* is resolved once via [`ir.open_corpus()`](#ir.open_cor
 an open [`Corpus`](ir.index.html.md#ir.index.Corpus) to skip that. The returned callable carries
 the bound corpus on `.corpus` for introspection.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]]
-
 ```pycon
 >>> retr = as_retriever(corpus, mode="hybrid", k=20)
 >>> hits = retr("how do I deploy the app")
 >>> hits = retr("deploy", filter={"owner": "me"})
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]]
 
 ### ir.build(source, , store=None, embedder=None, full=True, batch_size=256, edge_extractor=None)
 
@@ -1072,15 +1117,15 @@ The key an abstention floor is stored and loaded under.
 `mode` alone for a first-stage ranking (today’s behaviour, so existing floors keep
 working); `"<mode>+<tag>"` for a reranked one.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> calibration_key("hybrid")
 'hybrid'
 >>> calibration_key("hybrid", "rerank-m+artifact")
 'hybrid+rerank-m+artifact'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### ir.canonical_node_id(target, , source)
 
@@ -1093,15 +1138,15 @@ visited-set must use so the same id in two corpora stays two nodes.
 `[source, artifact_id]` cross-corpus pair. This resolves either to the
 canonical tuple.
 
-* **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
 ```pycon
 >>> canonical_node_id("dol", source="packages")
 ('packages', 'dol')
 >>> canonical_node_id(["skills", "deploy"], source="packages")
 ('skills', 'deploy')
 ```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### ir.collapsed_tree_policy(, summary_kinds=('description', 'synopsis', 'capability', 'document'), leaf_kinds=('chunk', 'readme_chunk'), seed_k=10)
 
@@ -1120,12 +1165,12 @@ purpose\* — that is what lets a WholeText / Skill corpus seed at all; the
 structural router check (above) is what keeps those seeds from being
 silently swallowed.
 
-* **Return type:**
-  [`WalkPolicy`](#ir.WalkPolicy)
-
 ```pycon
 >>> hits = traverse(q, corpus, policy=collapsed_tree_policy())
 ```
+
+* **Return type:**
+  [`WalkPolicy`](#ir.WalkPolicy)
 
 ### ir.corpora()
 
@@ -1180,9 +1225,6 @@ a planning decision that belongs to the agent layer, never to `ir`.
 near `0.03`, a cosine near `0.5`, a sigmoid reranker in `(0, 1)`), so
 tune it per configuration.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
-
 ```pycon
 >>> from ir.base import SearchHit
 >>> boost = dependency_evidence_boost({"networkx"}, weight=0.1)
@@ -1191,6 +1233,9 @@ tune it per configuration.
 >>> boost(SearchHit("au", "description", 0.5, "", {"deps": ["anyio"]}))
 0.0
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### ir.disclose(selection, , level='body', loader=None, store=None, expand=None, corpus=None)
 
@@ -1226,7 +1271,7 @@ Reveal the payload of each selected hit at `level` — append-only, pure.
   read: the [`Selection`](#ir.Selection) and its hits are never mutated, so a caller
   can disclose append-only without disturbing a cached ranked prefix.
 
-### ir.discover(corpus, query, , k=10, mode='hybrid', strategy='conservative', disclose_level='metadata', filter=None, surfaces=None, max_k=3, rel=0.9, gap_ratio=0.5, min_score=None, merge='rrf', merge_weights=None, merge_rrf_k=None, loader=None, store=None, expand=None, \*\*search_kw)
+### ir.discover(corpus, query, , k=10, mode='hybrid', strategy='conservative', disclose_level='metadata', filter=None, surfaces=None, max_k=3, rel=0.9, gap_ratio=0.5, min_score=None, merge='rrf', merge_weights=None, merge_rrf_k=None, loader=None, store=None, expand=None, dedup_by='auto', \*\*search_kw)
 
 Find and commit to the capabilities for `query` — the one search tool.
 
@@ -1252,7 +1297,7 @@ list the model must then filter under context rot.
     also truncated to `k` before selection.
   * **mode** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – ranking mode — `"hybrid"` (default; `ir`’s strongest overall),
     `"dense"`, or `"lexical"`.
-  * **strategy** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]], [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]]]) – selection strategy (see [`select()`](#ir.select)).
+  * **strategy** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]], [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]]]) – selection strategy (see [`select()`](#ir.select)).
   * **disclose_level** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `"metadata"` (default; cheap, no body I/O), `"body"`,
     or `"bundled"`.
   * **filter** ([`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – retrieval constraints (forwarded to
@@ -1307,7 +1352,7 @@ list the model must then filter under context rot.
     `None`; a bare float raises. Floors gate each source on its own
     raw scores *before* fusion; the fused ranking is never floored
     (rank-fused scores are ordinal — ir_07/ir_08).
-  * **merge** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – federated only — how the per-source rankings combine: `"rrf"`
+  * **merge** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – federated only — how the per-source rankings combine: `"rrf"`
     (default; rank-based, scale-free — see
     [`ir.retrieve.fuse_hits()`](ir.retrieve.html.md#ir.retrieve.fuse_hits)), `"score"` (raw-score merge,
     valid only when all corpora share an embedder — verified, raises
@@ -1323,6 +1368,12 @@ list the model must then filter under context rot.
     [`Disclosure.passage`](#ir.Disclosure.passage) (retrieval-time context expansion, see
     [`ir.expand`](#ir.expand)). Works at any `disclose_level`; the federated
     form resolves each hit’s corpus via its `source`.
+  * **dedup_by** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – collapse hits sharing this metadata key to the best-scoring
+    one *before* selection, so duplicate copies of one thing (a skill in
+    several repos) cannot make the top-2 gap zero. `"auto"` (default)
+    collapses by `name` for the `skills` corpus
+    (`DFLT_DEDUP_BY`) and leaves other corpora alone; `None`
+    keeps every hit; any other string names a metadata key.
   * **\*\*search_kw** ([`Any`](https://docs.python.org/3/library/typing.html#typing.Any)) – any other [`ir.retrieve.search()`](ir.retrieve.html.md#ir.retrieve.search) keyword (`rrf_k`,
     `rerank`, `bm25`, …).
 * **Return type:**
@@ -1395,7 +1446,7 @@ interact, via weighted Reciprocal Rank Fusion: each hit contributes
     ignored (a per-round pool may legitimately lack a configured
     source); callers with a closed source set should validate keys
     upfront, as federated [`ir.discover()`](#ir.discover) does.
-  * **identity** (`Union`[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – how cross-source duplicates merge — see `Identity`.
+  * **identity** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – how cross-source duplicates merge — see `Identity`.
     Default `None`: never; each `(source, artifact_id)` stays a
     distinct result.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – truncate the fused ranking to this many hits.
@@ -1443,7 +1494,7 @@ whether a (synopsis-aware) reindex is due *and* permitted now, and — unless
 * **Return type:**
   [`MaintenanceResult`](ir.maintenance.html.md#ir.maintenance.MaintenanceResult)
 
-### ir.make_llm_formulator(, rewriter=None, prompt='Rewrite the search query into {n} short, diverse alternative search queries that would retrieve the same target documents: fix typos, expand jargon, and add synonyms, but keep each a terse search phrase. One query per line, no numbering.\\\\n\\\\nQuery: {query}', n=3, fallback=None, \*\*prompt_function_kwargs)
+### ir.make_llm_formulator(, rewriter=None, prompt='Rewrite the search query into {n} short, diverse alternative search queries that would retrieve the same target documents: fix typos, expand jargon, and add synonyms, but keep each a terse search phrase. One query per line, no numbering.\\n\\nQuery: {query}', n=3, fallback=None, \*\*prompt_function_kwargs)
 
 An LLM-backed `Formulator` (rewrite / expand / multi-query).
 
@@ -1456,7 +1507,7 @@ multi-query fan-out width. Any error or empty reply falls back to `fallback`
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### ir.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, text_fields=None, \*\*prompt_function_kwargs)
+### ir.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\n\\nDocument:\\n{text}', model=None, synthesizer_id=None, text_key=None, text_fields=None, \*\*prompt_function_kwargs)
 
 An LLM-backed `Synthesizer` ([`Artifact`](ir.base.html.md#ir.base.Artifact) → synopsis).
 
@@ -1509,9 +1560,6 @@ Reads `artifact.raw[field]` (a [`Package`](ir.strategy.html.md#ir.strategy.Packa
 is shorter than `min_chars`. Whitespace is ignored. The returned callable
 carries a `when_id` stamp so the threshold folds into `strategy_id`.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
-
 ```pycon
 >>> thin = make_thin_description_predicate(min_chars=10)
 >>> thin(Artifact(id="a", raw={"name": "a", "description": ""}))
@@ -1519,6 +1567,9 @@ True
 >>> thin(Artifact(id="b", raw={"name": "b", "description": "Tools to parse dates"}))
 False
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
 
 ### ir.open_corpus(name, , embedder=None)
 
@@ -1652,9 +1703,6 @@ part). If its optional dependency is absent this warns once and returns `None`, 
 the caller degrades to first-stage ranking; resolve *before* deriving a calibration key
 so the degraded run uses the plain key.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
 ```pycon
 >>> resolve_reranker(len) is len
 True
@@ -1663,6 +1711,9 @@ Traceback (most recent call last):
     ...
 ValueError: unknown rerank spec 'nope'; expected a callable, 'cross-encoder' or 'cross-encoder:<model>'.
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### ir.retriever_for(name, \*\*search_defaults)
 
@@ -1710,13 +1761,13 @@ with an edge extractor (e.g. [`ir.default_edge_extractor()`](#ir.default_edge_ex
 `REF` edges run from a package to its dependencies). Fuse the walk’s hits
 with flat search through [`ir.fuse_hits()`](#ir.fuse_hits).
 
-* **Return type:**
-  [`WalkPolicy`](#ir.WalkPolicy)
-
 ```pycon
 >>> policy = reverse_dependency_policy(seeds=["networkx"])
 >>> hits = traverse(query, corpus, policy=policy)
 ```
+
+* **Return type:**
+  [`WalkPolicy`](#ir.WalkPolicy)
 
 ### ir.search(corpus, query, \*\*kwargs)
 
@@ -1757,7 +1808,7 @@ Commit to a subset of ranked `hits` — the selection stage.
 * **Parameters:**
   * **hits** ([`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]) – ranked [`SearchHit`](ir.base.html.md#ir.base.SearchHit)s (best first), as returned by
     [`ir.retrieve.search()`](ir.retrieve.html.md#ir.retrieve.search).
-  * **strategy** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]], [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]]]) – `"conservative"` (the default distractor-robust commit),
+  * **strategy** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]], [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]]]) – `"conservative"` (the default distractor-robust commit),
     one of `"top_k"` / `"abs_threshold"` / `"rel_threshold"` /
     `"score_gap"`, or any `Selector` callable (`hits ->
     subset`) — e.g. one built by `make_llm_selector()`.
@@ -1837,7 +1888,7 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
     injecting an unnamed callable / lambda). Omitted → the synthesizer’s
     own `synthesizer_id` / `__qualname__`.
   * **synopsis_kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – the surface kind (default `"synopsis"`, a summary kind).
-  * **when** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]) – `"always"` (default: every artifact) or a predicate
+  * **when** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]) – `"always"` (default: every artifact) or a predicate
     `Artifact -> bool`; the synthesizer is called, and a synopsis
     surface added, only where it returns true (e.g.
     `thin_description_predicate`). A predicate that raises

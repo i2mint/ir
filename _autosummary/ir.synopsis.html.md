@@ -120,7 +120,7 @@ alias of `Callable`[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`str`](ht
 A topical / classification-oriented alternative to [`SYNOPSIS_PROMPT`](#ir.synopsis.SYNOPSIS_PROMPT),
 suited to thin-description packages (opt-in: `make_llm_synthesizer(prompt=...)`).
 
-### ir.synopsis.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\\\n\\\\nDocument:\\\\n{text}', model=None, synthesizer_id=None, text_key=None, text_fields=None, \*\*prompt_function_kwargs)
+### ir.synopsis.make_llm_synthesizer(, summarize=None, prompt='Write a concise synopsis (2-4 sentences) of the document below: what it is about and what questions it answers, so that a search over synopses can route to it. Output only the synopsis, no preamble.\\n\\nDocument:\\n{text}', model=None, synthesizer_id=None, text_key=None, text_fields=None, \*\*prompt_function_kwargs)
 
 An LLM-backed [`Synthesizer`](#ir.synopsis.Synthesizer) ([`Artifact`](ir.base.html.md#ir.base.Artifact) → synopsis).
 
@@ -160,9 +160,6 @@ Reads `artifact.raw[field]` (a [`Package`](ir.strategy.html.md#ir.strategy.Packa
 is shorter than `min_chars`. Whitespace is ignored. The returned callable
 carries a `when_id` stamp so the threshold folds into `strategy_id`.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
-
 ```pycon
 >>> thin = make_thin_description_predicate(min_chars=10)
 >>> thin(Artifact(id="a", raw={"name": "a", "description": ""}))
@@ -170,6 +167,9 @@ True
 >>> thin(Artifact(id="b", raw={"name": "b", "description": "Tools to parse dates"}))
 False
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
 
 ### ir.synopsis.thin_description_predicate(artifact)
 
@@ -191,7 +191,7 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
     injecting an unnamed callable / lambda). Omitted → the synthesizer’s
     own `synthesizer_id` / `__qualname__`.
   * **synopsis_kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – the surface kind (default `"synopsis"`, a summary kind).
-  * **when** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]) – `"always"` (default: every artifact) or a predicate
+  * **when** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]) – `"always"` (default: every artifact) or a predicate
     `Artifact -> bool`; the synthesizer is called, and a synopsis
     surface added, only where it returns true (e.g.
     [`thin_description_predicate`](#ir.synopsis.thin_description_predicate)). A predicate that raises

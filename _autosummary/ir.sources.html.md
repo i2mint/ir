@@ -43,7 +43,7 @@ Smart-default constructors cover the common ways to define a source:
 | [`CorpusSource`](#ir.sources.CorpusSource)(name, scope[, ...])   | A corpus definition: scope + change signal + strategy + embedder.   |
 |-------------------------------------------------------------------------------------|---------------------------------------------------------------------|
 
-### *class* ir.sources.CorpusSource(name, scope, indexing_strategy=<factory>, change_signal=<function content_hash_signal>, embedder='default', metadata_of=None)
+### *class* ir.sources.CorpusSource(name, scope, indexing_strategy=WholeText(), change_signal=<function content_hash_signal>, embedder='default', metadata_of=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -81,7 +81,7 @@ records come from `priv.claude_transcripts.turn_pair_records()`.
 * **Return type:**
   [`CorpusSource`](#ir.sources.CorpusSource)
 
-#### *classmethod* from_files(root, , name=None, pattern='.\*\\\\\\\\.md$', exclude=None, strategy=None, \*\*kwargs)
+#### *classmethod* from_files(root, , name=None, pattern='.\*\\\\.md$', exclude=None, strategy=None, \*\*kwargs)
 
 A directory tree of text files as a corpus (lazy `dol` scope).
 
@@ -116,9 +116,6 @@ for a specific client lives with the consumer. Tool names are the
 artifact ids and must be unique: namespace them (`"server.tool"`)
 before merging several servers’ catalogues.
 
-* **Return type:**
-  [`CorpusSource`](#ir.sources.CorpusSource)
-
 ```pycon
 >>> src = CorpusSource.from_mcp_tools(
 ...     [{"name": "ping", "description": "Check the server is up"}]
@@ -129,6 +126,9 @@ ping
 
 Check the server is up
 ```
+
+* **Return type:**
+  [`CorpusSource`](#ir.sources.CorpusSource)
 
 #### *classmethod* from_md_reports(, name='reports', projects_root=None, strategy=None, recursive=True, exclude_dirs=None, \*\*kwargs)
 
@@ -174,9 +174,6 @@ names the record fields lifted into the strategy’s **filter fields** —
 the JSON-friendly stand-in for a `metadata_of` callable, which no
 registry entry could carry. The default strategy chunks `text_key`.
 
-* **Return type:**
-  [`CorpusSource`](#ir.sources.CorpusSource)
-
 ```pycon
 >>> src = CorpusSource.from_records(
 ...     name="notes",
@@ -186,6 +183,9 @@ registry entry could carry. The default strategy chunks `text_key`.
 >>> src.scope["a"]["text"], src.metadata_of("a", src.scope["a"])
 ('hi', {'project': 'p'})
 ```
+
+* **Return type:**
+  [`CorpusSource`](#ir.sources.CorpusSource)
 
 #### *classmethod* from_skills(, name='skills', filter=None, fetcher=None, strategy=None, \*\*kwargs)
 
@@ -260,13 +260,13 @@ with a `name`, an optional `description`, and an optional parameter
 schema under any of [`MCP_TOOL_PARAM_KEYS`](#ir.sources.MCP_TOOL_PARAM_KEYS). Every other field is
 dropped, so it neither reaches the index nor invalidates it.
 
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
 ```pycon
 >>> mcp_tool_record({"name": "ping", "inputSchema": {"type": "object"}})
 {'name': 'ping', 'description': '', 'parameters': {'type': 'object'}}
 ```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### ir.sources.mcp_tool_signal(artifact_id, raw)
 
@@ -278,13 +278,13 @@ embedded, so a schema change re-embeds the tool on the next build (ir_02
 does not count as a change. `raw` is a tool record in any form
 [`mcp_tool_record()`](#ir.sources.mcp_tool_record) accepts.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> len(mcp_tool_signal("ping", {"name": "ping"}))
 64
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### ir.sources.report_exclude_reason(path, folder, , exclude_dirs=frozenset({'.git', '.hg', '.ipynb_checkpoints', '.obsidian', '.svn', '.tox', '.venv', '_\_pycache_\_', 'build', 'dist', 'node_modules', 'site-packages', 'venv'}))
 
@@ -312,12 +312,12 @@ come from another package (`ir.register("mine", "records",
 fetcher="mypkg.recall:turn_records")`) can only survive a rebuild if the
 seam accepts a name rather than an object.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[], [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]
-
 ```pycon
 >>> resolve_fetcher(lambda: [])()
 []
 >>> resolve_fetcher("ir.sources:DFLT_EXCLUDE_DIRS") is DFLT_EXCLUDE_DIRS
 True
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[], [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]

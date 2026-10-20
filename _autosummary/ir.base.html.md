@@ -46,7 +46,7 @@ filtering *and* semantic ranking, not only embeddings.
 | [`SearchHit`](#ir.base.SearchHit)(artifact_id, surface_kind, score, text) | A scored record returned by retrieval (higher score = closer).                                                               |
 | [`Surface`](#ir.base.Surface)(artifact_id, kind, text[, ...])           | One embeddable unit derived from an artifact.                                                                                |
 
-### *class* ir.base.Artifact(id, raw, metadata=<factory>)
+### *class* ir.base.Artifact(id, raw, metadata=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -58,7 +58,7 @@ Non-embedded, hard-filterable metadata for an artifact (name, owner, tags).
 
 alias of [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
-### *class* ir.base.IndexPlan(filter_fields=<factory>, surfaces=<factory>)
+### *class* ir.base.IndexPlan(filter_fields=dict(), surfaces=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -73,7 +73,7 @@ key a resource store dereferences to the full payload. Skills stamp
 `skill_path`; packages / reports / files stamp `path` (see
 [`ir.sources`](ir.sources.html.md#module-ir.sources)). [`ir.select`](ir.html.md#ir.select) re-exports this for disclosure.
 
-### *class* ir.base.Record(id, artifact_id, surface_kind, surface_index, text, vector, metadata=<factory>)
+### *class* ir.base.Record(id, artifact_id, surface_kind, surface_index, text, vector, metadata=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -99,7 +99,7 @@ ledger via [`ir.retrieve.records_for_artifact()`](ir.retrieve.html.md#ir.retriev
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
-### *class* ir.base.SearchHit(artifact_id, surface_kind, score, text, metadata=<factory>, source=None, surface_index=None)
+### *class* ir.base.SearchHit(artifact_id, surface_kind, score, text, metadata=dict(), source=None, surface_index=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -136,7 +136,7 @@ JSON-serializable form (`score` cast to a Python `float`).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* ir.base.Surface(artifact_id, kind, text, granularity='document', metadata=<factory>)
+### *class* ir.base.Surface(artifact_id, kind, text, granularity='document', metadata=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

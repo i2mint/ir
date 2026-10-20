@@ -90,15 +90,15 @@ The key an abstention floor is stored and loaded under.
 `mode` alone for a first-stage ranking (today’s behaviour, so existing floors keep
 working); `"<mode>+<tag>"` for a reranked one.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> calibration_key("hybrid")
 'hybrid'
 >>> calibration_key("hybrid", "rerank-m+artifact")
 'hybrid+rerank-m+artifact'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### ir.rerank.is_anonymous(tag)
 
@@ -145,9 +145,6 @@ part). If its optional dependency is absent this warns once and returns `None`, 
 the caller degrades to first-stage ranking; resolve *before* deriving a calibration key
 so the degraded run uses the plain key.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
 ```pycon
 >>> resolve_reranker(len) is len
 True
@@ -156,6 +153,9 @@ Traceback (most recent call last):
     ...
 ValueError: unknown rerank spec 'nope'; expected a callable, 'cross-encoder' or 'cross-encoder:<model>'.
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### ir.rerank.spec_tag(spec, rerank_text='surface', , max_chars=2000)
 

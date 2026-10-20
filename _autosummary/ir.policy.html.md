@@ -60,7 +60,7 @@ downtime window ready for when it is turned on. New kinds register here.
 
 The global fallback policy (any kind without a specific default).
 
-### *class* ir.policy.MaintenancePolicy(reindex=<factory>, synopsis=<factory>)
+### *class* ir.policy.MaintenancePolicy(reindex=ReindexPolicy(), synopsis=SynopsisPolicy())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

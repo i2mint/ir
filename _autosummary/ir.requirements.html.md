@@ -112,12 +112,12 @@ are compared with the standard library, and anything it cannot judge (a
 pre-release, `dev`, `post` or local version, an unreadable specifier) is taken
 to hold: this check must never block `import ir` on a doubt.
 
-* **Return type:**
-  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
-
 ```pycon
 >>> version_satisfies("0.1.6", ">=0.1.1,<0.2"), version_satisfies("0.2.0", "<0.2")
 (True, False)
 >>> version_satisfies("1.4", "~=1.2"), version_satisfies("2.0", "~=1.2")
 (True, False)
 ```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)

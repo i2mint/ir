@@ -167,14 +167,14 @@ silently dropped).
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – if `k` is less than 1.
 
-### ir.eval_gen.make_default_abstention_generator(, prompt='You are generating "no applicable tool" cases for a tool-retrieval evaluation.\\\\n\\\\nThe tool catalog is about: {theme}.\\\\n\\\\nWrite {n} natural, plausible user requests that such a catalog should NOT be able\\\\nto satisfy because they fall outside its scope.\\\\nOne request per line. No numbering, no quotes, no extra commentary.\\\\n', \*\*prompt_function_kwargs)
+### ir.eval_gen.make_default_abstention_generator(, prompt='You are generating "no applicable tool" cases for a tool-retrieval evaluation.\\n\\nThe tool catalog is about: {theme}.\\n\\nWrite {n} natural, plausible user requests that such a catalog should NOT be able\\nto satisfy because they fall outside its scope.\\nOne request per line. No numbering, no quotes, no extra commentary.\\n', \*\*prompt_function_kwargs)
 
 Build the default abstention generator on `aix` (lazy import).
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### ir.eval_gen.make_default_query_generator(, prompt='You are generating evaluation data for a tool-retrieval system.\\\\n\\\\nBelow is a description of a capability (its name has been hidden on purpose):\\\\n\\\\n{description}\\\\n\\\\nWrite {n} natural, varied user requests that this capability should handle.\\\\nRules:\\\\n- Do NOT mention any tool, function, skill, or package name.\\\\n- Vary phrasing, specificity, and the implied (not explicit) parameters.\\\\n- One request per line. No numbering, no quotes, no extra commentary.\\\\n', \*\*prompt_function_kwargs)
+### ir.eval_gen.make_default_query_generator(, prompt='You are generating evaluation data for a tool-retrieval system.\\n\\nBelow is a description of a capability (its name has been hidden on purpose):\\n\\n{description}\\n\\nWrite {n} natural, varied user requests that this capability should handle.\\nRules:\\n- Do NOT mention any tool, function, skill, or package name.\\n- Vary phrasing, specificity, and the implied (not explicit) parameters.\\n- One request per line. No numbering, no quotes, no extra commentary.\\n', \*\*prompt_function_kwargs)
 
 Build the default back-translation generator on `aix` (lazy import).
 
