@@ -1,0 +1,24 @@
+{"query": "publish this report so I can read it on my phone", "gold": ["annals-publish"]}
+{"query": "squash merge the PR after CI is green and return to the default branch", "gold": ["landing-a-branch"]}
+{"query": "deploy the app to thorwhalen.com", "gold": ["tw-deploy"]}
+{"query": "I'm blocked on a secret only the user can set, file it so it is tracked", "gold": ["needs-human"]}
+{"query": "which public functions have no tests, measure coverage", "gold": ["wads-test-coverage"]}
+{"query": "rewrite this text so it doesn't sound machine-written", "gold": ["deslop"]}
+{"query": "check which repos have unmerged branches and drifted from default", "gold": ["branch-hygiene"]}
+{"query": "download a youtube video", "gold": ["yb-download"]}
+{"query": "build a React form from a zod schema", "gold": ["frontend"]}
+{"query": "fix the sphinx docs publishing to GitHub Pages", "gold": ["epythet-docs"]}
+{"query": "what are my other claude sessions doing and which need me", "gold": ["crowsnest"]}
+{"query": "convert a pdf to markdown", "gold": ["pdfdol-convert"]}
+{"query": "a repo needs the deploy key so CI can push the version bump back", "gold": ["wads-ci-fix"]}
+{"query": "write a message to a specific person using their communication style", "gold": ["acquaint-write"]}
+{"query": "recipe for sourdough bread", "gold": []}
+{"query": "how tall is mount everest", "gold": []}
+{"query": "book a flight to lisbon", "gold": []}
+{"query": "translate this poem into french", "gold": []}
+{"query": "what is the weather tomorrow", "gold": []}
+{"query": "tune my guitar to drop D", "gold": []}
+{"query": "best way to train a puppy", "gold": []}
+{"query": "explain the rules of cricket", "gold": []}
+{"query": "knit a scarf pattern", "gold": []}
+{"query": "history of the roman empire", "gold": []}
