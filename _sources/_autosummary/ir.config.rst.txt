@@ -13,6 +13,8 @@ ir.config
       corpus_dir
       data_dir
       embeddings_cache_dir
+      exclude_path
+      excluded_patterns
       registry_path
       safe_name
    

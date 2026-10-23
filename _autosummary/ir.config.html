@@ -169,6 +169,12 @@ treat the directories as guaranteed to exist.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.config.embeddings_cache_dir" title="ir.config.embeddings_cache_dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">embeddings_cache_dir</span></code></a>(model_id)</p></td>
 <td><p>Cache directory for one embedding model's vectors.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.config.exclude_path" title="ir.config.exclude_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exclude_path</span></code></a>()</p></td>
+<td><p>Local list of repo paths never to index (default <code class="docutils literal notranslate"><span class="pre">~/.config/ir/exclude</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.config.excluded_patterns" title="ir.config.excluded_patterns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">excluded_patterns</span></code></a>()</p></td>
+<td><p>The patterns in <a class="reference internal" href="#ir.config.exclude_path" title="ir.config.exclude_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">exclude_path()</span></code></a>, or <code class="docutils literal notranslate"><span class="pre">[]</span></code> when the file is absent.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.config.registry_path" title="ir.config.registry_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">registry_path</span></code></a>()</p></td>
 <td><p>JSON file mapping registered corpus names to their build settings.</p></td>
 </tr>
@@ -228,6 +234,30 @@ treat the directories as guaranteed to exist.</p>
 </dl>
 </dd></dl>
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.config.exclude_path">
+<span class="sig-prename descclassname"><span class="pre">ir.config.</span></span><span class="sig-name descname"><span class="pre">exclude_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/config.html#exclude_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.config.exclude_path" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.config.exclude_path'">¶</a></dt>
+<dd><p>Local list of repo paths never to index (default <code class="docutils literal notranslate"><span class="pre">~/.config/ir/exclude</span></code>).</p>
+<p>One <code class="docutils literal notranslate"><span class="pre">fnmatch</span></code> pattern per line, matched against a repo’s path relative to
+the projects folder (<code class="docutils literal notranslate"><span class="pre">q/some-private-repo</span></code>, <code class="docutils literal notranslate"><span class="pre">projects/*</span></code>) or its absolute
+path; blank lines and <code class="docutils literal notranslate"><span class="pre">#</span></code> comments are ignored. It is per-machine config,
+never committed, so a private repo’s name stays out of any shared file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.config.excluded_patterns">
+<span class="sig-prename descclassname"><span class="pre">ir.config.</span></span><span class="sig-name descname"><span class="pre">excluded_patterns</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/config.html#excluded_patterns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.config.excluded_patterns" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.config.excluded_patterns'">¶</a></dt>
+<dd><p>The patterns in <a class="reference internal" href="#ir.config.exclude_path" title="ir.config.exclude_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">exclude_path()</span></code></a>, or <code class="docutils literal notranslate"><span class="pre">[]</span></code> when the file is absent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.config.registry_path">
 <span class="sig-prename descclassname"><span class="pre">ir.config.</span></span><span class="sig-name descname"><span class="pre">registry_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/config.html#registry_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.config.registry_path" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.config.registry_path'">¶</a></dt>
 <dd><p>JSON file mapping registered corpus names to their build settings.</p>
@@ -256,6 +286,8 @@ treat the directories as guaranteed to exist.</p>
 <li><a :data-current="activeSection === '#ir.config.corpus_dir'" class="reference internal" href="#ir.config.corpus_dir"><code class="docutils literal notranslate"><span class="pre">corpus_dir()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.config.data_dir'" class="reference internal" href="#ir.config.data_dir"><code class="docutils literal notranslate"><span class="pre">data_dir()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.config.embeddings_cache_dir'" class="reference internal" href="#ir.config.embeddings_cache_dir"><code class="docutils literal notranslate"><span class="pre">embeddings_cache_dir()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.config.exclude_path'" class="reference internal" href="#ir.config.exclude_path"><code class="docutils literal notranslate"><span class="pre">exclude_path()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.config.excluded_patterns'" class="reference internal" href="#ir.config.excluded_patterns"><code class="docutils literal notranslate"><span class="pre">excluded_patterns()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.config.registry_path'" class="reference internal" href="#ir.config.registry_path"><code class="docutils literal notranslate"><span class="pre">registry_path()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.config.safe_name'" class="reference internal" href="#ir.config.safe_name"><code class="docutils literal notranslate"><span class="pre">safe_name()</span></code></a></li>
 </ul>
@@ -271,7 +303,7 @@ treat the directories as guaranteed to exist.</p>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=61349712"></script>
+<script src="../_static/documentation_options.js?v=c54c130b"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

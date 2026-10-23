@@ -23,6 +23,7 @@ ir.sources
       iter_report_doc_folders
       mcp_tool_record
       mcp_tool_signal
+      package_repo_dirs
       report_exclude_reason
       resolve_fetcher
    

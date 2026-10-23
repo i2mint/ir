@@ -348,9 +348,20 @@ projects root.
 * **Return type:**
   [`CorpusSource`](ir.sources.html.md#ir.sources.CorpusSource)
 
-#### *classmethod* from_packages(, name='packages', manifest=None, readme_chars=20000, strategy=None, \*\*kwargs)
+#### *classmethod* from_packages(, name='packages', manifest=None, repos=None, exclude=None, readme_chars=20000, strategy=None, \*\*kwargs)
 
-The local package ecosystem, scanned from the `.pth` manifest.
+The local repos: the `.pth` manifest plus every fleet repo on disk.
+
+`repos` overrides where the repo directories come from — a
+zero-argument callable yielding directory paths, or a `"module:attr"`
+reference (`resolve_fetcher()`). The default is
+`package_repo_dirs()`: manifest packages first, then the repos
+`priv.layout.scan_fleet` finds under the letter dirs (JS/TS apps,
+data repos), so a repo is findable whether or not it is a Python package.
+
+`exclude` is a list of `fnmatch` patterns for repos never to read
+(see [`ir.config.exclude_path()`](ir.config.html.md#ir.config.exclude_path)); the default is that local file’s
+patterns, applied to every directory whatever `repos` yields.
 
 * **Return type:**
   [`CorpusSource`](ir.sources.html.md#ir.sources.CorpusSource)

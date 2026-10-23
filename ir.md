@@ -1,4 +1,4 @@
-> built 2026-10-23 03:00 UTC from 046551e (master) · ir 0.1.52. Details: build_info.json
+> built 2026-10-23 06:50 UTC from be3b391 (master) · ir 0.1.53. Details: build_info.json
 
 # index.html.md
 
@@ -109,6 +109,8 @@ ir discover packages "cache"
 Or install into an environment you own: `uv pip install --python <env>/bin/python ir` (a distro-managed system Python refuses this; use `uv tool install`). If you run `ir` where its dependencies are missing, it now says which ones and prints these commands, instead of a bare `ModuleNotFoundError` from `ir/base.py`.
 
 **Where the index comes from.** Nothing is shipped or synced: each machine builds its own indexes from what is on that machine. The first `ir discover` on a machine that never built one prints `corpus 'packages' is empty; build it first: ir build packages`. Run it once (`ir build skills`, `ir build packages`, …); later builds are incremental, and `ir maintain --all` (or `ir schedule`) keeps them fresh. Indexes live under `~/.local/share/ir`.
+
+**What the `packages` corpus covers.** Every repo on disk, not only Python packages: the `.pth` manifest’s packages first, then every checkout `priv.layout.scan_fleet` finds under the letter dirs (JS/TS apps, data repos), with `package.json` supplying the description when there is no `pyproject.toml` one. Without `priv` installed it is the manifest alone. `CorpusSource.from_packages(repos=...)` replaces the enumeration. To keep a repo out of the index on one machine, add an `fnmatch` pattern for its path (relative to the projects folder, e.g. `q/some-private-repo`) to `~/.config/ir/exclude`, one per line; the next build drops its records.
 
 **How long a first build takes.** With the light embedder (no model download), `ir build packages` over about 2,800 records took 12 s on a small server. With the default MiniLM embedder the first build also downloads the model (about 90 MB) and embeds on CPU, so budget minutes (not measured here); `uv pip install --python <python> 'ef[sentence-transformers]'` enables it. Without that package `ir build` warns and builds with the light embedder.
 
@@ -777,14 +779,16 @@ treat the directories as guaranteed to exist.
 
 ### Functions
 
-| [`cache_dir`](_autosummary/ir.config.html.md#ir.config.cache_dir)()                    | Regenerable cache directory (default `~/.cache/ir`).               |
-|---------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| [`config_dir`](_autosummary/ir.config.html.md#ir.config.config_dir)()                   | User configuration directory (default `~/.config/ir`).             |
-| [`corpus_dir`](_autosummary/ir.config.html.md#ir.config.corpus_dir)(name)               | Durable directory holding one corpus's stores.                     |
-| [`data_dir`](_autosummary/ir.config.html.md#ir.config.data_dir)()                     | Durable data directory (default `~/.local/share/ir`).              |
-| [`embeddings_cache_dir`](_autosummary/ir.config.html.md#ir.config.embeddings_cache_dir)(model_id) | Cache directory for one embedding model's vectors.                 |
-| [`registry_path`](_autosummary/ir.config.html.md#ir.config.registry_path)()                | JSON file mapping registered corpus names to their build settings. |
-| [`safe_name`](_autosummary/ir.config.html.md#ir.config.safe_name)(name)                | Filesystem-safe slug for a corpus/model identifier.                |
+| [`cache_dir`](_autosummary/ir.config.html.md#ir.config.cache_dir)()                    | Regenerable cache directory (default `~/.cache/ir`).                                                              |
+|---------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| [`config_dir`](_autosummary/ir.config.html.md#ir.config.config_dir)()                   | User configuration directory (default `~/.config/ir`).                                                            |
+| [`corpus_dir`](_autosummary/ir.config.html.md#ir.config.corpus_dir)(name)               | Durable directory holding one corpus's stores.                                                                    |
+| [`data_dir`](_autosummary/ir.config.html.md#ir.config.data_dir)()                     | Durable data directory (default `~/.local/share/ir`).                                                             |
+| [`embeddings_cache_dir`](_autosummary/ir.config.html.md#ir.config.embeddings_cache_dir)(model_id) | Cache directory for one embedding model's vectors.                                                                |
+| [`exclude_path`](_autosummary/ir.config.html.md#ir.config.exclude_path)()                 | Local list of repo paths never to index (default `~/.config/ir/exclude`).                                         |
+| [`excluded_patterns`](_autosummary/ir.config.html.md#ir.config.excluded_patterns)()            | The patterns in [`exclude_path()`](_autosummary/ir.config.html.md#ir.config.exclude_path), or `[]` when the file is absent. |
+| [`registry_path`](_autosummary/ir.config.html.md#ir.config.registry_path)()                | JSON file mapping registered corpus names to their build settings.                                                |
+| [`safe_name`](_autosummary/ir.config.html.md#ir.config.safe_name)(name)                | Filesystem-safe slug for a corpus/model identifier.                                                               |
 
 ### ir.config.cache_dir()
 
@@ -820,6 +824,25 @@ Cache directory for one embedding model’s vectors.
 
 * **Return type:**
   [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
+
+### ir.config.exclude_path()
+
+Local list of repo paths never to index (default `~/.config/ir/exclude`).
+
+One `fnmatch` pattern per line, matched against a repo’s path relative to
+the projects folder (`q/some-private-repo`, `projects/*`) or its absolute
+path; blank lines and `#` comments are ignored. It is per-machine config,
+never committed, so a private repo’s name stays out of any shared file.
+
+* **Return type:**
+  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
+
+### ir.config.excluded_patterns()
+
+The patterns in [`exclude_path()`](_autosummary/ir.config.html.md#ir.config.exclude_path), or `[]` when the file is absent.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### ir.config.registry_path()
 
@@ -3217,9 +3240,20 @@ projects root.
 * **Return type:**
   [`CorpusSource`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource)
 
-#### *classmethod* from_packages(, name='packages', manifest=None, readme_chars=20000, strategy=None, \*\*kwargs)
+#### *classmethod* from_packages(, name='packages', manifest=None, repos=None, exclude=None, readme_chars=20000, strategy=None, \*\*kwargs)
 
-The local package ecosystem, scanned from the `.pth` manifest.
+The local repos: the `.pth` manifest plus every fleet repo on disk.
+
+`repos` overrides where the repo directories come from — a
+zero-argument callable yielding directory paths, or a `"module:attr"`
+reference (`resolve_fetcher()`). The default is
+`package_repo_dirs()`: manifest packages first, then the repos
+`priv.layout.scan_fleet` finds under the letter dirs (JS/TS apps,
+data repos), so a repo is findable whether or not it is a Python package.
+
+`exclude` is a list of `fnmatch` patterns for repos never to read
+(see [`ir.config.exclude_path()`](_autosummary/ir.config.html.md#ir.config.exclude_path)); the default is that local file’s
+patterns, applied to every directory whatever `repos` yields.
 
 * **Return type:**
   [`CorpusSource`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource)
@@ -6349,14 +6383,15 @@ Smart-default constructors cover the common ways to define a source:
 
 ### Functions
 
-| [`content_hash_signal`](_autosummary/ir.sources.html.md#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                 |
-|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
-| [`iter_pocket_repos`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.      |
-| [`iter_report_doc_folders`](_autosummary/ir.sources.html.md#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                       |
-| [`mcp_tool_record`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.       |
-| [`mcp_tool_signal`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`. |
-| [`report_exclude_reason`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.          |
-| [`resolve_fetcher`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.     |
+| [`content_hash_signal`](_autosummary/ir.sources.html.md#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                  |
+|-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [`iter_pocket_repos`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.       |
+| [`iter_report_doc_folders`](_autosummary/ir.sources.html.md#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                        |
+| [`mcp_tool_record`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.        |
+| [`mcp_tool_signal`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`.  |
+| [`package_repo_dirs`](_autosummary/ir.sources.html.md#ir.sources.package_repo_dirs)([manifest])                  | Manifest package directories, then fleet repos the manifest does not name. |
+| [`report_exclude_reason`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.           |
+| [`resolve_fetcher`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.      |
 
 ### Classes
 
@@ -6470,9 +6505,20 @@ projects root.
 * **Return type:**
   [`CorpusSource`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource)
 
-#### *classmethod* from_packages(, name='packages', manifest=None, readme_chars=20000, strategy=None, \*\*kwargs)
+#### *classmethod* from_packages(, name='packages', manifest=None, repos=None, exclude=None, readme_chars=20000, strategy=None, \*\*kwargs)
 
-The local package ecosystem, scanned from the `.pth` manifest.
+The local repos: the `.pth` manifest plus every fleet repo on disk.
+
+`repos` overrides where the repo directories come from — a
+zero-argument callable yielding directory paths, or a `"module:attr"`
+reference ([`resolve_fetcher()`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)). The default is
+[`package_repo_dirs()`](_autosummary/ir.sources.html.md#ir.sources.package_repo_dirs): manifest packages first, then the repos
+`priv.layout.scan_fleet` finds under the letter dirs (JS/TS apps,
+data repos), so a repo is findable whether or not it is a Python package.
+
+`exclude` is a list of `fnmatch` patterns for repos never to read
+(see [`ir.config.exclude_path()`](_autosummary/ir.config.html.md#ir.config.exclude_path)); the default is that local file’s
+patterns, applied to every directory whatever `repos` yields.
 
 * **Return type:**
   [`CorpusSource`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource)
@@ -6605,6 +6651,13 @@ does not count as a change. `raw` is a tool record in any form
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### ir.sources.package_repo_dirs(manifest=None)
+
+Manifest package directories, then fleet repos the manifest does not name.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
 
 ### ir.sources.report_exclude_reason(path, folder, , exclude_dirs=frozenset({'.git', '.hg', '.ipynb_checkpoints', '.obsidian', '.svn', '.tox', '.venv', '_\_pycache_\_', 'build', 'dist', 'node_modules', 'site-packages', 'venv'}))
 
@@ -7372,18 +7425,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-23 03:00 UTC** from commit <a href="https://github.com/i2mint/ir/commit/046551e4858c41fe5c8d349b67db528f3875ee65"><code>046551e</code></a> on branch <code>master</code>, for **ir 0.1.52** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-23 06:50 UTC** from commit <a href="https://github.com/i2mint/ir/commit/be3b3917cda885d920eef56c79f5b032002eb4dd"><code>be3b391</code></a> on branch <code>master</code>, for **ir 0.1.53** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.1.52) is behind the latest release on PyPI (0.1.53): `pip install ir` gives newer code than these docs describe.
+- The documented version (0.1.53) is behind the latest release on PyPI (0.1.54): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/046551e4858c41fe5c8d349b67db528f3875ee65"><code>046551e4858c41fe5c8d349b67db528f3875ee65</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/be3b3917cda885d920eef56c79f5b032002eb4dd"><code>be3b3917cda885d920eef56c79f5b032002eb4dd</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7394,9 +7447,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/39892498187">39892498187</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/39913739522">39913739522</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>046551e4858c41fe5c8d349b67db528f3875ee65</code> (in the history of the built commit) |
+| Event commit | <code>be3b3917cda885d920eef56c79f5b032002eb4dd</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7421,13 +7474,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.53/">0.1.53</a>, newer than the documented version (0.1.52).
+Latest release: <a href="https://pypi.org/project/ir/0.1.54/">0.1.54</a>, newer than the documented version (0.1.53).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 046551e4858c41fe5c8d349b67db528f3875ee65
+git checkout be3b3917cda885d920eef56c79f5b032002eb4dd
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

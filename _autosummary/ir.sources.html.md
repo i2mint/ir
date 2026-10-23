@@ -29,14 +29,15 @@ Smart-default constructors cover the common ways to define a source:
 
 ### Functions
 
-| [`content_hash_signal`](#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                 |
-|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
-| [`iter_pocket_repos`](#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.      |
-| [`iter_report_doc_folders`](#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                       |
-| [`mcp_tool_record`](#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.       |
-| [`mcp_tool_signal`](#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`. |
-| [`report_exclude_reason`](#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.          |
-| [`resolve_fetcher`](#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.     |
+| [`content_hash_signal`](#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                  |
+|-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [`iter_pocket_repos`](#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.       |
+| [`iter_report_doc_folders`](#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                        |
+| [`mcp_tool_record`](#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.        |
+| [`mcp_tool_signal`](#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`.  |
+| [`package_repo_dirs`](#ir.sources.package_repo_dirs)([manifest])                  | Manifest package directories, then fleet repos the manifest does not name. |
+| [`report_exclude_reason`](#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.           |
+| [`resolve_fetcher`](#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.      |
 
 ### Classes
 
@@ -150,9 +151,20 @@ projects root.
 * **Return type:**
   [`CorpusSource`](#ir.sources.CorpusSource)
 
-#### *classmethod* from_packages(, name='packages', manifest=None, readme_chars=20000, strategy=None, \*\*kwargs)
+#### *classmethod* from_packages(, name='packages', manifest=None, repos=None, exclude=None, readme_chars=20000, strategy=None, \*\*kwargs)
 
-The local package ecosystem, scanned from the `.pth` manifest.
+The local repos: the `.pth` manifest plus every fleet repo on disk.
+
+`repos` overrides where the repo directories come from — a
+zero-argument callable yielding directory paths, or a `"module:attr"`
+reference ([`resolve_fetcher()`](#ir.sources.resolve_fetcher)). The default is
+[`package_repo_dirs()`](#ir.sources.package_repo_dirs): manifest packages first, then the repos
+`priv.layout.scan_fleet` finds under the letter dirs (JS/TS apps,
+data repos), so a repo is findable whether or not it is a Python package.
+
+`exclude` is a list of `fnmatch` patterns for repos never to read
+(see [`ir.config.exclude_path()`](ir.config.html.md#ir.config.exclude_path)); the default is that local file’s
+patterns, applied to every directory whatever `repos` yields.
 
 * **Return type:**
   [`CorpusSource`](#ir.sources.CorpusSource)
@@ -285,6 +297,13 @@ does not count as a change. `raw` is a tool record in any form
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### ir.sources.package_repo_dirs(manifest=None)
+
+Manifest package directories, then fleet repos the manifest does not name.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
 
 ### ir.sources.report_exclude_reason(path, folder, , exclude_dirs=frozenset({'.git', '.hg', '.ipynb_checkpoints', '.obsidian', '.svn', '.tox', '.venv', '_\_pycache_\_', 'build', 'dist', 'node_modules', 'site-packages', 'venv'}))
 

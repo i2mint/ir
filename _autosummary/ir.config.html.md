@@ -18,14 +18,16 @@ treat the directories as guaranteed to exist.
 
 ### Functions
 
-| [`cache_dir`](#ir.config.cache_dir)()                    | Regenerable cache directory (default `~/.cache/ir`).               |
-|---------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| [`config_dir`](#ir.config.config_dir)()                   | User configuration directory (default `~/.config/ir`).             |
-| [`corpus_dir`](#ir.config.corpus_dir)(name)               | Durable directory holding one corpus's stores.                     |
-| [`data_dir`](#ir.config.data_dir)()                     | Durable data directory (default `~/.local/share/ir`).              |
-| [`embeddings_cache_dir`](#ir.config.embeddings_cache_dir)(model_id) | Cache directory for one embedding model's vectors.                 |
-| [`registry_path`](#ir.config.registry_path)()                | JSON file mapping registered corpus names to their build settings. |
-| [`safe_name`](#ir.config.safe_name)(name)                | Filesystem-safe slug for a corpus/model identifier.                |
+| [`cache_dir`](#ir.config.cache_dir)()                    | Regenerable cache directory (default `~/.cache/ir`).                                                              |
+|---------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| [`config_dir`](#ir.config.config_dir)()                   | User configuration directory (default `~/.config/ir`).                                                            |
+| [`corpus_dir`](#ir.config.corpus_dir)(name)               | Durable directory holding one corpus's stores.                                                                    |
+| [`data_dir`](#ir.config.data_dir)()                     | Durable data directory (default `~/.local/share/ir`).                                                             |
+| [`embeddings_cache_dir`](#ir.config.embeddings_cache_dir)(model_id) | Cache directory for one embedding model's vectors.                                                                |
+| [`exclude_path`](#ir.config.exclude_path)()                 | Local list of repo paths never to index (default `~/.config/ir/exclude`).                                         |
+| [`excluded_patterns`](#ir.config.excluded_patterns)()            | The patterns in [`exclude_path()`](#ir.config.exclude_path), or `[]` when the file is absent. |
+| [`registry_path`](#ir.config.registry_path)()                | JSON file mapping registered corpus names to their build settings.                                                |
+| [`safe_name`](#ir.config.safe_name)(name)                | Filesystem-safe slug for a corpus/model identifier.                                                               |
 
 ### ir.config.cache_dir()
 
@@ -61,6 +63,25 @@ Cache directory for one embedding model’s vectors.
 
 * **Return type:**
   [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
+
+### ir.config.exclude_path()
+
+Local list of repo paths never to index (default `~/.config/ir/exclude`).
+
+One `fnmatch` pattern per line, matched against a repo’s path relative to
+the projects folder (`q/some-private-repo`, `projects/*`) or its absolute
+path; blank lines and `#` comments are ignored. It is per-machine config,
+never committed, so a private repo’s name stays out of any shared file.
+
+* **Return type:**
+  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
+
+### ir.config.excluded_patterns()
+
+The patterns in [`exclude_path()`](#ir.config.exclude_path), or `[]` when the file is absent.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### ir.config.registry_path()
 
