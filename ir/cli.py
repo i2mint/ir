@@ -39,6 +39,26 @@ def _empty_corpus_msg(name) -> str:
     return f"corpus {name!r} is empty; build it first: ir build {name}"
 
 
+def _open_ready(name):
+    """Open corpus *name*; a never-built *preset* is built once, on first use.
+
+    Presets are auto-registered by :func:`registry.source_for`, so an empty one
+    means "nobody ran ``ir build`` on this machine", not "nothing to find".
+    Answering "empty" there made callers silently fall back to grep; building
+    (seconds with the default embedder) and saying so does not. Non-preset
+    corpora are left alone: their source is the user's to choose.
+    """
+    corpus = open_corpus(name)
+    if len(corpus) == 0 and name in registry.PRESETS:
+        print(
+            f"ir: preset corpus {name!r} was never built; building it now.",
+            file=sys.stderr,
+        )
+        build(name)
+        corpus = open_corpus(name)
+    return corpus
+
+
 def _drift_warning(drift, name) -> str:
     """A warning suffix when cases reference gold ids absent from the corpus.
 
@@ -157,7 +177,7 @@ def search(
     picks what it reads: surface (default) | artifact. Reranked scores are on the
     reranker's own scale.
     """
-    corpus = open_corpus(name)
+    corpus = _open_ready(name)
     if len(corpus) == 0:
         return _empty_corpus_msg(name)
     lines = []
@@ -208,7 +228,7 @@ def discover(
     """
     from .select import discover as _discover
 
-    corpus = open_corpus(name)
+    corpus = _open_ready(name)
     if len(corpus) == 0:
         return _empty_corpus_msg(name)
     floor = (
