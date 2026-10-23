@@ -758,7 +758,7 @@ def _manifest_paths(manifest: str | Path | None) -> list[Path]:
     paths = []
     for line in Path(manifest).read_text().splitlines():
         line = line.strip()
-        if line.startswith("/") and Path(line).is_dir():
+        if line and Path(line).is_absolute() and Path(line).is_dir():
             paths.append(Path(line))
     return paths
 
@@ -821,14 +821,25 @@ def _scan_packages(dirs: Iterable[Path], *, readme_chars: int) -> dict[str, dict
     The key is the directory name; a second directory with the same name (e.g.
     ``t/x`` and ``tt/x``) is keyed ``name@parent`` rather than overwriting it.
     """
-    import tomllib
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10: tomli if present, else no metadata
+        try:
+            import tomli as tomllib
+        except ModuleNotFoundError:
+            tomllib = None
+            warnings.warn(
+                "Neither tomllib (Python 3.11+) nor tomli is available; indexing "
+                "packages without pyproject descriptions or deps.",
+                stacklevel=2,
+            )
 
     scope: dict[str, dict] = {}
     for path in dirs:
         name = path.name
         description, deps = "", []
         pyproject = path / "pyproject.toml"
-        if pyproject.is_file():
+        if tomllib is not None and pyproject.is_file():
             try:
                 data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
                 proj = data.get("project", {})

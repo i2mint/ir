@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 import ir
 from ir import sources
 
@@ -27,13 +29,25 @@ def test_repos_seam_indexes_non_python_repos(tmp_path):
     )
     data = _repo(tmp_path, "misc/papers", readme="Past papers and solutions")
     src = ir.CorpusSource.from_packages(repos=lambda: [py, js, data])
-    assert src.scope["pyrepo"]["description"] == "A Python package"
     assert src.scope["jsapp"]["description"] == "Flashcards with spaced repetition"
     assert src.scope["papers"]["readme"].startswith("Past papers")
 
 
+def test_pyproject_description_is_read(tmp_path):
+    pytest.importorskip("tomllib" if _has("tomllib") else "tomli")
+    py = _repo(tmp_path, "t/pyrepo", pyproject_desc="A Python package")
+    src = ir.CorpusSource.from_packages(repos=lambda: [py])
+    assert src.scope["pyrepo"]["description"] == "A Python package"
+
+
+def _has(module):
+    import importlib.util
+
+    return importlib.util.find_spec(module) is not None
+
+
 def test_same_named_dirs_do_not_overwrite(tmp_path):
-    a = _repo(tmp_path, "t/thing", pyproject_desc="python thing")
+    a = _repo(tmp_path, "t/thing", package_json_desc="python thing")
     b = _repo(tmp_path, "tt/thing", package_json_desc="js thing")
     scope = ir.CorpusSource.from_packages(repos=lambda: [a, b]).scope
     assert scope["thing"]["description"] == "python thing"
