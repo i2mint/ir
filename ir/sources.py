@@ -19,6 +19,7 @@ Smart-default constructors cover the common ways to define a source:
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import json
 import os
@@ -29,6 +30,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .config import excluded_patterns
 from .strategy import (
     DFLT_CHUNK_MAX_TOKENS,
     Chunked,
@@ -560,12 +562,32 @@ class CorpusSource:
         *,
         name: str = "packages",
         manifest: str | Path | None = None,
+        repos: Callable[[], Iterable] | str | None = None,
+        exclude: Iterable[str] | None = None,
         readme_chars: int = 20000,
         strategy: IndexingStrategy | None = None,
         **kwargs,
     ) -> "CorpusSource":
-        """The local package ecosystem, scanned from the ``.pth`` manifest."""
-        scope = _scan_packages(manifest, readme_chars=readme_chars)
+        """The local repos: the ``.pth`` manifest plus every fleet repo on disk.
+
+        ``repos`` overrides where the repo directories come from — a
+        zero-argument callable yielding directory paths, or a ``"module:attr"``
+        reference (:func:`resolve_fetcher`). The default is
+        :func:`package_repo_dirs`: manifest packages first, then the repos
+        ``priv.layout.scan_fleet`` finds under the letter dirs (JS/TS apps,
+        data repos), so a repo is findable whether or not it is a Python package.
+
+        ``exclude`` is a list of ``fnmatch`` patterns for repos never to read
+        (see :func:`ir.config.exclude_path`); the default is that local file's
+        patterns, applied to every directory whatever ``repos`` yields.
+        """
+        if repos is not None:
+            dirs = [Path(d) for d in resolve_fetcher(repos)()]
+        else:
+            dirs = package_repo_dirs(manifest)
+        patterns = excluded_patterns() if exclude is None else list(exclude)
+        dirs = [d for d in dirs if not _is_excluded(d, patterns)]
+        scope = _scan_packages(dirs, readme_chars=readme_chars)
 
         def metadata_of(aid, raw):
             return {"path": raw.get("path")}
@@ -736,21 +758,88 @@ def _manifest_paths(manifest: str | Path | None) -> list[Path]:
     paths = []
     for line in Path(manifest).read_text().splitlines():
         line = line.strip()
-        if line.startswith("/") and Path(line).is_dir():
+        if line and Path(line).is_absolute() and Path(line).is_dir():
             paths.append(Path(line))
     return paths
 
 
-def _scan_packages(manifest, *, readme_chars: int) -> dict[str, dict]:
-    """Build ``{package_name: {name, description, readme, owner, deps, path}}``."""
-    import tomllib
+def _fleet_repo_dirs() -> list[Path]:
+    """Every repo checkout under the letter dirs, or ``[]`` when ``priv`` is absent.
+
+    ``priv.layout.scan_fleet`` is the fleet's SSOT for what is on disk (it already
+    drops symlinked aliases); linked git worktrees are dropped here, being the
+    same checkout as their main clone under another name.
+    """
+    try:
+        from priv.layout import scan_fleet
+    except ImportError:
+        return []
+    repos, _ = scan_fleet()
+    return [Path(r.path) for r in repos if not (Path(r.path) / ".git").is_file()]
+
+
+def _is_excluded(path: Path, patterns: Iterable[str]) -> bool:
+    """Does ``path`` (absolute, or relative to the projects folder) match a pattern?"""
+    patterns = list(patterns)
+    if not patterns:
+        return False
+    candidates = [path.as_posix()]
+    try:
+        candidates.append(
+            path.resolve().relative_to(_projects_root().resolve()).as_posix()
+        )
+    except (ValueError, RuntimeError):
+        pass
+    return any(fnmatch.fnmatch(c, p) for c in candidates for p in patterns)
+
+
+def package_repo_dirs(manifest: str | Path | None = None) -> list[Path]:
+    """Manifest package directories, then fleet repos the manifest does not name."""
+    dirs = _manifest_paths(manifest)
+    seen = {d.resolve() for d in dirs}
+    for d in _fleet_repo_dirs():
+        if d.resolve() not in seen:
+            seen.add(d.resolve())
+            dirs.append(d)
+    return dirs
+
+
+def _package_json_description(path: Path) -> str:
+    """The ``description`` of ``path/package.json``, or ``""``."""
+    pj = path / "package.json"
+    if not pj.is_file():
+        return ""
+    try:
+        return json.loads(pj.read_text(encoding="utf-8")).get("description") or ""
+    except (json.JSONDecodeError, OSError, ValueError, AttributeError):
+        return ""
+
+
+def _scan_packages(dirs: Iterable[Path], *, readme_chars: int) -> dict[str, dict]:
+    """Build ``{package_name: {name, description, readme, owner, deps, path}}``.
+
+    The key is the directory name; a second directory with the same name (e.g.
+    ``t/x`` and ``tt/x``) is keyed ``name@parent`` rather than overwriting it.
+    """
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10: tomli if present, else no metadata
+        try:
+            import tomli as tomllib
+        except ModuleNotFoundError:
+            tomllib = None
+            warnings.warn(
+                "Neither tomllib (Python 3.11+) nor tomli is available; indexing "
+                "packages without pyproject descriptions or deps.",
+                stacklevel=2,
+            )
 
     scope: dict[str, dict] = {}
-    for path in _manifest_paths(manifest):
+    for path in dirs:
         name = path.name
         description, deps = "", []
         pyproject = path / "pyproject.toml"
-        if pyproject.is_file():
+        if tomllib is not None and pyproject.is_file():
             try:
                 data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
                 proj = data.get("project", {})
@@ -764,13 +853,15 @@ def _scan_packages(manifest, *, readme_chars: int) -> dict[str, dict]:
                     f"indexing it with an empty description and no deps.",
                     stacklevel=2,
                 )
+        description = description or _package_json_description(path)
         readme = ""
         for cand in ("README.md", "README.rst", "README.txt"):
             rp = path / cand
             if rp.is_file():
                 readme = rp.read_text(encoding="utf-8", errors="ignore")[:readme_chars]
                 break
-        scope[name] = {
+        key = name if name not in scope else f"{name}@{path.parent.name}"
+        scope[key] = {
             "name": name,
             "description": description,
             "readme": readme,

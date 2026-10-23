@@ -76,3 +76,23 @@ def embeddings_cache_dir(model_id: str) -> Path:
 def registry_path() -> Path:
     """JSON file mapping registered corpus names to their build settings."""
     return config_dir() / "corpora.json"
+
+
+def exclude_path() -> Path:
+    """Local list of repo paths never to index (default ``~/.config/ir/exclude``).
+
+    One ``fnmatch`` pattern per line, matched against a repo's path relative to
+    the projects folder (``q/some-private-repo``, ``projects/*``) or its absolute
+    path; blank lines and ``#`` comments are ignored. It is per-machine config,
+    never committed, so a private repo's name stays out of any shared file.
+    """
+    return config_dir() / "exclude"
+
+
+def excluded_patterns() -> list[str]:
+    """The patterns in :func:`exclude_path`, or ``[]`` when the file is absent."""
+    path = exclude_path()
+    if not path.is_file():
+        return []
+    lines = (ln.split("#", 1)[0].strip() for ln in path.read_text().splitlines())
+    return [ln for ln in lines if ln]
