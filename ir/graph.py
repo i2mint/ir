@@ -99,6 +99,7 @@ class CorpusGraph:
         #: node identities (``None`` for a bare store).
         self.source = getattr(store_or_corpus, "name", None)
         self._reverse: dict[str, dict[Any, list[str]]] = {}
+        self._artifacts_by_key: dict[str, dict[Any, str]] = {}
 
     def __getitem__(self, node_id: str) -> list[Record]:
         """The artifact's records, plan-ordered (``NoLedgerEntry`` if unknown)."""
@@ -156,6 +157,50 @@ class CorpusGraph:
             self._reverse[edge_type] = index
         return index
 
+    def _artifacts_by_key_for(self, edge_type: str) -> dict[Any, str]:
+        """``{reverse-index key: artifact_id}`` over this corpus's artifacts.
+
+        Read from the ledger (whose keys are hashes, so the artifact id comes from
+        each entry), built once and kept for the life of this graph instance, like
+        :meth:`_reverse_index`.
+        """
+        index = self._artifacts_by_key.get(edge_type)
+        if index is None:
+            ledger_items = getattr(self.store, "ledger_items", None)
+            entries = ledger_items() if callable(ledger_items) else ()
+            index = {
+                _reverse_key(aid, edge_type): aid
+                for aid in (entry.get("artifact_id") for _, entry in entries)
+                if aid is not None
+            }
+            self._artifacts_by_key[edge_type] = index
+        return index
+
+    def resolve(self, node_id: Any, *, edge_type: str = REF) -> Any:
+        """The node id *node_id* names here, as :meth:`reverse_neighbors` keys it.
+
+        A ``(source, artifact_id)`` pair whose *source* is this graph's
+        :attr:`source` is read as its bare ``artifact_id``. An id naming an artifact
+        of this corpus (through the *edge_type* reverse-index key, so for ``REF``
+        case and ``-``/``_``/``.`` are ignored) resolves to that artifact's id;
+        anything else (a third-party library, another corpus's pair) resolves to its
+        own reverse-index key.
+
+        >>> CorpusGraph({}).resolve("Scikit_Learn")
+        'scikit-learn'
+        >>> CorpusGraph({}).resolve(["other", "Meshed"])
+        ('other', 'Meshed')
+        """
+        if (
+            isinstance(node_id, (list, tuple))
+            and self.source is not None
+            and len(node_id) == 2
+            and node_id[0] == self.source
+        ):
+            node_id = node_id[1]
+        key = _reverse_key(node_id, edge_type)
+        return self._artifacts_by_key_for(edge_type).get(key, key)
+
     def reverse_neighbors(self, node_id: Any, *, edge_type: str = REF) -> list[str]:
         """The artifact ids whose *edge_type* edges point **at** *node_id*.
 
@@ -166,7 +211,8 @@ class CorpusGraph:
         ids match through :func:`normalize_dist_name` (case, and ``-``/``_``/``.``,
         are ignored), so ``"scikit_learn"`` finds the dependents of
         ``"scikit-learn"``; other edge types match ids exactly. A cross-corpus
-        target is a ``(source, artifact_id)`` pair, matched exactly. Order is first-seen over the links view, de-duplicated.
+        target is a ``(source, artifact_id)`` pair, matched exactly. Order is
+        first-seen over the links view, de-duplicated.
         """
         index = self._reverse_index(edge_type)
         return list(index.get(_reverse_key(node_id, edge_type), []))

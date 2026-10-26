@@ -335,3 +335,94 @@ def test_walk_does_not_depend_on_seed_order():
         return [h.artifact_id for h in traverse("same words", corpus, policy=policy)]
 
     assert walk(["liba", "libb"]) == walk(["libb", "liba"])
+
+
+def test_seed_spellings_are_one_seed_and_commit_the_corpus_artifact():
+    # "Meshed" / "MESHED" name the corpus artifact "meshed": committed, not just routed.
+    for seeds in (["Meshed"], ["MESHED", "meshed"]):
+        hits = _walk(seeds)
+        assert {h.artifact_id for h in hits} == {"meshed", "allude", "unbox"}
+        assert {h.metadata["seed"] for h in hits if "seed" in h.metadata} == {"meshed"}
+
+
+def test_a_seed_naming_a_corpus_artifact_by_separator_variant():
+    docs = {
+        "scikit-learn": {"name": "scikit-learn", "description": "ml", "deps": []},
+        "fitter": {"name": "fitter", "description": "fit", "deps": ["scikit-learn"]},
+    }
+    src = ir.CorpusSource.from_mapping(docs, name="sk", strategy=ir.Package())
+    corpus = ir.build(
+        src,
+        store=CorpusStore.memory(),
+        embedder="light",
+        edge_extractor=ir.default_edge_extractor,
+    )
+    policy = ir.reverse_dependency_policy(seeds=["Scikit_Learn"])
+    ids = {h.artifact_id for h in traverse("fit", corpus, policy=policy)}
+    assert ids == {"scikit-learn", "fitter"}
+
+
+def _build(docs, *, name="sk", edge_extractor=ir.default_edge_extractor):
+    src = ir.CorpusSource.from_mapping(docs, name=name, strategy=ir.Package())
+    return ir.build(
+        src,
+        store=CorpusStore.memory(),
+        embedder="light",
+        edge_extractor=edge_extractor,
+    )
+
+
+def test_seed_order_is_decided_after_normalization():
+    # "Zlib" sorts before "abc" raw, after it normalized: the credited seed of a
+    # tie must not depend on the caller's spelling.
+    docs = {"d": {"name": "d", "description": "compress", "deps": ["zlib", "abc"]}}
+    corpus = _build(docs)
+
+    def seed_of(seeds):
+        policy = ir.reverse_dependency_policy(seeds=seeds)
+        (hit,) = traverse("compress", corpus, policy=policy)
+        return hit.metadata["seed"]
+
+    assert seed_of(["Zlib", "abc"]) == seed_of(["zlib", "abc"]) == "abc"
+
+
+def test_corpus_graph_resolve():
+    graph = CorpusGraph(_corpus())
+    assert graph.resolve("MESHED") == "meshed"  # a corpus artifact, loosely
+    assert graph.resolve(("pk", "Meshed")) == "meshed"  # this corpus's own pair
+    assert graph.resolve("Scikit_Learn") == "scikit-learn"  # third-party: its key
+    assert graph.resolve(("other", "Meshed")) == ("other", "Meshed")  # exact
+    assert graph.resolve("Meshed", edge_type="PARENT") == "Meshed"  # exact ids
+    # The corpus's own spelling wins over the normalized key.
+    docs = {"My_Lib": {"name": "My_Lib", "description": "x", "deps": []}}
+    assert CorpusGraph(_build(docs)).resolve("my-lib") == "My_Lib"
+
+
+def test_cross_corpus_seeds_keep_their_source():
+    # Of this corpus: committed like a string seed.
+    assert {h.artifact_id for h in _walk([("pk", "meshed")])} == {
+        "meshed",
+        "allude",
+        "unbox",
+    }
+
+    # Of another corpus: matches a cross-corpus edge target exactly, and routes.
+    def foreign_ref(aid, fields):
+        return {"REF": [["other", "Meshed"]]} if aid == "d" else {}
+
+    docs = {
+        "d": {"name": "d", "description": "uses meshed", "deps": []},
+        "e": {"name": "e", "description": "uses nothing", "deps": []},
+    }
+    corpus = _build(docs, edge_extractor=foreign_ref)
+    policy = ir.reverse_dependency_policy(seeds=[("other", "Meshed")])
+    hits = traverse("meshed", corpus, policy=policy)
+    assert [h.artifact_id for h in hits] == ["d"]
+    assert hits[0].metadata["seed"] == ("other", "Meshed")
+    policy = ir.reverse_dependency_policy(seeds=[("other", "meshed")])
+    assert traverse("meshed", corpus, policy=policy) == []  # foreign: exact match
+
+
+def test_a_malformed_seed_pair_is_a_clear_error():
+    with pytest.raises(ValueError, match=r"\(source, artifact_id\) pair"):
+        ir.reverse_dependency_policy(seeds=[("other", "a", "b")])
