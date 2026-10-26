@@ -309,3 +309,29 @@ def test_other_edge_types_match_ids_exactly():
     assert graph.reverse_neighbors("notes/a b.md", edge_type="CITES") == ["x"]
     assert graph.reverse_neighbors("deploy@infra", edge_type="PARENT") == []
     assert graph.reverse_neighbors("deploy@ops", edge_type="PARENT") == ["z"]
+
+
+def test_walk_does_not_depend_on_seed_order():
+    """Seeds are a set in meaning: their order must not break score ties (#122).
+
+    Two dependents with identical text tie on cosine; before the fix, the one
+    committed first (reached from the first seed iterated) ranked first, so a
+    caller passing a ``set`` got results that varied with ``PYTHONHASHSEED``.
+    """
+    twins = {
+        "left": {"name": "left", "description": "same words", "deps": ["liba"]},
+        "right": {"name": "right", "description": "same words", "deps": ["libb"]},
+    }
+    src = ir.CorpusSource.from_mapping(twins, name="tw", strategy=ir.Package())
+    corpus = ir.build(
+        src,
+        store=CorpusStore.memory(),
+        embedder="light",
+        edge_extractor=ir.default_edge_extractor,
+    )
+
+    def walk(seeds):
+        policy = ir.reverse_dependency_policy(seeds=seeds)
+        return [h.artifact_id for h in traverse("same words", corpus, policy=policy)]
+
+    assert walk(["liba", "libb"]) == walk(["libb", "liba"])

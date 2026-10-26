@@ -354,7 +354,9 @@ class _ReverseDependencyPolicy:
     """
 
     def __init__(self, *, seeds, edge_type, fan_in_weight, proximity_weight):
-        self.seeds = tuple(dict.fromkeys(str(s) for s in seeds))
+        # Sorted: seeds are a set in meaning, and their order breaks score ties in
+        # the walk, so a caller's ``set`` must not make results hash-seed dependent.
+        self.seeds = tuple(sorted({str(s) for s in seeds}))
         self.edge_type = edge_type
         self.fan_in_weight = fan_in_weight
         self.proximity_weight = proximity_weight
@@ -461,13 +463,15 @@ def reverse_dependency_policy(
     """A :class:`WalkPolicy` that walks dependency edges backwards from *seeds*.
 
     *seeds* are library ids the **caller** deems relevant to the query (ir never
-    chooses them: picking the domain libraries for a goal is the planner's job,
-    in the agent layer). The walk commits each seed that is an artifact of the
-    corpus, then its dependents (the artifacts whose ``edge_type`` edges point
-    at it), then theirs, up to :func:`traverse`'s ``max_depth``. A seed outside
-    the corpus (a third-party library) routes without being a result. So a
-    package that depends on a domain library but never says so in prose is
-    still found.
+    chooses them: picking the domain libraries for a goal is the planner's job, in
+    the agent layer). They are a set: their order never changes the result. The walk
+    commits each seed that is an artifact of the corpus, then its dependents (the
+    artifacts whose ``edge_type`` edges point at it), then theirs, up to
+    :func:`traverse`'s ``max_depth``. A seed outside the corpus (a third-party
+    library) routes without being a result. So a package that depends on a domain
+    library but never says so in prose is still found. A dependent reachable from
+    several seeds is credited to the one on its best-scoring path (on a tie, the
+    alphabetically first).
 
     Each result scores its best surface's cosine to the query, plus
     ``fan_in_weight`` times its normalized fan-in (its share of the most
