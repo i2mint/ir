@@ -2210,19 +2210,14 @@ def evaluate_named_sets(
     """
     theme = theme or named_sets.theme
     hits = _probe_hits(corpus, probe, mode=mode, k=k, surfaces=surfaces, **search_kw)
-    ranking = list(dict.fromkeys(h.artifact_id for h in hits))
-    row, named = _score_named(ranking, named_sets, k=k)
+    row, _, seen, missed = _score_named([h.artifact_id for h in hits], named_sets, k=k)
     return NamedSetReport(
         theme=theme,
         k=k,
         fp_rate=row["fp_rate"],
         hard_positive_recall=row["hard_positive_recall"],
-        distractors_seen=tuple(
-            d for d in named_sets.distractors if 0 < named[d]["rank"] <= k
-        ),
-        hard_positives_missed=tuple(
-            h for h in named_sets.hard_positives if not 0 < named[h]["rank"] <= k
-        ),
+        distractors_seen=seen,
+        hard_positives_missed=missed,
     )
 
 
@@ -2348,13 +2343,19 @@ def _score_named(
     *,
     k: int,
     scores: Mapping[str, float] | None = None,
-) -> tuple[dict[str, float], dict[str, dict]]:
-    """The named-set half of :func:`score_ranking`, for a de-duplicated *ranking*.
+) -> tuple[dict[str, float], dict[str, dict], tuple[str, ...], tuple[str, ...]]:
+    """The named-set half of :func:`score_ranking` and :func:`evaluate_named_sets`.
 
-    Returns ``({"fp_rate", "hard_positive_recall"}, named)``, *named* being
-    ``{id: {"role", "rank", "score"}}`` for every named distractor / hard positive
-    (rank 1-based, ``0`` when absent).
+    Returns ``(row, named, seen, missed)``: *row* is ``{"fp_rate",
+    "hard_positive_recall"}``; *named* is ``{id: {"role", "rank", "score"}}`` for
+    every named distractor / hard positive (rank 1-based, ``0`` when absent); *seen*
+    the distractors in the top *k*, *missed* the hard positives outside it. A
+    repeated id in *ranking* counts at its first position.
     """
+    if k < 1:
+        raise ValueError(f"k must be >= 1, got {k!r}")
+    ranking = list(dict.fromkeys(ranking))
+    top = set(ranking[:k])
     row = {
         "fp_rate": fp_rate_on_distractors(ranking, named_sets.distractors, k=k),
         "hard_positive_recall": recall_on_hard_positives(
@@ -2374,7 +2375,9 @@ def _score_named(
         }
         for aid, role in roles.items()
     }
-    return row, named
+    seen = tuple(d for d in named_sets.distractors if d in top)
+    missed = tuple(h for h in named_sets.hard_positives if h not in top)
+    return row, named, seen, missed
 
 
 def score_ranking(
@@ -2415,7 +2418,7 @@ def score_ranking(
     row: dict[str, float] = {"ndcg": ndcg_at_k(ranking, relevant, k)}
     named: dict[str, dict] = {}
     if named_sets is not None:
-        named_row, named = _score_named(ranking, named_sets, k=k, scores=scores)
+        named_row, named, _, _ = _score_named(ranking, named_sets, k=k, scores=scores)
         row.update(named_row)
     return row, named
 
