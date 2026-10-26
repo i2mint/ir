@@ -12,9 +12,9 @@ The probes are the benchmark's own theme probes. The seeds and `relevant_libs` a
 
 **Metrics.** Recall@20 counts `core` and `strong` as relevant. nDCG@20 uses the benchmark's graded gains. "Of them not seeds" counts the hard positives in the top 20 that are not themselves seed libraries (the walk commits a seed at once).
 
-**This run needed an ir fix first.** ir used to read a package's deps only from `pyproject.toml`, and 63 of the 228 packages declare theirs only in `setup.cfg`. #123 / #124 (an adversarial review of this run found the gap) made the packages source fall back to `setup.cfg`. The numbers below are after that fix.
+**This run needed an ir fix first.** ir used to read a package's deps only from `pyproject.toml`, and 50 of the 228 packages declare theirs only in `setup.cfg`. #123 / #124 (an adversarial review of this run found the gap) made the packages source fall back to `setup.cfg`. The numbers below are after that fix.
 
-**Compare arms within this run only.** The baseline is a little below the frozen June baseline in `baseline_report.json` (nDCG@20 0.80 / 0.74), but the corpus is not the same snapshot: its artifact-id signature differs from the one the labels were made on, one checkout is missing, and the package texts have changed since.
+**Compare arms within this run only.** The baseline is below the frozen June baseline in `baseline_report.json` (nDCG@20 0.80 / 0.74). The two runs index different corpora: the June one was the shared `packages` corpus, this one is the labelled subset with one checkout missing, and it now includes the `setup.cfg` deps and descriptions.
 
 ## Results
 ### embeddings (5 hard positives, 14 distractors)
@@ -55,14 +55,14 @@ Seed libraries: of the 18, the most depended-on has 19 dependents in the corpus,
 
 - **Both mechanisms help, but the effect is smaller than on the synthetic corpus.**
   - Embeddings: the walk (fused by RRF) lifts nDCG@20 from 0.77 to 0.89 and recall@20 from 0.42 to 0.52. The boost peaks at 0.87 (`w=0.01`).
-  - Graphs: the boost at `w=0.02` lifts nDCG@20 from 0.67 to 0.78 and finds 3 hard positives instead of 1. `w=0.01` gives a higher nDCG (0.82) but finds no extra hard positive. The walk gives 0.70.
+  - Graphs: the boost at `w=0.02` lifts nDCG@20 from 0.67 to 0.78 and finds 3 hard positives instead of 1. `w=0.01` gives a higher nDCG (0.82) but finds no extra hard positive. The walk gives 0.70, but it lowers recall@20 (0.46 to 0.38) and brings a distractor into the top 10.
 - **The dependency signal finds every hard positive it can reach.** A hard positive is reachable only if it depends on a seed library. Six of the eleven do: three per theme, and one of them is itself a seed. In both themes, the walk and the `w>=0.01` boost (`w>=0.02` for graphs) put all six in the top 20. The other five all declare dependencies, but on none of the seed libraries (a vector-DB client, for example).
 - **So the issue's hard-positive target (at least 6 of its 8 named in the top 20) cannot be met with its seed lists.** Only 4 of those 8 depend on a seed library, and all 4 reach the top 20. Raising the ceiling means choosing better seeds. That choice belongs to the caller, in the design raglab's Planner (`thorwhalen/raglab#2`), not ir.
-- **The guardrail holds on the rate, but not on the issue's premise.** The distractor FP rate@20 never rises above the baseline: embeddings falls from 0.14 to 0.07, graphs stays at 0.11. However, the issue assumed distractors "don't depend on seed libs", and two of the 23 do: an audio package that depends on `torch`, and a graphs distractor that depends on `meshed`. The dependency arms lift both of them. On graphs the walk brings that distractor into the top 10, and the boost (rank 11 at `w=0.02`) nearly does too. On embeddings no distractor enters the top 10 in any arm. A dependency is evidence of use, not of topic, and seed lists built from general-purpose libraries (`torch`, `scikit-learn`) carry that cost.
+- **The guardrail holds on the rate, but not on the issue's premise.** The distractor FP rate@20 never rises above the baseline: embeddings falls from 0.14 to 0.07, graphs stays at 0.11. However, the issue assumed distractors "don't depend on seed libs", and that is not true of two of the 23 named distractors: an audio package that depends on `torch` (one of the issue's seven guardrail distractors), and a graphs distractor that depends on `meshed`. The dependency arms lift both of them. On graphs the walk brings that distractor into the top 10, and the boost (rank 11 at `w=0.02`) nearly does too. On embeddings no distractor enters the top 10 in any arm. A dependency is evidence of use, not of topic, and seed lists built from general-purpose libraries (`torch`, `scikit-learn`) carry that cost.
 - **The cross-encoder comparison is split by theme.**
   - Graphs: the cross-encoder alone is the worst arm (nDCG 0.63, FP rate 0.22): prose like "DAG" fools it. Adding `dep_boost` on its scale (`w=0.01`) recovers part of the loss (0.71, FP rate 0.11, 3 hard positives instead of 1), so there the two signals are complementary.
   - Embeddings: the cross-encoder alone is already as good as the walk (0.89, FP rate 0.00), and every boost weight makes it worse (0.81-0.83).
-  - Larger weights saturate quickly on the cross-encoder's scale: 0.03 and 0.1 give identical rankings.
+  - Larger weights saturate quickly on the cross-encoder's scale: 0.03 and 0.1 give identical metrics on embeddings and near-identical ones on graphs.
 - **The weight is a dial, as in `ir_11`.** On the hybrid (RRF) scale the useful range is 0.01-0.02. At 0.05 both themes fall back (0.81 / 0.69), because any package with a seed dependency then outranks a better prose match. That supports `dependency_evidence_boost` having no default weight.
 - **The fan-in prior is not degenerate, but it is thin.** Most dependency targets have one or two dependents. The seed libraries have between 0 and 19.
 
