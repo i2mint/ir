@@ -46,3 +46,5 @@ Fan-in of the first corpus (dependents: how many dependencies): {5: 1, 7: 1, 9: 
 ## What remains
 
 The real-data run of the issue (nDCG@20 / recall@20 per theme against the all-MiniLM hybrid baseline, the 8 named hard positives, the named distractor guardrail, an `ef.Reranker` comparison arm) on the private labels, from a machine that has them.
+
+Update (2026-10-26): that run is `ir_12` (`misc/evals/dep_signal_real.py`).
