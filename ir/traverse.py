@@ -347,9 +347,19 @@ class _DepNode:
 def _seed_key(seed: Any) -> "str | tuple[str, str]":
     """A seed as a string id, or a ``(source, artifact_id)`` pair kept whole."""
     if isinstance(seed, (list, tuple)):
+        if len(seed) != 2:
+            raise ValueError(
+                "a cross-corpus seed is a (source, artifact_id) pair, "
+                f"got {seed!r} (wrap a single pair in a list: [{seed!r}])"
+            )
         source, artifact_id = seed
         return (str(source), str(artifact_id))
     return str(seed)
+
+
+def _node_order(node_id: Any) -> tuple:
+    """Sort key over resolved seed ids: strings first, then pairs, each in order."""
+    return (isinstance(node_id, tuple), node_id)
 
 
 class _ReverseDependencyPolicy:
@@ -362,11 +372,8 @@ class _ReverseDependencyPolicy:
     """
 
     def __init__(self, *, seeds, edge_type, fan_in_weight, proximity_weight):
-        # Sorted: seeds are a set in meaning, and their order breaks score ties in
-        # the walk, so a caller's ``set`` must not make results hash-seed dependent.
-        self.seeds = tuple(
-            sorted({_seed_key(s) for s in seeds}, key=lambda s: (type(s) is tuple, s))
-        )
+        # A set: ordering happens in ``seed``, after resolution to node ids.
+        self.seeds = frozenset(_seed_key(s) for s in seeds)
         self.edge_type = edge_type
         self.fan_in_weight = fan_in_weight
         self.proximity_weight = proximity_weight
@@ -386,12 +393,12 @@ class _ReverseDependencyPolicy:
         if node.artifact_id not in best:
             from .retrieve import NoLedgerEntry, _embed_query
 
-            try:
-                if not isinstance(node.artifact_id, str):
-                    raise NoLedgerEntry(node.artifact_id)  # a foreign-corpus seed
-                records = records_for_artifact(store, node.artifact_id)
-            except NoLedgerEntry:
-                records = []  # a seed outside the corpus: it routes, nothing to score
+            records = []  # a seed outside the corpus: it routes, nothing to score
+            if isinstance(node.artifact_id, str):  # a foreign-corpus pair never is
+                try:
+                    records = records_for_artifact(store, node.artifact_id)
+                except NoLedgerEntry:
+                    pass
             if not records:
                 best[node.artifact_id] = None
             else:
@@ -405,40 +412,14 @@ class _ReverseDependencyPolicy:
         return best[node.artifact_id]
 
     def seed(self, state: WalkState, store: Any) -> list[_DepNode]:
-        self._graph(state, store)
-        resolve = self._resolver(store)
-        nodes: dict = {}
-        for seed in self.seeds:
-            aid = resolve(seed)
-            nodes.setdefault(aid, _DepNode(artifact_id=aid, seed=aid))
-        return list(nodes.values())
-
-    def _resolver(self, store: Any):
-        """``seed -> node id``: the corpus artifact a seed names, else its index key.
-
-        A string seed is matched to the corpus artifact it names through the
-        reverse index's own key (so ``"Scikit_Learn"`` commits the artifact
-        ``scikit-learn``); a ``(source, artifact_id)`` seed of this corpus
-        resolves like a string; any other seed routes under its own key.
-        """
-        from .graph import _reverse_key
-
-        edge_type = self.edge_type
-        raw = getattr(store, "store", store)
-        ledger_keys = (
-            (k for k, _ in raw.ledger_items()) if hasattr(raw, "ledger_items") else ()
-        )
-        by_key = {_reverse_key(k, edge_type): k for k in ledger_keys}
-        name = getattr(store, "name", None)
-
-        def resolve(seed):
-            if type(seed) is tuple and name is not None and seed[0] == name:
-                seed = seed[1]
-            return by_key.get(
-                _reverse_key(seed, edge_type), _reverse_key(seed, edge_type)
-            )
-
-        return resolve
+        graph = self._graph(state, store)
+        # Resolve first, then dedupe and sort: seed order breaks score ties in the
+        # walk, so it must not depend on the caller's spelling or iteration order.
+        node_ids = {graph.resolve(s, edge_type=self.edge_type) for s in self.seeds}
+        return [
+            _DepNode(artifact_id=aid, seed=aid)
+            for aid in sorted(node_ids, key=_node_order)
+        ]
 
     def score(self, state: WalkState, node: _DepNode, store: Any) -> float:
         found = self._best(state, node, store)
@@ -508,10 +489,16 @@ def reverse_dependency_policy(
 
     *seeds* are library ids the **caller** deems relevant to the query (ir never
     chooses them: picking the domain libraries for a goal is the planner's job, in
-    the agent layer). They are a set: their order never changes the result, and spelling variants of
-    one library (``"scikit-learn"``, ``"Scikit_Learn"``) are one seed, matched to the
-    corpus artifact they name. A ``(source, artifact_id)`` pair names an artifact of
-    a corpus; it is committed only when *source* is this corpus, else it routes. The walk
+    the agent layer). They are a set: their order never changes the result, and
+    spelling variants of one library (``"scikit-learn"``, ``"Scikit_Learn"``) are one
+    seed, matched to the corpus artifact they name (see
+    :meth:`~ir.graph.CorpusGraph.resolve`). A ``(source, artifact_id)`` pair names an
+    artifact of a corpus: when *source* is this corpus it matches loosely, like a
+    string seed, and is committed; any other pair matches edge targets exactly and
+    only routes. A single pair is still a collection of seeds, so wrap it:
+    ``seeds=[("other", "Meshed")]``. A dependent's ``metadata["seed"]`` is the
+    normalized key of the seed it was reached from (the corpus artifact id, the
+    normalized library name, or the foreign pair as a tuple). The walk
     commits each seed that is an artifact of the corpus, then its dependents (the
     artifacts whose ``edge_type`` edges point at it), then theirs, up to
     :func:`traverse`'s ``max_depth``. A seed outside the corpus (a third-party
