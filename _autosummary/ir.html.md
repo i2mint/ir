@@ -229,7 +229,11 @@ A `(source, artifact_id)` pair whose *source* is this graph’s
 of this corpus (through the *edge_type* reverse-index key, so for `REF`
 case and `-`/`_`/`.` are ignored) resolves to that artifact’s id;
 anything else (a third-party library, another corpus’s pair) resolves to its
-own reverse-index key.
+own reverse-index key. When several artifacts share a key (`My_Lib` and
+`my-lib`), an exact match wins, else the first in sorted order, whatever
+the backend’s ledger order. A bare store (no [`source`](#ir.CorpusGraph.source)) cannot tell
+its own `(source, artifact_id)` pairs from foreign ones, so every pair
+resolves as foreign (itself); name the corpus to resolve its own pairs.
 
 ```pycon
 >>> CorpusGraph({}).resolve("Scikit_Learn")

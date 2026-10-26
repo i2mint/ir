@@ -1,4 +1,4 @@
-> built 2026-10-26 14:34 UTC from bbc9d39 (master) · ir 0.1.59. Details: build_info.json
+> built 2026-10-26 16:15 UTC from 4b1d6ac (master) · ir 0.1.60. Details: build_info.json
 
 # index.html.md
 
@@ -2790,7 +2790,11 @@ A `(source, artifact_id)` pair whose *source* is this graph’s
 of this corpus (through the *edge_type* reverse-index key, so for `REF`
 case and `-`/`_`/`.` are ignored) resolves to that artifact’s id;
 anything else (a third-party library, another corpus’s pair) resolves to its
-own reverse-index key.
+own reverse-index key. When several artifacts share a key (`My_Lib` and
+`my-lib`), an exact match wins, else the first in sorted order, whatever
+the backend’s ledger order. A bare store (no [`source`](_autosummary/ir.graph.html.md#ir.graph.CorpusGraph.source)) cannot tell
+its own `(source, artifact_id)` pairs from foreign ones, so every pair
+resolves as foreign (itself); name the corpus to resolve its own pairs.
 
 ```pycon
 >>> CorpusGraph({}).resolve("Scikit_Learn")
@@ -3177,7 +3181,11 @@ A `(source, artifact_id)` pair whose *source* is this graph’s
 of this corpus (through the *edge_type* reverse-index key, so for `REF`
 case and `-`/`_`/`.` are ignored) resolves to that artifact’s id;
 anything else (a third-party library, another corpus’s pair) resolves to its
-own reverse-index key.
+own reverse-index key. When several artifacts share a key (`My_Lib` and
+`my-lib`), an exact match wins, else the first in sorted order, whatever
+the backend’s ledger order. A bare store (no [`source`](_autosummary/ir.html.md#ir.CorpusGraph.source)) cannot tell
+its own `(source, artifact_id)` pairs from foreign ones, so every pair
+resolves as foreign (itself); name the corpus to resolve its own pairs.
 
 ```pycon
 >>> CorpusGraph({}).resolve("Scikit_Learn")
@@ -7514,18 +7522,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-26 14:34 UTC** from commit <a href="https://github.com/i2mint/ir/commit/bbc9d39de135cd23d218023c44d032faed94d442"><code>bbc9d39</code></a> on branch <code>master</code>, for **ir 0.1.59** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 16:15 UTC** from commit <a href="https://github.com/i2mint/ir/commit/4b1d6ac15f679638743bde16fe83e73e1987b13d"><code>4b1d6ac</code></a> on branch <code>master</code>, for **ir 0.1.60** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.59) is behind the latest release on PyPI (0.1.60): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/bbc9d39de135cd23d218023c44d032faed94d442"><code>bbc9d39de135cd23d218023c44d032faed94d442</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/4b1d6ac15f679638743bde16fe83e73e1987b13d"><code>4b1d6ac15f679638743bde16fe83e73e1987b13d</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7536,9 +7542,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/40340534825">40340534825</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/40357122126">40357122126</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>bbc9d39de135cd23d218023c44d032faed94d442</code> (in the history of the built commit) |
+| Event commit | <code>4b1d6ac15f679638743bde16fe83e73e1987b13d</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7563,13 +7569,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.60/">0.1.60</a>, newer than the documented version (0.1.59).
+Latest release: <a href="https://pypi.org/project/ir/0.1.60/">0.1.60</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout bbc9d39de135cd23d218023c44d032faed94d442
+git checkout 4b1d6ac15f679638743bde16fe83e73e1987b13d
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

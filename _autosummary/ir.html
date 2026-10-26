@@ -507,7 +507,11 @@ edges <em>in this corpus</em>).</p>
 of this corpus (through the <em>edge_type</em> reverse-index key, so for <code class="docutils literal notranslate"><span class="pre">REF</span></code>
 case and <code class="docutils literal notranslate"><span class="pre">-</span></code>/<code class="docutils literal notranslate"><span class="pre">_</span></code>/<code class="docutils literal notranslate"><span class="pre">.</span></code> are ignored) resolves to that artifact’s id;
 anything else (a third-party library, another corpus’s pair) resolves to its
-own reverse-index key.</p>
+own reverse-index key. When several artifacts share a key (<code class="docutils literal notranslate"><span class="pre">My_Lib</span></code> and
+<code class="docutils literal notranslate"><span class="pre">my-lib</span></code>), an exact match wins, else the first in sorted order, whatever
+the backend’s ledger order. A bare store (no <a class="reference internal" href="#ir.CorpusGraph.source" title="ir.CorpusGraph.source"><code class="xref py py-attr docutils literal notranslate"><span class="pre">source</span></code></a>) cannot tell
+its own <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> pairs from foreign ones, so every pair
+resolves as foreign (itself); name the corpus to resolve its own pairs.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="gp">&gt;&gt;&gt; </span><span class="n">CorpusGraph</span><span class="p">({})</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"Scikit_Learn"</span><span class="p">)</span>
 </span><span id="line-2"><span class="go">'scikit-learn'</span>
 </span><span id="line-3"><span class="gp">&gt;&gt;&gt; </span><span class="n">CorpusGraph</span><span class="p">({})</span><span class="o">.</span><span class="n">resolve</span><span class="p">([</span><span class="s2">"other"</span><span class="p">,</span> <span class="s2">"Meshed"</span><span class="p">])</span>
@@ -2740,7 +2744,7 @@ omitted → the predicate’s <code class="docutils literal notranslate"><span c
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=755f2e77"></script>
+<script src="../_static/documentation_options.js?v=5fe4e9ad"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
