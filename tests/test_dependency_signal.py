@@ -398,6 +398,25 @@ def test_corpus_graph_resolve():
     assert CorpusGraph(_build(docs)).resolve("my-lib") == "My_Lib"
 
 
+def test_corpus_graph_resolve_ambiguous_key_is_deterministic():
+    docs = {
+        n: {"name": n, "description": "x", "deps": []} for n in ("my-lib", "My_Lib")
+    }
+    for order in (docs, dict(reversed(docs.items()))):
+        graph = CorpusGraph(_build(order))
+        assert graph.resolve("my_lib") == "My_Lib"  # no exact match: first sorted
+        assert graph.resolve("my-lib") == "my-lib"  # exact match wins
+        assert graph.resolve("My_Lib") == "My_Lib"
+
+
+def test_bare_store_resolves_pairs_as_foreign():
+    graph = CorpusGraph(
+        _build({"meshed": {"name": "meshed", "description": "x", "deps": []}}).store
+    )
+    assert graph.source is None
+    assert graph.resolve(("pk", "Meshed")) == ("pk", "Meshed")
+
+
 def test_cross_corpus_seeds_keep_their_source():
     # Of this corpus: committed like a string seed.
     assert {h.artifact_id for h in _walk([("pk", "meshed")])} == {

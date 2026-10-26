@@ -99,7 +99,7 @@ class CorpusGraph:
         #: node identities (``None`` for a bare store).
         self.source = getattr(store_or_corpus, "name", None)
         self._reverse: dict[str, dict[Any, list[str]]] = {}
-        self._artifacts_by_key: dict[str, dict[Any, str]] = {}
+        self._artifacts_by_key: dict[str, dict[Any, list[str]]] = {}
 
     def __getitem__(self, node_id: str) -> list[Record]:
         """The artifact's records, plan-ordered (``NoLedgerEntry`` if unknown)."""
@@ -157,22 +157,24 @@ class CorpusGraph:
             self._reverse[edge_type] = index
         return index
 
-    def _artifacts_by_key_for(self, edge_type: str) -> dict[Any, str]:
-        """``{reverse-index key: artifact_id}`` over this corpus's artifacts.
+    def _artifacts_by_key_for(self, edge_type: str) -> dict[Any, list[str]]:
+        """``{reverse-index key: sorted artifact ids}`` over this corpus's artifacts.
 
         Read from the ledger (whose keys are hashes, so the artifact id comes from
         each entry), built once and kept for the life of this graph instance, like
-        :meth:`_reverse_index`.
+        :meth:`_reverse_index`. Several artifacts can share a key (``My_Lib`` and
+        ``my-lib``); they are sorted so :meth:`resolve` is backend-independent.
         """
         index = self._artifacts_by_key.get(edge_type)
         if index is None:
             ledger_items = getattr(self.store, "ledger_items", None)
             entries = ledger_items() if callable(ledger_items) else ()
-            index = {
-                _reverse_key(aid, edge_type): aid
-                for aid in (entry.get("artifact_id") for _, entry in entries)
-                if aid is not None
-            }
+            index = {}
+            for aid in (entry.get("artifact_id") for _, entry in entries):
+                if aid is not None:
+                    ids = index.setdefault(_reverse_key(aid, edge_type), set())
+                    ids.add(aid)
+            index = {key: sorted(ids) for key, ids in index.items()}
             self._artifacts_by_key[edge_type] = index
         return index
 
@@ -184,7 +186,11 @@ class CorpusGraph:
         of this corpus (through the *edge_type* reverse-index key, so for ``REF``
         case and ``-``/``_``/``.`` are ignored) resolves to that artifact's id;
         anything else (a third-party library, another corpus's pair) resolves to its
-        own reverse-index key.
+        own reverse-index key. When several artifacts share a key (``My_Lib`` and
+        ``my-lib``), an exact match wins, else the first in sorted order, whatever
+        the backend's ledger order. A bare store (no :attr:`source`) cannot tell
+        its own ``(source, artifact_id)`` pairs from foreign ones, so every pair
+        resolves as foreign (itself); name the corpus to resolve its own pairs.
 
         >>> CorpusGraph({}).resolve("Scikit_Learn")
         'scikit-learn'
@@ -199,7 +205,10 @@ class CorpusGraph:
         ):
             node_id = node_id[1]
         key = _reverse_key(node_id, edge_type)
-        return self._artifacts_by_key_for(edge_type).get(key, key)
+        candidates = self._artifacts_by_key_for(edge_type).get(key)
+        if not candidates:
+            return key
+        return node_id if node_id in candidates else candidates[0]
 
     def reverse_neighbors(self, node_id: Any, *, edge_type: str = REF) -> list[str]:
         """The artifact ids whose *edge_type* edges point **at** *node_id*.
