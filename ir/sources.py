@@ -19,6 +19,7 @@ Smart-default constructors cover the common ways to define a source:
 
 from __future__ import annotations
 
+import configparser
 import fnmatch
 import hashlib
 import json
@@ -804,6 +805,35 @@ def package_repo_dirs(manifest: str | Path | None = None) -> list[Path]:
     return dirs
 
 
+def _setup_cfg_metadata(path: Path) -> dict:
+    """``{"description", "dependencies"}`` from ``path/setup.cfg`` (``{}`` if none).
+
+    ``[metadata] description`` and ``[options] install_requires`` (one requirement
+    per line; blank lines and ``#`` comments dropped), for packages that predate
+    ``pyproject.toml``'s ``[project]`` table. An unreadable file warns and yields
+    ``{}``.
+    """
+    cfg_path = path / "setup.cfg"
+    if not cfg_path.is_file():
+        return {}
+    cfg = configparser.ConfigParser(interpolation=None)
+    try:
+        cfg.read_string(cfg_path.read_text(encoding="utf-8"))
+    except (configparser.Error, OSError, UnicodeDecodeError) as e:
+        warnings.warn(
+            f"Could not parse {cfg_path} ({e}); ignoring its metadata.", stacklevel=3
+        )
+        return {}
+    out: dict = {}
+    if description := cfg.get("metadata", "description", fallback="").strip():
+        out["description"] = description
+    lines = cfg.get("options", "install_requires", fallback="").splitlines()
+    deps = [ln.split("#", 1)[0].strip() for ln in lines]
+    if deps := [d for d in deps if d]:
+        out["dependencies"] = deps
+    return out
+
+
 def _package_json_description(path: Path) -> str:
     """The ``description`` of ``path/package.json``, or ``""``."""
     pj = path / "package.json"
@@ -818,7 +848,9 @@ def _package_json_description(path: Path) -> str:
 def _scan_packages(dirs: Iterable[Path], *, readme_chars: int) -> dict[str, dict]:
     """Build ``{package_name: {name, description, readme, owner, deps, path}}``.
 
-    The key is the directory name; a second directory with the same name (e.g.
+    ``description`` and ``deps`` come from ``pyproject.toml``'s ``[project]``, each
+    falling back to ``setup.cfg`` when ``[project]`` does not declare it (and the
+    description, last, to ``package.json``). The key is the directory name; a second directory with the same name (e.g.
     ``t/x`` and ``tt/x``) is keyed ``name@parent`` rather than overwriting it.
     """
     try:
@@ -837,23 +869,32 @@ def _scan_packages(dirs: Iterable[Path], *, readme_chars: int) -> dict[str, dict
     scope: dict[str, dict] = {}
     for path in dirs:
         name = path.name
-        description, deps = "", []
+        proj: dict = {}
         pyproject = path / "pyproject.toml"
         if tomllib is not None and pyproject.is_file():
             try:
                 data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
                 proj = data.get("project", {})
-                description = proj.get("description", "") or ""
-                deps = list(proj.get("dependencies", []) or [])
             except (tomllib.TOMLDecodeError, OSError, ValueError) as e:
                 # Warn rather than silently thinning the index (matching the
                 # warn-on-degradation discipline used across ir).
                 warnings.warn(
                     f"Could not parse {pyproject} for package {name!r} ({e}); "
-                    f"indexing it with an empty description and no deps.",
+                    f"falling back to setup.cfg / package.json metadata.",
                     stacklevel=2,
                 )
-        description = description or _package_json_description(path)
+        # A field [project] declares wins; otherwise setup.cfg's (older packages).
+        cfg = _setup_cfg_metadata(path)
+        description = (
+            proj.get("description")
+            or cfg.get("description")
+            or _package_json_description(path)
+        )
+        deps = list(
+            proj["dependencies"]
+            if "dependencies" in proj
+            else cfg.get("dependencies", [])
+        )
         readme = ""
         for cand in ("README.md", "README.rst", "README.txt"):
             rp = path / cand

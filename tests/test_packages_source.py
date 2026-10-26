@@ -89,3 +89,46 @@ def test_exclude_defaults_to_local_config_file(tmp_path, monkeypatch):
     exclude_path().write_text("# private\n*/t/b\n")
     src = ir.CorpusSource.from_packages(repos=lambda: [keep, drop])
     assert list(src.scope) == ["a"]
+
+
+_SETUP_CFG = """[metadata]
+name = old
+description = An older package
+
+[options]
+install_requires =
+    networkx>=3
+    # a comment
+    dol ; python_version >= "3.10"
+
+"""
+
+
+def test_setup_cfg_metadata_is_read(tmp_path):
+    d = tmp_path / "t" / "old"
+    d.mkdir(parents=True)
+    (d / "setup.cfg").write_text(_SETUP_CFG)
+    (d / "pyproject.toml").write_text('[build-system]\nrequires = ["setuptools"]\n')
+    rec = ir.CorpusSource.from_packages(repos=lambda: [d]).scope["old"]
+    assert rec["description"] == "An older package"
+    assert rec["deps"] == ["networkx>=3", 'dol ; python_version >= "3.10"']
+
+
+def test_pyproject_project_fields_win_over_setup_cfg(tmp_path):
+    pytest.importorskip("tomllib" if _has("tomllib") else "tomli")
+    d = _repo(tmp_path, "t/both", pyproject_desc="From pyproject")
+    with (d / "pyproject.toml").open("a") as f:
+        f.write("dependencies = []\n")
+    (d / "setup.cfg").write_text(_SETUP_CFG)
+    rec = ir.CorpusSource.from_packages(repos=lambda: [d]).scope["both"]
+    assert rec["description"] == "From pyproject"
+    assert rec["deps"] == []  # declared (empty) in [project]: setup.cfg is not read
+
+
+def test_unparseable_setup_cfg_warns_and_is_ignored(tmp_path):
+    d = tmp_path / "t" / "bad"
+    d.mkdir(parents=True)
+    (d / "setup.cfg").write_text("no section header\n")
+    with pytest.warns(UserWarning, match="setup.cfg"):
+        rec = ir.CorpusSource.from_packages(repos=lambda: [d]).scope["bad"]
+    assert rec["deps"] == [] and rec["description"] == ""
