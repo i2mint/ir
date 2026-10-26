@@ -2547,323 +2547,346 @@
 </span><span id="line-2210"><span class="sd">    """</span>
 </span><span id="line-2211">    <span class="n">theme</span> <span class="o">=</span> <span class="n">theme</span> <span class="ow">or</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">theme</span>
 </span><span id="line-2212">    <span class="n">hits</span> <span class="o">=</span> <span class="n">_probe_hits</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">probe</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">surfaces</span><span class="o">=</span><span class="n">surfaces</span><span class="p">,</span> <span class="o">**</span><span class="n">search_kw</span><span class="p">)</span>
-</span><span id="line-2213">    <span class="n">ranking</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">]</span>
-</span><span id="line-2214">    <span class="n">top</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ranking</span><span class="p">[:</span><span class="n">k</span><span class="p">])</span>
-</span><span id="line-2215">    <span class="k">return</span> <span class="n">NamedSetReport</span><span class="p">(</span>
-</span><span id="line-2216">        <span class="n">theme</span><span class="o">=</span><span class="n">theme</span><span class="p">,</span>
-</span><span id="line-2217">        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
-</span><span id="line-2218">        <span class="n">fp_rate</span><span class="o">=</span><span class="n">fp_rate_on_distractors</span><span class="p">(</span><span class="n">ranking</span><span class="p">,</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">distractors</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">),</span>
-</span><span id="line-2219">        <span class="n">hard_positive_recall</span><span class="o">=</span><span class="n">recall_on_hard_positives</span><span class="p">(</span>
-</span><span id="line-2220">            <span class="n">ranking</span><span class="p">,</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">hard_positives</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span>
-</span><span id="line-2221">        <span class="p">),</span>
-</span><span id="line-2222">        <span class="n">distractors_seen</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">distractors</span> <span class="k">if</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">top</span><span class="p">),</span>
-</span><span id="line-2223">        <span class="n">hard_positives_missed</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span>
-</span><span id="line-2224">            <span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">hard_positives</span> <span class="k">if</span> <span class="n">h</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">top</span>
-</span><span id="line-2225">        <span class="p">),</span>
-</span><span id="line-2226">    <span class="p">)</span></div>
+</span><span id="line-2213">    <span class="n">row</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">seen</span><span class="p">,</span> <span class="n">missed</span> <span class="o">=</span> <span class="n">_score_named</span><span class="p">([</span><span class="n">h</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">],</span> <span class="n">named_sets</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+</span><span id="line-2214">    <span class="k">return</span> <span class="n">NamedSetReport</span><span class="p">(</span>
+</span><span id="line-2215">        <span class="n">theme</span><span class="o">=</span><span class="n">theme</span><span class="p">,</span>
+</span><span id="line-2216">        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+</span><span id="line-2217">        <span class="n">fp_rate</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">"fp_rate"</span><span class="p">],</span>
+</span><span id="line-2218">        <span class="n">hard_positive_recall</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">"hard_positive_recall"</span><span class="p">],</span>
+</span><span id="line-2219">        <span class="n">distractors_seen</span><span class="o">=</span><span class="n">seen</span><span class="p">,</span>
+</span><span id="line-2220">        <span class="n">hard_positives_missed</span><span class="o">=</span><span class="n">missed</span><span class="p">,</span>
+</span><span id="line-2221">    <span class="p">)</span></div>
 
-</span><span id="line-2227">
-</span><span id="line-2228">
+</span><span id="line-2222">
+</span><span id="line-2223">
 <div class="viewcode-block" id="ComparisonReport">
 <a class="viewcode-back" href="../../_autosummary/ir.eval.html#ir.eval.ComparisonReport">[docs]</a>
-</span><span id="line-2229"><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="line-2230"><span class="k">class</span><span class="w"> </span><span class="nc">ComparisonReport</span><span class="p">:</span>
-</span><span id="line-2231"><span class="w">    </span><span class="sd">"""The outcome of :func:`compare_indexings` — an N-way indexing/embedder bake-off.</span>
-</span><span id="line-2232">
-</span><span id="line-2233"><span class="sd">    Attributes:</span>
-</span><span id="line-2234"><span class="sd">        k: the rank cutoff all ``@k`` metrics use.</span>
-</span><span id="line-2235"><span class="sd">        themes / labels: the themes scored and the corpus labels compared.</span>
-</span><span id="line-2236"><span class="sd">        baseline: the label every :meth:`regressions` check compares against</span>
-</span><span id="line-2237"><span class="sd">            (the first entry of ``corpora``).</span>
-</span><span id="line-2238"><span class="sd">        metrics: ``{label: {theme: {"ndcg", "fp_rate"?, "hard_positive_recall"?}}}``.</span>
-</span><span id="line-2239"><span class="sd">        deltas: ``{theme: {artifact_id: {"role", "by_label": {label: {"rank",</span>
-</span><span id="line-2240"><span class="sd">            "score"}}}}}`` for every named FP/FN id — the per-package effect.</span>
-</span><span id="line-2241"><span class="sd">    """</span>
-</span><span id="line-2242">
-</span><span id="line-2243">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="line-2244">    <span class="n">themes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
-</span><span id="line-2245">    <span class="n">labels</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
-</span><span id="line-2246">    <span class="n">baseline</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="line-2247">    <span class="n">metrics</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span>
-</span><span id="line-2248">    <span class="n">deltas</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]</span>
-</span><span id="line-2249">
+</span><span id="line-2224"><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-2225"><span class="k">class</span><span class="w"> </span><span class="nc">ComparisonReport</span><span class="p">:</span>
+</span><span id="line-2226"><span class="w">    </span><span class="sd">"""The outcome of :func:`compare_indexings` — an N-way indexing/embedder bake-off.</span>
+</span><span id="line-2227">
+</span><span id="line-2228"><span class="sd">    Attributes:</span>
+</span><span id="line-2229"><span class="sd">        k: the rank cutoff all ``@k`` metrics use.</span>
+</span><span id="line-2230"><span class="sd">        themes / labels: the themes scored and the corpus labels compared.</span>
+</span><span id="line-2231"><span class="sd">        baseline: the label every :meth:`regressions` check compares against</span>
+</span><span id="line-2232"><span class="sd">            (the first entry of ``corpora``).</span>
+</span><span id="line-2233"><span class="sd">        metrics: ``{label: {theme: {"ndcg", "fp_rate"?, "hard_positive_recall"?}}}``.</span>
+</span><span id="line-2234"><span class="sd">        deltas: ``{theme: {artifact_id: {"role", "by_label": {label: {"rank",</span>
+</span><span id="line-2235"><span class="sd">            "score"}}}}}`` for every named FP/FN id — the per-package effect.</span>
+</span><span id="line-2236"><span class="sd">    """</span>
+</span><span id="line-2237">
+</span><span id="line-2238">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="line-2239">    <span class="n">themes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+</span><span id="line-2240">    <span class="n">labels</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+</span><span id="line-2241">    <span class="n">baseline</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="line-2242">    <span class="n">metrics</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span>
+</span><span id="line-2243">    <span class="n">deltas</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]</span>
+</span><span id="line-2244">
 <div class="viewcode-block" id="ComparisonReport.to_dict">
 <a class="viewcode-back" href="../../_autosummary/ir.eval.html#ir.eval.ComparisonReport.to_dict">[docs]</a>
-</span><span id="line-2250">    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span id="line-2251"><span class="w">        </span><span class="sd">"""JSON-serializable form — the qh / HTTP surface."""</span>
-</span><span id="line-2252">        <span class="k">return</span> <span class="p">{</span>
-</span><span id="line-2253">            <span class="s2">"k"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">,</span>
-</span><span id="line-2254">            <span class="s2">"themes"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">themes</span><span class="p">),</span>
-</span><span id="line-2255">            <span class="s2">"labels"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">),</span>
-</span><span id="line-2256">            <span class="s2">"baseline"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">,</span>
-</span><span id="line-2257">            <span class="s2">"metrics"</span><span class="p">:</span> <span class="p">{</span>
-</span><span id="line-2258">                <span class="n">label</span><span class="p">:</span> <span class="p">{</span><span class="n">theme</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">by_theme</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-</span><span id="line-2259">                <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">by_theme</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-</span><span id="line-2260">            <span class="p">},</span>
-</span><span id="line-2261">            <span class="s2">"deltas"</span><span class="p">:</span> <span class="p">{</span>
-</span><span id="line-2262">                <span class="n">theme</span><span class="p">:</span> <span class="p">{</span><span class="n">aid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">ids</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-</span><span id="line-2263">                <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">ids</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">deltas</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-</span><span id="line-2264">            <span class="p">},</span>
-</span><span id="line-2265">        <span class="p">}</span></div>
+</span><span id="line-2245">    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="line-2246"><span class="w">        </span><span class="sd">"""JSON-serializable form — the qh / HTTP surface."""</span>
+</span><span id="line-2247">        <span class="k">return</span> <span class="p">{</span>
+</span><span id="line-2248">            <span class="s2">"k"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">,</span>
+</span><span id="line-2249">            <span class="s2">"themes"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">themes</span><span class="p">),</span>
+</span><span id="line-2250">            <span class="s2">"labels"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">),</span>
+</span><span id="line-2251">            <span class="s2">"baseline"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">,</span>
+</span><span id="line-2252">            <span class="s2">"metrics"</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="line-2253">                <span class="n">label</span><span class="p">:</span> <span class="p">{</span><span class="n">theme</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">by_theme</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</span><span id="line-2254">                <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">by_theme</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</span><span id="line-2255">            <span class="p">},</span>
+</span><span id="line-2256">            <span class="s2">"deltas"</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="line-2257">                <span class="n">theme</span><span class="p">:</span> <span class="p">{</span><span class="n">aid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">ids</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+</span><span id="line-2258">                <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">ids</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">deltas</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</span><span id="line-2259">            <span class="p">},</span>
+</span><span id="line-2260">        <span class="p">}</span></div>
 
-</span><span id="line-2266">
+</span><span id="line-2261">
 <div class="viewcode-block" id="ComparisonReport.regressions">
 <a class="viewcode-back" href="../../_autosummary/ir.eval.html#ir.eval.ComparisonReport.regressions">[docs]</a>
-</span><span id="line-2267">    <span class="k">def</span><span class="w"> </span><span class="nf">regressions</span><span class="p">(</span>
-</span><span id="line-2268">        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">baseline</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="line-2269">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-</span><span id="line-2270"><span class="w">        </span><span class="sd">"""Named packages that got WORSE than ``baseline`` — drives a pytest gate.</span>
-</span><span id="line-2271">
-</span><span id="line-2272"><span class="sd">        For a ``hard_positive``, worse = its rank dropped (grew larger) by more</span>
-</span><span id="line-2273"><span class="sd">        than ``threshold`` positions. For a ``distractor``, worse = its rank rose</span>
-</span><span id="line-2274"><span class="sd">        (grew smaller, more prominent) by more than ``threshold``. A package</span>
-</span><span id="line-2275"><span class="sd">        absent from a ranking is treated as rank ``inf`` (worst), so a vanished</span>
-</span><span id="line-2276"><span class="sd">        hard-positive and a newly-appearing distractor both register. Returns one</span>
-</span><span id="line-2277"><span class="sd">        dict per regressing ``(theme, id, label)``.</span>
-</span><span id="line-2278"><span class="sd">        """</span>
-</span><span id="line-2279">        <span class="n">base</span> <span class="o">=</span> <span class="n">baseline</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span>
-</span><span id="line-2280">        <span class="n">inf</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span>
-</span><span id="line-2281">        <span class="n">out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="line-2282">        <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">ids</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">deltas</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-</span><span id="line-2283">            <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">ids</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-</span><span id="line-2284">                <span class="n">role</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"role"</span><span class="p">)</span>
-</span><span id="line-2285">                <span class="n">by_label</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"by_label"</span><span class="p">,</span> <span class="p">{})</span>
-</span><span id="line-2286">                <span class="k">if</span> <span class="n">role</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">base</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">by_label</span><span class="p">:</span>
-</span><span id="line-2287">                    <span class="k">continue</span>
-</span><span id="line-2288">                <span class="n">base_rank</span> <span class="o">=</span> <span class="n">by_label</span><span class="p">[</span><span class="n">base</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rank"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">inf</span>
-</span><span id="line-2289">                <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">by_label</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-</span><span id="line-2290">                    <span class="k">if</span> <span class="n">label</span> <span class="o">==</span> <span class="n">base</span><span class="p">:</span>
-</span><span id="line-2291">                        <span class="k">continue</span>
-</span><span id="line-2292">                    <span class="n">cand_rank</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rank"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">inf</span>
-</span><span id="line-2293">                    <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">"hard_positive"</span><span class="p">:</span>
-</span><span id="line-2294">                        <span class="n">worse</span> <span class="o">=</span> <span class="p">(</span><span class="n">cand_rank</span> <span class="o">-</span> <span class="n">base_rank</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span>
-</span><span id="line-2295">                    <span class="k">else</span><span class="p">:</span>  <span class="c1"># distractor: smaller rank == more prominent == worse</span>
-</span><span id="line-2296">                        <span class="n">worse</span> <span class="o">=</span> <span class="p">(</span><span class="n">base_rank</span> <span class="o">-</span> <span class="n">cand_rank</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span>
-</span><span id="line-2297">                    <span class="k">if</span> <span class="n">worse</span><span class="p">:</span>
-</span><span id="line-2298">                        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-</span><span id="line-2299">                            <span class="p">{</span>
-</span><span id="line-2300">                                <span class="s2">"theme"</span><span class="p">:</span> <span class="n">theme</span><span class="p">,</span>
-</span><span id="line-2301">                                <span class="s2">"artifact_id"</span><span class="p">:</span> <span class="n">aid</span><span class="p">,</span>
-</span><span id="line-2302">                                <span class="s2">"role"</span><span class="p">:</span> <span class="n">role</span><span class="p">,</span>
-</span><span id="line-2303">                                <span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span>
-</span><span id="line-2304">                                <span class="c1"># rank 0/absent -&gt; None: ranks are 1-based, so 0</span>
-</span><span id="line-2305">                                <span class="c1"># would misleadingly read as "top of list".</span>
-</span><span id="line-2306">                                <span class="s2">"baseline_rank"</span><span class="p">:</span> <span class="n">by_label</span><span class="p">[</span><span class="n">base</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rank"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-2307">                                <span class="s2">"candidate_rank"</span><span class="p">:</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rank"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-2308">                            <span class="p">}</span>
-</span><span id="line-2309">                        <span class="p">)</span>
-</span><span id="line-2310">        <span class="k">return</span> <span class="n">out</span></div>
+</span><span id="line-2262">    <span class="k">def</span><span class="w"> </span><span class="nf">regressions</span><span class="p">(</span>
+</span><span id="line-2263">        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">baseline</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="line-2264">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+</span><span id="line-2265"><span class="w">        </span><span class="sd">"""Named packages that got WORSE than ``baseline`` — drives a pytest gate.</span>
+</span><span id="line-2266">
+</span><span id="line-2267"><span class="sd">        For a ``hard_positive``, worse = its rank dropped (grew larger) by more</span>
+</span><span id="line-2268"><span class="sd">        than ``threshold`` positions. For a ``distractor``, worse = its rank rose</span>
+</span><span id="line-2269"><span class="sd">        (grew smaller, more prominent) by more than ``threshold``. A package</span>
+</span><span id="line-2270"><span class="sd">        absent from a ranking is treated as rank ``inf`` (worst), so a vanished</span>
+</span><span id="line-2271"><span class="sd">        hard-positive and a newly-appearing distractor both register. Returns one</span>
+</span><span id="line-2272"><span class="sd">        dict per regressing ``(theme, id, label)``.</span>
+</span><span id="line-2273"><span class="sd">        """</span>
+</span><span id="line-2274">        <span class="n">base</span> <span class="o">=</span> <span class="n">baseline</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span>
+</span><span id="line-2275">        <span class="n">inf</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span>
+</span><span id="line-2276">        <span class="n">out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="line-2277">        <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">ids</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">deltas</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span id="line-2278">            <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">ids</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span id="line-2279">                <span class="n">role</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"role"</span><span class="p">)</span>
+</span><span id="line-2280">                <span class="n">by_label</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"by_label"</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="line-2281">                <span class="k">if</span> <span class="n">role</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">base</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">by_label</span><span class="p">:</span>
+</span><span id="line-2282">                    <span class="k">continue</span>
+</span><span id="line-2283">                <span class="n">base_rank</span> <span class="o">=</span> <span class="n">by_label</span><span class="p">[</span><span class="n">base</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rank"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">inf</span>
+</span><span id="line-2284">                <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">by_label</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span id="line-2285">                    <span class="k">if</span> <span class="n">label</span> <span class="o">==</span> <span class="n">base</span><span class="p">:</span>
+</span><span id="line-2286">                        <span class="k">continue</span>
+</span><span id="line-2287">                    <span class="n">cand_rank</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rank"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">inf</span>
+</span><span id="line-2288">                    <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">"hard_positive"</span><span class="p">:</span>
+</span><span id="line-2289">                        <span class="n">worse</span> <span class="o">=</span> <span class="p">(</span><span class="n">cand_rank</span> <span class="o">-</span> <span class="n">base_rank</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span>
+</span><span id="line-2290">                    <span class="k">else</span><span class="p">:</span>  <span class="c1"># distractor: smaller rank == more prominent == worse</span>
+</span><span id="line-2291">                        <span class="n">worse</span> <span class="o">=</span> <span class="p">(</span><span class="n">base_rank</span> <span class="o">-</span> <span class="n">cand_rank</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span>
+</span><span id="line-2292">                    <span class="k">if</span> <span class="n">worse</span><span class="p">:</span>
+</span><span id="line-2293">                        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+</span><span id="line-2294">                            <span class="p">{</span>
+</span><span id="line-2295">                                <span class="s2">"theme"</span><span class="p">:</span> <span class="n">theme</span><span class="p">,</span>
+</span><span id="line-2296">                                <span class="s2">"artifact_id"</span><span class="p">:</span> <span class="n">aid</span><span class="p">,</span>
+</span><span id="line-2297">                                <span class="s2">"role"</span><span class="p">:</span> <span class="n">role</span><span class="p">,</span>
+</span><span id="line-2298">                                <span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span>
+</span><span id="line-2299">                                <span class="c1"># rank 0/absent -&gt; None: ranks are 1-based, so 0</span>
+</span><span id="line-2300">                                <span class="c1"># would misleadingly read as "top of list".</span>
+</span><span id="line-2301">                                <span class="s2">"baseline_rank"</span><span class="p">:</span> <span class="n">by_label</span><span class="p">[</span><span class="n">base</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rank"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-2302">                                <span class="s2">"candidate_rank"</span><span class="p">:</span> <span class="n">cell</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rank"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-2303">                            <span class="p">}</span>
+</span><span id="line-2304">                        <span class="p">)</span>
+</span><span id="line-2305">        <span class="k">return</span> <span class="n">out</span></div>
 
-</span><span id="line-2311">
-</span><span id="line-2312">    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="line-2313">        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"ComparisonReport(k=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="si">}</span><span class="s2">, baseline=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="si">!r}</span><span class="s2">)"</span><span class="p">]</span>
-</span><span id="line-2314">        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
-</span><span id="line-2315">            <span class="k">for</span> <span class="n">theme</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">themes</span><span class="p">:</span>
-</span><span id="line-2316">                <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">theme</span><span class="p">]</span>
-</span><span id="line-2317">                <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"ndcg@</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'ndcg'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span>
-</span><span id="line-2318">                <span class="k">if</span> <span class="s2">"fp_rate"</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
-</span><span id="line-2319">                    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"fp_rate=</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'fp_rate'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="line-2320">                <span class="k">if</span> <span class="s2">"hard_positive_recall"</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
-</span><span id="line-2321">                    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"hp_recall=</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'hard_positive_recall'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="line-2322">                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">label</span><span class="si">:</span><span class="s2">&lt;12</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">theme</span><span class="si">:</span><span class="s2">&lt;12</span><span class="si">}</span><span class="s2"> "</span> <span class="o">+</span> <span class="s2">"  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">))</span>
-</span><span id="line-2323">        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+</span><span id="line-2306">
+</span><span id="line-2307">    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-2308">        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"ComparisonReport(k=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="si">}</span><span class="s2">, baseline=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="si">!r}</span><span class="s2">)"</span><span class="p">]</span>
+</span><span id="line-2309">        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
+</span><span id="line-2310">            <span class="k">for</span> <span class="n">theme</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">themes</span><span class="p">:</span>
+</span><span id="line-2311">                <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">theme</span><span class="p">]</span>
+</span><span id="line-2312">                <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"ndcg@</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'ndcg'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span>
+</span><span id="line-2313">                <span class="k">if</span> <span class="s2">"fp_rate"</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+</span><span id="line-2314">                    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"fp_rate=</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'fp_rate'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-2315">                <span class="k">if</span> <span class="s2">"hard_positive_recall"</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+</span><span id="line-2316">                    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"hp_recall=</span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'hard_positive_recall'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-2317">                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">label</span><span class="si">:</span><span class="s2">&lt;12</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">theme</span><span class="si">:</span><span class="s2">&lt;12</span><span class="si">}</span><span class="s2"> "</span> <span class="o">+</span> <span class="s2">"  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">))</span>
+</span><span id="line-2318">        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
 
-</span><span id="line-2324">
-</span><span id="line-2325">
-</span><span id="line-2326"><span class="k">def</span><span class="w"> </span><span class="nf">_ranker_of</span><span class="p">(</span>
-</span><span id="line-2327">    <span class="n">corpus_or_ranker</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">has_label_kw</span><span class="p">:</span> <span class="nb">bool</span>
-</span><span id="line-2328"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Retriever</span><span class="p">:</span>
-</span><span id="line-2329"><span class="w">    </span><span class="sd">"""The retriever a :func:`compare_indexings` entry stands for."""</span>
-</span><span id="line-2330">    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">corpus_or_ranker</span><span class="p">):</span>
-</span><span id="line-2331">        <span class="k">if</span> <span class="n">has_label_kw</span><span class="p">:</span>
-</span><span id="line-2332">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="line-2333">                <span class="sa">f</span><span class="s2">"search_kw_by_label names </span><span class="si">{</span><span class="n">label</span><span class="si">!r}</span><span class="s2">, a ranker: search settings "</span>
-</span><span id="line-2334">                <span class="s2">"only apply to corpus entries"</span>
-</span><span id="line-2335">            <span class="p">)</span>
-</span><span id="line-2336">        <span class="k">return</span> <span class="n">corpus_or_ranker</span>
-</span><span id="line-2337">    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus_or_ranker</span><span class="p">)</span>
+</span><span id="line-2319">
+</span><span id="line-2320">
+</span><span id="line-2321"><span class="k">def</span><span class="w"> </span><span class="nf">_ranker_of</span><span class="p">(</span>
+</span><span id="line-2322">    <span class="n">corpus_or_ranker</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">has_label_kw</span><span class="p">:</span> <span class="nb">bool</span>
+</span><span id="line-2323"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Retriever</span><span class="p">:</span>
+</span><span id="line-2324"><span class="w">    </span><span class="sd">"""The retriever a :func:`compare_indexings` entry stands for."""</span>
+</span><span id="line-2325">    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">corpus_or_ranker</span><span class="p">):</span>
+</span><span id="line-2326">        <span class="k">if</span> <span class="n">has_label_kw</span><span class="p">:</span>
+</span><span id="line-2327">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="line-2328">                <span class="sa">f</span><span class="s2">"search_kw_by_label names </span><span class="si">{</span><span class="n">label</span><span class="si">!r}</span><span class="s2">, a ranker: search settings "</span>
+</span><span id="line-2329">                <span class="s2">"only apply to corpus entries"</span>
+</span><span id="line-2330">            <span class="p">)</span>
+</span><span id="line-2331">        <span class="k">return</span> <span class="n">corpus_or_ranker</span>
+</span><span id="line-2332">    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_as_corpus</span><span class="p">(</span><span class="n">corpus_or_ranker</span><span class="p">)</span>
+</span><span id="line-2333">
+</span><span id="line-2334">    <span class="k">def</span><span class="w"> </span><span class="nf">rank</span><span class="p">(</span><span class="n">probe</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+</span><span id="line-2335">        <span class="k">return</span> <span class="n">_probe_hits</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">probe</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="o">**</span><span class="n">settings</span><span class="p">)</span>
+</span><span id="line-2336">
+</span><span id="line-2337">    <span class="k">return</span> <span class="n">rank</span>
 </span><span id="line-2338">
-</span><span id="line-2339">    <span class="k">def</span><span class="w"> </span><span class="nf">rank</span><span class="p">(</span><span class="n">probe</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
-</span><span id="line-2340">        <span class="k">return</span> <span class="n">_probe_hits</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">probe</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="o">**</span><span class="n">settings</span><span class="p">)</span>
-</span><span id="line-2341">
-</span><span id="line-2342">    <span class="k">return</span> <span class="n">rank</span>
-</span><span id="line-2343">
-</span><span id="line-2344">
+</span><span id="line-2339">
+</span><span id="line-2340"><span class="k">def</span><span class="w"> </span><span class="nf">_score_named</span><span class="p">(</span>
+</span><span id="line-2341">    <span class="n">ranking</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+</span><span id="line-2342">    <span class="n">named_sets</span><span class="p">:</span> <span class="n">NamedSets</span><span class="p">,</span>
+</span><span id="line-2343">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-2344">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+</span><span id="line-2345">    <span class="n">scores</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-2346"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]:</span>
+</span><span id="line-2347"><span class="w">    </span><span class="sd">"""The named-set half of :func:`score_ranking` and :func:`evaluate_named_sets`.</span>
+</span><span id="line-2348">
+</span><span id="line-2349"><span class="sd">    Returns ``(row, named, seen, missed)``: *row* is ``{"fp_rate",</span>
+</span><span id="line-2350"><span class="sd">    "hard_positive_recall"}``; *named* is ``{id: {"role", "rank", "score"}}`` for</span>
+</span><span id="line-2351"><span class="sd">    every named distractor / hard positive (rank 1-based, ``0`` when absent); *seen*</span>
+</span><span id="line-2352"><span class="sd">    the distractors in the top *k*, *missed* the hard positives outside it. A</span>
+</span><span id="line-2353"><span class="sd">    repeated id in *ranking* counts at its first position.</span>
+</span><span id="line-2354"><span class="sd">    """</span>
+</span><span id="line-2355">    <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="line-2356">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"k must be &gt;= 1, got </span><span class="si">{</span><span class="n">k</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-2357">    <span class="n">ranking</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">ranking</span><span class="p">))</span>
+</span><span id="line-2358">    <span class="n">top</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ranking</span><span class="p">[:</span><span class="n">k</span><span class="p">])</span>
+</span><span id="line-2359">    <span class="n">row</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="line-2360">        <span class="s2">"fp_rate"</span><span class="p">:</span> <span class="n">fp_rate_on_distractors</span><span class="p">(</span><span class="n">ranking</span><span class="p">,</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">distractors</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">),</span>
+</span><span id="line-2361">        <span class="s2">"hard_positive_recall"</span><span class="p">:</span> <span class="n">recall_on_hard_positives</span><span class="p">(</span>
+</span><span id="line-2362">            <span class="n">ranking</span><span class="p">,</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">hard_positives</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span>
+</span><span id="line-2363">        <span class="p">),</span>
+</span><span id="line-2364">    <span class="p">}</span>
+</span><span id="line-2365">    <span class="n">rank_by</span> <span class="o">=</span> <span class="p">{</span><span class="n">aid</span><span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">aid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranking</span><span class="p">)}</span>
+</span><span id="line-2366">    <span class="n">roles</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="line-2367">        <span class="o">**</span><span class="p">{</span><span class="n">d</span><span class="p">:</span> <span class="s2">"distractor"</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">distractors</span><span class="p">},</span>
+</span><span id="line-2368">        <span class="o">**</span><span class="p">{</span><span class="n">h</span><span class="p">:</span> <span class="s2">"hard_positive"</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">hard_positives</span><span class="p">},</span>
+</span><span id="line-2369">    <span class="p">}</span>
+</span><span id="line-2370">    <span class="n">named</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="line-2371">        <span class="n">aid</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="line-2372">            <span class="s2">"role"</span><span class="p">:</span> <span class="n">role</span><span class="p">,</span>
+</span><span id="line-2373">            <span class="s2">"rank"</span><span class="p">:</span> <span class="n">rank_by</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">aid</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+</span><span id="line-2374">            <span class="s2">"score"</span><span class="p">:</span> <span class="p">(</span><span class="n">scores</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">aid</span><span class="p">),</span>
+</span><span id="line-2375">        <span class="p">}</span>
+</span><span id="line-2376">        <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">roles</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</span><span id="line-2377">    <span class="p">}</span>
+</span><span id="line-2378">    <span class="n">seen</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">distractors</span> <span class="k">if</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">top</span><span class="p">)</span>
+</span><span id="line-2379">    <span class="n">missed</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">h</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">hard_positives</span> <span class="k">if</span> <span class="n">h</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">top</span><span class="p">)</span>
+</span><span id="line-2380">    <span class="k">return</span> <span class="n">row</span><span class="p">,</span> <span class="n">named</span><span class="p">,</span> <span class="n">seen</span><span class="p">,</span> <span class="n">missed</span>
+</span><span id="line-2381">
+</span><span id="line-2382">
 <div class="viewcode-block" id="score_ranking">
 <a class="viewcode-back" href="../../_autosummary/ir.eval.html#ir.eval.score_ranking">[docs]</a>
-</span><span id="line-2345"><span class="k">def</span><span class="w"> </span><span class="nf">score_ranking</span><span class="p">(</span>
-</span><span id="line-2346">    <span class="n">ranking</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-</span><span id="line-2347">    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">PackageRelevanceCase</span><span class="p">],</span>
-</span><span id="line-2348">    <span class="n">theme</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="line-2349">    <span class="o">*</span><span class="p">,</span>
-</span><span id="line-2350">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-</span><span id="line-2351">    <span class="n">named_sets</span><span class="p">:</span> <span class="n">NamedSets</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-2352">    <span class="n">scores</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-2353">    <span class="n">gains</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">LEVEL_GAINS</span><span class="p">,</span>
-</span><span id="line-2354"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]:</span>
-</span><span id="line-2355"><span class="w">    </span><span class="sd">"""One theme ranking's graded metrics, and where each named id landed.</span>
-</span><span id="line-2356">
-</span><span id="line-2357"><span class="sd">    The per-ranking half of :func:`compare_indexings`, for scoring a ranking made</span>
-</span><span id="line-2358"><span class="sd">    any other way. Returns ``(row, named)``: ``row`` is ``{"ndcg"}`` (graded nDCG@k</span>
-</span><span id="line-2359"><span class="sd">    over the cases' :data:`LEVEL_GAINS`) plus, with ``named_sets``, ``"fp_rate"``</span>
-</span><span id="line-2360"><span class="sd">    and ``"hard_positive_recall"`` at ``k``; ``named`` maps every named distractor</span>
-</span><span id="line-2361"><span class="sd">    and hard positive to ``{"role", "rank", "score"}`` (rank 1-based, ``0`` when</span>
-</span><span id="line-2362"><span class="sd">    absent; score from ``scores``, else ``None``). A repeated id counts at its first</span>
-</span><span id="line-2363"><span class="sd">    position.</span>
-</span><span id="line-2364">
-</span><span id="line-2365"><span class="sd">    &gt;&gt;&gt; cases = [PackageRelevanceCase("a", {"t": "core"}),</span>
-</span><span id="line-2366"><span class="sd">    ...          PackageRelevanceCase("b", {"t": "none"})]</span>
-</span><span id="line-2367"><span class="sd">    &gt;&gt;&gt; row, named = score_ranking(["b", "a"], cases, "t", k=5,</span>
-</span><span id="line-2368"><span class="sd">    ...                            named_sets=NamedSets("t", distractors=("b",)))</span>
-</span><span id="line-2369"><span class="sd">    &gt;&gt;&gt; round(row["ndcg"], 4), row["fp_rate"], named["b"]["rank"]</span>
-</span><span id="line-2370"><span class="sd">    (0.6309, 1.0, 1)</span>
-</span><span id="line-2371"><span class="sd">    """</span>
-</span><span id="line-2372">    <span class="kn">from</span><span class="w"> </span><span class="nn">ef.evaluation</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndcg_at_k</span>
-</span><span id="line-2373">
-</span><span id="line-2374">    <span class="n">ranking</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">ranking</span><span class="p">))</span>
-</span><span id="line-2375">    <span class="n">relevant</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="line-2376">        <span class="n">c</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">theme</span><span class="p">,</span> <span class="n">gains</span><span class="o">=</span><span class="n">gains</span><span class="p">)</span>
-</span><span id="line-2377">        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cases</span>
-</span><span id="line-2378">        <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">theme</span><span class="p">,</span> <span class="n">gains</span><span class="o">=</span><span class="n">gains</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
-</span><span id="line-2379">    <span class="p">}</span>
-</span><span id="line-2380">    <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"ndcg"</span><span class="p">:</span> <span class="n">ndcg_at_k</span><span class="p">(</span><span class="n">ranking</span><span class="p">,</span> <span class="n">relevant</span><span class="p">,</span> <span class="n">k</span><span class="p">)}</span>
-</span><span id="line-2381">    <span class="n">named</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="line-2382">    <span class="k">if</span> <span class="n">named_sets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-2383">        <span class="n">row</span><span class="p">[</span><span class="s2">"fp_rate"</span><span class="p">]</span> <span class="o">=</span> <span class="n">fp_rate_on_distractors</span><span class="p">(</span><span class="n">ranking</span><span class="p">,</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">distractors</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
-</span><span id="line-2384">        <span class="n">row</span><span class="p">[</span><span class="s2">"hard_positive_recall"</span><span class="p">]</span> <span class="o">=</span> <span class="n">recall_on_hard_positives</span><span class="p">(</span>
-</span><span id="line-2385">            <span class="n">ranking</span><span class="p">,</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">hard_positives</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span>
-</span><span id="line-2386">        <span class="p">)</span>
-</span><span id="line-2387">        <span class="n">rank_by</span> <span class="o">=</span> <span class="p">{</span><span class="n">aid</span><span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">aid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ranking</span><span class="p">)}</span>
-</span><span id="line-2388">        <span class="n">roles</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="line-2389">            <span class="o">**</span><span class="p">{</span><span class="n">d</span><span class="p">:</span> <span class="s2">"distractor"</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">distractors</span><span class="p">},</span>
-</span><span id="line-2390">            <span class="o">**</span><span class="p">{</span><span class="n">h</span><span class="p">:</span> <span class="s2">"hard_positive"</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">named_sets</span><span class="o">.</span><span class="n">hard_positives</span><span class="p">},</span>
-</span><span id="line-2391">        <span class="p">}</span>
-</span><span id="line-2392">        <span class="n">named</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="line-2393">            <span class="n">aid</span><span class="p">:</span> <span class="p">{</span>
-</span><span id="line-2394">                <span class="s2">"role"</span><span class="p">:</span> <span class="n">role</span><span class="p">,</span>
-</span><span id="line-2395">                <span class="s2">"rank"</span><span class="p">:</span> <span class="n">rank_by</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">aid</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
-</span><span id="line-2396">                <span class="s2">"score"</span><span class="p">:</span> <span class="p">(</span><span class="n">scores</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">aid</span><span class="p">),</span>
-</span><span id="line-2397">            <span class="p">}</span>
-</span><span id="line-2398">            <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">roles</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-</span><span id="line-2399">        <span class="p">}</span>
-</span><span id="line-2400">    <span class="k">return</span> <span class="n">row</span><span class="p">,</span> <span class="n">named</span></div>
-
-</span><span id="line-2401">
+</span><span id="line-2383"><span class="k">def</span><span class="w"> </span><span class="nf">score_ranking</span><span class="p">(</span>
+</span><span id="line-2384">    <span class="n">ranking</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+</span><span id="line-2385">    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">PackageRelevanceCase</span><span class="p">],</span>
+</span><span id="line-2386">    <span class="n">theme</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="line-2387">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-2388">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+</span><span id="line-2389">    <span class="n">named_sets</span><span class="p">:</span> <span class="n">NamedSets</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-2390">    <span class="n">scores</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-2391">    <span class="n">gains</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">LEVEL_GAINS</span><span class="p">,</span>
+</span><span id="line-2392"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]:</span>
+</span><span id="line-2393"><span class="w">    </span><span class="sd">"""One theme ranking's graded metrics, and where each named id landed.</span>
+</span><span id="line-2394">
+</span><span id="line-2395"><span class="sd">    The per-ranking half of :func:`compare_indexings`, for scoring a ranking made</span>
+</span><span id="line-2396"><span class="sd">    any other way. Returns ``(row, named)``: ``row`` is ``{"ndcg"}`` (graded nDCG@k</span>
+</span><span id="line-2397"><span class="sd">    over the cases' :data:`LEVEL_GAINS`) plus, with ``named_sets``, ``"fp_rate"``</span>
+</span><span id="line-2398"><span class="sd">    and ``"hard_positive_recall"`` at ``k``; ``named`` maps every named distractor</span>
+</span><span id="line-2399"><span class="sd">    and hard positive to ``{"role", "rank", "score"}`` (rank 1-based, ``0`` when</span>
+</span><span id="line-2400"><span class="sd">    absent; score from ``scores``, else ``None``). A repeated id counts at its first</span>
+</span><span id="line-2401"><span class="sd">    position.</span>
 </span><span id="line-2402">
+</span><span id="line-2403"><span class="sd">    &gt;&gt;&gt; cases = [PackageRelevanceCase("a", {"t": "core"}),</span>
+</span><span id="line-2404"><span class="sd">    ...          PackageRelevanceCase("b", {"t": "none"})]</span>
+</span><span id="line-2405"><span class="sd">    &gt;&gt;&gt; row, named = score_ranking(["b", "a"], cases, "t", k=5,</span>
+</span><span id="line-2406"><span class="sd">    ...                            named_sets=NamedSets("t", distractors=("b",)))</span>
+</span><span id="line-2407"><span class="sd">    &gt;&gt;&gt; round(row["ndcg"], 4), row["fp_rate"], named["b"]["rank"]</span>
+</span><span id="line-2408"><span class="sd">    (0.6309, 1.0, 1)</span>
+</span><span id="line-2409"><span class="sd">    """</span>
+</span><span id="line-2410">    <span class="kn">from</span><span class="w"> </span><span class="nn">ef.evaluation</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndcg_at_k</span>
+</span><span id="line-2411">
+</span><span id="line-2412">    <span class="n">ranking</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">ranking</span><span class="p">))</span>
+</span><span id="line-2413">    <span class="n">relevant</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-2414">    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cases</span><span class="p">:</span>
+</span><span id="line-2415">        <span class="n">gain</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">gain</span><span class="p">(</span><span class="n">theme</span><span class="p">,</span> <span class="n">gains</span><span class="o">=</span><span class="n">gains</span><span class="p">)</span>
+</span><span id="line-2416">        <span class="k">if</span> <span class="n">gain</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="line-2417">            <span class="n">relevant</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">gain</span>
+</span><span id="line-2418">    <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"ndcg"</span><span class="p">:</span> <span class="n">ndcg_at_k</span><span class="p">(</span><span class="n">ranking</span><span class="p">,</span> <span class="n">relevant</span><span class="p">,</span> <span class="n">k</span><span class="p">)}</span>
+</span><span id="line-2419">    <span class="n">named</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-2420">    <span class="k">if</span> <span class="n">named_sets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-2421">        <span class="n">named_row</span><span class="p">,</span> <span class="n">named</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_score_named</span><span class="p">(</span><span class="n">ranking</span><span class="p">,</span> <span class="n">named_sets</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">scores</span><span class="o">=</span><span class="n">scores</span><span class="p">)</span>
+</span><span id="line-2422">        <span class="n">row</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">named_row</span><span class="p">)</span>
+</span><span id="line-2423">    <span class="k">return</span> <span class="n">row</span><span class="p">,</span> <span class="n">named</span></div>
+
+</span><span id="line-2424">
+</span><span id="line-2425">
 <div class="viewcode-block" id="compare_indexings">
 <a class="viewcode-back" href="../../_autosummary/ir.eval.html#ir.eval.compare_indexings">[docs]</a>
-</span><span id="line-2403"><span class="k">def</span><span class="w"> </span><span class="nf">compare_indexings</span><span class="p">(</span>
-</span><span id="line-2404">    <span class="n">corpora</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-</span><span id="line-2405">    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">PackageRelevanceCase</span><span class="p">],</span>
-</span><span id="line-2406">    <span class="o">*</span><span class="p">,</span>
-</span><span id="line-2407">    <span class="n">themes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-</span><span id="line-2408">    <span class="n">probes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
-</span><span id="line-2409">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
-</span><span id="line-2410">    <span class="n">named_sets</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NamedSets</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-2411">    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_MODE</span><span class="p">,</span>
-</span><span id="line-2412">    <span class="n">rank_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
-</span><span id="line-2413">    <span class="n">gains</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">LEVEL_GAINS</span><span class="p">,</span>
-</span><span id="line-2414">    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-2415">    <span class="n">search_kw_by_label</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-2416">    <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-</span><span id="line-2417"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ComparisonReport</span><span class="p">:</span>
-</span><span id="line-2418"><span class="w">    </span><span class="sd">"""A/B (or N-way) regression gate over indexing / embedder configurations.</span>
-</span><span id="line-2419">
-</span><span id="line-2420"><span class="sd">    ``corpora`` maps a label -&gt; a built corpus (an ``ef`` instruction-tuned-embedder</span>
-</span><span id="line-2421"><span class="sd">    corpus or an ``ir`` deps-as-text corpus is just another entry — the harness is</span>
-</span><span id="line-2422"><span class="sd">    embedder-agnostic). For each ``(label, theme)`` it computes graded nDCG@k (via</span>
-</span><span id="line-2423"><span class="sd">    :func:`to_graded_qrels` + ``ef.evaluation.ndcg_at_k``), the named-set FP-rate /</span>
-</span><span id="line-2424"><span class="sd">    hard-positive recall@k (when ``named_sets`` is given), and the rank+score of</span>
-</span><span id="line-2425"><span class="sd">    every named FP/FN id — so a change's effect is quantified *per package*.</span>
-</span><span id="line-2426"><span class="sd">    ``probes`` supplies the per-theme query text (normally loaded from the JSONL</span>
-</span><span id="line-2427"><span class="sd">    ``__meta__`` via :func:`read_package_meta`). The first label is the baseline</span>
-</span><span id="line-2428"><span class="sd">    that :meth:`ComparisonReport.regressions` compares against. Each ranking is</span>
-</span><span id="line-2429"><span class="sd">    fetched once to depth ``rank_depth`` (deep enough that even a buried named id</span>
-</span><span id="line-2430"><span class="sd">    gets a real rank) and sliced at ``k`` for the ``@k`` metrics.</span>
-</span><span id="line-2431">
-</span><span id="line-2432"><span class="sd">    ``search_kw_by_label`` overrides search settings per label, on top of the</span>
-</span><span id="line-2433"><span class="sd">    shared ``mode`` / ``surfaces`` / ``**search_kw``: map one corpus under several</span>
-</span><span id="line-2434"><span class="sd">    labels to compare *search* configurations rather than indexings, e.g.</span>
-</span><span id="line-2435"><span class="sd">    ``{"deps x2": {"surface_weights": {"deps": 2.0}}}``. Any</span>
-</span><span id="line-2436"><span class="sd">    :func:`ir.retrieve.search` keyword except ``k`` (the depth is ``rank_depth``)</span>
-</span><span id="line-2437"><span class="sd">    and ``per_artifact`` (rankings are per artifact).</span>
-</span><span id="line-2438">
-</span><span id="line-2439"><span class="sd">    A ``corpora`` value may instead be a :data:`~ir.retrieve.Retriever`, a callable</span>
-</span><span id="line-2440"><span class="sd">    ``(probe, *, k) -&gt; hits`` (best first), for an arm that is not one</span>
-</span><span id="line-2441"><span class="sd">    :func:`ir.retrieve.search` call: flat hits fused with a</span>
-</span><span id="line-2442"><span class="sd">    :func:`ir.traverse.traverse` walk, a multi-query pool, an agent's pipeline, or</span>
-</span><span id="line-2443"><span class="sd">    simply ``ir.as_retriever(corpus, ...)``. Its hits are de-duplicated (first</span>
-</span><span id="line-2444"><span class="sd">    occurrence wins) and cut to ``rank_depth``, then scored the same way. The search</span>
-</span><span id="line-2445"><span class="sd">    settings above do not apply to it, so naming it in ``search_kw_by_label``</span>
-</span><span id="line-2446"><span class="sd">    raises.</span>
-</span><span id="line-2447"><span class="sd">    """</span>
-</span><span id="line-2448">    <span class="n">labels</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">corpora</span><span class="p">)</span>
-</span><span id="line-2449">    <span class="k">if</span> <span class="ow">not</span> <span class="n">labels</span><span class="p">:</span>
-</span><span id="line-2450">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"compare_indexings needs at least one corpus"</span><span class="p">)</span>
-</span><span id="line-2451">    <span class="k">if</span> <span class="n">rank_depth</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
-</span><span id="line-2452">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rank_depth (</span><span class="si">{</span><span class="n">rank_depth</span><span class="si">}</span><span class="s2">) must be &gt;= k (</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
-</span><span id="line-2453">    <span class="n">missing_probes</span> <span class="o">=</span> <span class="p">[</span><span class="n">theme</span> <span class="k">for</span> <span class="n">theme</span> <span class="ow">in</span> <span class="n">themes</span> <span class="k">if</span> <span class="n">theme</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">probes</span><span class="p">]</span>
-</span><span id="line-2454">    <span class="k">if</span> <span class="n">missing_probes</span><span class="p">:</span>
-</span><span id="line-2455">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no probe text for theme(s): </span><span class="si">{</span><span class="n">missing_probes</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="line-2456">    <span class="n">label_kw</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">search_kw_by_label</span> <span class="ow">or</span> <span class="p">{})</span>
-</span><span id="line-2457">    <span class="n">unknown</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">label_kw</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">labels</span><span class="p">))</span>
-</span><span id="line-2458">    <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
-</span><span id="line-2459">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"search_kw_by_label names unknown label(s): </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="line-2460">    <span class="n">reserved</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"k"</span><span class="p">,</span> <span class="s2">"per_artifact"</span><span class="p">}</span>
-</span><span id="line-2461">    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">reserved</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">kw</span><span class="p">)</span> <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">label_kw</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
-</span><span id="line-2462">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="line-2463">            <span class="s2">"search_kw_by_label cannot set k or per_artifact: every ranking is "</span>
-</span><span id="line-2464">            <span class="s2">"fetched per artifact to rank_depth"</span>
-</span><span id="line-2465">        <span class="p">)</span>
-</span><span id="line-2466">    <span class="n">rankers</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="line-2467">        <span class="n">label</span><span class="p">:</span> <span class="n">_ranker_of</span><span class="p">(</span>
-</span><span id="line-2468">            <span class="n">corpora</span><span class="p">[</span><span class="n">label</span><span class="p">],</span>
-</span><span id="line-2469">            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
-</span><span id="line-2470">            <span class="n">settings</span><span class="o">=</span><span class="p">{</span>
-</span><span id="line-2471">                <span class="s2">"mode"</span><span class="p">:</span> <span class="n">mode</span><span class="p">,</span>
-</span><span id="line-2472">                <span class="s2">"surfaces"</span><span class="p">:</span> <span class="n">surfaces</span><span class="p">,</span>
-</span><span id="line-2473">                <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
-</span><span id="line-2474">                <span class="o">**</span><span class="n">label_kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="p">{}),</span>
-</span><span id="line-2475">            <span class="p">},</span>
-</span><span id="line-2476">            <span class="n">has_label_kw</span><span class="o">=</span><span class="n">label</span> <span class="ow">in</span> <span class="n">label_kw</span><span class="p">,</span>
-</span><span id="line-2477">        <span class="p">)</span>
-</span><span id="line-2478">        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span>
-</span><span id="line-2479">    <span class="p">}</span>
-</span><span id="line-2480">    <span class="n">metrics</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="line-2481">    <span class="n">deltas</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="n">theme</span><span class="p">:</span> <span class="p">{}</span> <span class="k">for</span> <span class="n">theme</span> <span class="ow">in</span> <span class="n">themes</span><span class="p">}</span>
-</span><span id="line-2482">    <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">:</span>
-</span><span id="line-2483">        <span class="n">metrics</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="line-2484">        <span class="k">for</span> <span class="n">theme</span> <span class="ow">in</span> <span class="n">themes</span><span class="p">:</span>
-</span><span id="line-2485">            <span class="n">first</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SearchHit</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># a repeated id counts once, at its best</span>
-</span><span id="line-2486">            <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">rankers</span><span class="p">[</span><span class="n">label</span><span class="p">](</span><span class="n">probes</span><span class="p">[</span><span class="n">theme</span><span class="p">],</span> <span class="n">k</span><span class="o">=</span><span class="n">rank_depth</span><span class="p">):</span>
-</span><span id="line-2487">                <span class="n">first</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">hit</span><span class="p">)</span>
-</span><span id="line-2488">            <span class="n">ranking</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">first</span><span class="p">)[:</span><span class="n">rank_depth</span><span class="p">]</span>  <span class="c1"># every arm ranked to the same depth</span>
-</span><span id="line-2489">            <span class="n">row</span><span class="p">,</span> <span class="n">named</span> <span class="o">=</span> <span class="n">score_ranking</span><span class="p">(</span>
-</span><span id="line-2490">                <span class="n">ranking</span><span class="p">,</span>
-</span><span id="line-2491">                <span class="n">cases</span><span class="p">,</span>
-</span><span id="line-2492">                <span class="n">theme</span><span class="p">,</span>
-</span><span id="line-2493">                <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
-</span><span id="line-2494">                <span class="n">named_sets</span><span class="o">=</span><span class="n">named_sets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">theme</span><span class="p">)</span> <span class="k">if</span> <span class="n">named_sets</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-2495">                <span class="n">scores</span><span class="o">=</span><span class="p">{</span><span class="n">aid</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">first</span><span class="p">[</span><span class="n">aid</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">ranking</span><span class="p">},</span>
-</span><span id="line-2496">                <span class="n">gains</span><span class="o">=</span><span class="n">gains</span><span class="p">,</span>
-</span><span id="line-2497">            <span class="p">)</span>
-</span><span id="line-2498">            <span class="n">metrics</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">theme</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span>
-</span><span id="line-2499">            <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">named</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-</span><span id="line-2500">                <span class="n">entry</span> <span class="o">=</span> <span class="n">deltas</span><span class="p">[</span><span class="n">theme</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
-</span><span id="line-2501">                    <span class="n">aid</span><span class="p">,</span> <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="n">cell</span><span class="p">[</span><span class="s2">"role"</span><span class="p">],</span> <span class="s2">"by_label"</span><span class="p">:</span> <span class="p">{}}</span>
-</span><span id="line-2502">                <span class="p">)</span>
-</span><span id="line-2503">                <span class="n">entry</span><span class="p">[</span><span class="s2">"by_label"</span><span class="p">][</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="line-2504">                    <span class="s2">"rank"</span><span class="p">:</span> <span class="n">cell</span><span class="p">[</span><span class="s2">"rank"</span><span class="p">],</span>
-</span><span id="line-2505">                    <span class="s2">"score"</span><span class="p">:</span> <span class="n">cell</span><span class="p">[</span><span class="s2">"score"</span><span class="p">],</span>
-</span><span id="line-2506">                <span class="p">}</span>
-</span><span id="line-2507">    <span class="k">return</span> <span class="n">ComparisonReport</span><span class="p">(</span>
-</span><span id="line-2508">        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
-</span><span id="line-2509">        <span class="n">themes</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">themes</span><span class="p">),</span>
-</span><span id="line-2510">        <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
-</span><span id="line-2511">        <span class="n">baseline</span><span class="o">=</span><span class="n">labels</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-</span><span id="line-2512">        <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span>
-</span><span id="line-2513">        <span class="n">deltas</span><span class="o">=</span><span class="n">deltas</span><span class="p">,</span>
-</span><span id="line-2514">    <span class="p">)</span></div>
+</span><span id="line-2426"><span class="k">def</span><span class="w"> </span><span class="nf">compare_indexings</span><span class="p">(</span>
+</span><span id="line-2427">    <span class="n">corpora</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+</span><span id="line-2428">    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">PackageRelevanceCase</span><span class="p">],</span>
+</span><span id="line-2429">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-2430">    <span class="n">themes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+</span><span id="line-2431">    <span class="n">probes</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+</span><span id="line-2432">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+</span><span id="line-2433">    <span class="n">named_sets</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NamedSets</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-2434">    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_MODE</span><span class="p">,</span>
+</span><span id="line-2435">    <span class="n">rank_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
+</span><span id="line-2436">    <span class="n">gains</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">LEVEL_GAINS</span><span class="p">,</span>
+</span><span id="line-2437">    <span class="n">surfaces</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-2438">    <span class="n">search_kw_by_label</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-2439">    <span class="o">**</span><span class="n">search_kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+</span><span id="line-2440"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ComparisonReport</span><span class="p">:</span>
+</span><span id="line-2441"><span class="w">    </span><span class="sd">"""A/B (or N-way) regression gate over indexing / embedder configurations.</span>
+</span><span id="line-2442">
+</span><span id="line-2443"><span class="sd">    ``corpora`` maps a label -&gt; a built corpus (an ``ef`` instruction-tuned-embedder</span>
+</span><span id="line-2444"><span class="sd">    corpus or an ``ir`` deps-as-text corpus is just another entry — the harness is</span>
+</span><span id="line-2445"><span class="sd">    embedder-agnostic). For each ``(label, theme)`` it computes graded nDCG@k (via</span>
+</span><span id="line-2446"><span class="sd">    :func:`to_graded_qrels` + ``ef.evaluation.ndcg_at_k``), the named-set FP-rate /</span>
+</span><span id="line-2447"><span class="sd">    hard-positive recall@k (when ``named_sets`` is given), and the rank+score of</span>
+</span><span id="line-2448"><span class="sd">    every named FP/FN id — so a change's effect is quantified *per package*.</span>
+</span><span id="line-2449"><span class="sd">    ``probes`` supplies the per-theme query text (normally loaded from the JSONL</span>
+</span><span id="line-2450"><span class="sd">    ``__meta__`` via :func:`read_package_meta`). The first label is the baseline</span>
+</span><span id="line-2451"><span class="sd">    that :meth:`ComparisonReport.regressions` compares against. Each ranking is</span>
+</span><span id="line-2452"><span class="sd">    fetched once to depth ``rank_depth`` (deep enough that even a buried named id</span>
+</span><span id="line-2453"><span class="sd">    gets a real rank) and sliced at ``k`` for the ``@k`` metrics.</span>
+</span><span id="line-2454">
+</span><span id="line-2455"><span class="sd">    ``search_kw_by_label`` overrides search settings per label, on top of the</span>
+</span><span id="line-2456"><span class="sd">    shared ``mode`` / ``surfaces`` / ``**search_kw``: map one corpus under several</span>
+</span><span id="line-2457"><span class="sd">    labels to compare *search* configurations rather than indexings, e.g.</span>
+</span><span id="line-2458"><span class="sd">    ``{"deps x2": {"surface_weights": {"deps": 2.0}}}``. Any</span>
+</span><span id="line-2459"><span class="sd">    :func:`ir.retrieve.search` keyword except ``k`` (the depth is ``rank_depth``)</span>
+</span><span id="line-2460"><span class="sd">    and ``per_artifact`` (rankings are per artifact).</span>
+</span><span id="line-2461">
+</span><span id="line-2462"><span class="sd">    A ``corpora`` value may instead be a :data:`~ir.retrieve.Retriever`, a callable</span>
+</span><span id="line-2463"><span class="sd">    ``(probe, *, k) -&gt; hits`` (best first), for an arm that is not one</span>
+</span><span id="line-2464"><span class="sd">    :func:`ir.retrieve.search` call: flat hits fused with a</span>
+</span><span id="line-2465"><span class="sd">    :func:`ir.traverse.traverse` walk, a multi-query pool, an agent's pipeline, or</span>
+</span><span id="line-2466"><span class="sd">    simply ``ir.as_retriever(corpus, ...)``. Its hits are de-duplicated (first</span>
+</span><span id="line-2467"><span class="sd">    occurrence wins) and cut to ``rank_depth``, then scored the same way. The search</span>
+</span><span id="line-2468"><span class="sd">    settings above do not apply to it, so naming it in ``search_kw_by_label``</span>
+</span><span id="line-2469"><span class="sd">    raises.</span>
+</span><span id="line-2470"><span class="sd">    """</span>
+</span><span id="line-2471">    <span class="n">labels</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">corpora</span><span class="p">)</span>
+</span><span id="line-2472">    <span class="k">if</span> <span class="ow">not</span> <span class="n">labels</span><span class="p">:</span>
+</span><span id="line-2473">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"compare_indexings needs at least one corpus"</span><span class="p">)</span>
+</span><span id="line-2474">    <span class="k">if</span> <span class="n">rank_depth</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
+</span><span id="line-2475">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rank_depth (</span><span class="si">{</span><span class="n">rank_depth</span><span class="si">}</span><span class="s2">) must be &gt;= k (</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+</span><span id="line-2476">    <span class="n">missing_probes</span> <span class="o">=</span> <span class="p">[</span><span class="n">theme</span> <span class="k">for</span> <span class="n">theme</span> <span class="ow">in</span> <span class="n">themes</span> <span class="k">if</span> <span class="n">theme</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">probes</span><span class="p">]</span>
+</span><span id="line-2477">    <span class="k">if</span> <span class="n">missing_probes</span><span class="p">:</span>
+</span><span id="line-2478">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no probe text for theme(s): </span><span class="si">{</span><span class="n">missing_probes</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-2479">    <span class="n">label_kw</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">search_kw_by_label</span> <span class="ow">or</span> <span class="p">{})</span>
+</span><span id="line-2480">    <span class="n">unknown</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">label_kw</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">labels</span><span class="p">))</span>
+</span><span id="line-2481">    <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+</span><span id="line-2482">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"search_kw_by_label names unknown label(s): </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-2483">    <span class="n">reserved</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"k"</span><span class="p">,</span> <span class="s2">"per_artifact"</span><span class="p">}</span>
+</span><span id="line-2484">    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">reserved</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">kw</span><span class="p">)</span> <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">label_kw</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+</span><span id="line-2485">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="line-2486">            <span class="s2">"search_kw_by_label cannot set k or per_artifact: every ranking is "</span>
+</span><span id="line-2487">            <span class="s2">"fetched per artifact to rank_depth"</span>
+</span><span id="line-2488">        <span class="p">)</span>
+</span><span id="line-2489">    <span class="n">rankers</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="line-2490">        <span class="n">label</span><span class="p">:</span> <span class="n">_ranker_of</span><span class="p">(</span>
+</span><span id="line-2491">            <span class="n">corpora</span><span class="p">[</span><span class="n">label</span><span class="p">],</span>
+</span><span id="line-2492">            <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+</span><span id="line-2493">            <span class="n">settings</span><span class="o">=</span><span class="p">{</span>
+</span><span id="line-2494">                <span class="s2">"mode"</span><span class="p">:</span> <span class="n">mode</span><span class="p">,</span>
+</span><span id="line-2495">                <span class="s2">"surfaces"</span><span class="p">:</span> <span class="n">surfaces</span><span class="p">,</span>
+</span><span id="line-2496">                <span class="o">**</span><span class="n">search_kw</span><span class="p">,</span>
+</span><span id="line-2497">                <span class="o">**</span><span class="n">label_kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="p">{}),</span>
+</span><span id="line-2498">            <span class="p">},</span>
+</span><span id="line-2499">            <span class="n">has_label_kw</span><span class="o">=</span><span class="n">label</span> <span class="ow">in</span> <span class="n">label_kw</span><span class="p">,</span>
+</span><span id="line-2500">        <span class="p">)</span>
+</span><span id="line-2501">        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span>
+</span><span id="line-2502">    <span class="p">}</span>
+</span><span id="line-2503">    <span class="n">metrics</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-2504">    <span class="n">deltas</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="n">theme</span><span class="p">:</span> <span class="p">{}</span> <span class="k">for</span> <span class="n">theme</span> <span class="ow">in</span> <span class="n">themes</span><span class="p">}</span>
+</span><span id="line-2505">    <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">:</span>
+</span><span id="line-2506">        <span class="n">metrics</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-2507">        <span class="k">for</span> <span class="n">theme</span> <span class="ow">in</span> <span class="n">themes</span><span class="p">:</span>
+</span><span id="line-2508">            <span class="n">first</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SearchHit</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># a repeated id counts once, at its best</span>
+</span><span id="line-2509">            <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">rankers</span><span class="p">[</span><span class="n">label</span><span class="p">](</span><span class="n">probes</span><span class="p">[</span><span class="n">theme</span><span class="p">],</span> <span class="n">k</span><span class="o">=</span><span class="n">rank_depth</span><span class="p">):</span>
+</span><span id="line-2510">                <span class="n">first</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">hit</span><span class="p">)</span>
+</span><span id="line-2511">            <span class="n">ranking</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">first</span><span class="p">)[:</span><span class="n">rank_depth</span><span class="p">]</span>  <span class="c1"># every arm ranked to the same depth</span>
+</span><span id="line-2512">            <span class="n">row</span><span class="p">,</span> <span class="n">named</span> <span class="o">=</span> <span class="n">score_ranking</span><span class="p">(</span>
+</span><span id="line-2513">                <span class="n">ranking</span><span class="p">,</span>
+</span><span id="line-2514">                <span class="n">cases</span><span class="p">,</span>
+</span><span id="line-2515">                <span class="n">theme</span><span class="p">,</span>
+</span><span id="line-2516">                <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+</span><span id="line-2517">                <span class="n">named_sets</span><span class="o">=</span><span class="n">named_sets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">theme</span><span class="p">)</span> <span class="k">if</span> <span class="n">named_sets</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-2518">                <span class="n">scores</span><span class="o">=</span><span class="p">{</span><span class="n">aid</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">first</span><span class="p">[</span><span class="n">aid</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="p">)</span> <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">ranking</span><span class="p">},</span>
+</span><span id="line-2519">                <span class="n">gains</span><span class="o">=</span><span class="n">gains</span><span class="p">,</span>
+</span><span id="line-2520">            <span class="p">)</span>
+</span><span id="line-2521">            <span class="n">metrics</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">theme</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span>
+</span><span id="line-2522">            <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">named</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span id="line-2523">                <span class="n">entry</span> <span class="o">=</span> <span class="n">deltas</span><span class="p">[</span><span class="n">theme</span><span class="p">]</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
+</span><span id="line-2524">                    <span class="n">aid</span><span class="p">,</span> <span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="n">cell</span><span class="p">[</span><span class="s2">"role"</span><span class="p">],</span> <span class="s2">"by_label"</span><span class="p">:</span> <span class="p">{}}</span>
+</span><span id="line-2525">                <span class="p">)</span>
+</span><span id="line-2526">                <span class="n">entry</span><span class="p">[</span><span class="s2">"by_label"</span><span class="p">][</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="line-2527">                    <span class="s2">"rank"</span><span class="p">:</span> <span class="n">cell</span><span class="p">[</span><span class="s2">"rank"</span><span class="p">],</span>
+</span><span id="line-2528">                    <span class="s2">"score"</span><span class="p">:</span> <span class="n">cell</span><span class="p">[</span><span class="s2">"score"</span><span class="p">],</span>
+</span><span id="line-2529">                <span class="p">}</span>
+</span><span id="line-2530">    <span class="k">return</span> <span class="n">ComparisonReport</span><span class="p">(</span>
+</span><span id="line-2531">        <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+</span><span id="line-2532">        <span class="n">themes</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">themes</span><span class="p">),</span>
+</span><span id="line-2533">        <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+</span><span id="line-2534">        <span class="n">baseline</span><span class="o">=</span><span class="n">labels</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+</span><span id="line-2535">        <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span>
+</span><span id="line-2536">        <span class="n">deltas</span><span class="o">=</span><span class="n">deltas</span><span class="p">,</span>
+</span><span id="line-2537">    <span class="p">)</span></div>
 
 </span></code></pre></div>
     </div></div>
@@ -2878,7 +2901,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=d127aa6e"></script>
+    <script src="../../_static/documentation_options.js?v=755f2e77"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
