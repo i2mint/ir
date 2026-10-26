@@ -335,3 +335,38 @@ def test_walk_does_not_depend_on_seed_order():
         return [h.artifact_id for h in traverse("same words", corpus, policy=policy)]
 
     assert walk(["liba", "libb"]) == walk(["libb", "liba"])
+
+
+def test_seed_spellings_are_one_seed_and_commit_the_corpus_artifact():
+    # "Meshed" / "MESHED" name the corpus artifact "meshed": committed, not just routed.
+    for seeds in (["Meshed"], ["MESHED", "meshed"]):
+        hits = _walk(seeds)
+        assert {h.artifact_id for h in hits} == {"meshed", "allude", "unbox"}
+        assert {h.metadata["seed"] for h in hits if "seed" in h.metadata} == {"meshed"}
+
+
+def test_a_seed_naming_a_corpus_artifact_by_separator_variant():
+    docs = {
+        "scikit-learn": {"name": "scikit-learn", "description": "ml", "deps": []},
+        "fitter": {"name": "fitter", "description": "fit", "deps": ["scikit-learn"]},
+    }
+    src = ir.CorpusSource.from_mapping(docs, name="sk", strategy=ir.Package())
+    corpus = ir.build(
+        src,
+        store=CorpusStore.memory(),
+        embedder="light",
+        edge_extractor=ir.default_edge_extractor,
+    )
+    policy = ir.reverse_dependency_policy(seeds=["Scikit_Learn"])
+    ids = {h.artifact_id for h in traverse("fit", corpus, policy=policy)}
+    assert ids == {"scikit-learn", "fitter"}
+
+
+def test_cross_corpus_seeds_keep_their_source():
+    # Of this corpus: committed like a string seed. Of another: routes only.
+    assert {h.artifact_id for h in _walk([("pk", "meshed")])} == {
+        "meshed",
+        "allude",
+        "unbox",
+    }
+    assert _walk([("other", "meshed")]) == []

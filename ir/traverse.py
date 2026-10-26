@@ -339,9 +339,17 @@ def collapsed_tree_policy(
 class _DepNode:
     """An artifact reached by walking dependency edges backwards from a seed."""
 
-    artifact_id: str
-    seed: str
+    artifact_id: "str | tuple[str, str]"
+    seed: "str | tuple[str, str]"
     hops: int = 0
+
+
+def _seed_key(seed: Any) -> "str | tuple[str, str]":
+    """A seed as a string id, or a ``(source, artifact_id)`` pair kept whole."""
+    if isinstance(seed, (list, tuple)):
+        source, artifact_id = seed
+        return (str(source), str(artifact_id))
+    return str(seed)
 
 
 class _ReverseDependencyPolicy:
@@ -356,7 +364,9 @@ class _ReverseDependencyPolicy:
     def __init__(self, *, seeds, edge_type, fan_in_weight, proximity_weight):
         # Sorted: seeds are a set in meaning, and their order breaks score ties in
         # the walk, so a caller's ``set`` must not make results hash-seed dependent.
-        self.seeds = tuple(sorted({str(s) for s in seeds}))
+        self.seeds = tuple(
+            sorted({_seed_key(s) for s in seeds}, key=lambda s: (type(s) is tuple, s))
+        )
         self.edge_type = edge_type
         self.fan_in_weight = fan_in_weight
         self.proximity_weight = proximity_weight
@@ -377,6 +387,8 @@ class _ReverseDependencyPolicy:
             from .retrieve import NoLedgerEntry, _embed_query
 
             try:
+                if not isinstance(node.artifact_id, str):
+                    raise NoLedgerEntry(node.artifact_id)  # a foreign-corpus seed
                 records = records_for_artifact(store, node.artifact_id)
             except NoLedgerEntry:
                 records = []  # a seed outside the corpus: it routes, nothing to score
@@ -394,7 +406,39 @@ class _ReverseDependencyPolicy:
 
     def seed(self, state: WalkState, store: Any) -> list[_DepNode]:
         self._graph(state, store)
-        return [_DepNode(artifact_id=s, seed=s) for s in self.seeds]
+        resolve = self._resolver(store)
+        nodes: dict = {}
+        for seed in self.seeds:
+            aid = resolve(seed)
+            nodes.setdefault(aid, _DepNode(artifact_id=aid, seed=aid))
+        return list(nodes.values())
+
+    def _resolver(self, store: Any):
+        """``seed -> node id``: the corpus artifact a seed names, else its index key.
+
+        A string seed is matched to the corpus artifact it names through the
+        reverse index's own key (so ``"Scikit_Learn"`` commits the artifact
+        ``scikit-learn``); a ``(source, artifact_id)`` seed of this corpus
+        resolves like a string; any other seed routes under its own key.
+        """
+        from .graph import _reverse_key
+
+        edge_type = self.edge_type
+        raw = getattr(store, "store", store)
+        ledger_keys = (
+            (k for k, _ in raw.ledger_items()) if hasattr(raw, "ledger_items") else ()
+        )
+        by_key = {_reverse_key(k, edge_type): k for k in ledger_keys}
+        name = getattr(store, "name", None)
+
+        def resolve(seed):
+            if type(seed) is tuple and name is not None and seed[0] == name:
+                seed = seed[1]
+            return by_key.get(
+                _reverse_key(seed, edge_type), _reverse_key(seed, edge_type)
+            )
+
+        return resolve
 
     def score(self, state: WalkState, node: _DepNode, store: Any) -> float:
         found = self._best(state, node, store)
@@ -455,7 +499,7 @@ class _ReverseDependencyPolicy:
 
 def reverse_dependency_policy(
     *,
-    seeds: Iterable[str],
+    seeds: Iterable["str | tuple[str, str]"],
     edge_type: str = "REF",
     fan_in_weight: float = 0.0,
     proximity_weight: float = 0.0,
@@ -464,7 +508,10 @@ def reverse_dependency_policy(
 
     *seeds* are library ids the **caller** deems relevant to the query (ir never
     chooses them: picking the domain libraries for a goal is the planner's job, in
-    the agent layer). They are a set: their order never changes the result. The walk
+    the agent layer). They are a set: their order never changes the result, and spelling variants of
+    one library (``"scikit-learn"``, ``"Scikit_Learn"``) are one seed, matched to the
+    corpus artifact they name. A ``(source, artifact_id)`` pair names an artifact of
+    a corpus; it is committed only when *source* is this corpus, else it routes. The walk
     commits each seed that is an artifact of the corpus, then its dependents (the
     artifacts whose ``edge_type`` edges point at it), then theirs, up to
     :func:`traverse`'s ``max_depth``. A seed outside the corpus (a third-party
