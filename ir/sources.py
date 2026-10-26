@@ -808,15 +808,16 @@ def package_repo_dirs(manifest: str | Path | None = None) -> list[Path]:
 def _setup_cfg_metadata(path: Path) -> dict:
     """``{"description", "dependencies"}`` from ``path/setup.cfg`` (``{}`` if none).
 
-    ``[metadata] description`` and ``[options] install_requires`` (one requirement
-    per line; blank lines and ``#`` comments dropped), for packages that predate
-    ``pyproject.toml``'s ``[project]`` table. An unreadable file warns and yields
-    ``{}``.
+    ``[metadata] description`` and ``[options] install_requires``, for packages that
+    predate ``pyproject.toml``'s ``[project]`` table. ``install_requires`` is read as
+    setuptools reads it: one requirement per line, or a single line split on ``;``.
+    A ``file:`` / ``attr:`` directive is not resolved and yields nothing. A repeated
+    option keeps its last value; an unreadable file warns and yields ``{}``.
     """
     cfg_path = path / "setup.cfg"
     if not cfg_path.is_file():
         return {}
-    cfg = configparser.ConfigParser(interpolation=None)
+    cfg = configparser.ConfigParser(interpolation=None, strict=False)
     try:
         cfg.read_string(cfg_path.read_text(encoding="utf-8"))
     except (configparser.Error, OSError, UnicodeDecodeError) as e:
@@ -824,12 +825,17 @@ def _setup_cfg_metadata(path: Path) -> dict:
             f"Could not parse {cfg_path} ({e}); ignoring its metadata.", stacklevel=3
         )
         return {}
+
+    def value(section, option):
+        v = cfg.get(section, option, fallback="").strip()
+        return "" if v.startswith(("file:", "attr:")) else v
+
     out: dict = {}
-    if description := cfg.get("metadata", "description", fallback="").strip():
+    if description := value("metadata", "description"):
         out["description"] = description
-    lines = cfg.get("options", "install_requires", fallback="").splitlines()
-    deps = [ln.split("#", 1)[0].strip() for ln in lines]
-    if deps := [d for d in deps if d]:
+    requires = value("options", "install_requires")
+    lines = requires.splitlines() if "\n" in requires else requires.split(";")
+    if deps := [ln.strip() for ln in lines if ln.strip() and not ln.startswith("#")]:
         out["dependencies"] = deps
     return out
 
@@ -850,7 +856,9 @@ def _scan_packages(dirs: Iterable[Path], *, readme_chars: int) -> dict[str, dict
 
     ``description`` and ``deps`` come from ``pyproject.toml``'s ``[project]``, each
     falling back to ``setup.cfg`` when ``[project]`` does not declare it (and the
-    description, last, to ``package.json``). The key is the directory name; a second directory with the same name (e.g.
+    description, last, to ``package.json``).
+
+    The key is the directory name; a second directory with the same name (e.g.
     ``t/x`` and ``tt/x``) is keyed ``name@parent`` rather than overwriting it.
     """
     try:
@@ -874,7 +882,10 @@ def _scan_packages(dirs: Iterable[Path], *, readme_chars: int) -> dict[str, dict
         if tomllib is not None and pyproject.is_file():
             try:
                 data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
-                proj = data.get("project", {})
+                table = data.get("project", {})
+                if not isinstance(table, dict):
+                    raise ValueError("[project] is not a table")
+                proj = table
             except (tomllib.TOMLDecodeError, OSError, ValueError) as e:
                 # Warn rather than silently thinning the index (matching the
                 # warn-on-degradation discipline used across ir).

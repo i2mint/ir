@@ -132,3 +132,37 @@ def test_unparseable_setup_cfg_warns_and_is_ignored(tmp_path):
     with pytest.warns(UserWarning, match="setup.cfg"):
         rec = ir.CorpusSource.from_packages(repos=lambda: [d]).scope["bad"]
     assert rec["deps"] == [] and rec["description"] == ""
+
+
+@pytest.mark.parametrize(
+    "options, deps",
+    [
+        ("install_requires = numpy; scipy>=1\n", ["numpy", "scipy>=1"]),
+        ("install_requires = file: requirements.txt\n", []),
+        (
+            "install_requires =\n    pkg @ https://x.org/p.zip#sha256=ab\n",
+            ["pkg @ https://x.org/p.zip#sha256=ab"],
+        ),
+        ("install_requires = a\ninstall_requires = b\n", ["b"]),  # last one wins
+    ],
+)
+def test_setup_cfg_install_requires_forms(tmp_path, options, deps):
+    d = tmp_path / "t" / "pkg"
+    d.mkdir(parents=True)
+    (d / "setup.cfg").write_text(
+        "[metadata]\ndescription = file: README.md\n[options]\n" + options
+    )
+    rec = ir.CorpusSource.from_packages(repos=lambda: [d]).scope["pkg"]
+    assert rec["deps"] == deps
+    assert rec["description"] == ""  # a file: directive is not resolved
+
+
+def test_non_table_project_warns_and_falls_back(tmp_path):
+    pytest.importorskip("tomllib" if _has("tomllib") else "tomli")
+    d = tmp_path / "t" / "odd"
+    d.mkdir(parents=True)
+    (d / "pyproject.toml").write_text("project = 3\n")
+    (d / "setup.cfg").write_text(_SETUP_CFG)
+    with pytest.warns(UserWarning, match="not a table"):
+        rec = ir.CorpusSource.from_packages(repos=lambda: [d]).scope["odd"]
+    assert rec["description"] == "An older package"
