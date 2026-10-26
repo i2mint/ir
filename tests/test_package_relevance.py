@@ -363,3 +363,83 @@ def test_compare_indexings_per_label_search_kw_guards():
     with pytest.raises(ValueError, match="per_artifact"):
         ev.compare_indexings({"b": corpus}, cases, themes=THEMES, probes=_probes(),
                              k=5, search_kw_by_label={"b": {"per_artifact": False}})
+
+
+def test_compare_indexings_scores_a_ranker_arm():
+    """A label may map to a ranker ``(probe, *, k) -> hits``: e.g. a fused arm (#121)."""
+    corpus = _corpus()
+    cases = _cases()
+    named = {t: ev.derive_named_sets(cases, t, observed_floor=0.4) for t in THEMES}
+
+    def flat(probe, *, k):
+        return ir.search(corpus, probe, k=k, mode="dense")
+
+    def fused(probe, *, k):  # not one search() call: two lists fused by rank
+        lexical = ir.search(corpus, probe, k=k, mode="lexical")
+        return ir.fuse_hits({"dense": flat(probe, k=k), "lexical": lexical}, k=k)
+
+    kw = dict(themes=THEMES, probes=_probes(), named_sets=named, mode="dense", k=5)
+    report = ev.compare_indexings(
+        {"corpus": corpus, "same": flat, "fused": fused}, cases, **kw
+    )
+    # a ranker that IS the corpus's own search scores identically to the corpus
+    assert report.metrics["same"] == report.metrics["corpus"]
+    for ids in report.deltas.values():
+        for info in ids.values():
+            assert set(info["by_label"]) == {"corpus", "same", "fused"}
+            assert info["by_label"]["same"] == info["by_label"]["corpus"]
+    # the fused arm really was run: scored as its own ranking
+    theme = THEMES[0]
+    row, _ = ev.score_ranking(
+        [h.artifact_id for h in fused(_probes()[theme], k=1000)], cases, theme,
+        k=5, named_sets=named[theme],
+    )
+    assert report.metrics["fused"][theme] == row
+
+
+def test_compare_indexings_ranker_is_cut_to_rank_depth_and_may_be_lazy():
+    corpus = _corpus()
+    cases = _cases()
+    named = {t: ev.derive_named_sets(cases, t, observed_floor=0.4) for t in THEMES}
+
+    def greedy(probe, *, k):  # ignores k, repeats, and yields lazily
+        hits = ir.search(corpus, probe, k=1000, mode="dense")
+        yield from hits
+        yield from hits
+
+    kw = dict(themes=THEMES, probes=_probes(), named_sets=named, mode="dense", k=2)
+    report = ev.compare_indexings({"corpus": corpus, "greedy": greedy}, cases,
+                                  rank_depth=3, **kw)
+    for ids in report.deltas.values():
+        for info in ids.values():
+            ranks = info["by_label"]
+            assert ranks["greedy"]["rank"] == ranks["corpus"]["rank"] <= 3
+    assert report.metrics["greedy"] == report.metrics["corpus"]
+
+
+def test_compare_indexings_rejects_search_kw_for_a_ranker():
+    corpus = _corpus()
+    with pytest.raises(ValueError, match="ranker"):
+        ev.compare_indexings(
+            {"b": corpus, "r": lambda probe, *, k: []},
+            _cases(),
+            themes=THEMES,
+            probes=_probes(),
+            k=5,
+            search_kw_by_label={"r": {"mode": "lexical"}},
+        )
+
+
+def test_score_ranking_counts_a_repeated_id_once():
+    cases = [
+        ev.PackageRelevanceCase("a", {"t": "core"}),
+        ev.PackageRelevanceCase("b", {"t": "strong"}),
+    ]
+    named = ev.NamedSets("t", distractors=("x",), hard_positives=("b",))
+    row, cells = ev.score_ranking(
+        ["a", "x", "a", "b"], cases, "t", k=3, named_sets=named, scores={"b": 0.5}
+    )
+    assert row["hard_positive_recall"] == 1.0  # b is 3rd once the repeat is dropped
+    assert cells["b"] == {"role": "hard_positive", "rank": 3, "score": 0.5}
+    assert cells["x"] == {"role": "distractor", "rank": 2, "score": None}
+    assert row["ndcg"] == ev.score_ranking(["a", "x", "b"], cases, "t", k=3)[0]["ndcg"]
