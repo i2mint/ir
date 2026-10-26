@@ -46,6 +46,7 @@ ir.eval
       retrieval_report
       save_cases
       save_package_cases
+      score_ranking
       sweep_selector
       to_graded_qrels
       to_qrels

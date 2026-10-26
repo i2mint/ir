@@ -1,4 +1,4 @@
-> built 2026-10-26 10:29 UTC from 617c8c8 (master) · ir 0.1.55. Details: build_info.json
+> built 2026-10-26 10:53 UTC from 84d662a (master) · ir 0.1.56. Details: build_info.json
 
 # index.html.md
 
@@ -1116,6 +1116,7 @@ ev.retrieval_report(corpus, cases, mode="hybrid").primary
 | [`retrieval_report`](_autosummary/ir.eval.html.md#ir.eval.retrieval_report)(corpus, cases, \*[, ...])         | Score a corpus's retrieval against the cases — the pure-`ef` path.                                                                                             |
 | [`save_cases`](_autosummary/ir.eval.html.md#ir.eval.save_cases)(cases, path, \*[, meta])                | Write `cases` to a JSONL file (one case per line).                                                                                                             |
 | [`save_package_cases`](_autosummary/ir.eval.html.md#ir.eval.save_package_cases)(cases, path, \*[, meta])        | Write [`PackageRelevanceCase`](_autosummary/ir.eval.html.md#ir.eval.PackageRelevanceCase)s to JSONL (mirrors [`save_cases()`](_autosummary/ir.eval.html.md#ir.eval.save_cases)). |
+| [`score_ranking`](_autosummary/ir.eval.html.md#ir.eval.score_ranking)(ranking, cases, theme, \*, k[, ...]) | One theme ranking's graded metrics, and where each named id landed.                                                                                            |
 | [`sweep_selector`](_autosummary/ir.eval.html.md#ir.eval.sweep_selector)(corpus, cases, \*[, strategy, ...]) | Tune the selector: score a grid of commit knobs against the cases.                                                                                             |
 | [`to_graded_qrels`](_autosummary/ir.eval.html.md#ir.eval.to_graded_qrels)(cases, theme, \*[, probe, ...])    | Build `ef`'s **graded** `(queries, qrels)` for one `theme`.                                                                                                    |
 | [`to_qrels`](_autosummary/ir.eval.html.md#ir.eval.to_qrels)(cases, \*[, grade])                       | Build `ef`'s `(queries, qrels)` from the gold-bearing cases.                                                                                                   |
@@ -2016,6 +2017,15 @@ labels to compare *search* configurations rather than indexings, e.g.
 [`ir.retrieve.search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search) keyword except `k` (the depth is `rank_depth`)
 and `per_artifact` (rankings are per artifact).
 
+A `corpora` value may instead be a [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever), a callable
+`(probe, *, k) -> hits` (best first), for an arm that is not one
+[`ir.retrieve.search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search) call: flat hits fused with a
+`ir.traverse.traverse()` walk, a multi-query pool, an agent’s pipeline, or
+simply `ir.as_retriever(corpus, ...)`. Its hits are de-duplicated (first
+occurrence wins) and cut to `rank_depth`, then scored the same way. The search
+settings above do not apply to it, so naming it in `search_kw_by_label`
+raises.
+
 * **Return type:**
   [`ComparisonReport`](_autosummary/ir.eval.html.md#ir.eval.ComparisonReport)
 
@@ -2271,6 +2281,30 @@ per-theme probe text (`probes`) and the corpus signature
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### ir.eval.score_ranking(ranking, cases, theme, , k, named_sets=None, scores=None, gains={'core': 3.0, 'none': 0.0, 'strong': 2.0, 'tangential': 0.0, 'uses-tools': 1.0})
+
+One theme ranking’s graded metrics, and where each named id landed.
+
+The per-ranking half of [`compare_indexings()`](_autosummary/ir.eval.html.md#ir.eval.compare_indexings), for scoring a ranking made
+any other way. Returns `(row, named)`: `row` is `{"ndcg"}` (graded nDCG@k
+over the cases’ [`LEVEL_GAINS`](_autosummary/ir.eval.html.md#ir.eval.LEVEL_GAINS)) plus, with `named_sets`, `"fp_rate"`
+and `"hard_positive_recall"` at `k`; `named` maps every named distractor
+and hard positive to `{"role", "rank", "score"}` (rank 1-based, `0` when
+absent; score from `scores`, else `None`). A repeated id counts at its first
+position.
+
+```pycon
+>>> cases = [PackageRelevanceCase("a", {"t": "core"}),
+...          PackageRelevanceCase("b", {"t": "none"})]
+>>> row, named = score_ranking(["b", "a"], cases, "t", k=5,
+...                            named_sets=NamedSets("t", distractors=("b",)))
+>>> round(row["ndcg"], 4), row["fp_rate"], named["b"]["rank"]
+(0.6309, 1.0, 1)
+```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)], [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
 
 ### ir.eval.sweep_selector(corpus, cases, , strategy='conservative', mode='hybrid', k=10, surfaces=None, max_k_grid=(1, 2, 3, 5, 8), rel_grid=(0.4, 0.5, 0.6, 0.7, 0.8, 0.9), min_score_grid=(None,), gap_ratio=0.5, objective='selection_f1', \*\*search_kw)
 
@@ -7425,18 +7459,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-26 10:29 UTC** from commit <a href="https://github.com/i2mint/ir/commit/617c8c86250014fb2d1196e85fbdd3c0cd962251"><code>617c8c8</code></a> on branch <code>master</code>, for **ir 0.1.55** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 10:53 UTC** from commit <a href="https://github.com/i2mint/ir/commit/84d662a54d3e2a59e1d69066afeadd6071c41abb"><code>84d662a</code></a> on branch <code>master</code>, for **ir 0.1.56** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.1.55) is behind the latest release on PyPI (0.1.56): `pip install ir` gives newer code than these docs describe.
+- The documented version (0.1.56) is behind the latest release on PyPI (0.1.57): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/617c8c86250014fb2d1196e85fbdd3c0cd962251"><code>617c8c86250014fb2d1196e85fbdd3c0cd962251</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/84d662a54d3e2a59e1d69066afeadd6071c41abb"><code>84d662a54d3e2a59e1d69066afeadd6071c41abb</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7447,9 +7481,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/40307535868">40307535868</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/40310681888">40310681888</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>617c8c86250014fb2d1196e85fbdd3c0cd962251</code> (in the history of the built commit) |
+| Event commit | <code>84d662a54d3e2a59e1d69066afeadd6071c41abb</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7474,13 +7508,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.56/">0.1.56</a>, newer than the documented version (0.1.55).
+Latest release: <a href="https://pypi.org/project/ir/0.1.57/">0.1.57</a>, newer than the documented version (0.1.56).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 617c8c86250014fb2d1196e85fbdd3c0cd962251
+git checkout 84d662a54d3e2a59e1d69066afeadd6071c41abb
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

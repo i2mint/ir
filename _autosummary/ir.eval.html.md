@@ -101,6 +101,7 @@ ev.retrieval_report(corpus, cases, mode="hybrid").primary
 | [`retrieval_report`](#ir.eval.retrieval_report)(corpus, cases, \*[, ...])         | Score a corpus's retrieval against the cases — the pure-`ef` path.                                                                                             |
 | [`save_cases`](#ir.eval.save_cases)(cases, path, \*[, meta])                | Write `cases` to a JSONL file (one case per line).                                                                                                             |
 | [`save_package_cases`](#ir.eval.save_package_cases)(cases, path, \*[, meta])        | Write [`PackageRelevanceCase`](#ir.eval.PackageRelevanceCase)s to JSONL (mirrors [`save_cases()`](#ir.eval.save_cases)). |
+| [`score_ranking`](#ir.eval.score_ranking)(ranking, cases, theme, \*, k[, ...]) | One theme ranking's graded metrics, and where each named id landed.                                                                                            |
 | [`sweep_selector`](#ir.eval.sweep_selector)(corpus, cases, \*[, strategy, ...]) | Tune the selector: score a grid of commit knobs against the cases.                                                                                             |
 | [`to_graded_qrels`](#ir.eval.to_graded_qrels)(cases, theme, \*[, probe, ...])    | Build `ef`'s **graded** `(queries, qrels)` for one `theme`.                                                                                                    |
 | [`to_qrels`](#ir.eval.to_qrels)(cases, \*[, grade])                       | Build `ef`'s `(queries, qrels)` from the gold-bearing cases.                                                                                                   |
@@ -1001,6 +1002,15 @@ labels to compare *search* configurations rather than indexings, e.g.
 [`ir.retrieve.search()`](ir.retrieve.html.md#ir.retrieve.search) keyword except `k` (the depth is `rank_depth`)
 and `per_artifact` (rankings are per artifact).
 
+A `corpora` value may instead be a [`Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever), a callable
+`(probe, *, k) -> hits` (best first), for an arm that is not one
+[`ir.retrieve.search()`](ir.retrieve.html.md#ir.retrieve.search) call: flat hits fused with a
+`ir.traverse.traverse()` walk, a multi-query pool, an agent’s pipeline, or
+simply `ir.as_retriever(corpus, ...)`. Its hits are de-duplicated (first
+occurrence wins) and cut to `rank_depth`, then scored the same way. The search
+settings above do not apply to it, so naming it in `search_kw_by_label`
+raises.
+
 * **Return type:**
   [`ComparisonReport`](#ir.eval.ComparisonReport)
 
@@ -1256,6 +1266,30 @@ per-theme probe text (`probes`) and the corpus signature
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### ir.eval.score_ranking(ranking, cases, theme, , k, named_sets=None, scores=None, gains={'core': 3.0, 'none': 0.0, 'strong': 2.0, 'tangential': 0.0, 'uses-tools': 1.0})
+
+One theme ranking’s graded metrics, and where each named id landed.
+
+The per-ranking half of [`compare_indexings()`](#ir.eval.compare_indexings), for scoring a ranking made
+any other way. Returns `(row, named)`: `row` is `{"ndcg"}` (graded nDCG@k
+over the cases’ [`LEVEL_GAINS`](#ir.eval.LEVEL_GAINS)) plus, with `named_sets`, `"fp_rate"`
+and `"hard_positive_recall"` at `k`; `named` maps every named distractor
+and hard positive to `{"role", "rank", "score"}` (rank 1-based, `0` when
+absent; score from `scores`, else `None`). A repeated id counts at its first
+position.
+
+```pycon
+>>> cases = [PackageRelevanceCase("a", {"t": "core"}),
+...          PackageRelevanceCase("b", {"t": "none"})]
+>>> row, named = score_ranking(["b", "a"], cases, "t", k=5,
+...                            named_sets=NamedSets("t", distractors=("b",)))
+>>> round(row["ndcg"], 4), row["fp_rate"], named["b"]["rank"]
+(0.6309, 1.0, 1)
+```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)], [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
 
 ### ir.eval.sweep_selector(corpus, cases, , strategy='conservative', mode='hybrid', k=10, surfaces=None, max_k_grid=(1, 2, 3, 5, 8), rel_grid=(0.4, 0.5, 0.6, 0.7, 0.8, 0.9), min_score_grid=(None,), gap_ratio=0.5, objective='selection_f1', \*\*search_kw)
 
