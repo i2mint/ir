@@ -156,6 +156,7 @@ def score(ranking, cases, theme, named, *, seeds=()):
     counts are this experiment's. A hard positive that is itself a seed is committed
     by the walk at once, so the ones that are not seeds are counted apart.
     """
+    ranking = list(dict.fromkeys(ranking))
     row, cells = ev.score_ranking(ranking, cases, theme, k=K, named_sets=named)
     relevant = {c.artifact_id for c in cases if c.level(theme) in RELEVANT}
     top, top10 = set(ranking[:K]), set(ranking[:10])

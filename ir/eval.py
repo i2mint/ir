@@ -79,6 +79,7 @@ from .rerank import (
     resolve_reranker,
     spec_tag,
 )
+from .retrieve import Retriever
 from .retrieve import search as _search
 from .select import DFLT_GAP_RATIO, DFLT_MAX_K, DFLT_REL_THRESHOLD
 
@@ -2322,15 +2323,11 @@ class ComparisonReport:
         return "\n".join(lines)
 
 
-#: A :func:`compare_indexings` arm that is not a corpus: ``(probe, *, k) -> hits``.
-Ranker = Callable[..., Sequence[SearchHit]]
-
-
 def _ranker_of(
     corpus_or_ranker: Any, *, label: str, settings: Mapping, has_label_kw: bool
-) -> Ranker:
-    """The ranker a :func:`compare_indexings` entry stands for."""
-    if callable(corpus_or_ranker) and not isinstance(corpus_or_ranker, str):
+) -> Retriever:
+    """The retriever a :func:`compare_indexings` entry stands for."""
+    if callable(corpus_or_ranker):
         if has_label_kw:
             raise ValueError(
                 f"search_kw_by_label names {label!r}, a ranker: search settings "
@@ -2439,11 +2436,14 @@ def compare_indexings(
     :func:`ir.retrieve.search` keyword except ``k`` (the depth is ``rank_depth``)
     and ``per_artifact`` (rankings are per artifact).
 
-    A ``corpora`` value may instead be a **ranker**, a callable ``(probe, *, k) ->
-    hits`` (best first), for an arm that is not one :func:`ir.retrieve.search` call:
-    flat hits fused with a :func:`ir.traverse.traverse` walk, a multi-query pool, an
-    agent's pipeline. It is scored the same way. The search settings above do not
-    apply to it, so naming it in ``search_kw_by_label`` raises.
+    A ``corpora`` value may instead be a :data:`~ir.retrieve.Retriever`, a callable
+    ``(probe, *, k) -> hits`` (best first), for an arm that is not one
+    :func:`ir.retrieve.search` call: flat hits fused with a
+    :func:`ir.traverse.traverse` walk, a multi-query pool, an agent's pipeline, or
+    simply ``ir.as_retriever(corpus, ...)``. Its hits are de-duplicated (first
+    occurrence wins) and cut to ``rank_depth``, then scored the same way. The search
+    settings above do not apply to it, so naming it in ``search_kw_by_label``
+    raises.
     """
     labels = tuple(corpora)
     if not labels:
@@ -2482,14 +2482,17 @@ def compare_indexings(
     for label in labels:
         metrics[label] = {}
         for theme in themes:
-            hits = rankers[label](probes[theme], k=rank_depth)
+            first: dict[str, SearchHit] = {}  # a repeated id counts once, at its best
+            for hit in rankers[label](probes[theme], k=rank_depth):
+                first.setdefault(hit.artifact_id, hit)
+            ranking = list(first)[:rank_depth]  # every arm ranked to the same depth
             row, named = score_ranking(
-                [h.artifact_id for h in hits],
+                ranking,
                 cases,
                 theme,
                 k=k,
                 named_sets=named_sets.get(theme) if named_sets else None,
-                scores={h.artifact_id: float(h.score) for h in reversed(hits)},
+                scores={aid: float(first[aid].score) for aid in ranking},
                 gains=gains,
             )
             metrics[label][theme] = row
