@@ -29,7 +29,9 @@ from pathlib import Path
 
 import ir
 from ir import eval as ev
+from ir.eval_gen import corpus_signature
 from ir.graph import CorpusGraph, normalize_dist_name
+from ir.rerank import resolve_reranker
 from ir.sources import package_repo_dirs
 from ir.store import CorpusStore
 from ir.traverse import traverse
@@ -61,9 +63,11 @@ SEEDS = {
 }
 K = 20
 DEPTH = 1000  # ranking depth: past the corpus size, so every named id gets a rank
-#: ``dep_boost`` weights on the hybrid (RRF, ~0.03) and cross-encoder (0..1) scales.
+NODE_BUDGET = DEPTH  # the walk may commit the whole corpus; max_depth stays traverse's
+#: ``dep_boost`` weights on the hybrid (RRF, ~0.03) and cross-encoder scales. Most
+#: cross-encoder scores sit near 0, so its useful weights are small too.
 RRF_WEIGHTS = (0.005, 0.01, 0.02, 0.05)
-RERANK_WEIGHTS = (0.1, 0.3)
+RERANK_WEIGHTS = (0.01, 0.03, 0.1)
 RERANK = "cross-encoder"
 RELEVANT = {"core", "strong"}  # the benchmark's "relevant" for recall@K
 
@@ -80,13 +84,18 @@ def load(data_dir):
     )
 
 
-def build(names, *, embedder="default"):
-    """``(corpus, names with no checkout)``: an in-memory packages corpus over *names*."""
+def build(names, *, embedder="default", repo_dirs=package_repo_dirs):
+    """``(corpus, missing, duplicated)``: an in-memory packages corpus over *names*.
+
+    ``missing`` are the names with no checkout; ``duplicated`` those with several,
+    of which the first (in ``repo_dirs()`` order, manifest first) is indexed.
+    """
     wanted = set(names)
-    by_name = {}  # the first checkout of each name, as the manifest orders them
-    for d in package_repo_dirs():
+    by_name, seen = {}, Counter()
+    for d in repo_dirs():
         if d.name in wanted:
             by_name.setdefault(d.name, d)
+            seen[d.name] += 1
     src = ir.CorpusSource.from_packages(repos=lambda: by_name.values(), exclude=[])
     corpus = ir.build(
         src,
@@ -94,14 +103,18 @@ def build(names, *, embedder="default"):
         embedder=embedder,
         edge_extractor=ir.default_edge_extractor,
     )
-    return corpus, wanted - set(by_name)
+    return corpus, wanted - set(by_name), {n for n, c in seen.items() if c > 1}
 
 
 def arms(corpus, probe, seeds, *, rerank=RERANK):
     """``{arm: ranked artifact ids}`` for one theme probe.
 
-    ``rerank`` names the reranker of the comparison arms (``None`` drops them).
+    ``rerank`` names the reranker of the comparison arms (``None`` drops them). One
+    that cannot load raises, rather than silently scoring the baseline twice.
     """
+    reranker = resolve_reranker(rerank)
+    if rerank is not None and reranker is None:
+        raise RuntimeError(f"reranker {rerank!r} is unavailable (install ir[rerank])")
 
     def ids(hits):
         return [h.artifact_id for h in hits]
@@ -118,26 +131,30 @@ def arms(corpus, probe, seeds, *, rerank=RERANK):
         corpus,
         policy=ir.reverse_dependency_policy(seeds=seeds),
         k=DEPTH,
-        node_budget=DEPTH,
+        node_budget=NODE_BUDGET,
     )
     out = {
         "baseline (hybrid)": ids(flat),
         "+ reverse-dep walk (RRF)": ids(ir.fuse_hits({"flat": flat, "walk": walked})),
     }
     out |= {f"+ dep_boost w={w}": ids(search(dep_boost=boost(w))) for w in RRF_WEIGHTS}
-    if rerank is not None:
-        out[rerank] = ids(search(rerank=rerank))
+    if reranker is not None:
+        out[rerank] = ids(search(rerank=reranker))
         out |= {
             f"{rerank} + dep_boost w={w}": ids(
-                search(rerank=rerank, dep_boost=boost(w))
+                search(rerank=reranker, dep_boost=boost(w))
             )
             for w in RERANK_WEIGHTS
         }
     return out
 
 
-def score(ranking, cases, theme, named):
-    """The issue's metrics for one ranking, plus where each named id landed."""
+def score(ranking, cases, theme, named, *, seeds=()):
+    """The issue's metrics for one ranking, plus where each named id landed.
+
+    A hard positive that is itself a seed is committed by the walk at once, so the
+    ones that are not seeds are counted apart.
+    """
     from ef.evaluation import ndcg_at_k
 
     gains = {c.artifact_id: c.gain(theme) for c in cases if c.gain(theme) > 0}
@@ -146,8 +163,11 @@ def score(ranking, cases, theme, named):
     rank = {a: i + 1 for i, a in enumerate(ranking)}
     return {
         "nDCG@20": ndcg_at_k(ranking, gains, K),
-        "recall@20": len(top & relevant) / len(relevant),
+        "recall@20": len(top & relevant) / len(relevant) if relevant else 0.0,
         "hard positives in top-20": sum(a in top for a in named.hard_positives),
+        "of them not seeds": sum(
+            a in top and a not in seeds for a in named.hard_positives
+        ),
         "distractor fp_rate@20": ev.fp_rate_on_distractors(
             ranking, named.distractors, k=K
         ),
@@ -161,12 +181,23 @@ def score(ranking, cases, theme, named):
 def run(data_dir):
     """The full report: per-theme metrics and named ranks per arm, and the fan-in."""
     cases, probes, named_sets = load(data_dir)
-    corpus, missing = build(c.artifact_id for c in cases)
-    report = {"k": K, "missing_checkouts": sorted(missing), "themes": {}}
+    corpus, missing, duplicated = build(c.artifact_id for c in cases)
+    cases = [c for c in cases if c.artifact_id not in missing]
+    path = Path(data_dir) / "package_relevance_cases.jsonl"
+    report = {
+        "k": K,
+        "missing_checkouts": sorted(missing),
+        "duplicated_checkouts": sorted(duplicated),
+        "corpus_signature": corpus_signature(corpus),
+        "labelled_corpus_signature": ev.read_package_meta(path).get("corpus_signature"),
+        "themes": {},
+    }
     for theme, named in named_sets.items():
         seeds = {normalize_dist_name(s) for s in SEEDS[theme]}
         ranked = arms(corpus, probes[theme], seeds)
-        scored = {arm: score(r, cases, theme, named) for arm, r in ranked.items()}
+        scored = {
+            arm: score(r, cases, theme, named, seeds=seeds) for arm, r in ranked.items()
+        }
         report["themes"][theme] = {
             "n_hard_positives": len(named.hard_positives),
             "n_distractors": len(named.distractors),

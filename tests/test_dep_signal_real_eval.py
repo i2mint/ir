@@ -6,6 +6,8 @@ checks the arithmetic of :func:`score` on a hand-made ranking.
 """
 
 import importlib.util
+import json
+import math
 from pathlib import Path
 
 import pytest
@@ -40,13 +42,17 @@ def test_score_counts_what_it_names(real):
         _case("d"),
     ]
     named = ev.NamedSets(theme="graphs", distractors=("d",), hard_positives=("c",))
-    metrics, ranks = real.score(["d", "c", "a"], cases, "graphs", named)
+    metrics, ranks = real.score(["d", "c", "a"], cases, "graphs", named, seeds={"c"})
     assert metrics["recall@20"] == 0.5  # a of {a, b}; c is uses-tools, not relevant
     assert metrics["hard positives in top-20"] == 1
+    assert metrics["of them not seeds"] == 0  # c is a seed
     assert metrics["distractor fp_rate@20"] == 1.0
     assert metrics["distractors in top-10"] == 1
     assert metrics["uses-tools in top-20"] == 1
-    assert 0 < metrics["nDCG@20"] < 1
+    # linear gains core=3, strong=2, uses-tools=1: c at rank 2, a at rank 3
+    dcg = 1 / math.log2(3) + 3 / math.log2(4)
+    idcg = 3 + 2 / math.log2(3) + 1 / math.log2(4)
+    assert metrics["nDCG@20"] == pytest.approx(dcg / idcg)
     assert ranks == {"c": 2, "d": 1}
 
 
@@ -85,3 +91,17 @@ def test_arms_on_a_synthetic_corpus(real):
             },
         }
     )
+
+
+def test_build_reports_missing_and_duplicated_checkouts(real, tmp_path):
+    dirs = []
+    for rel in ("t/a", "tt/a", "t/b"):
+        d = tmp_path / rel
+        d.mkdir(parents=True)
+        (d / "package.json").write_text(json.dumps({"description": f"pkg {rel}"}))
+        dirs.append(d)
+    corpus, missing, duplicated = real.build(
+        ["a", "b", "c"], embedder="light", repo_dirs=lambda: dirs
+    )
+    assert missing == {"c"} and duplicated == {"a"}
+    assert ev.corpus_artifact_ids(corpus) == {"a", "b"}
