@@ -2210,18 +2210,18 @@ def evaluate_named_sets(
     """
     theme = theme or named_sets.theme
     hits = _probe_hits(corpus, probe, mode=mode, k=k, surfaces=surfaces, **search_kw)
-    ranking = [h.artifact_id for h in hits]
-    top = set(ranking[:k])
+    ranking = list(dict.fromkeys(h.artifact_id for h in hits))
+    row, named = _score_named(ranking, named_sets, k=k)
     return NamedSetReport(
         theme=theme,
         k=k,
-        fp_rate=fp_rate_on_distractors(ranking, named_sets.distractors, k=k),
-        hard_positive_recall=recall_on_hard_positives(
-            ranking, named_sets.hard_positives, k=k
+        fp_rate=row["fp_rate"],
+        hard_positive_recall=row["hard_positive_recall"],
+        distractors_seen=tuple(
+            d for d in named_sets.distractors if 0 < named[d]["rank"] <= k
         ),
-        distractors_seen=tuple(d for d in named_sets.distractors if d in top),
         hard_positives_missed=tuple(
-            h for h in named_sets.hard_positives if h not in top
+            h for h in named_sets.hard_positives if not 0 < named[h]["rank"] <= k
         ),
     )
 
@@ -2342,6 +2342,41 @@ def _ranker_of(
     return rank
 
 
+def _score_named(
+    ranking: Sequence[str],
+    named_sets: NamedSets,
+    *,
+    k: int,
+    scores: Mapping[str, float] | None = None,
+) -> tuple[dict[str, float], dict[str, dict]]:
+    """The named-set half of :func:`score_ranking`, for a de-duplicated *ranking*.
+
+    Returns ``({"fp_rate", "hard_positive_recall"}, named)``, *named* being
+    ``{id: {"role", "rank", "score"}}`` for every named distractor / hard positive
+    (rank 1-based, ``0`` when absent).
+    """
+    row = {
+        "fp_rate": fp_rate_on_distractors(ranking, named_sets.distractors, k=k),
+        "hard_positive_recall": recall_on_hard_positives(
+            ranking, named_sets.hard_positives, k=k
+        ),
+    }
+    rank_by = {aid: i + 1 for i, aid in enumerate(ranking)}
+    roles = {
+        **{d: "distractor" for d in named_sets.distractors},
+        **{h: "hard_positive" for h in named_sets.hard_positives},
+    }
+    named = {
+        aid: {
+            "role": role,
+            "rank": rank_by.get(aid, 0),
+            "score": (scores or {}).get(aid),
+        }
+        for aid, role in roles.items()
+    }
+    return row, named
+
+
 def score_ranking(
     ranking: Sequence[str],
     cases: Sequence[PackageRelevanceCase],
@@ -2372,31 +2407,16 @@ def score_ranking(
     from ef.evaluation import ndcg_at_k
 
     ranking = list(dict.fromkeys(ranking))
-    relevant = {
-        c.artifact_id: c.gain(theme, gains=gains)
-        for c in cases
-        if c.gain(theme, gains=gains) > 0
-    }
+    relevant = {}
+    for c in cases:
+        gain = c.gain(theme, gains=gains)
+        if gain > 0:
+            relevant[c.artifact_id] = gain
     row: dict[str, float] = {"ndcg": ndcg_at_k(ranking, relevant, k)}
     named: dict[str, dict] = {}
     if named_sets is not None:
-        row["fp_rate"] = fp_rate_on_distractors(ranking, named_sets.distractors, k=k)
-        row["hard_positive_recall"] = recall_on_hard_positives(
-            ranking, named_sets.hard_positives, k=k
-        )
-        rank_by = {aid: i + 1 for i, aid in enumerate(ranking)}
-        roles = {
-            **{d: "distractor" for d in named_sets.distractors},
-            **{h: "hard_positive" for h in named_sets.hard_positives},
-        }
-        named = {
-            aid: {
-                "role": role,
-                "rank": rank_by.get(aid, 0),
-                "score": (scores or {}).get(aid),
-            }
-            for aid, role in roles.items()
-        }
+        named_row, named = _score_named(ranking, named_sets, k=k, scores=scores)
+        row.update(named_row)
     return row, named
 
 
