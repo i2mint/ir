@@ -2210,19 +2210,14 @@ def evaluate_named_sets(
     """
     theme = theme or named_sets.theme
     hits = _probe_hits(corpus, probe, mode=mode, k=k, surfaces=surfaces, **search_kw)
-    ranking = [h.artifact_id for h in hits]
-    top = set(ranking[:k])
+    row, _, seen, missed = _score_named([h.artifact_id for h in hits], named_sets, k=k)
     return NamedSetReport(
         theme=theme,
         k=k,
-        fp_rate=fp_rate_on_distractors(ranking, named_sets.distractors, k=k),
-        hard_positive_recall=recall_on_hard_positives(
-            ranking, named_sets.hard_positives, k=k
-        ),
-        distractors_seen=tuple(d for d in named_sets.distractors if d in top),
-        hard_positives_missed=tuple(
-            h for h in named_sets.hard_positives if h not in top
-        ),
+        fp_rate=row["fp_rate"],
+        hard_positive_recall=row["hard_positive_recall"],
+        distractors_seen=seen,
+        hard_positives_missed=missed,
     )
 
 
@@ -2342,6 +2337,49 @@ def _ranker_of(
     return rank
 
 
+def _score_named(
+    ranking: Sequence[str],
+    named_sets: NamedSets,
+    *,
+    k: int,
+    scores: Mapping[str, float] | None = None,
+) -> tuple[dict[str, float], dict[str, dict], tuple[str, ...], tuple[str, ...]]:
+    """The named-set half of :func:`score_ranking` and :func:`evaluate_named_sets`.
+
+    Returns ``(row, named, seen, missed)``: *row* is ``{"fp_rate",
+    "hard_positive_recall"}``; *named* is ``{id: {"role", "rank", "score"}}`` for
+    every named distractor / hard positive (rank 1-based, ``0`` when absent); *seen*
+    the distractors in the top *k*, *missed* the hard positives outside it. A
+    repeated id in *ranking* counts at its first position.
+    """
+    if k < 1:
+        raise ValueError(f"k must be >= 1, got {k!r}")
+    ranking = list(dict.fromkeys(ranking))
+    top = set(ranking[:k])
+    row = {
+        "fp_rate": fp_rate_on_distractors(ranking, named_sets.distractors, k=k),
+        "hard_positive_recall": recall_on_hard_positives(
+            ranking, named_sets.hard_positives, k=k
+        ),
+    }
+    rank_by = {aid: i + 1 for i, aid in enumerate(ranking)}
+    roles = {
+        **{d: "distractor" for d in named_sets.distractors},
+        **{h: "hard_positive" for h in named_sets.hard_positives},
+    }
+    named = {
+        aid: {
+            "role": role,
+            "rank": rank_by.get(aid, 0),
+            "score": (scores or {}).get(aid),
+        }
+        for aid, role in roles.items()
+    }
+    seen = tuple(d for d in named_sets.distractors if d in top)
+    missed = tuple(h for h in named_sets.hard_positives if h not in top)
+    return row, named, seen, missed
+
+
 def score_ranking(
     ranking: Sequence[str],
     cases: Sequence[PackageRelevanceCase],
@@ -2372,31 +2410,16 @@ def score_ranking(
     from ef.evaluation import ndcg_at_k
 
     ranking = list(dict.fromkeys(ranking))
-    relevant = {
-        c.artifact_id: c.gain(theme, gains=gains)
-        for c in cases
-        if c.gain(theme, gains=gains) > 0
-    }
+    relevant = {}
+    for c in cases:
+        gain = c.gain(theme, gains=gains)
+        if gain > 0:
+            relevant[c.artifact_id] = gain
     row: dict[str, float] = {"ndcg": ndcg_at_k(ranking, relevant, k)}
     named: dict[str, dict] = {}
     if named_sets is not None:
-        row["fp_rate"] = fp_rate_on_distractors(ranking, named_sets.distractors, k=k)
-        row["hard_positive_recall"] = recall_on_hard_positives(
-            ranking, named_sets.hard_positives, k=k
-        )
-        rank_by = {aid: i + 1 for i, aid in enumerate(ranking)}
-        roles = {
-            **{d: "distractor" for d in named_sets.distractors},
-            **{h: "hard_positive" for h in named_sets.hard_positives},
-        }
-        named = {
-            aid: {
-                "role": role,
-                "rank": rank_by.get(aid, 0),
-                "score": (scores or {}).get(aid),
-            }
-            for aid, role in roles.items()
-        }
+        named_row, named, _, _ = _score_named(ranking, named_sets, k=k, scores=scores)
+        row.update(named_row)
     return row, named
 
 

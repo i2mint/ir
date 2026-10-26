@@ -9,11 +9,13 @@ A/B gate, and the ``regressions`` gate logic.
 """
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 import ir
 from ir import eval as ev
+from ir.base import SearchHit
 from ir.store import CorpusStore
 
 FIXTURE = Path(__file__).parent / "fixtures" / "package_relevance_fixture.jsonl"
@@ -443,3 +445,29 @@ def test_score_ranking_counts_a_repeated_id_once():
     assert cells["b"] == {"role": "hard_positive", "rank": 3, "score": 0.5}
     assert cells["x"] == {"role": "distractor", "rank": 2, "score": None}
     assert row["ndcg"] == ev.score_ranking(["a", "x", "b"], cases, "t", k=3)[0]["ndcg"]
+
+
+def test_named_set_metrics_are_one_implementation():
+    """``evaluate_named_sets`` and ``score_ranking`` agree on the same ranking."""
+    ns = ev.NamedSets("t", distractors=("b", "x"), hard_positives=("a", "c", "z"))
+    ranking = ["b", "b", "a", "d", "c"]
+    hits = [
+        SearchHit(artifact_id=i, surface_kind="s", score=1.0, text="") for i in ranking
+    ]
+    with patch.object(ev, "_probe_hits", return_value=hits):
+        report = ev.evaluate_named_sets(None, ns, probe="q", k=3)
+    row, named = ev.score_ranking(ranking, [], "t", k=3, named_sets=ns)
+    assert (report.fp_rate, report.hard_positive_recall) == (
+        row["fp_rate"],
+        row["hard_positive_recall"],
+    )
+    assert report.distractors_seen == ("b",)
+    assert report.hard_positives_missed == ("c", "z")
+    assert report.fp_rate == len(report.distractors_seen) / len(ns.distractors)
+    assert [named[i]["rank"] for i in ("b", "a", "c", "x")] == [1, 2, 4, 0]
+
+
+def test_named_set_metrics_refuse_k_below_one():
+    ns = ev.NamedSets("t", distractors=("b",))
+    with pytest.raises(ValueError, match="k must be >= 1"):
+        ev.score_ranking(["b"], [], "t", k=0, named_sets=ns)
