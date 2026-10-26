@@ -152,30 +152,26 @@ def arms(corpus, probe, seeds, *, rerank=RERANK):
 def score(ranking, cases, theme, named, *, seeds=()):
     """The issue's metrics for one ranking, plus where each named id landed.
 
-    A hard positive that is itself a seed is committed by the walk at once, so the
-    ones that are not seeds are counted apart.
+    nDCG, the FP rate and the named ranks are :func:`ir.eval.score_ranking`'s; the
+    counts are this experiment's. A hard positive that is itself a seed is committed
+    by the walk at once, so the ones that are not seeds are counted apart.
     """
-    from ef.evaluation import ndcg_at_k
-
-    gains = {c.artifact_id: c.gain(theme) for c in cases if c.gain(theme) > 0}
+    row, cells = ev.score_ranking(ranking, cases, theme, k=K, named_sets=named)
     relevant = {c.artifact_id for c in cases if c.level(theme) in RELEVANT}
     top, top10 = set(ranking[:K]), set(ranking[:10])
-    rank = {a: i + 1 for i, a in enumerate(ranking)}
     return {
-        "nDCG@20": ndcg_at_k(ranking, gains, K),
+        "nDCG@20": row["ndcg"],
         "recall@20": len(top & relevant) / len(relevant) if relevant else 0.0,
         "hard positives in top-20": sum(a in top for a in named.hard_positives),
         "of them not seeds": sum(
             a in top and a not in seeds for a in named.hard_positives
         ),
-        "distractor fp_rate@20": ev.fp_rate_on_distractors(
-            ranking, named.distractors, k=K
-        ),
+        "distractor fp_rate@20": row["fp_rate"],
         "distractors in top-10": sum(a in top10 for a in named.distractors),
         "uses-tools in top-20": sum(
             c.artifact_id in top for c in cases if c.level(theme) == "uses-tools"
         ),
-    }, {a: rank.get(a, 0) for a in (*named.hard_positives, *named.distractors)}
+    }, {a: cells[a]["rank"] for a in (*named.hard_positives, *named.distractors)}
 
 
 def run(data_dir):

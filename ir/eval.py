@@ -2322,6 +2322,87 @@ class ComparisonReport:
         return "\n".join(lines)
 
 
+#: A :func:`compare_indexings` arm that is not a corpus: ``(probe, *, k) -> hits``.
+Ranker = Callable[..., Sequence[SearchHit]]
+
+
+def _ranker_of(
+    corpus_or_ranker: Any, *, label: str, settings: Mapping, has_label_kw: bool
+) -> Ranker:
+    """The ranker a :func:`compare_indexings` entry stands for."""
+    if callable(corpus_or_ranker) and not isinstance(corpus_or_ranker, str):
+        if has_label_kw:
+            raise ValueError(
+                f"search_kw_by_label names {label!r}, a ranker: search settings "
+                "only apply to corpus entries"
+            )
+        return corpus_or_ranker
+    corpus = _as_corpus(corpus_or_ranker)
+
+    def rank(probe: str, *, k: int) -> list[SearchHit]:
+        return _probe_hits(corpus, probe, k=k, **settings)
+
+    return rank
+
+
+def score_ranking(
+    ranking: Sequence[str],
+    cases: Sequence[PackageRelevanceCase],
+    theme: str,
+    *,
+    k: int,
+    named_sets: NamedSets | None = None,
+    scores: Mapping[str, float] | None = None,
+    gains: Mapping[str, float] = LEVEL_GAINS,
+) -> tuple[dict[str, float], dict[str, dict]]:
+    """One theme ranking's graded metrics, and where each named id landed.
+
+    The per-ranking half of :func:`compare_indexings`, for scoring a ranking made
+    any other way. Returns ``(row, named)``: ``row`` is ``{"ndcg"}`` (graded nDCG@k
+    over the cases' :data:`LEVEL_GAINS`) plus, with ``named_sets``, ``"fp_rate"``
+    and ``"hard_positive_recall"`` at ``k``; ``named`` maps every named distractor
+    and hard positive to ``{"role", "rank", "score"}`` (rank 1-based, ``0`` when
+    absent; score from ``scores``, else ``None``). A repeated id counts at its first
+    position.
+
+    >>> cases = [PackageRelevanceCase("a", {"t": "core"}),
+    ...          PackageRelevanceCase("b", {"t": "none"})]
+    >>> row, named = score_ranking(["b", "a"], cases, "t", k=5,
+    ...                            named_sets=NamedSets("t", distractors=("b",)))
+    >>> round(row["ndcg"], 4), row["fp_rate"], named["b"]["rank"]
+    (0.6309, 1.0, 1)
+    """
+    from ef.evaluation import ndcg_at_k
+
+    ranking = list(dict.fromkeys(ranking))
+    relevant = {
+        c.artifact_id: c.gain(theme, gains=gains)
+        for c in cases
+        if c.gain(theme, gains=gains) > 0
+    }
+    row: dict[str, float] = {"ndcg": ndcg_at_k(ranking, relevant, k)}
+    named: dict[str, dict] = {}
+    if named_sets is not None:
+        row["fp_rate"] = fp_rate_on_distractors(ranking, named_sets.distractors, k=k)
+        row["hard_positive_recall"] = recall_on_hard_positives(
+            ranking, named_sets.hard_positives, k=k
+        )
+        rank_by = {aid: i + 1 for i, aid in enumerate(ranking)}
+        roles = {
+            **{d: "distractor" for d in named_sets.distractors},
+            **{h: "hard_positive" for h in named_sets.hard_positives},
+        }
+        named = {
+            aid: {
+                "role": role,
+                "rank": rank_by.get(aid, 0),
+                "score": (scores or {}).get(aid),
+            }
+            for aid, role in roles.items()
+        }
+    return row, named
+
+
 def compare_indexings(
     corpora: Mapping[str, Any],
     cases: Sequence[PackageRelevanceCase],
@@ -2357,9 +2438,13 @@ def compare_indexings(
     ``{"deps x2": {"surface_weights": {"deps": 2.0}}}``. Any
     :func:`ir.retrieve.search` keyword except ``k`` (the depth is ``rank_depth``)
     and ``per_artifact`` (rankings are per artifact).
-    """
-    from ef.evaluation import ndcg_at_k
 
+    A ``corpora`` value may instead be a **ranker**, a callable ``(probe, *, k) ->
+    hits`` (best first), for an arm that is not one :func:`ir.retrieve.search` call:
+    flat hits fused with a :func:`ir.traverse.traverse` walk, a multi-query pool, an
+    agent's pipeline. It is scored the same way. The search settings above do not
+    apply to it, so naming it in ``search_kw_by_label`` raises.
+    """
     labels = tuple(corpora)
     if not labels:
         raise ValueError("compare_indexings needs at least one corpus")
@@ -2378,47 +2463,44 @@ def compare_indexings(
             "search_kw_by_label cannot set k or per_artifact: every ranking is "
             "fetched per artifact to rank_depth"
         )
-    metrics: dict[str, dict[str, dict[str, float]]] = {}
-    deltas: dict[str, dict[str, dict]] = {theme: {} for theme in themes}
-    for label in labels:
-        corpus = _as_corpus(corpora[label])
-        metrics[label] = {}
-        for theme in themes:
-            settings = {
+    rankers = {
+        label: _ranker_of(
+            corpora[label],
+            label=label,
+            settings={
                 "mode": mode,
                 "surfaces": surfaces,
                 **search_kw,
                 **label_kw.get(label, {}),
-            }
-            hits = _probe_hits(corpus, probes[theme], k=rank_depth, **settings)
-            ranking = [h.artifact_id for h in hits]
-            score_by = {h.artifact_id: float(h.score) for h in hits}
-            rank_by = {aid: i + 1 for i, aid in enumerate(ranking)}
-            relevant = {
-                c.artifact_id: c.gain(theme, gains=gains)
-                for c in cases
-                if c.gain(theme, gains=gains) > 0
-            }
-            row: dict[str, float] = {"ndcg": ndcg_at_k(ranking, relevant, k)}
-            ns = named_sets.get(theme) if named_sets else None
-            if ns is not None:
-                row["fp_rate"] = fp_rate_on_distractors(ranking, ns.distractors, k=k)
-                row["hard_positive_recall"] = recall_on_hard_positives(
-                    ranking, ns.hard_positives, k=k
-                )
-                roles = {
-                    **{d: "distractor" for d in ns.distractors},
-                    **{h: "hard_positive" for h in ns.hard_positives},
-                }
-                for aid, role in roles.items():
-                    entry = deltas[theme].setdefault(
-                        aid, {"role": role, "by_label": {}}
-                    )
-                    entry["by_label"][label] = {
-                        "rank": rank_by.get(aid, 0),
-                        "score": score_by.get(aid),
-                    }
+            },
+            has_label_kw=label in label_kw,
+        )
+        for label in labels
+    }
+    metrics: dict[str, dict[str, dict[str, float]]] = {}
+    deltas: dict[str, dict[str, dict]] = {theme: {} for theme in themes}
+    for label in labels:
+        metrics[label] = {}
+        for theme in themes:
+            hits = rankers[label](probes[theme], k=rank_depth)
+            row, named = score_ranking(
+                [h.artifact_id for h in hits],
+                cases,
+                theme,
+                k=k,
+                named_sets=named_sets.get(theme) if named_sets else None,
+                scores={h.artifact_id: float(h.score) for h in reversed(hits)},
+                gains=gains,
+            )
             metrics[label][theme] = row
+            for aid, cell in named.items():
+                entry = deltas[theme].setdefault(
+                    aid, {"role": cell["role"], "by_label": {}}
+                )
+                entry["by_label"][label] = {
+                    "rank": cell["rank"],
+                    "score": cell["score"],
+                }
     return ComparisonReport(
         k=k,
         themes=tuple(themes),
