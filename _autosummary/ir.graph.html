@@ -294,6 +294,28 @@ edges <em>in this corpus</em>).</p>
 </dl>
 </dd></dl>
 <dl class="py method">
+<dt class="sig sig-object py" id="ir.graph.CorpusGraph.resolve">
+<span class="sig-name descname"><span class="pre">resolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_id</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REF'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/graph.html#CorpusGraph.resolve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.graph.CorpusGraph.resolve" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.graph.CorpusGraph.resolve'">¶</a></dt>
+<dd><p>The node id <em>node_id</em> names here, as <a class="reference internal" href="#ir.graph.CorpusGraph.reverse_neighbors" title="ir.graph.CorpusGraph.reverse_neighbors"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reverse_neighbors()</span></code></a> keys it.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> pair whose <em>source</em> is this graph’s
+<a class="reference internal" href="#ir.graph.CorpusGraph.source" title="ir.graph.CorpusGraph.source"><code class="xref py py-attr docutils literal notranslate"><span class="pre">source</span></code></a> is read as its bare <code class="docutils literal notranslate"><span class="pre">artifact_id</span></code>. An id naming an artifact
+of this corpus (through the <em>edge_type</em> reverse-index key, so for <code class="docutils literal notranslate"><span class="pre">REF</span></code>
+case and <code class="docutils literal notranslate"><span class="pre">-</span></code>/<code class="docutils literal notranslate"><span class="pre">_</span></code>/<code class="docutils literal notranslate"><span class="pre">.</span></code> are ignored) resolves to that artifact’s id;
+anything else (a third-party library, another corpus’s pair) resolves to its
+own reverse-index key.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="gp">&gt;&gt;&gt; </span><span class="n">CorpusGraph</span><span class="p">({})</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"Scikit_Learn"</span><span class="p">)</span>
+</span><span id="line-2"><span class="go">'scikit-learn'</span>
+</span><span id="line-3"><span class="gp">&gt;&gt;&gt; </span><span class="n">CorpusGraph</span><span class="p">({})</span><span class="o">.</span><span class="n">resolve</span><span class="p">([</span><span class="s2">"other"</span><span class="p">,</span> <span class="s2">"Meshed"</span><span class="p">])</span>
+</span><span id="line-4"><span class="go">('other', 'Meshed')</span>
+</span></code></pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
 <dt class="sig sig-object py" id="ir.graph.CorpusGraph.reverse_neighbors">
 <span class="sig-name descname"><span class="pre">reverse_neighbors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_id</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REF'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/graph.html#CorpusGraph.reverse_neighbors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.graph.CorpusGraph.reverse_neighbors" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.graph.CorpusGraph.reverse_neighbors'">¶</a></dt>
 <dd><p>The artifact ids whose <em>edge_type</em> edges point <strong>at</strong> <em>node_id</em>.</p>
@@ -304,7 +326,8 @@ target outside it (a third-party dependency). For <code class="docutils literal 
 ids match through <a class="reference internal" href="#ir.graph.normalize_dist_name" title="ir.graph.normalize_dist_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">normalize_dist_name()</span></code></a> (case, and <code class="docutils literal notranslate"><span class="pre">-</span></code>/<code class="docutils literal notranslate"><span class="pre">_</span></code>/<code class="docutils literal notranslate"><span class="pre">.</span></code>,
 are ignored), so <code class="docutils literal notranslate"><span class="pre">"scikit_learn"</span></code> finds the dependents of
 <code class="docutils literal notranslate"><span class="pre">"scikit-learn"</span></code>; other edge types match ids exactly. A cross-corpus
-target is a <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> pair, matched exactly. Order is first-seen over the links view, de-duplicated.</p>
+target is a <code class="docutils literal notranslate"><span class="pre">(source,</span> <span class="pre">artifact_id)</span></code> pair, matched exactly. Order is
+first-seen over the links view, de-duplicated.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>]</span></p>
@@ -454,6 +477,7 @@ package <code class="docutils literal notranslate"><span class="pre">"AA"</span>
 <li><a :data-current="activeSection === '#ir.graph.CorpusGraph.fan_in'" class="reference internal" href="#ir.graph.CorpusGraph.fan_in"><code class="docutils literal notranslate"><span class="pre">CorpusGraph.fan_in()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.graph.CorpusGraph.max_fan_in'" class="reference internal" href="#ir.graph.CorpusGraph.max_fan_in"><code class="docutils literal notranslate"><span class="pre">CorpusGraph.max_fan_in()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.graph.CorpusGraph.neighbors'" class="reference internal" href="#ir.graph.CorpusGraph.neighbors"><code class="docutils literal notranslate"><span class="pre">CorpusGraph.neighbors()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.graph.CorpusGraph.resolve'" class="reference internal" href="#ir.graph.CorpusGraph.resolve"><code class="docutils literal notranslate"><span class="pre">CorpusGraph.resolve()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.graph.CorpusGraph.reverse_neighbors'" class="reference internal" href="#ir.graph.CorpusGraph.reverse_neighbors"><code class="docutils literal notranslate"><span class="pre">CorpusGraph.reverse_neighbors()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.graph.CorpusGraph.source'" class="reference internal" href="#ir.graph.CorpusGraph.source"><code class="docutils literal notranslate"><span class="pre">CorpusGraph.source</span></code></a></li>
 </ul>
@@ -481,7 +505,7 @@ package <code class="docutils literal notranslate"><span class="pre">"AA"</span>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=393d09ac"></script>
+<script src="../_static/documentation_options.js?v=d127aa6e"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

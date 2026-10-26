@@ -220,6 +220,27 @@ edges *in this corpus*).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
+#### resolve(node_id, , edge_type='REF')
+
+The node id *node_id* names here, as [`reverse_neighbors()`](#ir.CorpusGraph.reverse_neighbors) keys it.
+
+A `(source, artifact_id)` pair whose *source* is this graph’s
+[`source`](#ir.CorpusGraph.source) is read as its bare `artifact_id`. An id naming an artifact
+of this corpus (through the *edge_type* reverse-index key, so for `REF`
+case and `-`/`_`/`.` are ignored) resolves to that artifact’s id;
+anything else (a third-party library, another corpus’s pair) resolves to its
+own reverse-index key.
+
+```pycon
+>>> CorpusGraph({}).resolve("Scikit_Learn")
+'scikit-learn'
+>>> CorpusGraph({}).resolve(["other", "Meshed"])
+('other', 'Meshed')
+```
+
+* **Return type:**
+  [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
+
 #### reverse_neighbors(node_id, , edge_type='REF')
 
 The artifact ids whose *edge_type* edges point **at** *node_id*.
@@ -231,7 +252,8 @@ target outside it (a third-party dependency). For `REF` edges, string
 ids match through `normalize_dist_name()` (case, and `-`/`_`/`.`,
 are ignored), so `"scikit_learn"` finds the dependents of
 `"scikit-learn"`; other edge types match ids exactly. A cross-corpus
-target is a `(source, artifact_id)` pair, matched exactly. Order is first-seen over the links view, de-duplicated.
+target is a `(source, artifact_id)` pair, matched exactly. Order is
+first-seen over the links view, de-duplicated.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -1753,7 +1775,16 @@ A [`WalkPolicy`](#ir.WalkPolicy) that walks dependency edges backwards from *see
 
 *seeds* are library ids the **caller** deems relevant to the query (ir never
 chooses them: picking the domain libraries for a goal is the planner’s job, in
-the agent layer). They are a set: their order never changes the result. The walk
+the agent layer). They are a set: their order never changes the result, and
+spelling variants of one library (`"scikit-learn"`, `"Scikit_Learn"`) are one
+seed, matched to the corpus artifact they name (see
+[`resolve()`](ir.graph.html.md#ir.graph.CorpusGraph.resolve)). A `(source, artifact_id)` pair names an
+artifact of a corpus: when *source* is this corpus it matches loosely, like a
+string seed, and is committed; any other pair matches edge targets exactly and
+only routes. A single pair is still a collection of seeds, so wrap it:
+`seeds=[("other", "Meshed")]`. A dependent’s `metadata["seed"]` is the
+normalized key of the seed it was reached from (the corpus artifact id, the
+normalized library name, or the foreign pair as a tuple). The walk
 commits each seed that is an artifact of the corpus, then its dependents (the
 artifacts whose `edge_type` edges point at it), then theirs, up to
 [`traverse()`](#ir.traverse)’s `max_depth`. A seed outside the corpus (a third-party

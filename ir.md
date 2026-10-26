@@ -1,4 +1,4 @@
-> built 2026-10-26 11:13 UTC from d67ebf0 (master) · ir 0.1.57. Details: build_info.json
+> built 2026-10-26 14:26 UTC from ad39d82 (master) · ir 0.1.58. Details: build_info.json
 
 # index.html.md
 
@@ -2781,6 +2781,27 @@ edges *in this corpus*).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
+#### resolve(node_id, , edge_type='REF')
+
+The node id *node_id* names here, as [`reverse_neighbors()`](_autosummary/ir.graph.html.md#ir.graph.CorpusGraph.reverse_neighbors) keys it.
+
+A `(source, artifact_id)` pair whose *source* is this graph’s
+[`source`](_autosummary/ir.graph.html.md#ir.graph.CorpusGraph.source) is read as its bare `artifact_id`. An id naming an artifact
+of this corpus (through the *edge_type* reverse-index key, so for `REF`
+case and `-`/`_`/`.` are ignored) resolves to that artifact’s id;
+anything else (a third-party library, another corpus’s pair) resolves to its
+own reverse-index key.
+
+```pycon
+>>> CorpusGraph({}).resolve("Scikit_Learn")
+'scikit-learn'
+>>> CorpusGraph({}).resolve(["other", "Meshed"])
+('other', 'Meshed')
+```
+
+* **Return type:**
+  [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
+
 #### reverse_neighbors(node_id, , edge_type='REF')
 
 The artifact ids whose *edge_type* edges point **at** *node_id*.
@@ -2792,7 +2813,8 @@ target outside it (a third-party dependency). For `REF` edges, string
 ids match through [`normalize_dist_name()`](_autosummary/ir.graph.html.md#ir.graph.normalize_dist_name) (case, and `-`/`_`/`.`,
 are ignored), so `"scikit_learn"` finds the dependents of
 `"scikit-learn"`; other edge types match ids exactly. A cross-corpus
-target is a `(source, artifact_id)` pair, matched exactly. Order is first-seen over the links view, de-duplicated.
+target is a `(source, artifact_id)` pair, matched exactly. Order is
+first-seen over the links view, de-duplicated.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -3146,6 +3168,27 @@ edges *in this corpus*).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
+#### resolve(node_id, , edge_type='REF')
+
+The node id *node_id* names here, as [`reverse_neighbors()`](_autosummary/ir.html.md#ir.CorpusGraph.reverse_neighbors) keys it.
+
+A `(source, artifact_id)` pair whose *source* is this graph’s
+[`source`](_autosummary/ir.html.md#ir.CorpusGraph.source) is read as its bare `artifact_id`. An id naming an artifact
+of this corpus (through the *edge_type* reverse-index key, so for `REF`
+case and `-`/`_`/`.` are ignored) resolves to that artifact’s id;
+anything else (a third-party library, another corpus’s pair) resolves to its
+own reverse-index key.
+
+```pycon
+>>> CorpusGraph({}).resolve("Scikit_Learn")
+'scikit-learn'
+>>> CorpusGraph({}).resolve(["other", "Meshed"])
+('other', 'Meshed')
+```
+
+* **Return type:**
+  [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
+
 #### reverse_neighbors(node_id, , edge_type='REF')
 
 The artifact ids whose *edge_type* edges point **at** *node_id*.
@@ -3157,7 +3200,8 @@ target outside it (a third-party dependency). For `REF` edges, string
 ids match through `normalize_dist_name()` (case, and `-`/`_`/`.`,
 are ignored), so `"scikit_learn"` finds the dependents of
 `"scikit-learn"`; other edge types match ids exactly. A cross-corpus
-target is a `(source, artifact_id)` pair, matched exactly. Order is first-seen over the links view, de-duplicated.
+target is a `(source, artifact_id)` pair, matched exactly. Order is
+first-seen over the links view, de-duplicated.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -4679,7 +4723,16 @@ A [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy) that walks dependency ed
 
 *seeds* are library ids the **caller** deems relevant to the query (ir never
 chooses them: picking the domain libraries for a goal is the planner’s job, in
-the agent layer). They are a set: their order never changes the result. The walk
+the agent layer). They are a set: their order never changes the result, and
+spelling variants of one library (`"scikit-learn"`, `"Scikit_Learn"`) are one
+seed, matched to the corpus artifact they name (see
+[`resolve()`](_autosummary/ir.graph.html.md#ir.graph.CorpusGraph.resolve)). A `(source, artifact_id)` pair names an
+artifact of a corpus: when *source* is this corpus it matches loosely, like a
+string seed, and is committed; any other pair matches edge targets exactly and
+only routes. A single pair is still a collection of seeds, so wrap it:
+`seeds=[("other", "Meshed")]`. A dependent’s `metadata["seed"]` is the
+normalized key of the seed it was reached from (the corpus artifact id, the
+normalized library name, or the foreign pair as a tuple). The walk
 commits each seed that is an artifact of the corpus, then its dependents (the
 artifacts whose `edge_type` edges point at it), then theirs, up to
 [`traverse()`](_autosummary/ir.html.md#ir.traverse)’s `max_depth`. A seed outside the corpus (a third-party
@@ -7461,7 +7514,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-26 11:13 UTC** from commit <a href="https://github.com/i2mint/ir/commit/d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5"><code>d67ebf0</code></a> on branch <code>master</code>, for **ir 0.1.57** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 14:26 UTC** from commit <a href="https://github.com/i2mint/ir/commit/ad39d8281a69ac5d78fe96877c401ff50dbe8ea5"><code>ad39d82</code></a> on branch <code>master</code>, for **ir 0.1.58** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -7470,7 +7523,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5"><code>d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/ad39d8281a69ac5d78fe96877c401ff50dbe8ea5"><code>ad39d8281a69ac5d78fe96877c401ff50dbe8ea5</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7481,9 +7534,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/40313264140">40313264140</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/40339343691">40339343691</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5</code> (in the history of the built commit) |
+| Event commit | <code>ad39d8281a69ac5d78fe96877c401ff50dbe8ea5</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7508,13 +7561,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.57/">0.1.57</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.58/">0.1.58</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5
+git checkout ad39d8281a69ac5d78fe96877c401ff50dbe8ea5
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

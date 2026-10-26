@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-26T11:13:44Z",
+  "built_at": "2026-10-26T14:26:12Z",
   "package": {
     "name": "ir",
-    "version": "0.1.57",
+    "version": "0.1.58",
     "display_name": "ir",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5",
-    "short_commit": "d67ebf0",
+    "commit": "ad39d8281a69ac5d78fe96877c401ff50dbe8ea5",
+    "short_commit": "ad39d82",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/ir",
-    "commit_url": "https://github.com/i2mint/ir/commit/d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5",
+    "commit_url": "https://github.com/i2mint/ir/commit/ad39d8281a69ac5d78fe96877c401ff50dbe8ea5",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/ir",
-    "sha": "d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5",
+    "sha": "ad39d8281a69ac5d78fe96877c401ff50dbe8ea5",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "40313264140",
-    "run_url": "https://github.com/i2mint/ir/actions/runs/40313264140",
+    "run_id": "40339343691",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/40339343691",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -56,15 +56,15 @@
   },
   "site": {
     "modules_documented": 23,
-    "objects_documented": 517
+    "objects_documented": 519
   },
   "pypi": {
     "checked": true,
-    "latest": "0.1.57",
+    "latest": "0.1.58",
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout ad39d8281a69ac5d78fe96877c401ff50dbe8ea5\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,

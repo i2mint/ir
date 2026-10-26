@@ -539,174 +539,208 @@
 </span><span id="line-339"><span class="k">class</span><span class="w"> </span><span class="nc">_DepNode</span><span class="p">:</span>
 </span><span id="line-340"><span class="w">    </span><span class="sd">"""An artifact reached by walking dependency edges backwards from a seed."""</span>
 </span><span id="line-341">
-</span><span id="line-342">    <span class="n">artifact_id</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="line-343">    <span class="n">seed</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="line-342">    <span class="n">artifact_id</span><span class="p">:</span> <span class="s2">"str | tuple[str, str]"</span>
+</span><span id="line-343">    <span class="n">seed</span><span class="p">:</span> <span class="s2">"str | tuple[str, str]"</span>
 </span><span id="line-344">    <span class="n">hops</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
 </span><span id="line-345">
 </span><span id="line-346">
-</span><span id="line-347"><span class="k">class</span><span class="w"> </span><span class="nc">_ReverseDependencyPolicy</span><span class="p">:</span>
-</span><span id="line-348"><span class="w">    </span><span class="sd">"""Walk reverse ``REF`` edges from caller-supplied seeds to their dependents.</span>
-</span><span id="line-349">
-</span><span id="line-350"><span class="sd">    Seeds are library ids (in the corpus or not); a seed outside the corpus only</span>
-</span><span id="line-351"><span class="sd">    routes. Each committed artifact scores ``cosine + fan_in_weight * fan_in /</span>
-</span><span id="line-352"><span class="sd">    max_fan_in + proximity_weight / (1 + hops)``, its cosine being its best</span>
-</span><span id="line-353"><span class="sd">    surface's against the query. The visited set keys on the artifact id.</span>
-</span><span id="line-354"><span class="sd">    """</span>
-</span><span id="line-355">
-</span><span id="line-356">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">seeds</span><span class="p">,</span> <span class="n">edge_type</span><span class="p">,</span> <span class="n">fan_in_weight</span><span class="p">,</span> <span class="n">proximity_weight</span><span class="p">):</span>
-</span><span id="line-357">        <span class="c1"># Sorted: seeds are a set in meaning, and their order breaks score ties in</span>
-</span><span id="line-358">        <span class="c1"># the walk, so a caller's ``set`` must not make results hash-seed dependent.</span>
-</span><span id="line-359">        <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">({</span><span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">seeds</span><span class="p">}))</span>
-</span><span id="line-360">        <span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span> <span class="o">=</span> <span class="n">edge_type</span>
-</span><span id="line-361">        <span class="bp">self</span><span class="o">.</span><span class="n">fan_in_weight</span> <span class="o">=</span> <span class="n">fan_in_weight</span>
-</span><span id="line-362">        <span class="bp">self</span><span class="o">.</span><span class="n">proximity_weight</span> <span class="o">=</span> <span class="n">proximity_weight</span>
+</span><span id="line-347"><span class="k">def</span><span class="w"> </span><span class="nf">_seed_key</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"str | tuple[str, str]"</span><span class="p">:</span>
+</span><span id="line-348"><span class="w">    </span><span class="sd">"""A seed as a string id, or a ``(source, artifact_id)`` pair kept whole."""</span>
+</span><span id="line-349">    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seed</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+</span><span id="line-350">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+</span><span id="line-351">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="line-352">                <span class="s2">"a cross-corpus seed is a (source, artifact_id) pair, "</span>
+</span><span id="line-353">                <span class="sa">f</span><span class="s2">"got </span><span class="si">{</span><span class="n">seed</span><span class="si">!r}</span><span class="s2"> (wrap a single pair in a list: [</span><span class="si">{</span><span class="n">seed</span><span class="si">!r}</span><span class="s2">])"</span>
+</span><span id="line-354">            <span class="p">)</span>
+</span><span id="line-355">        <span class="n">source</span><span class="p">,</span> <span class="n">artifact_id</span> <span class="o">=</span> <span class="n">seed</span>
+</span><span id="line-356">        <span class="k">return</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">source</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">))</span>
+</span><span id="line-357">    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+</span><span id="line-358">
+</span><span id="line-359">
+</span><span id="line-360"><span class="k">def</span><span class="w"> </span><span class="nf">_node_order</span><span class="p">(</span><span class="n">node_id</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+</span><span id="line-361"><span class="w">    </span><span class="sd">"""Sort key over resolved seed ids: strings first, then pairs, each in order."""</span>
+</span><span id="line-362">    <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">node_id</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">),</span> <span class="n">node_id</span><span class="p">)</span>
 </span><span id="line-363">
-</span><span id="line-364">    <span class="k">def</span><span class="w"> </span><span class="nf">_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-</span><span id="line-365">        <span class="n">graph</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"graph"</span><span class="p">)</span>
-</span><span id="line-366">        <span class="k">if</span> <span class="n">graph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-367">            <span class="kn">from</span><span class="w"> </span><span class="nn">.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusGraph</span>
-</span><span id="line-368">
-</span><span id="line-369">            <span class="n">graph</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">"graph"</span><span class="p">]</span> <span class="o">=</span> <span class="n">CorpusGraph</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
-</span><span id="line-370">            <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">"source"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="line-371">        <span class="k">return</span> <span class="n">graph</span>
-</span><span id="line-372">
-</span><span id="line-373">    <span class="k">def</span><span class="w"> </span><span class="nf">_best</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_DepNode</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-</span><span id="line-374"><span class="w">        </span><span class="sd">"""``(record, cosine)`` of the artifact's best surface, or ``None``."""</span>
-</span><span id="line-375">        <span class="n">best</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"best"</span><span class="p">,</span> <span class="p">{})</span>
-</span><span id="line-376">        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">best</span><span class="p">:</span>
-</span><span id="line-377">            <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">NoLedgerEntry</span><span class="p">,</span> <span class="n">_embed_query</span>
-</span><span id="line-378">
-</span><span id="line-379">            <span class="k">try</span><span class="p">:</span>
-</span><span id="line-380">                <span class="n">records</span> <span class="o">=</span> <span class="n">records_for_artifact</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">)</span>
-</span><span id="line-381">            <span class="k">except</span> <span class="n">NoLedgerEntry</span><span class="p">:</span>
-</span><span id="line-382">                <span class="n">records</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># a seed outside the corpus: it routes, nothing to score</span>
-</span><span id="line-383">            <span class="k">if</span> <span class="ow">not</span> <span class="n">records</span><span class="p">:</span>
-</span><span id="line-384">                <span class="n">best</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="line-385">            <span class="k">else</span><span class="p">:</span>
-</span><span id="line-386">                <span class="n">qv</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"query_vec"</span><span class="p">)</span>
-</span><span id="line-387">                <span class="k">if</span> <span class="n">qv</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-388">                    <span class="n">qv</span> <span class="o">=</span> <span class="n">_embed_query</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">"embedder"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">state</span><span class="o">.</span><span class="n">query</span><span class="p">)</span>
-</span><span id="line-389">                    <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">"query_vec"</span><span class="p">]</span> <span class="o">=</span> <span class="n">qv</span>
-</span><span id="line-390">                <span class="n">best</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
-</span><span id="line-391">                    <span class="p">((</span><span class="n">r</span><span class="p">,</span> <span class="n">_cosine</span><span class="p">(</span><span class="n">qv</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">vector</span><span class="p">))</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-</span><span id="line-392">                <span class="p">)</span>
-</span><span id="line-393">        <span class="k">return</span> <span class="n">best</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">]</span>
-</span><span id="line-394">
-</span><span id="line-395">    <span class="k">def</span><span class="w"> </span><span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">_DepNode</span><span class="p">]:</span>
-</span><span id="line-396">        <span class="bp">self</span><span class="o">.</span><span class="n">_graph</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
-</span><span id="line-397">        <span class="k">return</span> <span class="p">[</span><span class="n">_DepNode</span><span class="p">(</span><span class="n">artifact_id</span><span class="o">=</span><span class="n">s</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span><span class="p">]</span>
-</span><span id="line-398">
-</span><span id="line-399">    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_DepNode</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="line-400">        <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_best</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
-</span><span id="line-401">        <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-402">            <span class="k">return</span> <span class="mf">0.0</span>
-</span><span id="line-403">        <span class="n">graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
-</span><span id="line-404">        <span class="n">score</span> <span class="o">=</span> <span class="n">found</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-</span><span id="line-405">        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fan_in_weight</span><span class="p">:</span>
-</span><span id="line-406">            <span class="n">top</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">max_fan_in</span><span class="p">(</span><span class="n">edge_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span><span class="p">)</span>
-</span><span id="line-407">            <span class="k">if</span> <span class="n">top</span><span class="p">:</span>
-</span><span id="line-408">                <span class="n">fan_in</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">fan_in</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">edge_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span><span class="p">)</span>
-</span><span id="line-409">                <span class="n">score</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fan_in_weight</span> <span class="o">*</span> <span class="n">fan_in</span> <span class="o">/</span> <span class="n">top</span>
-</span><span id="line-410">        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proximity_weight</span><span class="p">:</span>
-</span><span id="line-411">            <span class="n">score</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proximity_weight</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">node</span><span class="o">.</span><span class="n">hops</span><span class="p">)</span>
-</span><span id="line-412">        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+</span><span id="line-364">
+</span><span id="line-365"><span class="k">class</span><span class="w"> </span><span class="nc">_ReverseDependencyPolicy</span><span class="p">:</span>
+</span><span id="line-366"><span class="w">    </span><span class="sd">"""Walk reverse ``REF`` edges from caller-supplied seeds to their dependents.</span>
+</span><span id="line-367">
+</span><span id="line-368"><span class="sd">    Seeds are library ids (in the corpus or not); a seed outside the corpus only</span>
+</span><span id="line-369"><span class="sd">    routes. Each committed artifact scores ``cosine + fan_in_weight * fan_in /</span>
+</span><span id="line-370"><span class="sd">    max_fan_in + proximity_weight / (1 + hops)``, its cosine being its best</span>
+</span><span id="line-371"><span class="sd">    surface's against the query. The visited set keys on the artifact id.</span>
+</span><span id="line-372"><span class="sd">    """</span>
+</span><span id="line-373">
+</span><span id="line-374">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">seeds</span><span class="p">,</span> <span class="n">edge_type</span><span class="p">,</span> <span class="n">fan_in_weight</span><span class="p">,</span> <span class="n">proximity_weight</span><span class="p">):</span>
+</span><span id="line-375">        <span class="c1"># A set: ordering happens in ``seed``, after resolution to node ids.</span>
+</span><span id="line-376">        <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">_seed_key</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">seeds</span><span class="p">)</span>
+</span><span id="line-377">        <span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span> <span class="o">=</span> <span class="n">edge_type</span>
+</span><span id="line-378">        <span class="bp">self</span><span class="o">.</span><span class="n">fan_in_weight</span> <span class="o">=</span> <span class="n">fan_in_weight</span>
+</span><span id="line-379">        <span class="bp">self</span><span class="o">.</span><span class="n">proximity_weight</span> <span class="o">=</span> <span class="n">proximity_weight</span>
+</span><span id="line-380">
+</span><span id="line-381">    <span class="k">def</span><span class="w"> </span><span class="nf">_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+</span><span id="line-382">        <span class="n">graph</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"graph"</span><span class="p">)</span>
+</span><span id="line-383">        <span class="k">if</span> <span class="n">graph</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-384">            <span class="kn">from</span><span class="w"> </span><span class="nn">.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusGraph</span>
+</span><span id="line-385">
+</span><span id="line-386">            <span class="n">graph</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">"graph"</span><span class="p">]</span> <span class="o">=</span> <span class="n">CorpusGraph</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
+</span><span id="line-387">            <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">"source"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="line-388">        <span class="k">return</span> <span class="n">graph</span>
+</span><span id="line-389">
+</span><span id="line-390">    <span class="k">def</span><span class="w"> </span><span class="nf">_best</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_DepNode</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+</span><span id="line-391"><span class="w">        </span><span class="sd">"""``(record, cosine)`` of the artifact's best surface, or ``None``."""</span>
+</span><span id="line-392">        <span class="n">best</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"best"</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="line-393">        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">best</span><span class="p">:</span>
+</span><span id="line-394">            <span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">NoLedgerEntry</span><span class="p">,</span> <span class="n">_embed_query</span>
+</span><span id="line-395">
+</span><span id="line-396">            <span class="n">records</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># a seed outside the corpus: it routes, nothing to score</span>
+</span><span id="line-397">            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>  <span class="c1"># a foreign-corpus pair never is</span>
+</span><span id="line-398">                <span class="k">try</span><span class="p">:</span>
+</span><span id="line-399">                    <span class="n">records</span> <span class="o">=</span> <span class="n">records_for_artifact</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">)</span>
+</span><span id="line-400">                <span class="k">except</span> <span class="n">NoLedgerEntry</span><span class="p">:</span>
+</span><span id="line-401">                    <span class="k">pass</span>
+</span><span id="line-402">            <span class="k">if</span> <span class="ow">not</span> <span class="n">records</span><span class="p">:</span>
+</span><span id="line-403">                <span class="n">best</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="line-404">            <span class="k">else</span><span class="p">:</span>
+</span><span id="line-405">                <span class="n">qv</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"query_vec"</span><span class="p">)</span>
+</span><span id="line-406">                <span class="k">if</span> <span class="n">qv</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-407">                    <span class="n">qv</span> <span class="o">=</span> <span class="n">_embed_query</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">"embedder"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">state</span><span class="o">.</span><span class="n">query</span><span class="p">)</span>
+</span><span id="line-408">                    <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">"query_vec"</span><span class="p">]</span> <span class="o">=</span> <span class="n">qv</span>
+</span><span id="line-409">                <span class="n">best</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+</span><span id="line-410">                    <span class="p">((</span><span class="n">r</span><span class="p">,</span> <span class="n">_cosine</span><span class="p">(</span><span class="n">qv</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">vector</span><span class="p">))</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="line-411">                <span class="p">)</span>
+</span><span id="line-412">        <span class="k">return</span> <span class="n">best</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">]</span>
 </span><span id="line-413">
-</span><span id="line-414">    <span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">scored</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-</span><span id="line-415">        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">scored</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="line-416">
-</span><span id="line-417">    <span class="k">def</span><span class="w"> </span><span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_DepNode</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">_DepNode</span><span class="p">]:</span>
-</span><span id="line-418">        <span class="n">graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+</span><span id="line-414">    <span class="k">def</span><span class="w"> </span><span class="nf">seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">_DepNode</span><span class="p">]:</span>
+</span><span id="line-415">        <span class="n">graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+</span><span id="line-416">        <span class="c1"># Resolve first, then dedupe and sort: seed order breaks score ties in the</span>
+</span><span id="line-417">        <span class="c1"># walk, so it must not depend on the caller's spelling or iteration order.</span>
+</span><span id="line-418">        <span class="n">node_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">graph</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">edge_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span><span class="p">}</span>
 </span><span id="line-419">        <span class="k">return</span> <span class="p">[</span>
-</span><span id="line-420">            <span class="n">_DepNode</span><span class="p">(</span><span class="n">artifact_id</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span> <span class="n">hops</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">hops</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-</span><span id="line-421">            <span class="k">for</span> <span class="n">dependent</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">reverse_neighbors</span><span class="p">(</span>
-</span><span id="line-422">                <span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">edge_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span>
-</span><span id="line-423">            <span class="p">)</span>
-</span><span id="line-424">        <span class="p">]</span>
-</span><span id="line-425">
-</span><span id="line-426">    <span class="k">def</span><span class="w"> </span><span class="nf">node_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_DepNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Hashable</span><span class="p">:</span>
-</span><span id="line-427">        <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span>
-</span><span id="line-428">
-</span><span id="line-429">    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="line-430">        <span class="k">return</span> <span class="kc">False</span>
-</span><span id="line-431">
-</span><span id="line-432">    <span class="k">def</span><span class="w"> </span><span class="nf">to_hit</span><span class="p">(</span>
-</span><span id="line-433">        <span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_DepNode</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="line-434">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"SearchHit | None"</span><span class="p">:</span>
-</span><span id="line-435">        <span class="n">found</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"best"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">)</span>
-</span><span id="line-436">        <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-437">            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># a seed outside the corpus routes but is not a result</span>
-</span><span id="line-438">        <span class="n">record</span> <span class="o">=</span> <span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-</span><span id="line-439">        <span class="n">graph</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">"graph"</span><span class="p">]</span>
-</span><span id="line-440">        <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
-</span><span id="line-441">        <span class="n">meta</span><span class="p">[</span><span class="s2">"walk_depth"</span><span class="p">]</span> <span class="o">=</span> <span class="n">depth</span>
-</span><span id="line-442">        <span class="n">meta</span><span class="p">[</span><span class="s2">"fan_in"</span><span class="p">]</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">fan_in</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">edge_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span><span class="p">)</span>
-</span><span id="line-443">        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">hops</span><span class="p">:</span>
-</span><span id="line-444">            <span class="n">meta</span><span class="p">[</span><span class="s2">"seed"</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">seed</span>
-</span><span id="line-445">        <span class="k">return</span> <span class="n">SearchHit</span><span class="p">(</span>
-</span><span id="line-446">            <span class="n">artifact_id</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
-</span><span id="line-447">            <span class="n">surface_kind</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
-</span><span id="line-448">            <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">),</span>
-</span><span id="line-449">            <span class="n">text</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
-</span><span id="line-450">            <span class="n">metadata</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
-</span><span id="line-451">            <span class="n">source</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">),</span>
-</span><span id="line-452">            <span class="n">surface_index</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">surface_index</span><span class="p">,</span>
-</span><span id="line-453">        <span class="p">)</span>
-</span><span id="line-454">
-</span><span id="line-455">
+</span><span id="line-420">            <span class="n">_DepNode</span><span class="p">(</span><span class="n">artifact_id</span><span class="o">=</span><span class="n">aid</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">aid</span><span class="p">)</span>
+</span><span id="line-421">            <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">node_ids</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">_node_order</span><span class="p">)</span>
+</span><span id="line-422">        <span class="p">]</span>
+</span><span id="line-423">
+</span><span id="line-424">    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_DepNode</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="line-425">        <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_best</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+</span><span id="line-426">        <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-427">            <span class="k">return</span> <span class="mf">0.0</span>
+</span><span id="line-428">        <span class="n">graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+</span><span id="line-429">        <span class="n">score</span> <span class="o">=</span> <span class="n">found</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="line-430">        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fan_in_weight</span><span class="p">:</span>
+</span><span id="line-431">            <span class="n">top</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">max_fan_in</span><span class="p">(</span><span class="n">edge_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span><span class="p">)</span>
+</span><span id="line-432">            <span class="k">if</span> <span class="n">top</span><span class="p">:</span>
+</span><span id="line-433">                <span class="n">fan_in</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">fan_in</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">edge_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span><span class="p">)</span>
+</span><span id="line-434">                <span class="n">score</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fan_in_weight</span> <span class="o">*</span> <span class="n">fan_in</span> <span class="o">/</span> <span class="n">top</span>
+</span><span id="line-435">        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proximity_weight</span><span class="p">:</span>
+</span><span id="line-436">            <span class="n">score</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proximity_weight</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">node</span><span class="o">.</span><span class="n">hops</span><span class="p">)</span>
+</span><span id="line-437">        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
+</span><span id="line-438">
+</span><span id="line-439">    <span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">scored</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+</span><span id="line-440">        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">scored</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-441">
+</span><span id="line-442">    <span class="k">def</span><span class="w"> </span><span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_DepNode</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">_DepNode</span><span class="p">]:</span>
+</span><span id="line-443">        <span class="n">graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+</span><span id="line-444">        <span class="k">return</span> <span class="p">[</span>
+</span><span id="line-445">            <span class="n">_DepNode</span><span class="p">(</span><span class="n">artifact_id</span><span class="o">=</span><span class="n">dependent</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">seed</span><span class="p">,</span> <span class="n">hops</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">hops</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="line-446">            <span class="k">for</span> <span class="n">dependent</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">reverse_neighbors</span><span class="p">(</span>
+</span><span id="line-447">                <span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">edge_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span>
+</span><span id="line-448">            <span class="p">)</span>
+</span><span id="line-449">        <span class="p">]</span>
+</span><span id="line-450">
+</span><span id="line-451">    <span class="k">def</span><span class="w"> </span><span class="nf">node_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_DepNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Hashable</span><span class="p">:</span>
+</span><span id="line-452">        <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span>
+</span><span id="line-453">
+</span><span id="line-454">    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="line-455">        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="line-456">
+</span><span id="line-457">    <span class="k">def</span><span class="w"> </span><span class="nf">to_hit</span><span class="p">(</span>
+</span><span id="line-458">        <span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">WalkState</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">_DepNode</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="line-459">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"SearchHit | None"</span><span class="p">:</span>
+</span><span id="line-460">        <span class="n">found</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"best"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">)</span>
+</span><span id="line-461">        <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-462">            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># a seed outside the corpus routes but is not a result</span>
+</span><span id="line-463">        <span class="n">record</span> <span class="o">=</span> <span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="line-464">        <span class="n">graph</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="s2">"graph"</span><span class="p">]</span>
+</span><span id="line-465">        <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+</span><span id="line-466">        <span class="n">meta</span><span class="p">[</span><span class="s2">"walk_depth"</span><span class="p">]</span> <span class="o">=</span> <span class="n">depth</span>
+</span><span id="line-467">        <span class="n">meta</span><span class="p">[</span><span class="s2">"fan_in"</span><span class="p">]</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">fan_in</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">edge_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_type</span><span class="p">)</span>
+</span><span id="line-468">        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">hops</span><span class="p">:</span>
+</span><span id="line-469">            <span class="n">meta</span><span class="p">[</span><span class="s2">"seed"</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">seed</span>
+</span><span id="line-470">        <span class="k">return</span> <span class="n">SearchHit</span><span class="p">(</span>
+</span><span id="line-471">            <span class="n">artifact_id</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+</span><span id="line-472">            <span class="n">surface_kind</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">surface_kind</span><span class="p">,</span>
+</span><span id="line-473">            <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">),</span>
+</span><span id="line-474">            <span class="n">text</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+</span><span id="line-475">            <span class="n">metadata</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
+</span><span id="line-476">            <span class="n">source</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">),</span>
+</span><span id="line-477">            <span class="n">surface_index</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">surface_index</span><span class="p">,</span>
+</span><span id="line-478">        <span class="p">)</span>
+</span><span id="line-479">
+</span><span id="line-480">
 <div class="viewcode-block" id="reverse_dependency_policy">
 <a class="viewcode-back" href="../../_autosummary/ir.html#ir.reverse_dependency_policy">[docs]</a>
-</span><span id="line-456"><span class="k">def</span><span class="w"> </span><span class="nf">reverse_dependency_policy</span><span class="p">(</span>
-</span><span id="line-457">    <span class="o">*</span><span class="p">,</span>
-</span><span id="line-458">    <span class="n">seeds</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-</span><span id="line-459">    <span class="n">edge_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"REF"</span><span class="p">,</span>
-</span><span id="line-460">    <span class="n">fan_in_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-</span><span id="line-461">    <span class="n">proximity_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-</span><span id="line-462"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WalkPolicy</span><span class="p">:</span>
-</span><span id="line-463"><span class="w">    </span><span class="sd">"""A :class:`WalkPolicy` that walks dependency edges backwards from *seeds*.</span>
-</span><span id="line-464">
-</span><span id="line-465"><span class="sd">    *seeds* are library ids the **caller** deems relevant to the query (ir never</span>
-</span><span id="line-466"><span class="sd">    chooses them: picking the domain libraries for a goal is the planner's job, in</span>
-</span><span id="line-467"><span class="sd">    the agent layer). They are a set: their order never changes the result. The walk</span>
-</span><span id="line-468"><span class="sd">    commits each seed that is an artifact of the corpus, then its dependents (the</span>
-</span><span id="line-469"><span class="sd">    artifacts whose ``edge_type`` edges point at it), then theirs, up to</span>
-</span><span id="line-470"><span class="sd">    :func:`traverse`'s ``max_depth``. A seed outside the corpus (a third-party</span>
-</span><span id="line-471"><span class="sd">    library) routes without being a result. So a package that depends on a domain</span>
-</span><span id="line-472"><span class="sd">    library but never says so in prose is still found. A dependent reachable from</span>
-</span><span id="line-473"><span class="sd">    several seeds is credited to the one on its best-scoring path (on a tie, the</span>
-</span><span id="line-474"><span class="sd">    alphabetically first).</span>
-</span><span id="line-475">
-</span><span id="line-476"><span class="sd">    Each result scores its best surface's cosine to the query, plus</span>
-</span><span id="line-477"><span class="sd">    ``fan_in_weight`` times its normalized fan-in (its share of the most</span>
-</span><span id="line-478"><span class="sd">    depended-on target, a centrality prior), plus ``proximity_weight / (1 +</span>
-</span><span id="line-479"><span class="sd">    hops)`` (closer to a seed scores higher). Both weights default to ``0``, so</span>
-</span><span id="line-480"><span class="sd">    the score is plain cosine. Hits carry ``metadata["walk_depth"]``,</span>
-</span><span id="line-481"><span class="sd">    ``metadata["fan_in"]`` and, for dependents, ``metadata["seed"]``.</span>
-</span><span id="line-482">
-</span><span id="line-483"><span class="sd">    The store passed to :func:`traverse` is a :class:`~ir.index.Corpus` built</span>
-</span><span id="line-484"><span class="sd">    with an edge extractor (e.g. :func:`ir.default_edge_extractor`, whose</span>
-</span><span id="line-485"><span class="sd">    ``REF`` edges run from a package to its dependencies). Fuse the walk's hits</span>
-</span><span id="line-486"><span class="sd">    with flat search through :func:`ir.fuse_hits`.</span>
-</span><span id="line-487">
-</span><span id="line-488"><span class="sd">    &gt;&gt;&gt; policy = reverse_dependency_policy(seeds=["networkx"])   # doctest: +SKIP</span>
-</span><span id="line-489"><span class="sd">    &gt;&gt;&gt; hits = traverse(query, corpus, policy=policy)            # doctest: +SKIP</span>
-</span><span id="line-490"><span class="sd">    """</span>
-</span><span id="line-491">    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seeds</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="line-492">        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-</span><span id="line-493">            <span class="sa">f</span><span class="s2">"seeds must be a collection of ids, not the string </span><span class="si">{</span><span class="n">seeds</span><span class="si">!r}</span><span class="s2"> "</span>
-</span><span id="line-494">            <span class="sa">f</span><span class="s2">"(write [</span><span class="si">{</span><span class="n">seeds</span><span class="si">!r}</span><span class="s2">])."</span>
-</span><span id="line-495">        <span class="p">)</span>
-</span><span id="line-496">    <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="p">(</span>
-</span><span id="line-497">        <span class="p">(</span><span class="s2">"fan_in_weight"</span><span class="p">,</span> <span class="n">fan_in_weight</span><span class="p">),</span>
-</span><span id="line-498">        <span class="p">(</span><span class="s2">"proximity_weight"</span><span class="p">,</span> <span class="n">proximity_weight</span><span class="p">),</span>
-</span><span id="line-499">    <span class="p">):</span>
-</span><span id="line-500">        <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span> <span class="ow">or</span> <span class="n">weight</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="line-501">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> must be finite and non-negative, got </span><span class="si">{</span><span class="n">weight</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="line-502">    <span class="k">return</span> <span class="n">_ReverseDependencyPolicy</span><span class="p">(</span>
-</span><span id="line-503">        <span class="n">seeds</span><span class="o">=</span><span class="n">seeds</span><span class="p">,</span>
-</span><span id="line-504">        <span class="n">edge_type</span><span class="o">=</span><span class="n">edge_type</span><span class="p">,</span>
-</span><span id="line-505">        <span class="n">fan_in_weight</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">fan_in_weight</span><span class="p">),</span>
-</span><span id="line-506">        <span class="n">proximity_weight</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">proximity_weight</span><span class="p">),</span>
-</span><span id="line-507">    <span class="p">)</span></div>
+</span><span id="line-481"><span class="k">def</span><span class="w"> </span><span class="nf">reverse_dependency_policy</span><span class="p">(</span>
+</span><span id="line-482">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-483">    <span class="n">seeds</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="s2">"str | tuple[str, str]"</span><span class="p">],</span>
+</span><span id="line-484">    <span class="n">edge_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"REF"</span><span class="p">,</span>
+</span><span id="line-485">    <span class="n">fan_in_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+</span><span id="line-486">    <span class="n">proximity_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+</span><span id="line-487"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WalkPolicy</span><span class="p">:</span>
+</span><span id="line-488"><span class="w">    </span><span class="sd">"""A :class:`WalkPolicy` that walks dependency edges backwards from *seeds*.</span>
+</span><span id="line-489">
+</span><span id="line-490"><span class="sd">    *seeds* are library ids the **caller** deems relevant to the query (ir never</span>
+</span><span id="line-491"><span class="sd">    chooses them: picking the domain libraries for a goal is the planner's job, in</span>
+</span><span id="line-492"><span class="sd">    the agent layer). They are a set: their order never changes the result, and</span>
+</span><span id="line-493"><span class="sd">    spelling variants of one library (``"scikit-learn"``, ``"Scikit_Learn"``) are one</span>
+</span><span id="line-494"><span class="sd">    seed, matched to the corpus artifact they name (see</span>
+</span><span id="line-495"><span class="sd">    :meth:`~ir.graph.CorpusGraph.resolve`). A ``(source, artifact_id)`` pair names an</span>
+</span><span id="line-496"><span class="sd">    artifact of a corpus: when *source* is this corpus it matches loosely, like a</span>
+</span><span id="line-497"><span class="sd">    string seed, and is committed; any other pair matches edge targets exactly and</span>
+</span><span id="line-498"><span class="sd">    only routes. A single pair is still a collection of seeds, so wrap it:</span>
+</span><span id="line-499"><span class="sd">    ``seeds=[("other", "Meshed")]``. A dependent's ``metadata["seed"]`` is the</span>
+</span><span id="line-500"><span class="sd">    normalized key of the seed it was reached from (the corpus artifact id, the</span>
+</span><span id="line-501"><span class="sd">    normalized library name, or the foreign pair as a tuple). The walk</span>
+</span><span id="line-502"><span class="sd">    commits each seed that is an artifact of the corpus, then its dependents (the</span>
+</span><span id="line-503"><span class="sd">    artifacts whose ``edge_type`` edges point at it), then theirs, up to</span>
+</span><span id="line-504"><span class="sd">    :func:`traverse`'s ``max_depth``. A seed outside the corpus (a third-party</span>
+</span><span id="line-505"><span class="sd">    library) routes without being a result. So a package that depends on a domain</span>
+</span><span id="line-506"><span class="sd">    library but never says so in prose is still found. A dependent reachable from</span>
+</span><span id="line-507"><span class="sd">    several seeds is credited to the one on its best-scoring path (on a tie, the</span>
+</span><span id="line-508"><span class="sd">    alphabetically first).</span>
+</span><span id="line-509">
+</span><span id="line-510"><span class="sd">    Each result scores its best surface's cosine to the query, plus</span>
+</span><span id="line-511"><span class="sd">    ``fan_in_weight`` times its normalized fan-in (its share of the most</span>
+</span><span id="line-512"><span class="sd">    depended-on target, a centrality prior), plus ``proximity_weight / (1 +</span>
+</span><span id="line-513"><span class="sd">    hops)`` (closer to a seed scores higher). Both weights default to ``0``, so</span>
+</span><span id="line-514"><span class="sd">    the score is plain cosine. Hits carry ``metadata["walk_depth"]``,</span>
+</span><span id="line-515"><span class="sd">    ``metadata["fan_in"]`` and, for dependents, ``metadata["seed"]``.</span>
+</span><span id="line-516">
+</span><span id="line-517"><span class="sd">    The store passed to :func:`traverse` is a :class:`~ir.index.Corpus` built</span>
+</span><span id="line-518"><span class="sd">    with an edge extractor (e.g. :func:`ir.default_edge_extractor`, whose</span>
+</span><span id="line-519"><span class="sd">    ``REF`` edges run from a package to its dependencies). Fuse the walk's hits</span>
+</span><span id="line-520"><span class="sd">    with flat search through :func:`ir.fuse_hits`.</span>
+</span><span id="line-521">
+</span><span id="line-522"><span class="sd">    &gt;&gt;&gt; policy = reverse_dependency_policy(seeds=["networkx"])   # doctest: +SKIP</span>
+</span><span id="line-523"><span class="sd">    &gt;&gt;&gt; hits = traverse(query, corpus, policy=policy)            # doctest: +SKIP</span>
+</span><span id="line-524"><span class="sd">    """</span>
+</span><span id="line-525">    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seeds</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="line-526">        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+</span><span id="line-527">            <span class="sa">f</span><span class="s2">"seeds must be a collection of ids, not the string </span><span class="si">{</span><span class="n">seeds</span><span class="si">!r}</span><span class="s2"> "</span>
+</span><span id="line-528">            <span class="sa">f</span><span class="s2">"(write [</span><span class="si">{</span><span class="n">seeds</span><span class="si">!r}</span><span class="s2">])."</span>
+</span><span id="line-529">        <span class="p">)</span>
+</span><span id="line-530">    <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="p">(</span>
+</span><span id="line-531">        <span class="p">(</span><span class="s2">"fan_in_weight"</span><span class="p">,</span> <span class="n">fan_in_weight</span><span class="p">),</span>
+</span><span id="line-532">        <span class="p">(</span><span class="s2">"proximity_weight"</span><span class="p">,</span> <span class="n">proximity_weight</span><span class="p">),</span>
+</span><span id="line-533">    <span class="p">):</span>
+</span><span id="line-534">        <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span> <span class="ow">or</span> <span class="n">weight</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="line-535">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> must be finite and non-negative, got </span><span class="si">{</span><span class="n">weight</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-536">    <span class="k">return</span> <span class="n">_ReverseDependencyPolicy</span><span class="p">(</span>
+</span><span id="line-537">        <span class="n">seeds</span><span class="o">=</span><span class="n">seeds</span><span class="p">,</span>
+</span><span id="line-538">        <span class="n">edge_type</span><span class="o">=</span><span class="n">edge_type</span><span class="p">,</span>
+</span><span id="line-539">        <span class="n">fan_in_weight</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">fan_in_weight</span><span class="p">),</span>
+</span><span id="line-540">        <span class="n">proximity_weight</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">proximity_weight</span><span class="p">),</span>
+</span><span id="line-541">    <span class="p">)</span></div>
 
 </span></code></pre></div>
     </div></div>
@@ -721,7 +755,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=393d09ac"></script>
+    <script src="../../_static/documentation_options.js?v=d127aa6e"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
