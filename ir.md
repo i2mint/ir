@@ -1,4 +1,4 @@
-> built 2026-10-26 10:53 UTC from 84d662a (master) · ir 0.1.56. Details: build_info.json
+> built 2026-10-26 11:13 UTC from d67ebf0 (master) · ir 0.1.57. Details: build_info.json
 
 # index.html.md
 
@@ -4678,13 +4678,15 @@ set. `search_defaults` apply to every source.
 A [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy) that walks dependency edges backwards from *seeds*.
 
 *seeds* are library ids the **caller** deems relevant to the query (ir never
-chooses them: picking the domain libraries for a goal is the planner’s job,
-in the agent layer). The walk commits each seed that is an artifact of the
-corpus, then its dependents (the artifacts whose `edge_type` edges point
-at it), then theirs, up to [`traverse()`](_autosummary/ir.html.md#ir.traverse)’s `max_depth`. A seed outside
-the corpus (a third-party library) routes without being a result. So a
-package that depends on a domain library but never says so in prose is
-still found.
+chooses them: picking the domain libraries for a goal is the planner’s job, in
+the agent layer). They are a set: their order never changes the result. The walk
+commits each seed that is an artifact of the corpus, then its dependents (the
+artifacts whose `edge_type` edges point at it), then theirs, up to
+[`traverse()`](_autosummary/ir.html.md#ir.traverse)’s `max_depth`. A seed outside the corpus (a third-party
+library) routes without being a result. So a package that depends on a domain
+library but never says so in prose is still found. A dependent reachable from
+several seeds is credited to the one on its best-scoring path (on a tie, the
+alphabetically first).
 
 Each result scores its best surface’s cosine to the query, plus
 `fan_in_weight` times its normalized fan-in (its share of the most
@@ -7459,18 +7461,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-26 10:53 UTC** from commit <a href="https://github.com/i2mint/ir/commit/84d662a54d3e2a59e1d69066afeadd6071c41abb"><code>84d662a</code></a> on branch <code>master</code>, for **ir 0.1.56** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 11:13 UTC** from commit <a href="https://github.com/i2mint/ir/commit/d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5"><code>d67ebf0</code></a> on branch <code>master</code>, for **ir 0.1.57** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.56) is behind the latest release on PyPI (0.1.57): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/84d662a54d3e2a59e1d69066afeadd6071c41abb"><code>84d662a54d3e2a59e1d69066afeadd6071c41abb</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5"><code>d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7481,9 +7481,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/40310681888">40310681888</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/40313264140">40313264140</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>84d662a54d3e2a59e1d69066afeadd6071c41abb</code> (in the history of the built commit) |
+| Event commit | <code>d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7508,13 +7508,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.57/">0.1.57</a>, newer than the documented version (0.1.56).
+Latest release: <a href="https://pypi.org/project/ir/0.1.57/">0.1.57</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 84d662a54d3e2a59e1d69066afeadd6071c41abb
+git checkout d67ebf0b7b439752bb2e7bf0f7e9b11feb32bdd5
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

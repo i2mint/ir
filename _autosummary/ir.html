@@ -2266,13 +2266,15 @@ set. <code class="docutils literal notranslate"><span class="pre">search_default
 <span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">reverse_dependency_policy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">seeds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REF'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan_in_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proximity_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/traverse.html#reverse_dependency_policy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.reverse_dependency_policy" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.reverse_dependency_policy'">¶</a></dt>
 <dd><p>A <a class="reference internal" href="#ir.WalkPolicy" title="ir.WalkPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">WalkPolicy</span></code></a> that walks dependency edges backwards from <em>seeds</em>.</p>
 <p><em>seeds</em> are library ids the <strong>caller</strong> deems relevant to the query (ir never
-chooses them: picking the domain libraries for a goal is the planner’s job,
-in the agent layer). The walk commits each seed that is an artifact of the
-corpus, then its dependents (the artifacts whose <code class="docutils literal notranslate"><span class="pre">edge_type</span></code> edges point
-at it), then theirs, up to <a class="reference internal" href="#ir.traverse" title="ir.traverse"><code class="xref py py-func docutils literal notranslate"><span class="pre">traverse()</span></code></a>’s <code class="docutils literal notranslate"><span class="pre">max_depth</span></code>. A seed outside
-the corpus (a third-party library) routes without being a result. So a
-package that depends on a domain library but never says so in prose is
-still found.</p>
+chooses them: picking the domain libraries for a goal is the planner’s job, in
+the agent layer). They are a set: their order never changes the result. The walk
+commits each seed that is an artifact of the corpus, then its dependents (the
+artifacts whose <code class="docutils literal notranslate"><span class="pre">edge_type</span></code> edges point at it), then theirs, up to
+<a class="reference internal" href="#ir.traverse" title="ir.traverse"><code class="xref py py-func docutils literal notranslate"><span class="pre">traverse()</span></code></a>’s <code class="docutils literal notranslate"><span class="pre">max_depth</span></code>. A seed outside the corpus (a third-party
+library) routes without being a result. So a package that depends on a domain
+library but never says so in prose is still found. A dependent reachable from
+several seeds is credited to the one on its best-scoring path (on a tie, the
+alphabetically first).</p>
 <p>Each result scores its best surface’s cosine to the query, plus
 <code class="docutils literal notranslate"><span class="pre">fan_in_weight</span></code> times its normalized fan-in (its share of the most
 depended-on target, a centrality prior), plus <code class="docutils literal notranslate"><span class="pre">proximity_weight</span> <span class="pre">/</span> <span class="pre">(1</span> <span class="pre">+</span>
@@ -2705,7 +2707,7 @@ omitted → the predicate’s <code class="docutils literal notranslate"><span c
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=9d458db5"></script>
+<script src="../_static/documentation_options.js?v=393d09ac"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
