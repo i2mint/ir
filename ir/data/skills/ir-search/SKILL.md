@@ -9,7 +9,11 @@ description: >-
   do I have written about …", "is there a doc on …". Covers the `ir` CLI
   (build/search/discover), the corpus map, the mode/scoring gotchas, and when to
   delegate to the `ir-discover-agent` subagent for a reviewed, reformulated
-  search vs. running a quick inline lookup. `ir` is a deterministic retrieval
+  search vs. running a quick inline lookup, which route (grep, lexical, dense,
+  hybrid) fits which query, and the synonym ledger (`ir synonyms`) that widens
+  keyword search with the corpus's own vocabulary. For past Claude Code sessions
+  ("we did X", "that old session") use the `astern-recall` skill, which also
+  searches the other machines and accounts. `ir` is a deterministic retrieval
   substrate with no agent of its own; this skill + the subagent are the
   Claude-Code-native way to wrap it in agentic query→review→reformulate powers
   (the coded equivalent is `raglab`).
@@ -41,11 +45,36 @@ relevance. This skill adds that intelligence via Claude Code.
 | `reports` | Project docs / research / design notes / ADRs — Markdown under every project's `docs/` and `misc/docs/` **and their subdirectories** (`research/`, `decisions/`, `adr/`, …). |
 | `packages` | The local Python package ecosystem — one card per package (name + description + README). |
 | `skills` | Agent skills (`SKILL.md` capabilities). |
-| `sessions` | Past Claude Code session transcripts (turn pairs). |
+| `session_synopses`, `session_turns`, `subagent_turns` | Past Claude Code sessions, fed by `astern` from every account and machine it syncs. Prefer the `astern-recall` skill (`astern grep` / `astern recall`): it refreshes the sources first and adds a no-index regex route. |
+| `sessions` | Legacy preset: this machine's `~/.claude` turn pairs only. |
 | *(registered)* | Any custom `files` corpus the user registered. |
 
 `ir ls` lists them with record counts; `ir info <corpus>` shows config, freshness,
 and any calibrated abstention floors.
+
+## Pick the route by the shape of the query
+
+Research and measurements behind this: `misc/docs/ir_13` (keyword/regex vs embeddings) and `ir_05` (dense vs lexical vs hybrid).
+
+| The query has… | First move | If it misses |
+|---|---|---|
+| a rare token: identifier, path, name, error string, issue number, quoted phrase | grep over the raw files (`rg`, or `astern grep` for sessions), else `--mode lexical` | separator/case variants, the synonym ledger, then hybrid |
+| a name with known aliases (a renamed package, a nickname) | `ir synonyms <term>` → use its regex in grep, or `--expand` on `ir search` | LLM-proposed variants; add a ledger entry if one hits |
+| stable topical vocabulary | `--mode lexical` or `rg -i` with 3–6 expanded terms | `--mode hybrid` |
+| a paraphrase or concept ("when did we decide not to…") | `--mode hybrid` (or dense), several phrasings | grep for the artifacts the top hits name (files, issues) |
+| "have I ever…" (needs recall) | grep with a broad alternation, then hybrid as a second net | union both |
+
+**Expand every query** into 3–6 variants: synonyms, morphological variants (`deploy\w*`), separator and case variants (`acme[-_ ]?corp`), and the artifacts the answer would leave behind (file names, commands, issue numbers). General-English synonyms you produce yourself; the **synonym ledger** holds only what you can't know, the corpus's private vocabulary:
+
+```bash
+ir synonyms acmecorp                         # aliases + a ready grep regex
+ir search reports "acmecorp invoice" -m lexical --expand   # the variants, fused, original first
+ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname; found <id> after a miss"
+```
+
+Add an entry only when all four hold: a query missed, a reformulation found the target, you read and verified it, and the bridging word is corpus-specific (you would not have produced it unprompted). `--oneway` for renames and acronyms (old name finds new content, not the reverse). The ledger lives in the user's config dir (`ir synonyms` prints its path); it is private, never commit it.
+
+**Judge misses and stop**: a miss is no hit whose text mentions the thing, not "fewer than k". After three rounds with no new candidates, switch route instead of writing a fourth pattern, and report what you searched.
 
 ## Inline recipe
 
