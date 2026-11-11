@@ -5,21 +5,21 @@
   {
    "argv": [],
    "rc": 0,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
   },
   {
    "argv": [
     "--help"
    ],
    "rc": 0,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
   },
   {
    "argv": [
     "-h"
    ],
    "rc": 0,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
   },
   {
    "argv": [
@@ -51,7 +51,7 @@
     "--help"
    ],
    "rc": 0,
-   "usage": "PROG search [-h] [-k K] [-m MODE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] name query"
+   "usage": "PROG search [-h] [-k K] [-m MODE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] name query"
   },
   {
    "argv": [
@@ -59,7 +59,7 @@
     "--help"
    ],
    "rc": 0,
-   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] name query"
+   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] name query"
   },
   {
    "argv": [
@@ -146,7 +146,7 @@
     "no-such-command"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
   },
   {
    "argv": [
@@ -170,7 +170,7 @@
     "x"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
   },
   {
    "argv": [
@@ -179,7 +179,7 @@
     "b"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
   },
   {
    "argv": [
@@ -195,7 +195,7 @@
     "onlyname"
    ],
    "rc": 2,
-   "usage": "PROG search [-h] [-k K] [-m MODE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] name query"
+   "usage": "PROG search [-h] [-k K] [-m MODE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] name query"
   },
   {
    "argv": [
@@ -203,7 +203,7 @@
     "positional-not-allowed"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
   },
   {
    "argv": [
@@ -218,7 +218,7 @@
     "extra"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
   },
   {
    "argv": [
@@ -227,7 +227,7 @@
     "b"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
   },
   {
    "argv": [
@@ -237,7 +237,7 @@
     "--k"
    ],
    "rc": 2,
-   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] name query"
+   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [-f FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] name query"
   },
   {
    "argv": [

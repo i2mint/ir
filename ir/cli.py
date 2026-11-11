@@ -20,6 +20,9 @@ Commands operate on **named** corpora from the registry (see
     ir sweep-select skills skills_eval.jsonl          # tune max_k/rel for the selector
     ir calibrate-min-score skills skills_eval.jsonl --persist  # abstention floor
     ir discover skills "deploy app" --min-score auto  # use the calibrated floor
+    ir synonyms acmecorp            # a term's aliases + a grep regex, from the ledger
+    ir synonyms-add "acmecorp, acme corp" --note "client nickname"
+    ir search session_turns "acmecorp invoice" -m lexical --expand
 """
 
 from __future__ import annotations
@@ -166,6 +169,7 @@ def search(
     fusion="rrf",
     rerank=None,
     rerank_text="surface",
+    expand=False,
 ):
     """Search a built corpus and print the top-k hits.
 
@@ -175,20 +179,36 @@ def search(
     the cross-encoder precision stage (needs the ``ir[rerank]`` extra; without it
     the search warns and keeps the first-stage ranking); ``--rerank-text``
     picks what it reads: surface (default) | artifact. Reranked scores are on the
-    reranker's own scale.
+    reranker's own scale. ``--expand`` also searches the query's variants from the
+    synonym ledger (``ir synonyms``) and fuses them (best score per artifact across
+    the variants; the original query is always one of them).
     """
     corpus = _open_ready(name)
     if len(corpus) == 0:
         return _empty_corpus_msg(name)
     lines = []
     hits = corpus.search(
-        query, k=k, mode=mode, fusion=fusion, **_rerank_kw(rerank, rerank_text)
+        query,
+        k=k,
+        mode=mode,
+        fusion=fusion,
+        **_rerank_kw(rerank, rerank_text),
+        **_expand_kw(expand, name),
     )
     for h in hits:
         # artifact_id is the unique label across corpora (skill name[@parent],
         # package name, or a report's relative path).
         lines.append(f"{h.score:+.3f}  {h.artifact_id}  [{h.surface_kind}]")
     return "\n".join(lines) or "(no matches)"
+
+
+def _expand_kw(expand, name):
+    """Search kwargs for ledger-based query expansion; empty (today's behavior) when off."""
+    if not expand:
+        return {}
+    from .synonyms import make_synonym_formulator
+
+    return {"formulate": make_synonym_formulator(corpus=name)}
 
 
 def _rerank_kw(rerank, rerank_text):
@@ -211,6 +231,7 @@ def discover(
     fusion="rrf",
     rerank=None,
     rerank_text="surface",
+    expand=False,
 ):
     """Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -224,7 +245,8 @@ def discover(
     top_k | rel_threshold | score_gap. ``--rerank cross-encoder`` adds the
     calibrated cross-encoder precision stage (``--rerank-text`` picks what it
     reads); with ``--min-score auto`` it uses the floor calibrated under the same
-    ``--rerank`` / ``--rerank-text``.
+    ``--rerank`` / ``--rerank-text``. ``--expand`` adds the query's variants from
+    the synonym ledger (``ir synonyms``).
     """
     from .select import discover as _discover
 
@@ -246,6 +268,7 @@ def discover(
         min_score=floor,
         fusion=fusion,
         **_rerank_kw(rerank, rerank_text),
+        **_expand_kw(expand, name),
     )
     if result.abstained:
         return (
@@ -616,6 +639,44 @@ def calibrate_min_score(
     return out
 
 
+def synonyms(term=None, *, corpus=None):
+    """Show what the synonym ledger knows: a term's aliases and grep regex, or all entries.
+
+    The ledger (``$IR_SYNONYMS`` or ``<config dir>/synonyms.jsonl``) holds a corpus's
+    private vocabulary (nicknames, renamed packages, jargon) learned from misses. Use
+    the printed regex in ``rg`` / ``astern grep``; ``ir search --expand`` uses the
+    same entries. Add with ``ir synonyms-add``.
+    """
+    from .synonyms import aliases, ledger_path, load_synonyms, term_regex
+
+    entries = load_synonyms(corpus=corpus)
+    if term is None:
+        lines = [f"# {ledger_path()} ({len(entries)} entries)"]
+        for e in entries:
+            arrow = " -> " if e.oneway else " = "
+            scope = f"  [{e.corpus}]" if e.corpus else ""
+            note = f"  # {e.note}" if e.note else ""
+            lines.append(arrow.join(e.terms) + scope + note)
+        return "\n".join(lines)
+    terms = aliases(term, entries)
+    return f"aliases: {', '.join(terms)}\nregex:   {term_regex(terms)}"
+
+
+def synonyms_add(terms, *, note="", oneway=False, corpus=None):
+    """Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.
+
+    ``ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname"``. Add only
+    after a verified find that the word made possible; ``--oneway`` makes the first
+    term expand to the others but not back; ``--corpus`` scopes the entry.
+    """
+    from .synonyms import add_synonyms, ledger_path
+
+    e = add_synonyms(
+        [t for t in str(terms).split(",")], note=note, oneway=oneway, corpus=corpus
+    )
+    return f"added to {ledger_path()}: {e.to_json()}"
+
+
 COMMANDS = [
     ls,
     register,
@@ -632,4 +693,6 @@ COMMANDS = [
     eval_select,
     sweep_select,
     calibrate_min_score,
+    synonyms,
+    synonyms_add,
 ]

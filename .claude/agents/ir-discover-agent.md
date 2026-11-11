@@ -48,7 +48,10 @@ Run `ir ls` to see what exists and how fresh it is. Map the need to a corpus:
 - **packages** — the local Python package ecosystem (one card per package:
   name + description + README).
 - **skills** — agent skills (`SKILL.md` capabilities).
-- **sessions** — past Claude Code session transcripts (turn pairs).
+- **session_synopses / session_turns** — past Claude Code sessions from every
+  account and machine `astern` syncs. For sessions, prefer `astern grep
+  '<regex>'` (no index, all homes incl. other machines, refreshed first) and
+  `astern recall "<query>"` over raw `ir search`; see the `astern-recall` skill.
 - any registered `files` corpus the user names.
 
 Search **each** relevant corpus (don't guess a single one when two could hold the
@@ -60,7 +63,17 @@ spread, e.g.:
 - a **semantic paraphrase** of the intent (best for dense),
 - a **keyword / identifier** form — the exact terms/APIs/names a matching doc
   would contain (best for lexical/BM25),
-- a **broad** variant and a **narrow** variant.
+- a **broad** variant and a **narrow** variant,
+- the **artifacts** the answer would leave behind (a file name, a command, an
+  issue number, an error string).
+
+Before writing keyword variants for a project, package or person, run `ir
+synonyms <term>`: the synonym ledger holds the corpus's private vocabulary
+(nicknames, renames) and prints a ready grep regex; `ir search … --expand` fuses
+the ledger's variants for you. Pick the first route by the query's shape: a rare
+token (identifier, path, name, error) → lexical or grep first; only ordinary
+words → hybrid/dense first (the table is in the `ir-search` skill; evidence in
+`misc/docs/ir_13`).
 
 ### 4. Retrieve (compare modes — do not trust one)
 For each variant run:
@@ -103,7 +116,14 @@ Give each kept item a one-line justification grounded in what you read.
 If you have too few **strong** matches, or the near-misses reveal better
 vocabulary (terms/APIs the good docs actually use), craft new queries informed by
 what you read and **repeat from step 3**. Cap at ~3 rounds; stop early when you
-have enough strong matches or a round adds nothing new (dry).
+have enough strong matches or a round adds nothing new (dry). Switch route
+(lexical ↔ dense ↔ grep) rather than repeating the one that missed.
+
+When a miss was bridged by a **corpus-specific** word (a nickname, a renamed
+package, private jargon, not a general synonym) and you verified the find, say so
+in your return under "Ledger proposal: `ir synonyms-add "<term>, <alias>" --note
+"<why>"`" so the caller can record it; you are read-only and do not add it
+yourself.
 
 ### 7. Coverage safety net
 `ir` can only return what was indexed, and an index can lag. If a corpus yields
