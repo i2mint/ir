@@ -23,26 +23,31 @@ ir eval-select skills skills_eval.jsonl           # score the selection stage
 ir sweep-select skills skills_eval.jsonl          # tune max_k/rel for the selector
 ir calibrate-min-score skills skills_eval.jsonl --persist  # abstention floor
 ir discover skills "deploy app" --min-score auto  # use the calibrated floor
+ir synonyms acmecorp            # a term's aliases + a grep regex, from the ledger
+ir synonyms-add "acmecorp, acme corp" --note "client nickname"
+ir search session_turns "acmecorp invoice" -m lexical --expand
 ```
 
 ### Functions
 
-| [`build`](#ir.cli.build)(name, \*[, embedder, full])                  | Build or incrementally update a registered (or preset) corpus.                 |
-|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| [`calibrate_min_score`](#ir.cli.calibrate_min_score)(name, cases, \*[, mode, ...])  | Calibrate the absolute abstention min_score floor for a corpus + mode.         |
-| [`coverage`](#ir.cli.coverage)([name])                                   | Report disk-vs-index coverage for a reports corpus (silent-gap detector).      |
-| [`discover`](#ir.cli.discover)(name, query, \*[, k, mode, ...])          | Search a corpus, commit to a distractor-robust subset, and show it.            |
-| [`eval`](#ir.cli.eval)(name, cases, \*[, mode, k])                   | Score a built corpus's retrieval against a DiscoveryCase JSONL file.           |
-| [`eval_gen`](#ir.cli.eval_gen)(name, out, \*[, k, abstention_frac, ...]) | Generate an eval-case file for a corpus by back-translation (needs aix/LLM).   |
-| [`eval_select`](#ir.cli.eval_select)(name, cases, \*[, strategy, ...])      | Score a selector against a DiscoveryCase JSONL file (selection quality).       |
-| [`info`](#ir.cli.info)(name)                                         | Show a corpus's stored config, stats, policy, and any abstention floors.       |
-| [`ls`](#ir.cli.ls)()                                               | List registered corpora with their kind, embedder, and record count.           |
-| [`maintain`](#ir.cli.maintain)([name, all, dry_run])                     | Run due background work: incremental reindex, synopsis in its downtime window. |
-| [`register`](#ir.cli.register)(name, kind, \*[, root, pattern, ...])     | Register a named corpus.                                                       |
-| [`rm`](#ir.cli.rm)(name)                                           | Unregister a corpus (does not delete its built data).                          |
-| [`schedule`](#ir.cli.schedule)(\*[, every, status, restart, ...])        | Install, inspect, and operate the OS job that runs `ir maintain`.              |
-| [`search`](#ir.cli.search)(name, query, \*[, k, mode, fusion, ...])    | Search a built corpus and print the top-k hits.                                |
-| [`sweep_select`](#ir.cli.sweep_select)(name, cases, \*[, strategy, ...])     | Sweep selector knobs (max_k × rel) against a case file; print the grid + best. |
+| [`build`](#ir.cli.build)(name, \*[, embedder, full])                  | Build or incrementally update a registered (or preset) corpus.                       |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`calibrate_min_score`](#ir.cli.calibrate_min_score)(name, cases, \*[, mode, ...])  | Calibrate the absolute abstention min_score floor for a corpus + mode.               |
+| [`coverage`](#ir.cli.coverage)([name])                                   | Report disk-vs-index coverage for a reports corpus (silent-gap detector).            |
+| [`discover`](#ir.cli.discover)(name, query, \*[, k, mode, ...])          | Search a corpus, commit to a distractor-robust subset, and show it.                  |
+| [`eval`](#ir.cli.eval)(name, cases, \*[, mode, k])                   | Score a built corpus's retrieval against a DiscoveryCase JSONL file.                 |
+| [`eval_gen`](#ir.cli.eval_gen)(name, out, \*[, k, abstention_frac, ...]) | Generate an eval-case file for a corpus by back-translation (needs aix/LLM).         |
+| [`eval_select`](#ir.cli.eval_select)(name, cases, \*[, strategy, ...])      | Score a selector against a DiscoveryCase JSONL file (selection quality).             |
+| [`info`](#ir.cli.info)(name)                                         | Show a corpus's stored config, stats, policy, and any abstention floors.             |
+| [`ls`](#ir.cli.ls)()                                               | List registered corpora with their kind, embedder, and record count.                 |
+| [`maintain`](#ir.cli.maintain)([name, all, dry_run])                     | Run due background work: incremental reindex, synopsis in its downtime window.       |
+| [`register`](#ir.cli.register)(name, kind, \*[, root, pattern, ...])     | Register a named corpus.                                                             |
+| [`rm`](#ir.cli.rm)(name)                                           | Unregister a corpus (does not delete its built data).                                |
+| [`schedule`](#ir.cli.schedule)(\*[, every, status, restart, ...])        | Install, inspect, and operate the OS job that runs `ir maintain`.                    |
+| [`search`](#ir.cli.search)(name, query, \*[, k, mode, fusion, ...])    | Search a built corpus and print the top-k hits.                                      |
+| [`sweep_select`](#ir.cli.sweep_select)(name, cases, \*[, strategy, ...])     | Sweep selector knobs (max_k × rel) against a case file; print the grid + best.       |
+| [`synonyms`](#ir.cli.synonyms)([term, corpus])                           | Show what the synonym ledger knows: a term's aliases and grep regex, or all entries. |
+| [`synonyms_add`](#ir.cli.synonyms_add)(terms, \*[, note, oneway, corpus])    | Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.    |
 
 ### ir.cli.build(name, , embedder=None, full=True)
 
@@ -75,7 +80,7 @@ file that is on disk but missing from the index (rebuild with `ir build` to
 fix). Catches the ingestion gaps that back-translation evals structurally
 cannot — a doc that was never indexed can never be an eval gold id.
 
-### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface')
+### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface', expand=False)
 
 Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -89,7 +94,8 @@ pair with –min-score for abstention — see ir_08). strategy: conservative |
 top_k | rel_threshold | score_gap. `--rerank cross-encoder` adds the
 calibrated cross-encoder precision stage (`--rerank-text` picks what it
 reads); with `--min-score auto` it uses the floor calibrated under the same
-`--rerank` / `--rerank-text`.
+`--rerank` / `--rerank-text`. `--expand` adds the query’s variants from
+the synonym ledger (`ir synonyms`).
 
 ### ir.cli.eval(name, cases, , mode='hybrid', k=10)
 
@@ -168,7 +174,7 @@ remove: stop the schedule and delete its definition.
 dry_run: print the definition that would be written, and write nothing.
 backend: launchd | cron (default: whichever this machine provides).
 
-### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface')
+### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface', expand=False)
 
 Search a built corpus and print the top-k hits.
 
@@ -178,7 +184,9 @@ better abstention separability — see ir_08). `--rerank cross-encoder` adds
 the cross-encoder precision stage (needs the `ir[rerank]` extra; without it
 the search warns and keeps the first-stage ranking); `--rerank-text`
 picks what it reads: surface (default) | artifact. Reranked scores are on the
-reranker’s own scale.
+reranker’s own scale. `--expand` also searches the query’s variants from the
+synonym ledger (`ir synonyms`) and fuses them (best score per artifact across
+the variants; the original query is always one of them).
 
 ### ir.cli.sweep_select(name, cases, , strategy='conservative', mode='hybrid', k=10, objective='selection_f1')
 
@@ -189,3 +197,20 @@ the sweep is cheap. Prints a table (one row per setting, best objective first)
 and the winning max_k / rel. Use it to pick `ir.select` defaults empirically.
 objective: selection_f1 | selection_precision | selection_recall |
 conditional_commit_rate | mean_selected_size. mode: dense | lexical | hybrid.
+
+### ir.cli.synonyms(term=None, , corpus=None)
+
+Show what the synonym ledger knows: a term’s aliases and grep regex, or all entries.
+
+The ledger (`$IR_SYNONYMS` or `<config dir>/synonyms.jsonl`) holds a corpus’s
+private vocabulary (nicknames, renamed packages, jargon) learned from misses. Use
+the printed regex in `rg` / `astern grep`; `ir search --expand` uses the
+same entries. Add with `ir synonyms-add`.
+
+### ir.cli.synonyms_add(terms, , note='', oneway=False, corpus=None)
+
+Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.
+
+`ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname"`. Add only
+after a verified find that the word made possible; `--oneway` makes the first
+term expand to the others but not back; `--corpus` scopes the entry.

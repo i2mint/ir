@@ -1,0 +1,32 @@
+ir.synonyms
+===========
+
+.. automodule:: ir.synonyms
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_LEDGER_NAME
+      SHORT_TERM_CHARS
+      DFLT_MAX_VARIANTS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      add_synonyms
+      aliases
+      expand_query
+      ledger_path
+      load_synonyms
+      make_synonym_formulator
+      term_regex
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      SynonymEntry
+   

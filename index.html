@@ -103,6 +103,7 @@
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.sources.html">ir.sources</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.store.html">ir.store</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.strategy.html">ir.strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.synonyms.html">ir.synonyms</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.synopsis.html">ir.synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.tools.html">ir.tools</a></li>
 </ul>
@@ -347,7 +348,7 @@
 <p>Disclosure is a <em>pure</em> read that follows the pointer already stored on each hit (<code class="docutils literal notranslate"><span class="pre">skill_path</span></code> / <code class="docutils literal notranslate"><span class="pre">path</span></code>); it never mutates the ranked hits and tolerates a stale pointer. Keeping the agent’s context append-only (to protect the prompt cache) is then the caller’s discipline — <code class="docutils literal notranslate"><span class="pre">ir</span></code> hands back additive payloads.</p>
 </section>
 <section id="graph-traverse-opt-in">
-<h3>Graph &amp; traverse (opt-in)<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#graph-traverse-opt-in" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#graph-traverse-opt-in'">¶</a></h3>
+<span id="graph--traverse-opt-in"></span><h3>Graph &amp; traverse (opt-in)<a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#graph-traverse-opt-in" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#graph-traverse-opt-in'">¶</a></h3>
 <p>Artifacts refer to each other — a package depends on packages, a skill has a parent. <code class="docutils literal notranslate"><span class="pre">ir</span></code> models those as a <strong>semantic link graph</strong>: a typed-edge <code class="docutils literal notranslate"><span class="pre">links</span></code> view on the store, populated at build time by an <code class="docutils literal notranslate"><span class="pre">EdgeExtractor</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="n">corpus</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">build</span><span class="p">(</span>
 </span><span id="line-2">    <span class="n">source</span><span class="p">,</span> <span class="n">edge_extractor</span><span class="o">=</span><span class="n">ir</span><span class="o">.</span><span class="n">default_edge_extractor</span>
@@ -464,7 +465,7 @@
 
 </section>
 </section>
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-26 16:15 UTC from <a href="https://github.com/i2mint/ir/commit/4b1d6ac15f679638743bde16fe83e73e1987b13d">4b1d6ac</a> (master) · ir 0.1.60 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-11 11:00 UTC from <a href="https://github.com/i2mint/ir/commit/b82e9b2a9f08db9c8bb8456b74c640e47678443f">b82e9b2</a> (master) · ir 0.1.61 · <a href="about-this-build.html">about this build</a></p>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
@@ -500,7 +501,7 @@
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=5fe4e9ad"></script>
+<script src="_static/documentation_options.js?v=fb9c6db4"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>

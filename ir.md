@@ -1,4 +1,4 @@
-> built 2026-10-26 16:15 UTC from 4b1d6ac (master) · ir 0.1.60. Details: build_info.json
+> built 2026-11-11 11:00 UTC from b82e9b2 (master) · ir 0.1.61. Details: build_info.json
 
 # index.html.md
 
@@ -589,26 +589,31 @@ ir eval-select skills skills_eval.jsonl           # score the selection stage
 ir sweep-select skills skills_eval.jsonl          # tune max_k/rel for the selector
 ir calibrate-min-score skills skills_eval.jsonl --persist  # abstention floor
 ir discover skills "deploy app" --min-score auto  # use the calibrated floor
+ir synonyms acmecorp            # a term's aliases + a grep regex, from the ledger
+ir synonyms-add "acmecorp, acme corp" --note "client nickname"
+ir search session_turns "acmecorp invoice" -m lexical --expand
 ```
 
 ### Functions
 
-| [`build`](_autosummary/ir.cli.html.md#ir.cli.build)(name, \*[, embedder, full])                  | Build or incrementally update a registered (or preset) corpus.                 |
-|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| [`calibrate_min_score`](_autosummary/ir.cli.html.md#ir.cli.calibrate_min_score)(name, cases, \*[, mode, ...])  | Calibrate the absolute abstention min_score floor for a corpus + mode.         |
-| [`coverage`](_autosummary/ir.cli.html.md#ir.cli.coverage)([name])                                   | Report disk-vs-index coverage for a reports corpus (silent-gap detector).      |
-| [`discover`](_autosummary/ir.cli.html.md#ir.cli.discover)(name, query, \*[, k, mode, ...])          | Search a corpus, commit to a distractor-robust subset, and show it.            |
-| [`eval`](_autosummary/ir.cli.html.md#ir.cli.eval)(name, cases, \*[, mode, k])                   | Score a built corpus's retrieval against a DiscoveryCase JSONL file.           |
-| [`eval_gen`](_autosummary/ir.cli.html.md#ir.cli.eval_gen)(name, out, \*[, k, abstention_frac, ...]) | Generate an eval-case file for a corpus by back-translation (needs aix/LLM).   |
-| [`eval_select`](_autosummary/ir.cli.html.md#ir.cli.eval_select)(name, cases, \*[, strategy, ...])      | Score a selector against a DiscoveryCase JSONL file (selection quality).       |
-| [`info`](_autosummary/ir.cli.html.md#ir.cli.info)(name)                                         | Show a corpus's stored config, stats, policy, and any abstention floors.       |
-| [`ls`](_autosummary/ir.cli.html.md#ir.cli.ls)()                                               | List registered corpora with their kind, embedder, and record count.           |
-| [`maintain`](_autosummary/ir.cli.html.md#ir.cli.maintain)([name, all, dry_run])                     | Run due background work: incremental reindex, synopsis in its downtime window. |
-| [`register`](_autosummary/ir.cli.html.md#ir.cli.register)(name, kind, \*[, root, pattern, ...])     | Register a named corpus.                                                       |
-| [`rm`](_autosummary/ir.cli.html.md#ir.cli.rm)(name)                                           | Unregister a corpus (does not delete its built data).                          |
-| [`schedule`](_autosummary/ir.cli.html.md#ir.cli.schedule)(\*[, every, status, restart, ...])        | Install, inspect, and operate the OS job that runs `ir maintain`.              |
-| [`search`](_autosummary/ir.cli.html.md#ir.cli.search)(name, query, \*[, k, mode, fusion, ...])    | Search a built corpus and print the top-k hits.                                |
-| [`sweep_select`](_autosummary/ir.cli.html.md#ir.cli.sweep_select)(name, cases, \*[, strategy, ...])     | Sweep selector knobs (max_k × rel) against a case file; print the grid + best. |
+| [`build`](_autosummary/ir.cli.html.md#ir.cli.build)(name, \*[, embedder, full])                  | Build or incrementally update a registered (or preset) corpus.                       |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`calibrate_min_score`](_autosummary/ir.cli.html.md#ir.cli.calibrate_min_score)(name, cases, \*[, mode, ...])  | Calibrate the absolute abstention min_score floor for a corpus + mode.               |
+| [`coverage`](_autosummary/ir.cli.html.md#ir.cli.coverage)([name])                                   | Report disk-vs-index coverage for a reports corpus (silent-gap detector).            |
+| [`discover`](_autosummary/ir.cli.html.md#ir.cli.discover)(name, query, \*[, k, mode, ...])          | Search a corpus, commit to a distractor-robust subset, and show it.                  |
+| [`eval`](_autosummary/ir.cli.html.md#ir.cli.eval)(name, cases, \*[, mode, k])                   | Score a built corpus's retrieval against a DiscoveryCase JSONL file.                 |
+| [`eval_gen`](_autosummary/ir.cli.html.md#ir.cli.eval_gen)(name, out, \*[, k, abstention_frac, ...]) | Generate an eval-case file for a corpus by back-translation (needs aix/LLM).         |
+| [`eval_select`](_autosummary/ir.cli.html.md#ir.cli.eval_select)(name, cases, \*[, strategy, ...])      | Score a selector against a DiscoveryCase JSONL file (selection quality).             |
+| [`info`](_autosummary/ir.cli.html.md#ir.cli.info)(name)                                         | Show a corpus's stored config, stats, policy, and any abstention floors.             |
+| [`ls`](_autosummary/ir.cli.html.md#ir.cli.ls)()                                               | List registered corpora with their kind, embedder, and record count.                 |
+| [`maintain`](_autosummary/ir.cli.html.md#ir.cli.maintain)([name, all, dry_run])                     | Run due background work: incremental reindex, synopsis in its downtime window.       |
+| [`register`](_autosummary/ir.cli.html.md#ir.cli.register)(name, kind, \*[, root, pattern, ...])     | Register a named corpus.                                                             |
+| [`rm`](_autosummary/ir.cli.html.md#ir.cli.rm)(name)                                           | Unregister a corpus (does not delete its built data).                                |
+| [`schedule`](_autosummary/ir.cli.html.md#ir.cli.schedule)(\*[, every, status, restart, ...])        | Install, inspect, and operate the OS job that runs `ir maintain`.                    |
+| [`search`](_autosummary/ir.cli.html.md#ir.cli.search)(name, query, \*[, k, mode, fusion, ...])    | Search a built corpus and print the top-k hits.                                      |
+| [`sweep_select`](_autosummary/ir.cli.html.md#ir.cli.sweep_select)(name, cases, \*[, strategy, ...])     | Sweep selector knobs (max_k × rel) against a case file; print the grid + best.       |
+| [`synonyms`](_autosummary/ir.cli.html.md#ir.cli.synonyms)([term, corpus])                           | Show what the synonym ledger knows: a term's aliases and grep regex, or all entries. |
+| [`synonyms_add`](_autosummary/ir.cli.html.md#ir.cli.synonyms_add)(terms, \*[, note, oneway, corpus])    | Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.    |
 
 ### ir.cli.build(name, , embedder=None, full=True)
 
@@ -641,7 +646,7 @@ file that is on disk but missing from the index (rebuild with `ir build` to
 fix). Catches the ingestion gaps that back-translation evals structurally
 cannot — a doc that was never indexed can never be an eval gold id.
 
-### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface')
+### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface', expand=False)
 
 Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -655,7 +660,8 @@ pair with –min-score for abstention — see ir_08). strategy: conservative |
 top_k | rel_threshold | score_gap. `--rerank cross-encoder` adds the
 calibrated cross-encoder precision stage (`--rerank-text` picks what it
 reads); with `--min-score auto` it uses the floor calibrated under the same
-`--rerank` / `--rerank-text`.
+`--rerank` / `--rerank-text`. `--expand` adds the query’s variants from
+the synonym ledger (`ir synonyms`).
 
 ### ir.cli.eval(name, cases, , mode='hybrid', k=10)
 
@@ -734,7 +740,7 @@ remove: stop the schedule and delete its definition.
 dry_run: print the definition that would be written, and write nothing.
 backend: launchd | cron (default: whichever this machine provides).
 
-### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface')
+### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface', expand=False)
 
 Search a built corpus and print the top-k hits.
 
@@ -744,7 +750,9 @@ better abstention separability — see ir_08). `--rerank cross-encoder` adds
 the cross-encoder precision stage (needs the `ir[rerank]` extra; without it
 the search warns and keeps the first-stage ranking); `--rerank-text`
 picks what it reads: surface (default) | artifact. Reranked scores are on the
-reranker’s own scale.
+reranker’s own scale. `--expand` also searches the query’s variants from the
+synonym ledger (`ir synonyms`) and fuses them (best score per artifact across
+the variants; the original query is always one of them).
 
 ### ir.cli.sweep_select(name, cases, , strategy='conservative', mode='hybrid', k=10, objective='selection_f1')
 
@@ -755,6 +763,23 @@ the sweep is cheap. Prints a table (one row per setting, best objective first)
 and the winning max_k / rel. Use it to pick `ir.select` defaults empirically.
 objective: selection_f1 | selection_precision | selection_recall |
 conditional_commit_rate | mean_selected_size. mode: dense | lexical | hybrid.
+
+### ir.cli.synonyms(term=None, , corpus=None)
+
+Show what the synonym ledger knows: a term’s aliases and grep regex, or all entries.
+
+The ledger (`$IR_SYNONYMS` or `<config dir>/synonyms.jsonl`) holds a corpus’s
+private vocabulary (nicknames, renamed packages, jargon) learned from misses. Use
+the printed regex in `rg` / `astern grep`; `ir search --expand` uses the
+same entries. Add with `ir synonyms-add`.
+
+### ir.cli.synonyms_add(terms, , note='', oneway=False, corpus=None)
+
+Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.
+
+`ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname"`. Add only
+after a verified find that the word made possible; `--oneway` makes the first
+term expand to the others but not back; `--corpus` scopes the entry.
 
 
 # _autosummary/ir.config.html.md
@@ -4928,6 +4953,7 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 | [`sources`](_autosummary/ir.sources.html.md#module-ir.sources)           | Defining a corpus source — an abstract strategy plus parameters.                                                       |
 | [`store`](_autosummary/ir.store.html.md#module-ir.store)               | Persistence for `ir` — the repository layer over `dol` key-value views.                                                |
 | [`strategy`](_autosummary/ir.strategy.html.md#module-ir.strategy)         | Indexing strategies — the "what do we index?" seam.                                                                    |
+| [`synonyms`](_autosummary/ir.synonyms.html.md#module-ir.synonyms)         | The synonym ledger: corpus vocabulary an agent learns, for keyword and regex search.                                   |
 | [`synopsis`](_autosummary/ir.synopsis.html.md#module-ir.synopsis)         | Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).                                           |
 | [`tools`](_autosummary/ir.tools.html.md#module-ir.tools)               | Agent-callable tool surface over `ir` — plain functions returning JSON-ready dicts, deliberately MCP/HTTP-agnostic.    |
 
@@ -7244,6 +7270,155 @@ so an injected-free synopsis summarizes the same text a strategy would index.
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 
+# _autosummary/ir.synonyms.html.md
+
+# ir.synonyms
+
+The synonym ledger: corpus vocabulary an agent learns, for keyword and regex search.
+
+Lexical search (BM25, grep) misses when the searcher’s word is not the document’s
+word. An LLM closes most of that gap on its own by writing variants of the query,
+but it cannot know a corpus’s private vocabulary: a project’s nickname, a renamed
+package, a person’s handle, in-house jargon. The ledger keeps exactly those, learned
+from misses, so the next search starts where the last one ended (research report
+`misc/docs/ir_13`).
+
+One JSON object per line in `synonyms.jsonl` under ir’s config dir (override the
+path with `$IR_SYNONYMS`):
+
+```default
+{"terms": ["acmecorp", "acme corp", "ac"], "note": "client; repo dir ac/", "added": "2026-11-11"}
+{"terms": ["vd", "vector database"], "oneway": true, "note": "vd expands, not back"}
+```
+
+`terms` are equivalent (each expands to the others); with `oneway` only the first
+expands to the rest. `corpus` (optional) limits an entry to one corpus. The ledger
+is the user’s private data: it lives in their config dir, never in a repo.
+
+Three uses, one source: [`term_regex()`](_autosummary/ir.synonyms.html.md#ir.synonyms.term_regex) builds an alternation for grep,
+[`expand_query()`](_autosummary/ir.synonyms.html.md#ir.synonyms.expand_query) produces query variants, and [`make_synonym_formulator()`](_autosummary/ir.synonyms.html.md#ir.synonyms.make_synonym_formulator)
+plugs those into [`ir.retrieve.search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search)’s `formulate=` seam (deterministic, no
+LLM; the original query always comes first).
+
+```pycon
+>>> entries = [SynonymEntry(("acmecorp", "acme corp", "ac"))]
+>>> aliases("Acme Corp", entries)
+['Acme Corp', 'acmecorp', 'ac']
+>>> term_regex(aliases("acmecorp", entries))
+'acme[-_ ]?corp|acmecorp|\\bac\\b'
+>>> expand_query("acme corp invoice", entries)
+['acme corp invoice', 'acmecorp invoice', 'ac invoice']
+```
+
+### Module Attributes
+
+| [`DFLT_LEDGER_NAME`](_autosummary/ir.synonyms.html.md#ir.synonyms.DFLT_LEDGER_NAME)   | The ledger's file name inside [`ir.config.config_dir()`](_autosummary/ir.config.html.md#ir.config.config_dir).   |
+|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| [`SHORT_TERM_CHARS`](_autosummary/ir.synonyms.html.md#ir.synonyms.SHORT_TERM_CHARS)   | Terms at most this long that are plain word characters get `\b` guards in a regex, so `ac` does not match inside `react`.     |
+| [`DFLT_MAX_VARIANTS`](_autosummary/ir.synonyms.html.md#ir.synonyms.DFLT_MAX_VARIANTS)  | Default cap on the number of query variants (the original included).                                                          |
+
+### Functions
+
+| [`add_synonyms`](_autosummary/ir.synonyms.html.md#ir.synonyms.add_synonyms)(terms, \*[, note, oneway, ...])     | Append one entry to the ledger (creating it) and return it.                                                                                    |
+|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`aliases`](_autosummary/ir.synonyms.html.md#ir.synonyms.aliases)(term, entries)                           | `term` first, then every term the ledger makes equivalent to it (deduped).                                                                     |
+| [`expand_query`](_autosummary/ir.synonyms.html.md#ir.synonyms.expand_query)(query, entries, \*[, max_variants]) | `query` first, then variants with one known term swapped for an alias.                                                                         |
+| [`ledger_path`](_autosummary/ir.synonyms.html.md#ir.synonyms.ledger_path)()                                    | Where the ledger lives: `$IR_SYNONYMS`, else `<config_dir>/synonyms.jsonl`.                                                                    |
+| [`load_synonyms`](_autosummary/ir.synonyms.html.md#ir.synonyms.load_synonyms)([path, corpus])                    | The ledger's entries (those for all corpora, plus `corpus`'s own).                                                                             |
+| [`make_synonym_formulator`](_autosummary/ir.synonyms.html.md#ir.synonyms.make_synonym_formulator)([entries, path, ...])    | A deterministic [`ir.formulate.Formulator`](_autosummary/ir.formulate.html.md#ir.formulate.Formulator) that expands from the ledger. |
+| [`term_regex`](_autosummary/ir.synonyms.html.md#ir.synonyms.term_regex)(terms)                                | One alternation matching any of `terms`, tolerant of `-`/`_`/space.                                                                            |
+
+### Classes
+
+| [`SynonymEntry`](_autosummary/ir.synonyms.html.md#ir.synonyms.SynonymEntry)(terms[, oneway, note, added, ...])   | One ledger line: equivalent `terms` (or `oneway` from the first).   |
+|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+
+### ir.synonyms.DFLT_LEDGER_NAME *= 'synonyms.jsonl'*
+
+The ledger’s file name inside [`ir.config.config_dir()`](_autosummary/ir.config.html.md#ir.config.config_dir).
+
+### ir.synonyms.DFLT_MAX_VARIANTS *= 6*
+
+Default cap on the number of query variants (the original included).
+
+### ir.synonyms.SHORT_TERM_CHARS *= 4*
+
+Terms at most this long that are plain word characters get `\b` guards in a
+regex, so `ac` does not match inside `react`.
+
+### *class* ir.synonyms.SynonymEntry(terms, oneway=False, note='', added='', corpus=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One ledger line: equivalent `terms` (or `oneway` from the first).
+
+### ir.synonyms.add_synonyms(terms, , note='', oneway=False, corpus=None, path=None)
+
+Append one entry to the ledger (creating it) and return it.
+
+Add an entry only after a verified find that the corpus-specific word made
+possible; general-language synonyms are the searcher’s job, not the ledger’s.
+
+* **Return type:**
+  [`SynonymEntry`](_autosummary/ir.synonyms.html.md#ir.synonyms.SynonymEntry)
+
+### ir.synonyms.aliases(term, entries)
+
+`term` first, then every term the ledger makes equivalent to it (deduped).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.synonyms.expand_query(query, entries, , max_variants=6)
+
+`query` first, then variants with one known term swapped for an alias.
+
+Terms are matched as whole words, case-insensitively, separator-tolerant.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.synonyms.ledger_path()
+
+Where the ledger lives: `$IR_SYNONYMS`, else `<config_dir>/synonyms.jsonl`.
+
+* **Return type:**
+  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
+
+### ir.synonyms.load_synonyms(path=None, , corpus=None)
+
+The ledger’s entries (those for all corpora, plus `corpus`’s own).
+
+A missing ledger is an empty one; a malformed line is skipped, so a hand edit
+gone wrong never breaks search.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SynonymEntry`](_autosummary/ir.synonyms.html.md#ir.synonyms.SynonymEntry)]
+
+### ir.synonyms.make_synonym_formulator(entries=None, , path=None, corpus=None, max_variants=6)
+
+A deterministic [`ir.formulate.Formulator`](_autosummary/ir.formulate.html.md#ir.formulate.Formulator) that expands from the ledger.
+
+With `entries=None` the ledger is re-read on every call, so an entry an agent
+just added applies to its next search. Returns the original query alone when
+nothing in it is in the ledger (identity, the seam’s default behavior).
+
+### ir.synonyms.term_regex(terms)
+
+One alternation matching any of `terms`, tolerant of `-`/`_`/space.
+
+Longest first (so a regex engine prefers the full phrase); short plain words get
+word boundaries.
+
+```pycon
+>>> term_regex(["db", "data base"])
+'data[-_ ]?base|\\bdb\\b'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+
 # _autosummary/ir.synopsis.html.md
 
 # ir.synopsis
@@ -7522,16 +7697,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-10-26 16:15 UTC** from commit <a href="https://github.com/i2mint/ir/commit/4b1d6ac15f679638743bde16fe83e73e1987b13d"><code>4b1d6ac</code></a> on branch <code>master</code>, for **ir 0.1.60** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-11 11:00 UTC** from commit <a href="https://github.com/i2mint/ir/commit/b82e9b2a9f08db9c8bb8456b74c640e47678443f"><code>b82e9b2</code></a> on branch <code>master</code>, for **ir 0.1.61** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.61) is behind the latest release on PyPI (0.1.62): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/4b1d6ac15f679638743bde16fe83e73e1987b13d"><code>4b1d6ac15f679638743bde16fe83e73e1987b13d</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/b82e9b2a9f08db9c8bb8456b74c640e47678443f"><code>b82e9b2a9f08db9c8bb8456b74c640e47678443f</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7542,9 +7719,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/40357122126">40357122126</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43008164347">43008164347</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>4b1d6ac15f679638743bde16fe83e73e1987b13d</code> (in the history of the built commit) |
+| Event commit | <code>b82e9b2a9f08db9c8bb8456b74c640e47678443f</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7553,7 +7730,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 | epythet  | 0.2.22  |
 | Sphinx   | 9.1.1   |
 | docutils | 0.22.4  |
-| Python   | 3.12.15 |
+| Python   | 3.12.16 |
 
 ## Configuration as resolved
 
@@ -7569,13 +7746,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.60/">0.1.60</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.62/">0.1.62</a>, newer than the documented version (0.1.61).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 4b1d6ac15f679638743bde16fe83e73e1987b13d
+git checkout b82e9b2a9f08db9c8bb8456b74c640e47678443f
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
@@ -7599,7 +7776,7 @@ Skills are folders holding a `SKILL.md` (the [Agent Skills](https://agentskills.
 
 ### `ir-search`
 
-Find specific documents, packages, skills, or past work with the `ir` retrieval engine — and have the results reviewed for real relevance before they come back. Use whenever the user wants to search/look-up over their own corpora: “find the docs/report about X”, “use ir (or ir discover) to find …”, “which of my packages does Y”, “search my reports/notes/sessions for Z”, “what do I have written about …”, “is there a doc on …”. Covers the `ir` CLI (build/search/discover), the corpus map, the mode/scoring gotchas, and when to delegate to the `ir-discover-agent` subagent for a reviewed, reformulated search vs. running a quick inline lookup. `ir` is a deterministic retrieval substrate with no agent of its own; this skill + the subagent are the Claude-Code-native way to wrap it in agentic query→review→reformulate powers (the coded equivalent is `raglab`).
+Find specific documents, packages, skills, or past work with the `ir` retrieval engine — and have the results reviewed for real relevance before they come back. Use whenever the user wants to search/look-up over their own corpora: “find the docs/report about X”, “use ir (or ir discover) to find …”, “which of my packages does Y”, “search my reports/notes/sessions for Z”, “what do I have written about …”, “is there a doc on …”. Covers the `ir` CLI (build/search/discover), the corpus map, the mode/scoring gotchas, and when to delegate to the `ir-discover-agent` subagent for a reviewed, reformulated search vs. running a quick inline lookup, which route (grep, lexical, dense, hybrid) fits which query, and the synonym ledger (`ir synonyms`) that widens keyword search with the corpus’s own vocabulary. For past Claude Code sessions (“we did X”, “that old session”) use the `astern-recall` skill, which also searches the other machines and accounts. `ir` is a deterministic retrieval substrate with no agent of its own; this skill + the subagent are the Claude-Code-native way to wrap it in agentic query→review→reformulate powers (the coded equivalent is `raglab`).
 
 ```bash
 gh skill install i2mint/ir ir-search --agent claude-code

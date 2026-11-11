@@ -1976,5 +1976,6 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 | [`sources`](ir.sources.html.md#module-ir.sources)           | Defining a corpus source — an abstract strategy plus parameters.                                                       |
 | [`store`](ir.store.html.md#module-ir.store)               | Persistence for `ir` — the repository layer over `dol` key-value views.                                                |
 | [`strategy`](ir.strategy.html.md#module-ir.strategy)         | Indexing strategies — the "what do we index?" seam.                                                                    |
+| [`synonyms`](ir.synonyms.html.md#module-ir.synonyms)         | The synonym ledger: corpus vocabulary an agent learns, for keyword and regex search.                                   |
 | [`synopsis`](ir.synopsis.html.md#module-ir.synopsis)         | Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).                                           |
 | [`tools`](ir.tools.html.md#module-ir.tools)               | Agent-callable tool surface over `ir` — plain functions returning JSON-ready dicts, deliberately MCP/HTTP-agnostic.    |

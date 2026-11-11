@@ -134,6 +134,7 @@
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.sources.html">ir.sources</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.store.html">ir.store</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.strategy.html">ir.strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.synonyms.html">ir.synonyms</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.synopsis.html">ir.synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.tools.html">ir.tools</a></li>
 </ul>
@@ -194,12 +195,16 @@
       </ul></li>
       <li><a href="_autosummary/ir.eval_gen.html#ir.eval_gen.AbstentionGenerator">AbstentionGenerator (in module ir.eval_gen)</a>
 </li>
-      <li><a href="_autosummary/ir.synopsis.html#ir.synopsis.ALWAYS">ALWAYS (in module ir.synopsis)</a>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.add_synonyms">add_synonyms() (in module ir.synonyms)</a>
 </li>
-      <li><a href="_autosummary/ir.schedule.html#ir.schedule.ScheduleSpec.args">args (ir.schedule.ScheduleSpec attribute)</a>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.aliases">aliases() (in module ir.synonyms)</a>
+</li>
+      <li><a href="_autosummary/ir.synopsis.html#ir.synopsis.ALWAYS">ALWAYS (in module ir.synopsis)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
+      <li><a href="_autosummary/ir.schedule.html#ir.schedule.ScheduleSpec.args">args (ir.schedule.ScheduleSpec attribute)</a>
+</li>
       <li><a href="_autosummary/ir.html#ir.Artifact">Artifact (class in ir)</a>
 
       <ul style="list-style-type:none">
@@ -461,11 +466,15 @@
 </li>
       <li><a href="_autosummary/ir.sources.html#ir.sources.DFLT_EXCLUDE_DIRS">DFLT_EXCLUDE_DIRS (in module ir.sources)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.eval.html#ir.eval.DFLT_K_VALUES">DFLT_K_VALUES (in module ir.eval)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.DFLT_LABEL">DFLT_LABEL (in module ir.schedule)</a>
+</li>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.DFLT_LEDGER_NAME">DFLT_LEDGER_NAME (in module ir.synonyms)</a>
+</li>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.DFLT_MAX_VARIANTS">DFLT_MAX_VARIANTS (in module ir.synonyms)</a>
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.DFLT_METRICS">DFLT_METRICS (in module ir.eval)</a>
 </li>
@@ -548,10 +557,10 @@
 </li>
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.ScheduleSpec.env_dict">env_dict (ir.schedule.ScheduleSpec property)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.cli.html#ir.cli.eval">eval() (in module ir.cli)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.cli.html#ir.cli.eval_gen">eval_gen() (in module ir.cli)</a>
 </li>
       <li><a href="_autosummary/ir.cli.html#ir.cli.eval_select">eval_select() (in module ir.cli)</a>
@@ -569,6 +578,8 @@
       <li><a href="_autosummary/ir.config.html#ir.config.excluded_patterns">excluded_patterns() (in module ir.config)</a>
 </li>
       <li><a href="_autosummary/ir.html#ir.expand">expand() (in module ir)</a>
+</li>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.expand_query">expand_query() (in module ir.synonyms)</a>
 </li>
   </ul></td>
   </tr>
@@ -932,6 +943,13 @@
 </li>
       </ul></li>
       <li>
+    ir.synonyms
+
+      <ul style="list-style-type:none">
+        <li><a href="_autosummary/ir.synonyms.html#module-ir.synonyms">module</a>
+</li>
+      </ul></li>
+      <li>
     ir.synopsis
 
       <ul style="list-style-type:none">
@@ -987,6 +1005,8 @@
       </ul></li>
       <li><a href="_autosummary/ir.base.html#ir.base.ledger_key">ledger_key() (in module ir.base)</a>
 </li>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.ledger_path">ledger_path() (in module ir.synonyms)</a>
+</li>
       <li><a href="_autosummary/ir.html#ir.Disclosure.level">level (ir.Disclosure attribute)</a>
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.PackageRelevanceCase.level">level() (ir.eval.PackageRelevanceCase method)</a>
@@ -1010,6 +1030,8 @@
       <li><a href="_autosummary/ir.eval.html#ir.eval.load_cases">load_cases() (in module ir.eval)</a>
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.load_package_cases">load_package_cases() (in module ir.eval)</a>
+</li>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.load_synonyms">load_synonyms() (in module ir.synonyms)</a>
 </li>
       <li><a href="_autosummary/ir.html#ir.CorpusStore.local">local() (ir.CorpusStore class method)</a>
 
@@ -1088,6 +1110,8 @@
         <li><a href="_autosummary/ir.tools.html#ir.tools.make_search">(in module ir.tools)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.make_synonym_formulator">make_synonym_formulator() (in module ir.synonyms)</a>
+</li>
       <li><a href="_autosummary/ir.html#ir.make_thin_description_predicate">make_thin_description_predicate() (in module ir)</a>
 
       <ul style="list-style-type:none">
@@ -1203,6 +1227,8 @@
         <li><a href="_autosummary/ir.store.html#module-ir.store">ir.store</a>
 </li>
         <li><a href="_autosummary/ir.strategy.html#module-ir.strategy">ir.strategy</a>
+</li>
+        <li><a href="_autosummary/ir.synonyms.html#module-ir.synonyms">ir.synonyms</a>
 </li>
         <li><a href="_autosummary/ir.synopsis.html#module-ir.synopsis">ir.synopsis</a>
 </li>
@@ -1591,20 +1617,22 @@
         <li><a href="_autosummary/ir.store.html#ir.store.CorpusStore.set_ledger_entry">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.html#ir.CorpusStore.set_links">set_links() (ir.CorpusStore method)</a>
 
       <ul style="list-style-type:none">
         <li><a href="_autosummary/ir.store.html#ir.store.CorpusStore.set_links">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.html#ir.CorpusStore.set_maintenance_state">set_maintenance_state() (ir.CorpusStore method)</a>
 
       <ul style="list-style-type:none">
         <li><a href="_autosummary/ir.store.html#ir.store.CorpusStore.set_maintenance_state">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.SHORT_TERM_CHARS">SHORT_TERM_CHARS (in module ir.synonyms)</a>
+</li>
       <li><a href="_autosummary/ir.coverage.html#ir.coverage.CoverageReport.should_index">should_index (ir.coverage.CoverageReport property)</a>
 
       <ul style="list-style-type:none">
@@ -1667,6 +1695,12 @@
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.sweep_selector">sweep_selector() (in module ir.eval)</a>
 </li>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.SynonymEntry">SynonymEntry (class in ir.synonyms)</a>
+</li>
+      <li><a href="_autosummary/ir.cli.html#ir.cli.synonyms">synonyms() (in module ir.cli)</a>
+</li>
+      <li><a href="_autosummary/ir.cli.html#ir.cli.synonyms_add">synonyms_add() (in module ir.cli)</a>
+</li>
       <li><a href="_autosummary/ir.html#ir.Package.synopsis_fields">synopsis_fields (ir.Package attribute)</a>
 
       <ul style="list-style-type:none">
@@ -1700,6 +1734,8 @@
         <li><a href="_autosummary/ir.base.html#ir.base.tag_source">(in module ir.base)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/ir.synonyms.html#ir.synonyms.term_regex">term_regex() (in module ir.synonyms)</a>
+</li>
       <li><a href="_autosummary/ir.strategy.html#ir.strategy.text_of">text_of() (in module ir.strategy)</a>
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.NamedSets.theme">theme (ir.eval.NamedSets attribute)</a>
@@ -1844,7 +1880,7 @@
 </footer>
     </div>
     
-    <script src="_static/documentation_options.js?v=5fe4e9ad"></script>
+    <script src="_static/documentation_options.js?v=fb9c6db4"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>

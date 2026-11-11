@@ -23,4 +23,6 @@ ir.cli
       schedule
       search
       sweep_select
+      synonyms
+      synonyms_add
    

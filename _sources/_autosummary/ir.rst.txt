@@ -106,5 +106,6 @@
    sources
    store
    strategy
+   synonyms
    synopsis
    tools
