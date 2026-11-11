@@ -95,9 +95,12 @@ def load_synonyms(
     for line in lines:
         try:
             d = json.loads(line)
-            terms = tuple(str(t) for t in d["terms"] if str(t).strip())
+            raw = d["terms"]
         except (ValueError, KeyError, TypeError):
             continue
+        if not isinstance(raw, list):  # a string would split into characters
+            continue
+        terms = tuple(str(t).strip() for t in raw if _is_term(str(t)))
         if len(terms) < 2:
             continue
         e = SynonymEntry(
@@ -125,7 +128,7 @@ def add_synonyms(
     Add an entry only after a verified find that the corpus-specific word made
     possible; general-language synonyms are the searcher's job, not the ledger's.
     """
-    terms = tuple(t.strip() for t in terms if t and t.strip())
+    terms = tuple(t.strip() for t in terms if t and _is_term(t))
     if len(terms) < 2:
         raise ValueError(f"a ledger entry needs at least two terms, got {terms!r}")
     e = SynonymEntry(
@@ -140,6 +143,11 @@ def add_synonyms(
     with open(p, "a", encoding="utf-8") as f:
         f.write(e.to_json() + "\n")
     return e
+
+
+def _is_term(t: str) -> bool:
+    """A usable term has a word character (``-`` or ``|`` alone would match noise)."""
+    return bool(re.search(r"\w", t))
 
 
 def _norm(term: str) -> str:
@@ -198,11 +206,11 @@ def expand_query(
     for e in entries:
         sources = e.terms[:1] if e.oneway else e.terms
         for src in sorted(sources, key=len, reverse=True):
-            rx = re.compile(rf"(?<!\w){term_regex([src]).strip('|')}(?!\w)", re.I)
+            rx = re.compile(rf"(?<!\w)(?:{term_regex([src])})(?!\w)", re.I)
             if not rx.search(query):
                 continue
             for alt in aliases(src, [e])[1:]:
-                variant = rx.sub(alt, query, count=1)
+                variant = rx.sub(lambda _m, a=alt: a, query, count=1)
                 if variant not in out:
                     out.append(variant)
                 if len(out) >= max_variants:

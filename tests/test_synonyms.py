@@ -117,3 +117,17 @@ def test_cli_synonyms_show_and_add(ledger):
 def test_expand_flag_off_is_todays_behavior():
     assert cli._expand_kw(False, "x") == {}
     assert "formulate" in cli._expand_kw(True, "x")
+
+
+def test_hand_edits_never_break_search(ledger):
+    ledger.write_text(
+        '{"terms": "acme, ac"}\n'  # a string, not a list: skipped
+        '{"terms": ["-", "minus"]}\n'  # separator-only term dropped -> < 2 terms
+        '{"terms": ["foo|", "bar"]}\n'
+        '{"terms": ["winpath", "C:\\\\Users"]}\n'
+    )
+    es = load_synonyms()
+    assert [e.terms for e in es] == [("foo|", "bar"), ("winpath", "C:\\Users")]
+    assert expand_query("x - y", es) == ["x - y"]
+    assert expand_query("foo| baz", es)[1] == "bar baz"
+    assert expand_query("winpath here", es)[1] == "C:\\Users here"

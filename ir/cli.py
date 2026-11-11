@@ -180,7 +180,8 @@ def search(
     the search warns and keeps the first-stage ranking); ``--rerank-text``
     picks what it reads: surface (default) | artifact. Reranked scores are on the
     reranker's own scale. ``--expand`` also searches the query's variants from the
-    synonym ledger (``ir synonyms``) and fuses them, the original first.
+    synonym ledger (``ir synonyms``) and fuses them (best score per artifact across
+    the variants; the original query is always one of them).
     """
     corpus = _open_ready(name)
     if len(corpus) == 0:
