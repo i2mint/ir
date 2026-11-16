@@ -218,7 +218,7 @@ def _expand_kw(expand, name):
 
 def _filter_kw(filter):
     """Search kwargs for a JSON metadata filter; empty (today's behavior) when unset."""
-    if filter is None or filter == "":
+    if filter is None or not str(filter).strip():
         return {}
     import json
 
@@ -230,6 +230,16 @@ def _filter_kw(filter):
         ) from None
     if not isinstance(parsed, dict):
         raise SystemExit("--filter must be a JSON object (a Mongo-style filter)")
+    if not parsed:
+        return {}
+    from vd.base import UnsupportedFilterError
+    from vd.filters import validate_filter
+
+    try:
+        validate_filter(parsed)
+    except (UnsupportedFilterError, AttributeError, TypeError, ValueError) as e:
+        # vd raises a bare AttributeError for a malformed $and/$or operand
+        raise SystemExit(f"--filter: unusable filter ({e})") from None
     return {"filter": parsed}
 
 

@@ -86,14 +86,14 @@ DFLT_BM25_SAT_K = 8.0
 
 
 def _matches(metadata: Mapping[str, Any], filter: Mapping[str, Any]) -> bool:
-    """Mongo-style metadata match, via ``vd`` when available."""
-    try:
-        from vd.filters import matches_filter
+    """Mongo-style metadata match via ``vd``; an unsupported operator raises.
 
-        return matches_filter(dict(metadata), dict(filter))
-    except Exception:
-        # Minimal equality fallback if vd is unavailable.
-        return all(metadata.get(k) == v for k, v in filter.items())
+    (An invalid filter used to be swallowed into "no matches", which an agent
+    cannot tell from a real empty result.)
+    """
+    from vd.filters import matches_filter
+
+    return matches_filter(dict(metadata), dict(filter))
 
 
 def _embed_query(embedder, query: str) -> np.ndarray:

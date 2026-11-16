@@ -18,10 +18,6 @@ def corpus():
     return ir.build(src, store=CorpusStore.memory(), embedder="light")
 
 
-def _ids(result):
-    return sorted(r["id"] if "id" in r else r["name"] for r in result["results"])
-
-
 def test_filter_kw_parses_json_and_is_empty_when_unset():
     assert cli._filter_kw(None) == {}
     assert cli._filter_kw("") == {}
@@ -68,3 +64,31 @@ def test_short_f_still_means_fusion_and_filter_is_long_only():
 
     ns = mk_parser().parse_args(["search", "n", "q", "-f", "blend", "--filter", "{}"])
     assert (ns.fusion, ns.filter) == ("blend", "{}")
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ['{"project": {"$regex": "p"}}', '{"$and": {"project": "p1"}}'],
+)
+def test_filter_kw_rejects_unsupported_operators(bad):
+    with pytest.raises(SystemExit, match="--filter"):
+        cli._filter_kw(bad)
+
+
+def test_filter_kw_empty_object_means_no_filter():
+    assert cli._filter_kw("{}") == {}
+    assert cli._filter_kw("  ") == {}
+
+
+def test_python_api_raises_on_unsupported_operator(corpus):
+    from vd.base import UnsupportedFilterError
+
+    with pytest.raises(UnsupportedFilterError):
+        corpus.search("alpha", mode="lexical", filter={"project": {"$regex": "p"}})
+
+
+def test_discover_short_f_is_fusion():
+    from ir.__main__ import mk_parser
+
+    ns = mk_parser().parse_args(["discover", "n", "q", "-f", "blend"])
+    assert ns.fusion == "blend"
