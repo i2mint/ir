@@ -41,6 +41,19 @@ FORMULATION_PROMPT = (
 )
 
 
+#: Prompt for :func:`make_keyword_formulator`: term lists for BM25 / grep, not
+#: fluent paraphrases (ir_13 §1.3).
+KEYWORD_FORMULATION_PROMPT = (
+    "You are writing queries for a keyword (BM25 / grep) search, not a semantic "
+    "one. For the request below, output {n} short keyword queries, one per line, "
+    "no numbering. Each is a few terms that would literally appear in a matching "
+    "document: spelling and morphological variants (deploy, deploys, deployment), "
+    "synonyms and aliases, and the artifacts the answer would leave behind (file "
+    "names, commands, identifiers, error messages). Never a sentence.\n\n"
+    "Request: {query}"
+)
+
+
 def identity_formulator(query: str) -> str:
     """The default formulator: return the query unchanged (embed it verbatim)."""
     return query
@@ -96,5 +109,39 @@ def make_llm_formulator(
             return queries
         fb = fallback if fallback is not None else identity_formulator
         return fb(query)
+
+    return formulate
+
+
+def make_keyword_formulator(
+    *,
+    rewriter: Callable[[str], "str | Sequence[str]"] | None = None,
+    n: int = 4,
+    include_original: bool = True,
+    **kwargs: Any,
+) -> Formulator:
+    """An LLM :data:`Formulator` that writes **keyword** queries for BM25 / grep.
+
+    Like :func:`make_llm_formulator` (same injectable ``rewriter``, lazy ``aix``,
+    identity fallback), but its default prompt asks for term lists (variants and
+    the artifacts an answer would leave behind) instead of fluent paraphrases,
+    which is what a lexical first stage can match. With ``include_original`` the
+    query itself is always one of the produced queries, so a bad rewrite can add
+    noise but never drop the literal request; pair it with
+    ``search(variant_weight=...)`` to keep the original on top.
+
+    >>> f = make_keyword_formulator(rewriter=lambda q: ["deploy deployment", "ci.yml"])
+    >>> f("how do we ship")
+    ['how do we ship', 'deploy deployment', 'ci.yml']
+    """
+    kwargs.setdefault("prompt", KEYWORD_FORMULATION_PROMPT)
+    inner = make_llm_formulator(rewriter=rewriter, n=n, **kwargs)
+
+    def formulate(query: str) -> str | Sequence[str]:
+        produced = inner(query)
+        variants = [produced] if isinstance(produced, str) else list(produced)
+        if not include_original:
+            return variants
+        return [query, *(v for v in variants if v != query)]
 
     return formulate

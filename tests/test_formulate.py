@@ -5,8 +5,14 @@ multi-query fan-out unions+fuses; the LLM formulator is injectable and falls bac
 to identity on any failure. Hermetic: the light embedder, no ``aix``.
 """
 
+import pytest
+
 import ir
-from ir.formulate import identity_formulator, make_llm_formulator
+from ir.formulate import (
+    identity_formulator,
+    make_keyword_formulator,
+    make_llm_formulator,
+)
 from ir.store import CorpusStore
 
 DOCS = {
@@ -99,3 +105,75 @@ def test_make_llm_formulator_with_injected_rewriter_needs_no_aix():
     # rewrite is normalized to a one-element list (a valid Formulator output).
     f = make_llm_formulator(rewriter=lambda q: q)
     assert f("anything") == ["anything"]
+
+
+# ----- variant_weight / keyword formulator (#136) -------------------------- #
+
+
+def _two_query(q):
+    return [q, "bake a cake in the oven"]
+
+
+def test_variant_weight_default_is_todays_merge():
+    corpus = _corpus()
+    kw = dict(formulate=_two_query, mode="lexical", per_artifact=False, k=6)
+    base = ir.search(corpus, "deploy the app", **kw)
+    same = ir.search(corpus, "deploy the app", variant_weight=1.0, **kw)
+    assert [(h.artifact_id, h.score) for h in base] == [
+        (h.artifact_id, h.score) for h in same
+    ]
+
+
+def test_variant_weight_demotes_formulations_not_the_original():
+    corpus = _corpus()
+    kw = dict(formulate=_two_query, mode="lexical", k=6)
+    full = {h.artifact_id: h.score for h in ir.search(corpus, "deploy the app", **kw)}
+    low = {
+        h.artifact_id: h.score
+        for h in ir.search(corpus, "deploy the app", variant_weight=0.5, **kw)
+    }
+    assert low["deploy"] == full["deploy"]  # the original query's hit is untouched
+    assert low["bake"] == pytest.approx(full["bake"] * 0.5)  # the variant's is halved
+
+
+def test_variant_weight_zero_keeps_only_the_original_ranking_on_top():
+    corpus = _corpus()
+    hits = ir.search(
+        corpus,
+        "deploy the app",
+        formulate=_two_query,
+        mode="lexical",
+        variant_weight=0.0,
+        k=1,
+    )
+    assert hits[0].artifact_id == "deploy"
+
+
+@pytest.mark.parametrize("bad", [-1.0, float("nan"), float("inf")])
+def test_variant_weight_validated(bad):
+    with pytest.raises(ValueError, match="variant_weight"):
+        ir.search(_corpus(), "x", formulate=_two_query, variant_weight=bad)
+
+
+def test_keyword_formulator_keeps_original_first_and_dedupes():
+    f = make_keyword_formulator(rewriter=lambda q: ["a b", q, "c"])
+    assert f("orig") == ["orig", "a b", "c"]
+    assert make_keyword_formulator(rewriter=lambda q: ["a"], include_original=False)(
+        "orig"
+    ) == ["a"]
+
+
+def test_keyword_formulator_falls_back_to_the_query_on_failure():
+    def boom(q):
+        raise RuntimeError("no llm")
+
+    assert make_keyword_formulator(rewriter=boom)("orig") == ["orig"]
+
+
+def test_keyword_formulator_uses_the_keyword_prompt_by_default():
+    from ir.formulate import KEYWORD_FORMULATION_PROMPT
+
+    assert "BM25" in KEYWORD_FORMULATION_PROMPT
+    assert (
+        "{query}" in KEYWORD_FORMULATION_PROMPT and "{n}" in KEYWORD_FORMULATION_PROMPT
+    )

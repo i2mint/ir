@@ -554,6 +554,7 @@ def search(
     formulate: Formulator | None = None,
     surface_weights: Mapping[str, float] | None = None,
     dep_boost: ScoreBoost | None = None,
+    variant_weight: float = 1.0,
 ) -> list[SearchHit]:
     """Return the top-*k* :class:`~ir.base.SearchHit` for *query*.
 
@@ -613,6 +614,15 @@ def search(
         from unweighted ones, so a calibrated floor does not apply to them
         (``discover(min_score="auto")`` warns and skips it). Default ``None``
         weighs every surface equally, as before.
+    variant_weight : multiplier on the scores of the formulator's *variants* (every
+        produced query other than ``query`` itself) before the cross-query merge
+        takes the best score per surface. ``1.0`` (default) keeps today's merge;
+        below ``1.0`` the original query outranks its formulations unless a
+        variant matches clearly better, which guards against query drift (cf. RM3's
+        interpolation, query2doc's repeated query). Meant for the non-negative
+        scores of BM25 and hybrid fusion; weighted scores are on a different scale
+        from unweighted ones. No effect without ``formulate``. Must be finite and
+        non-negative.
     dep_boost : an optional :data:`ScoreBoost` (``hit -> float``) whose value is
         added to each fetched candidate's score after fusion and the reranker,
         before the per-artifact collapse -- a structural signal next to the
@@ -632,6 +642,10 @@ def search(
     if fusion not in FUSIONS:
         raise ValueError(f"unknown fusion {fusion!r}; expected one of {FUSIONS}")
     weights = _check_surface_weights(surface_weights)
+    if not (math.isfinite(variant_weight) and variant_weight >= 0):
+        raise ValueError(
+            f"variant_weight must be finite and non-negative, got {variant_weight!r}"
+        )
 
     # Materialize once: surfaces may be a one-shot iterable, and it is both the
     # filter input and part of the BM25 cache key.
@@ -660,24 +674,25 @@ def search(
             )
             merged: list[SearchHit] = []
             for q in queries:
-                merged.extend(
-                    search(
-                        corpus,
-                        q,
-                        k=depth,
-                        filter=filter,
-                        surfaces=surfaces,
-                        per_artifact=False,
-                        mode=mode,
-                        fusion=fusion,
-                        rrf_k=rrf_k,
-                        alpha=alpha,
-                        bm25_sat_k=bm25_sat_k,
-                        fetch_k=fetch_k,
-                        bm25=bm25,
-                        surface_weights=weights,
-                    )
+                found = search(
+                    corpus,
+                    q,
+                    k=depth,
+                    filter=filter,
+                    surfaces=surfaces,
+                    per_artifact=False,
+                    mode=mode,
+                    fusion=fusion,
+                    rrf_k=rrf_k,
+                    alpha=alpha,
+                    bm25_sat_k=bm25_sat_k,
+                    fetch_k=fetch_k,
+                    bm25=bm25,
+                    surface_weights=weights,
                 )
+                if q != asked and variant_weight != 1.0:
+                    found = [replace(h, score=h.score * variant_weight) for h in found]
+                merged.extend(found)
             if rerank is not None and merged:
                 merged = _rerank_hits(
                     corpus,
