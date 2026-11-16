@@ -7,6 +7,8 @@ by another package (astern's session synopses / turns) round-trip through
 ``corpora.json`` and rebuild in a fresh process.
 """
 
+import json
+
 import pytest
 
 import ir
@@ -215,4 +217,25 @@ def test_records_signal_is_stable_for_set_valued_metadata():
     )
     assert sig("x", {"text": "t", "tags": {"a"}}) != sig(
         "x", {"text": "t", "tags": {"b"}}
+    )
+
+
+def test_signal_ignores_what_it_does_not_hash_and_matches_the_old_hash_without_sets():
+    import ef
+
+    from ir.sources import records_change_signal
+
+    cyclic = {"text": "t"}
+    cyclic["parent"] = cyclic  # an unhashed cycle used to be fine and must stay fine
+    assert records_change_signal()("x", cyclic) == ef.content_hash(cyclic)
+    plain = {"text": "t", "pages": ["p.1", "p.2"], "n": (1, 2)}
+    sig = records_change_signal(metadata_keys=["pages"])
+    assert sig("x", plain) == ef.content_hash(plain, content_keys=["pages"])
+    whole = records_change_signal(text_key="body")
+    rec = {"body": "t", "tags": ["a", "b"]}
+    assert whole("x", rec) == ef.content_hash(
+        json.dumps(rec, sort_keys=True, default=str)
+    )
+    assert whole("x", {"body": "t", "tags": {"a", "b"}}) == whole(
+        "x", {"body": "t", "tags": {"b", "a"}}
     )

@@ -91,6 +91,17 @@ def _canonical(value: Any) -> Any:
     return value
 
 
+def _json_default(value: Any) -> Any:
+    """``json.dumps`` fallback: sets become sorted lists, anything else its ``str``.
+
+    Called only for values JSON cannot serialise, so a record without sets hashes
+    exactly as with ``default=str`` and nothing unhashed is ever walked.
+    """
+    if isinstance(value, (set, frozenset)):
+        return _canonical(value)
+    return str(value)
+
+
 def records_change_signal(
     *,
     text_key: str = "text",
@@ -125,10 +136,15 @@ def records_change_signal(
     def signal(artifact_id: str, raw: Any) -> str:
         if not isinstance(raw, Mapping):
             return ef.content_hash(raw)
-        raw = _canonical(raw)
         if text_key == "text":
+            if (
+                keys
+            ):  # canonicalise only what content_keys will read, not the whole record
+                raw = {**raw, **{k: _canonical(raw[k]) for k in keys if k in raw}}
+                if isinstance(raw.get("metadata"), Mapping):
+                    raw["metadata"] = _canonical(raw["metadata"])
             return ef.content_hash(raw, content_keys=keys)
-        return ef.content_hash(json.dumps(raw, sort_keys=True, default=str))
+        return ef.content_hash(json.dumps(raw, sort_keys=True, default=_json_default))
 
     return signal
 
