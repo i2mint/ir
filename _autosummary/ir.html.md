@@ -69,6 +69,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`parent_policy`](#ir.parent_policy)()                                    | The whole artifact (small-to-big): every stored surface, plan order.                                                                       |
 | [`tag_source`](#ir.tag_source)(hits, source)                           | Stamp *source* on every hit that doesn't already carry one.                                                                                |
 | [`make_llm_formulator`](#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                               |
+| [`make_keyword_formulator`](#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                       |
 | [`select`](#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                 |
 | [`disclose`](#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                    |
 | [`discover`](#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                     |
@@ -1571,6 +1572,27 @@ whether a (synopsis-aware) reindex is due *and* permitted now, and — unless
 
 * **Return type:**
   [`MaintenanceResult`](ir.maintenance.html.md#ir.maintenance.MaintenanceResult)
+
+### ir.make_keyword_formulator(, rewriter=None, n=4, include_original=True, \*\*kwargs)
+
+An LLM `Formulator` that writes **keyword** queries for BM25 / grep.
+
+Like [`make_llm_formulator()`](#ir.make_llm_formulator) (same injectable `rewriter`, lazy `aix`,
+identity fallback), but its default prompt asks for term lists (variants and
+the artifacts an answer would leave behind) instead of fluent paraphrases,
+which is what a lexical first stage can match. With `include_original` the
+query itself is always one of the produced queries, so a bad rewrite can add
+noise but never drop the literal request; pair it with
+`search(variant_weight=...)` to keep the original on top.
+
+```pycon
+>>> f = make_keyword_formulator(rewriter=lambda q: ["deploy deployment", "ci.yml"])
+>>> f("how do we ship")
+['how do we ship', 'deploy deployment', 'ci.yml']
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 ### ir.make_llm_formulator(, rewriter=None, prompt='Rewrite the search query into {n} short, diverse alternative search queries that would retrieve the same target documents: fix typos, expand jargon, and add synonyms, but keep each a terse search phrase. One query per line, no numbering.\\n\\nQuery: {query}', n=3, fallback=None, \*\*prompt_function_kwargs)
 

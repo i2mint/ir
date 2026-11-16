@@ -25,15 +25,17 @@ formulator must never make retrieval *worse* than the raw query.
 
 ### Module Attributes
 
-| [`Formulator`](#ir.formulate.Formulator)         | a query string -> one query (`str`) or several (`Sequence[str]`).                                                           |
-|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| [`FORMULATION_PROMPT`](#ir.formulate.FORMULATION_PROMPT) | Default prompt for [`make_llm_formulator()`](#ir.formulate.make_llm_formulator) — diverse paraphrases for recall. |
+| [`Formulator`](#ir.formulate.Formulator)                 | a query string -> one query (`str`) or several (`Sequence[str]`).                                                           |
+|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| [`FORMULATION_PROMPT`](#ir.formulate.FORMULATION_PROMPT)         | Default prompt for [`make_llm_formulator()`](#ir.formulate.make_llm_formulator) — diverse paraphrases for recall. |
+| [`KEYWORD_FORMULATION_PROMPT`](#ir.formulate.KEYWORD_FORMULATION_PROMPT) | term lists for BM25 / grep, not fluent paraphrases (ir_13 §1.3).                                                            |
 
 ### Functions
 
-| [`identity_formulator`](#ir.formulate.identity_formulator)(query)                       | The default formulator: return the query unchanged (embed it verbatim).                                     |
-|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| [`make_llm_formulator`](#ir.formulate.make_llm_formulator)(\*[, rewriter, prompt, ...]) | An LLM-backed [`Formulator`](#ir.formulate.Formulator) (rewrite / expand / multi-query). |
+| [`identity_formulator`](#ir.formulate.identity_formulator)(query)                       | The default formulator: return the query unchanged (embed it verbatim).                                             |
+|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| [`make_keyword_formulator`](#ir.formulate.make_keyword_formulator)(\*[, rewriter, n, ...])  | An LLM [`Formulator`](#ir.formulate.Formulator) that writes **keyword** queries for BM25 / grep. |
+| [`make_llm_formulator`](#ir.formulate.make_llm_formulator)(\*[, rewriter, prompt, ...]) | An LLM-backed [`Formulator`](#ir.formulate.Formulator) (rewrite / expand / multi-query).         |
 
 ### ir.formulate.FORMULATION_PROMPT *= 'Rewrite the search query into {n} short, diverse alternative search queries that would retrieve the same target documents: fix typos, expand jargon, and add synonyms, but keep each a terse search phrase. One query per line, no numbering.\\n\\nQuery: {query}'*
 
@@ -50,12 +52,41 @@ producer when injected.
 
 alias of `Callable`[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], `str | Sequence[str]`]
 
+### ir.formulate.KEYWORD_FORMULATION_PROMPT *= 'You are writing queries for a keyword (BM25 / grep) search, not a semantic one. For the request below, output {n} short keyword queries, one per line, no numbering. Each is a few terms that would literally appear in a matching document: spelling and morphological variants (deploy, deploys, deployment), synonyms and aliases, and the artifacts the answer would leave behind (file names, commands, identifiers, error messages). Never a sentence.\\n\\nRequest: {query}'*
+
+term lists for BM25 / grep, not
+fluent paraphrases (ir_13 §1.3).
+
+* **Type:**
+  Prompt for [`make_keyword_formulator()`](#ir.formulate.make_keyword_formulator)
+
 ### ir.formulate.identity_formulator(query)
 
 The default formulator: return the query unchanged (embed it verbatim).
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### ir.formulate.make_keyword_formulator(, rewriter=None, n=4, include_original=True, \*\*kwargs)
+
+An LLM [`Formulator`](#ir.formulate.Formulator) that writes **keyword** queries for BM25 / grep.
+
+Like [`make_llm_formulator()`](#ir.formulate.make_llm_formulator) (same injectable `rewriter`, lazy `aix`,
+identity fallback), but its default prompt asks for term lists (variants and
+the artifacts an answer would leave behind) instead of fluent paraphrases,
+which is what a lexical first stage can match. With `include_original` the
+query itself is always one of the produced queries, so a bad rewrite can add
+noise but never drop the literal request; pair it with
+`search(variant_weight=...)` to keep the original on top.
+
+```pycon
+>>> f = make_keyword_formulator(rewriter=lambda q: ["deploy deployment", "ci.yml"])
+>>> f("how do we ship")
+['how do we ship', 'deploy deployment', 'ci.yml']
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 ### ir.formulate.make_llm_formulator(, rewriter=None, prompt='Rewrite the search query into {n} short, diverse alternative search queries that would retrieve the same target documents: fix typos, expand jargon, and add synonyms, but keep each a terse search phrase. One query per line, no numbering.\\n\\nQuery: {query}', n=3, fallback=None, \*\*prompt_function_kwargs)
 

@@ -230,68 +230,127 @@
 </span><span id="line-41"><span class="p">)</span>
 </span><span id="line-42">
 </span><span id="line-43">
+</span><span id="line-44"><span class="c1">#: Prompt for :func:`make_keyword_formulator`: term lists for BM25 / grep, not</span>
+</span><span id="line-45"><span class="c1">#: fluent paraphrases (ir_13 §1.3).</span>
+</span><span id="line-46"><span class="n">KEYWORD_FORMULATION_PROMPT</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="line-47">    <span class="s2">"You are writing queries for a keyword (BM25 / grep) search, not a semantic "</span>
+</span><span id="line-48">    <span class="s2">"one. For the request below, output </span><span class="si">{n}</span><span class="s2"> short keyword queries, one per line, "</span>
+</span><span id="line-49">    <span class="s2">"no numbering. Each is a few terms that would literally appear in a matching "</span>
+</span><span id="line-50">    <span class="s2">"document: spelling and morphological variants (deploy, deploys, deployment), "</span>
+</span><span id="line-51">    <span class="s2">"synonyms and aliases, and the artifacts the answer would leave behind (file "</span>
+</span><span id="line-52">    <span class="s2">"names, commands, identifiers, error messages). Never a sentence.</span><span class="se">\n\n</span><span class="s2">"</span>
+</span><span id="line-53">    <span class="s2">"Request: </span><span class="si">{query}</span><span class="s2">"</span>
+</span><span id="line-54"><span class="p">)</span>
+</span><span id="line-55">
+</span><span id="line-56">
 <div class="viewcode-block" id="identity_formulator">
 <a class="viewcode-back" href="../../_autosummary/ir.formulate.html#ir.identity_formulator">[docs]</a>
-</span><span id="line-44"><span class="k">def</span><span class="w"> </span><span class="nf">identity_formulator</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="line-45"><span class="w">    </span><span class="sd">"""The default formulator: return the query unchanged (embed it verbatim)."""</span>
-</span><span id="line-46">    <span class="k">return</span> <span class="n">query</span></div>
+</span><span id="line-57"><span class="k">def</span><span class="w"> </span><span class="nf">identity_formulator</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-58"><span class="w">    </span><span class="sd">"""The default formulator: return the query unchanged (embed it verbatim)."""</span>
+</span><span id="line-59">    <span class="k">return</span> <span class="n">query</span></div>
 
-</span><span id="line-47">
-</span><span id="line-48">
-</span><span id="line-49"><span class="k">def</span><span class="w"> </span><span class="nf">_default_llm_rewriter</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-</span><span id="line-50"><span class="w">    </span><span class="sd">"""Build the default LLM rewriter on :mod:`aix` (lazy import)."""</span>
-</span><span id="line-51">    <span class="kn">import</span><span class="w"> </span><span class="nn">aix</span>
-</span><span id="line-52">
-</span><span id="line-53">    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_lines</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-</span><span id="line-54">        <span class="k">return</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">" -</span><span class="se">\t</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
-</span><span id="line-55">
-</span><span id="line-56">    <span class="n">fn</span> <span class="o">=</span> <span class="n">aix</span><span class="o">.</span><span class="n">prompt_func</span><span class="p">(</span>
-</span><span id="line-57">        <span class="n">prompt</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="n">_parse_lines</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"formulate_queries"</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
-</span><span id="line-58">    <span class="p">)</span>
-</span><span id="line-59">
-</span><span id="line-60">    <span class="k">def</span><span class="w"> </span><span class="nf">rewrite</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-</span><span id="line-61">        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">))</span>
-</span><span id="line-62">
-</span><span id="line-63">    <span class="k">return</span> <span class="n">rewrite</span>
-</span><span id="line-64">
+</span><span id="line-60">
+</span><span id="line-61">
+</span><span id="line-62"><span class="k">def</span><span class="w"> </span><span class="nf">_default_llm_rewriter</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+</span><span id="line-63"><span class="w">    </span><span class="sd">"""Build the default LLM rewriter on :mod:`aix` (lazy import)."""</span>
+</span><span id="line-64">    <span class="kn">import</span><span class="w"> </span><span class="nn">aix</span>
 </span><span id="line-65">
+</span><span id="line-66">    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_lines</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="line-67">        <span class="k">return</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">" -</span><span class="se">\t</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+</span><span id="line-68">
+</span><span id="line-69">    <span class="n">fn</span> <span class="o">=</span> <span class="n">aix</span><span class="o">.</span><span class="n">prompt_func</span><span class="p">(</span>
+</span><span id="line-70">        <span class="n">prompt</span><span class="p">,</span> <span class="n">egress</span><span class="o">=</span><span class="n">_parse_lines</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"formulate_queries"</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span>
+</span><span id="line-71">    <span class="p">)</span>
+</span><span id="line-72">
+</span><span id="line-73">    <span class="k">def</span><span class="w"> </span><span class="nf">rewrite</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="line-74">        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">))</span>
+</span><span id="line-75">
+</span><span id="line-76">    <span class="k">return</span> <span class="n">rewrite</span>
+</span><span id="line-77">
+</span><span id="line-78">
 <div class="viewcode-block" id="make_llm_formulator">
 <a class="viewcode-back" href="../../_autosummary/ir.formulate.html#ir.make_llm_formulator">[docs]</a>
-</span><span id="line-66"><span class="k">def</span><span class="w"> </span><span class="nf">make_llm_formulator</span><span class="p">(</span>
-</span><span id="line-67">    <span class="o">*</span><span class="p">,</span>
-</span><span id="line-68">    <span class="n">rewriter</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">"str | Sequence[str]"</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-69">    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">FORMULATION_PROMPT</span><span class="p">,</span>
-</span><span id="line-70">    <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
-</span><span id="line-71">    <span class="n">fallback</span><span class="p">:</span> <span class="n">Formulator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-72">    <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-</span><span id="line-73"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Formulator</span><span class="p">:</span>
-</span><span id="line-74"><span class="w">    </span><span class="sd">"""An LLM-backed :data:`Formulator` (rewrite / expand / multi-query).</span>
-</span><span id="line-75">
-</span><span id="line-76"><span class="sd">    ``rewriter`` is an injectable ``query -&gt; str | [str, ...]`` callable (a test</span>
-</span><span id="line-77"><span class="sd">    double, or your own router); when omitted it is built lazily on :mod:`aix`</span>
-</span><span id="line-78"><span class="sd">    (``aix.prompt_func``), so importing this module stays offline. ``n`` is the</span>
-</span><span id="line-79"><span class="sd">    multi-query fan-out width. Any error or empty reply falls back to ``fallback``</span>
-</span><span id="line-80"><span class="sd">    (default: :func:`identity_formulator`).</span>
-</span><span id="line-81"><span class="sd">    """</span>
-</span><span id="line-82">
-</span><span id="line-83">    <span class="k">def</span><span class="w"> </span><span class="nf">formulate</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-</span><span id="line-84">        <span class="n">fn</span> <span class="o">=</span> <span class="p">(</span>
-</span><span id="line-85">            <span class="n">rewriter</span>
-</span><span id="line-86">            <span class="k">if</span> <span class="n">rewriter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-</span><span id="line-87">            <span class="k">else</span> <span class="n">_default_llm_rewriter</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">)</span>
-</span><span id="line-88">        <span class="p">)</span>
-</span><span id="line-89">        <span class="k">try</span><span class="p">:</span>
-</span><span id="line-90">            <span class="n">out</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
-</span><span id="line-91">        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-</span><span id="line-92">            <span class="n">out</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="line-93">        <span class="n">queries</span> <span class="o">=</span> <span class="p">[</span><span class="n">out</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">out</span> <span class="ow">or</span> <span class="p">[])</span>
-</span><span id="line-94">        <span class="n">queries</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">queries</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">q</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
-</span><span id="line-95">        <span class="k">if</span> <span class="n">queries</span><span class="p">:</span>
-</span><span id="line-96">            <span class="k">return</span> <span class="n">queries</span>
-</span><span id="line-97">        <span class="n">fb</span> <span class="o">=</span> <span class="n">fallback</span> <span class="k">if</span> <span class="n">fallback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">identity_formulator</span>
-</span><span id="line-98">        <span class="k">return</span> <span class="n">fb</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
-</span><span id="line-99">
-</span><span id="line-100">    <span class="k">return</span> <span class="n">formulate</span></div>
+</span><span id="line-79"><span class="k">def</span><span class="w"> </span><span class="nf">make_llm_formulator</span><span class="p">(</span>
+</span><span id="line-80">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-81">    <span class="n">rewriter</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">"str | Sequence[str]"</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-82">    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">FORMULATION_PROMPT</span><span class="p">,</span>
+</span><span id="line-83">    <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+</span><span id="line-84">    <span class="n">fallback</span><span class="p">:</span> <span class="n">Formulator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-85">    <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+</span><span id="line-86"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Formulator</span><span class="p">:</span>
+</span><span id="line-87"><span class="w">    </span><span class="sd">"""An LLM-backed :data:`Formulator` (rewrite / expand / multi-query).</span>
+</span><span id="line-88">
+</span><span id="line-89"><span class="sd">    ``rewriter`` is an injectable ``query -&gt; str | [str, ...]`` callable (a test</span>
+</span><span id="line-90"><span class="sd">    double, or your own router); when omitted it is built lazily on :mod:`aix`</span>
+</span><span id="line-91"><span class="sd">    (``aix.prompt_func``), so importing this module stays offline. ``n`` is the</span>
+</span><span id="line-92"><span class="sd">    multi-query fan-out width. Any error or empty reply falls back to ``fallback``</span>
+</span><span id="line-93"><span class="sd">    (default: :func:`identity_formulator`).</span>
+</span><span id="line-94"><span class="sd">    """</span>
+</span><span id="line-95">
+</span><span id="line-96">    <span class="k">def</span><span class="w"> </span><span class="nf">formulate</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="line-97">        <span class="n">fn</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="line-98">            <span class="n">rewriter</span>
+</span><span id="line-99">            <span class="k">if</span> <span class="n">rewriter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="line-100">            <span class="k">else</span> <span class="n">_default_llm_rewriter</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">prompt_function_kwargs</span><span class="p">)</span>
+</span><span id="line-101">        <span class="p">)</span>
+</span><span id="line-102">        <span class="k">try</span><span class="p">:</span>
+</span><span id="line-103">            <span class="n">out</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+</span><span id="line-104">        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span><span id="line-105">            <span class="n">out</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="line-106">        <span class="n">queries</span> <span class="o">=</span> <span class="p">[</span><span class="n">out</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">out</span> <span class="ow">or</span> <span class="p">[])</span>
+</span><span id="line-107">        <span class="n">queries</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">queries</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">q</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+</span><span id="line-108">        <span class="k">if</span> <span class="n">queries</span><span class="p">:</span>
+</span><span id="line-109">            <span class="k">return</span> <span class="n">queries</span>
+</span><span id="line-110">        <span class="n">fb</span> <span class="o">=</span> <span class="n">fallback</span> <span class="k">if</span> <span class="n">fallback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">identity_formulator</span>
+</span><span id="line-111">        <span class="k">return</span> <span class="n">fb</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+</span><span id="line-112">
+</span><span id="line-113">    <span class="k">return</span> <span class="n">formulate</span></div>
+
+</span><span id="line-114">
+</span><span id="line-115">
+<div class="viewcode-block" id="make_keyword_formulator">
+<a class="viewcode-back" href="../../_autosummary/ir.formulate.html#ir.make_keyword_formulator">[docs]</a>
+</span><span id="line-116"><span class="k">def</span><span class="w"> </span><span class="nf">make_keyword_formulator</span><span class="p">(</span>
+</span><span id="line-117">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-118">    <span class="n">rewriter</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">"str | Sequence[str]"</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-119">    <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+</span><span id="line-120">    <span class="n">include_original</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="line-121">    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+</span><span id="line-122"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Formulator</span><span class="p">:</span>
+</span><span id="line-123"><span class="w">    </span><span class="sd">"""An LLM :data:`Formulator` that writes **keyword** queries for BM25 / grep.</span>
+</span><span id="line-124">
+</span><span id="line-125"><span class="sd">    Like :func:`make_llm_formulator` (same injectable ``rewriter``, lazy ``aix``,</span>
+</span><span id="line-126"><span class="sd">    identity fallback), but its default prompt asks for term lists (variants and</span>
+</span><span id="line-127"><span class="sd">    the artifacts an answer would leave behind) instead of fluent paraphrases,</span>
+</span><span id="line-128"><span class="sd">    which is what a lexical first stage can match. With ``include_original`` the</span>
+</span><span id="line-129"><span class="sd">    query itself is always one of the produced queries, so a bad rewrite can add</span>
+</span><span id="line-130"><span class="sd">    noise but never drop the literal request; pair it with</span>
+</span><span id="line-131"><span class="sd">    ``search(variant_weight=...)`` to keep the original on top.</span>
+</span><span id="line-132">
+</span><span id="line-133"><span class="sd">    &gt;&gt;&gt; f = make_keyword_formulator(rewriter=lambda q: ["deploy deployment", "ci.yml"])</span>
+</span><span id="line-134"><span class="sd">    &gt;&gt;&gt; f("how do we ship")</span>
+</span><span id="line-135"><span class="sd">    ['how do we ship', 'deploy deployment', 'ci.yml']</span>
+</span><span id="line-136"><span class="sd">    """</span>
+</span><span id="line-137">
+</span><span id="line-138">    <span class="k">def</span><span class="w"> </span><span class="nf">_key</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-139">        <span class="k">return</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">())</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span>
+</span><span id="line-140">
+</span><span id="line-141">    <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"prompt"</span><span class="p">,</span> <span class="n">KEYWORD_FORMULATION_PROMPT</span><span class="p">)</span>
+</span><span id="line-142">    <span class="n">inner</span> <span class="o">=</span> <span class="n">make_llm_formulator</span><span class="p">(</span><span class="n">rewriter</span><span class="o">=</span><span class="n">rewriter</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="line-143">
+</span><span id="line-144">    <span class="k">def</span><span class="w"> </span><span class="nf">formulate</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="line-145">        <span class="n">produced</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+</span><span id="line-146">        <span class="n">variants</span> <span class="o">=</span> <span class="p">[</span><span class="n">produced</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">produced</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">produced</span><span class="p">)</span>
+</span><span id="line-147">        <span class="k">if</span> <span class="ow">not</span> <span class="n">include_original</span><span class="p">:</span>
+</span><span id="line-148">            <span class="k">return</span> <span class="n">variants</span>
+</span><span id="line-149">        <span class="n">seen</span><span class="p">,</span> <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="n">_key</span><span class="p">(</span><span class="n">query</span><span class="p">)},</span> <span class="p">[</span><span class="n">query</span><span class="p">]</span>
+</span><span id="line-150">        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variants</span><span class="p">:</span>
+</span><span id="line-151">            <span class="k">if</span> <span class="n">_key</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+</span><span id="line-152">                <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">_key</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+</span><span id="line-153">                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+</span><span id="line-154">        <span class="k">return</span> <span class="n">out</span>
+</span><span id="line-155">
+</span><span id="line-156">    <span class="k">return</span> <span class="n">formulate</span></div>
 
 </span></code></pre></div>
     </div></div>
@@ -306,7 +365,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=07ed7713"></script>
+    <script src="../../_static/documentation_options.js?v=3015fd79"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>

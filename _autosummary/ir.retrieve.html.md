@@ -292,7 +292,7 @@ siblings.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Record`](ir.base.html.md#ir.base.Record)]
 
-### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None, surface_weights=None, dep_boost=None)
+### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None, surface_weights=None, dep_boost=None, variant_weight=1.0)
 
 Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
 
@@ -343,6 +343,18 @@ Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
     from unweighted ones, so a calibrated floor does not apply to them
     (`discover(min_score="auto")` warns and skips it). Default `None`
     weighs every surface equally, as before.
+  * **variant_weight** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – *variants* (every produced query other than `query`, compared trimmed
+    and case-folded) before the cross-query merge takes the best score per
+    surface. `1.0` (default) keeps today’s merge; below `1.0` the original
+    outranks its formulations unless a variant matches clearly better, which
+    guards against query drift (cf. RM3’s interpolation, query2doc’s repeated
+    query). Negative scores (a dense cosine) move down, not up. It only helps
+    when the formulator returns the original among its queries (a formulator
+    that returns only variants, or one rewritten query, is scaled uniformly or
+    not at all), and a `rerank` stage replaces the scores it weighted.
+    Weighted scores are on a different scale from unweighted ones, so
+    `discover(min_score="auto")` warns and skips the calibrated floor.
+    No effect without `formulate`.
   * **dep_boost** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – added to each fetched candidate’s score after fusion and the reranker,
     before the per-artifact collapse – a structural signal next to the
     reranker’s textual one. [`dependency_evidence_boost()`](#ir.retrieve.dependency_evidence_boost) builds one from

@@ -1,4 +1,4 @@
-> built 2026-11-16 07:30 UTC from 4347e2e (master) · ir 0.1.65. Details: build_info.json
+> built 2026-11-16 07:36 UTC from 12ff372 (master) · ir 0.1.66. Details: build_info.json
 
 # index.html.md
 
@@ -2638,15 +2638,17 @@ formulator must never make retrieval *worse* than the raw query.
 
 ### Module Attributes
 
-| [`Formulator`](_autosummary/ir.formulate.html.md#ir.formulate.Formulator)         | a query string -> one query (`str`) or several (`Sequence[str]`).                                                           |
-|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| [`FORMULATION_PROMPT`](_autosummary/ir.formulate.html.md#ir.formulate.FORMULATION_PROMPT) | Default prompt for [`make_llm_formulator()`](_autosummary/ir.formulate.html.md#ir.formulate.make_llm_formulator) — diverse paraphrases for recall. |
+| [`Formulator`](_autosummary/ir.formulate.html.md#ir.formulate.Formulator)                 | a query string -> one query (`str`) or several (`Sequence[str]`).                                                           |
+|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| [`FORMULATION_PROMPT`](_autosummary/ir.formulate.html.md#ir.formulate.FORMULATION_PROMPT)         | Default prompt for [`make_llm_formulator()`](_autosummary/ir.formulate.html.md#ir.formulate.make_llm_formulator) — diverse paraphrases for recall. |
+| [`KEYWORD_FORMULATION_PROMPT`](_autosummary/ir.formulate.html.md#ir.formulate.KEYWORD_FORMULATION_PROMPT) | term lists for BM25 / grep, not fluent paraphrases (ir_13 §1.3).                                                            |
 
 ### Functions
 
-| [`identity_formulator`](_autosummary/ir.formulate.html.md#ir.formulate.identity_formulator)(query)                       | The default formulator: return the query unchanged (embed it verbatim).                                     |
-|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| [`make_llm_formulator`](_autosummary/ir.formulate.html.md#ir.formulate.make_llm_formulator)(\*[, rewriter, prompt, ...]) | An LLM-backed [`Formulator`](_autosummary/ir.formulate.html.md#ir.formulate.Formulator) (rewrite / expand / multi-query). |
+| [`identity_formulator`](_autosummary/ir.formulate.html.md#ir.formulate.identity_formulator)(query)                       | The default formulator: return the query unchanged (embed it verbatim).                                             |
+|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| [`make_keyword_formulator`](_autosummary/ir.formulate.html.md#ir.formulate.make_keyword_formulator)(\*[, rewriter, n, ...])  | An LLM [`Formulator`](_autosummary/ir.formulate.html.md#ir.formulate.Formulator) that writes **keyword** queries for BM25 / grep. |
+| [`make_llm_formulator`](_autosummary/ir.formulate.html.md#ir.formulate.make_llm_formulator)(\*[, rewriter, prompt, ...]) | An LLM-backed [`Formulator`](_autosummary/ir.formulate.html.md#ir.formulate.Formulator) (rewrite / expand / multi-query).         |
 
 ### ir.formulate.FORMULATION_PROMPT *= 'Rewrite the search query into {n} short, diverse alternative search queries that would retrieve the same target documents: fix typos, expand jargon, and add synonyms, but keep each a terse search phrase. One query per line, no numbering.\\n\\nQuery: {query}'*
 
@@ -2663,12 +2665,41 @@ producer when injected.
 
 alias of `Callable`[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], `str | Sequence[str]`]
 
+### ir.formulate.KEYWORD_FORMULATION_PROMPT *= 'You are writing queries for a keyword (BM25 / grep) search, not a semantic one. For the request below, output {n} short keyword queries, one per line, no numbering. Each is a few terms that would literally appear in a matching document: spelling and morphological variants (deploy, deploys, deployment), synonyms and aliases, and the artifacts the answer would leave behind (file names, commands, identifiers, error messages). Never a sentence.\\n\\nRequest: {query}'*
+
+term lists for BM25 / grep, not
+fluent paraphrases (ir_13 §1.3).
+
+* **Type:**
+  Prompt for [`make_keyword_formulator()`](_autosummary/ir.formulate.html.md#ir.formulate.make_keyword_formulator)
+
 ### ir.formulate.identity_formulator(query)
 
 The default formulator: return the query unchanged (embed it verbatim).
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### ir.formulate.make_keyword_formulator(, rewriter=None, n=4, include_original=True, \*\*kwargs)
+
+An LLM [`Formulator`](_autosummary/ir.formulate.html.md#ir.formulate.Formulator) that writes **keyword** queries for BM25 / grep.
+
+Like [`make_llm_formulator()`](_autosummary/ir.formulate.html.md#ir.formulate.make_llm_formulator) (same injectable `rewriter`, lazy `aix`,
+identity fallback), but its default prompt asks for term lists (variants and
+the artifacts an answer would leave behind) instead of fluent paraphrases,
+which is what a lexical first stage can match. With `include_original` the
+query itself is always one of the produced queries, so a bad rewrite can add
+noise but never drop the literal request; pair it with
+`search(variant_weight=...)` to keep the original on top.
+
+```pycon
+>>> f = make_keyword_formulator(rewriter=lambda q: ["deploy deployment", "ci.yml"])
+>>> f("how do we ship")
+['how do we ship', 'deploy deployment', 'ci.yml']
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 ### ir.formulate.make_llm_formulator(, rewriter=None, prompt='Rewrite the search query into {n} short, diverse alternative search queries that would retrieve the same target documents: fix typos, expand jargon, and add synonyms, but keep each a terse search phrase. One query per line, no numbering.\\n\\nQuery: {query}', n=3, fallback=None, \*\*prompt_function_kwargs)
 
@@ -3050,6 +3081,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`parent_policy`](_autosummary/ir.html.md#ir.parent_policy)()                                    | The whole artifact (small-to-big): every stored surface, plan order.                                                                       |
 | [`tag_source`](_autosummary/ir.html.md#ir.tag_source)(hits, source)                           | Stamp *source* on every hit that doesn't already carry one.                                                                                |
 | [`make_llm_formulator`](_autosummary/ir.html.md#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                               |
+| [`make_keyword_formulator`](_autosummary/ir.html.md#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                       |
 | [`select`](_autosummary/ir.html.md#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                 |
 | [`disclose`](_autosummary/ir.html.md#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                    |
 | [`discover`](_autosummary/ir.html.md#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                     |
@@ -4552,6 +4584,27 @@ whether a (synopsis-aware) reindex is due *and* permitted now, and — unless
 
 * **Return type:**
   [`MaintenanceResult`](_autosummary/ir.maintenance.html.md#ir.maintenance.MaintenanceResult)
+
+### ir.make_keyword_formulator(, rewriter=None, n=4, include_original=True, \*\*kwargs)
+
+An LLM `Formulator` that writes **keyword** queries for BM25 / grep.
+
+Like [`make_llm_formulator()`](_autosummary/ir.html.md#ir.make_llm_formulator) (same injectable `rewriter`, lazy `aix`,
+identity fallback), but its default prompt asks for term lists (variants and
+the artifacts an answer would leave behind) instead of fluent paraphrases,
+which is what a lexical first stage can match. With `include_original` the
+query itself is always one of the produced queries, so a bad rewrite can add
+noise but never drop the literal request; pair it with
+`search(variant_weight=...)` to keep the original on top.
+
+```pycon
+>>> f = make_keyword_formulator(rewriter=lambda q: ["deploy deployment", "ci.yml"])
+>>> f("how do we ship")
+['how do we ship', 'deploy deployment', 'ci.yml']
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 ### ir.make_llm_formulator(, rewriter=None, prompt='Rewrite the search query into {n} short, diverse alternative search queries that would retrieve the same target documents: fix typos, expand jargon, and add synonyms, but keep each a terse search phrase. One query per line, no numbering.\\n\\nQuery: {query}', n=3, fallback=None, \*\*prompt_function_kwargs)
 
@@ -6100,7 +6153,7 @@ siblings.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Record`](_autosummary/ir.base.html.md#ir.base.Record)]
 
-### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None, surface_weights=None, dep_boost=None)
+### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None, surface_weights=None, dep_boost=None, variant_weight=1.0)
 
 Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit) for *query*.
 
@@ -6151,6 +6204,18 @@ Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)
     from unweighted ones, so a calibrated floor does not apply to them
     (`discover(min_score="auto")` warns and skips it). Default `None`
     weighs every surface equally, as before.
+  * **variant_weight** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – *variants* (every produced query other than `query`, compared trimmed
+    and case-folded) before the cross-query merge takes the best score per
+    surface. `1.0` (default) keeps today’s merge; below `1.0` the original
+    outranks its formulations unless a variant matches clearly better, which
+    guards against query drift (cf. RM3’s interpolation, query2doc’s repeated
+    query). Negative scores (a dense cosine) move down, not up. It only helps
+    when the formulator returns the original among its queries (a formulator
+    that returns only variants, or one rewritten query, is scaled uniformly or
+    not at all), and a `rerank` stage replaces the scores it weighted.
+    Weighted scores are on a different scale from unweighted ones, so
+    `discover(min_score="auto")` warns and skips the calibrated floor.
+    No effect without `formulate`.
   * **dep_boost** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – added to each fetched candidate’s score after fusion and the reranker,
     before the per-artifact collapse – a structural signal next to the
     reranker’s textual one. [`dependency_evidence_boost()`](_autosummary/ir.retrieve.html.md#ir.retrieve.dependency_evidence_boost) builds one from
@@ -7863,7 +7928,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-16 07:30 UTC** from commit <a href="https://github.com/i2mint/ir/commit/4347e2ef31fa1462fe9e591be7b59a35b864b19b"><code>4347e2e</code></a> on branch <code>master</code>, for **ir 0.1.65** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-16 07:36 UTC** from commit <a href="https://github.com/i2mint/ir/commit/12ff372d3f34b06822d6172132f194cb27e1c7d5"><code>12ff372</code></a> on branch <code>master</code>, for **ir 0.1.66** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -7872,7 +7937,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/4347e2ef31fa1462fe9e591be7b59a35b864b19b"><code>4347e2ef31fa1462fe9e591be7b59a35b864b19b</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/12ff372d3f34b06822d6172132f194cb27e1c7d5"><code>12ff372d3f34b06822d6172132f194cb27e1c7d5</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7883,9 +7948,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43824203501">43824203501</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43824870566">43824870566</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>4347e2ef31fa1462fe9e591be7b59a35b864b19b</code> (in the history of the built commit) |
+| Event commit | <code>12ff372d3f34b06822d6172132f194cb27e1c7d5</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7910,13 +7975,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.65/">0.1.65</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.66/">0.1.66</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 4347e2ef31fa1462fe9e591be7b59a35b864b19b
+git checkout 12ff372d3f34b06822d6172132f194cb27e1c7d5
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

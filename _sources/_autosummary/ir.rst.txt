@@ -36,6 +36,7 @@
       parent_policy
       tag_source
       make_llm_formulator
+      make_keyword_formulator
       select
       disclose
       discover
