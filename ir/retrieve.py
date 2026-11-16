@@ -52,6 +52,7 @@ import hashlib
 import json
 import math
 import numbers
+import threading
 import warnings
 from collections import OrderedDict
 from collections.abc import Iterable, Mapping, Sequence
@@ -153,6 +154,7 @@ def _dense_ranked(
 #: How many per-candidate-set BM25 indexes a corpus keeps (least recently used
 #: evicted first). Each is a full tokenized copy of its slice, so this bounds memory.
 BM25_CACHE_MAXSIZE = 8
+_BM25_CACHE_LOCK = threading.Lock()
 
 
 def _candidate_key(
@@ -173,9 +175,7 @@ def _candidate_key(
     return (surfaces, hashlib.sha1(text.encode()).hexdigest())
 
 
-def _bm25_index_for(
-    corpus, ids, metas, candidates, cache_key, *, maxsize=BM25_CACHE_MAXSIZE
-):
+def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
     """A ``vd.BM25Index`` over the candidate texts, cached on the corpus instance.
 
     BM25's term statistics (document frequencies, lengths) are
@@ -191,6 +191,9 @@ def _bm25_index_for(
     duplicated and BM25 covers only the already-filtered candidates. Returns
     ``None`` (with a warning) if ``vd`` is unavailable, letting lexical mode
     return nothing and hybrid degrade to dense.
+
+    At most ``BM25_CACHE_MAXSIZE`` indexes are kept (LRU, the unfiltered one
+    included); a workload rotating through more filters rebuilds on each miss.
     """
     try:
         from vd import BM25Index
@@ -210,9 +213,11 @@ def _bm25_index_for(
             corpus._bm25_index_cache = cache
         except Exception:
             pass  # corpus doesn't admit attribute caching → build fresh each call
-    if cache_key in cache:
-        cache.move_to_end(cache_key)
-        return cache[cache_key]
+    with _BM25_CACHE_LOCK:  # searches may run in a server threadpool
+        index = cache.get(cache_key)
+        if index is not None:
+            cache.move_to_end(cache_key)
+            return index
 
     collection = {
         ids[j]: SimpleNamespace(
@@ -221,9 +226,10 @@ def _bm25_index_for(
         for j in candidates
     }
     index = BM25Index(collection)
-    cache[cache_key] = index
-    while len(cache) > maxsize:  # LRU: a service with varied filters stays bounded
-        cache.popitem(last=False)
+    with _BM25_CACHE_LOCK:
+        cache[cache_key] = index
+        while len(cache) > BM25_CACHE_MAXSIZE:  # LRU: varied filters stay bounded
+            cache.popitem(last=False)
     return index
 
 

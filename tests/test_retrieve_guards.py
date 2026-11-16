@@ -73,3 +73,15 @@ def test_bm25_cache_is_bounded_and_keys_are_small():
     cache = corpus._bm25_index_cache
     assert len(cache) == retrieve.BM25_CACHE_MAXSIZE
     assert all(len(repr(key)) < 200 for key in cache)
+
+
+def test_bm25_cache_hit_protects_hot_key():
+    from ir import retrieve
+
+    corpus = _corpus()
+    corpus.search("alpha", mode="lexical")
+    hot = next(iter(corpus._bm25_index_cache))
+    for i in range(retrieve.BM25_CACHE_MAXSIZE * 2):
+        corpus.search("alpha", mode="lexical")  # keeps the hot key recent
+        corpus.search("alpha", mode="lexical", filter={"k": {"$nin": [f"x{i}"]}})
+    assert hot in corpus._bm25_index_cache
