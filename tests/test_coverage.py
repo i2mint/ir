@@ -201,3 +201,77 @@ def test_coverage_sees_pocket_repos(tmp_path):
     rep = reports_coverage(projects_root=tmp_path, indexed_ids=[])
     assert "i/_pocket/satellite/docs/research/decisions.md" in rep.missing
     assert not any("satellite-wt" in m or "loose" in m for m in rep.missing)
+
+
+def _make_companion_tree(root: Path) -> None:
+    """Root-level private companions (``_name``) beside ordinary repos, and noise."""
+    comp = root / "_secret"
+    (comp / ".git").mkdir(parents=True)
+    (comp / "docs" / "research").mkdir(parents=True)
+    (comp / "docs" / "research" / "design.md").write_text("zorblax private design")
+    (comp / "misc" / "docs").mkdir(parents=True)
+    (comp / "misc" / "docs" / "notes.md").write_text("companion misc docs")
+    (comp / "docs" / "README.md").write_text("metadata, excluded as ALLCAPS")
+    (comp / "docs" / "node_modules").mkdir()
+    (comp / "docs" / "node_modules" / "v.md").write_text("vendored")
+    # working folders without a repo are not companions (agent scratch space)
+    scratch = root / "_agent_work" / "docs"
+    scratch.mkdir(parents=True)
+    (scratch / "scratch.md").write_text("agent scratch")
+    # a worktree-style companion (.git is a file) duplicates a checkout elsewhere
+    wt = root / "_secret-wt"
+    (wt / "docs").mkdir(parents=True)
+    (wt / ".git").write_text("gitdir: elsewhere")
+    (wt / "docs" / "dup.md").write_text("duplicate")
+    # a plain file with the prefix, and a public sibling with the same stem
+    (root / "_note.md").write_text("not a folder")
+    pub = root / "t" / "secret"
+    (pub / ".git").mkdir(parents=True)
+    (pub / "docs").mkdir()
+    (pub / "docs" / "public.md").write_text("public sibling")
+
+
+def test_reports_ingest_includes_root_level_companions(tmp_path):
+    _make_companion_tree(tmp_path)
+    src = ir.CorpusSource.from_md_reports(projects_root=tmp_path)
+    ids = set(src.scope)
+    assert "_secret/docs/research/design.md" in ids
+    assert "_secret/misc/docs/notes.md" in ids
+    assert "t/secret/docs/public.md" in ids  # the public sibling is still there
+    assert not any(i.startswith("_agent_work") or "_secret-wt" in i for i in ids)
+    assert "_secret/docs/README.md" not in ids  # same exclusions as other repos
+    assert not any("node_modules" in i for i in ids)
+    assert (
+        src.metadata_of("_secret/docs/research/design.md", None)["project"] == "_secret"
+    )
+
+
+def test_companion_reports_are_tagged_with_the_companion_folder(tmp_path):
+    from ir.sources import _project_of
+
+    _make_companion_tree(tmp_path)
+    assert _project_of("_secret/docs/research/design.md", tmp_path) == "_secret"
+    assert _project_of("t/secret/docs/public.md", tmp_path) == "secret"
+    # without a root, or for a folder that is not a repo, the old path-only answer
+    assert _project_of("_agent_work/docs/scratch.md", tmp_path) == "docs"
+
+
+def test_coverage_lists_a_companions_docs_and_a_discover_finds_them(
+    tmp_path, monkeypatch
+):
+    """The issue's acceptance: coverage lists it as indexed; discover returns it."""
+    from ir.coverage import reports_coverage
+    from ir.store import CorpusStore
+
+    _make_companion_tree(tmp_path)
+    missing = reports_coverage(projects_root=tmp_path, indexed_ids=[]).missing
+    assert "_secret/docs/research/design.md" in missing
+    assert not any(m.startswith("_agent_work") for m in missing)
+
+    src = ir.CorpusSource.from_md_reports(projects_root=tmp_path)
+    corpus = ir.build(src, store=CorpusStore.memory(), embedder="light")
+    indexed = {e["artifact_id"] for _k, e in corpus.store.ledger_items()}
+    assert reports_coverage(projects_root=tmp_path, indexed_ids=indexed).missing == []
+    hits = ir.search(corpus, "zorblax", mode="lexical", k=3)
+    assert hits[0].artifact_id == "_secret/docs/research/design.md"
+    assert hits[0].metadata["project"] == "_secret"
