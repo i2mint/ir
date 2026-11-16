@@ -863,11 +863,13 @@ def _drop_auto_floor_if_rescaled(min_score: Any, search_kw: Mapping) -> Any:
     """``min_score`` without its ``"auto"`` floors when the search rescales scores.
 
     Calibrated floors are stored per mode and reranker, never per
-    ``surface_weights`` / ``dep_boost``, so applying one to rescaled scores would
+    ``surface_weights`` / ``dep_boost`` / ``variant_weight``, so applying one to rescaled scores would
     abstain on a mis-scaled floor. Like a stale floor, this warns and degrades to
     no absolute abstention; explicit numeric floors are the caller's and stay.
     """
     rescaled = [kw for kw in ("surface_weights", "dep_boost") if search_kw.get(kw)]
+    if search_kw.get("variant_weight", 1.0) != 1.0:
+        rescaled.append("variant_weight")
     if not rescaled:
         return min_score
     is_auto = min_score == "auto" if isinstance(min_score, str) else False

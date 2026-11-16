@@ -533,6 +533,19 @@ def _rerank_hits(
     return [replace(hits[int(rid)], score=score) for rid, score in ranked]
 
 
+def _norm_query(query: str) -> str:
+    """A query's identity for "is this the original?": trimmed and case-folded."""
+    return " ".join(query.split()).casefold()
+
+
+def _demote(score: float, weight: float) -> float:
+    """``score * weight`` for ``score >= 0``; a negative score moves further *down*.
+
+    (Plain multiplication by a weight below 1 would promote a negative cosine.)
+    """
+    return score - (1.0 - weight) * abs(score)
+
+
 def search(
     corpus,
     query: str,
@@ -554,6 +567,7 @@ def search(
     formulate: Formulator | None = None,
     surface_weights: Mapping[str, float] | None = None,
     dep_boost: ScoreBoost | None = None,
+    variant_weight: float = 1.0,
 ) -> list[SearchHit]:
     """Return the top-*k* :class:`~ir.base.SearchHit` for *query*.
 
@@ -613,6 +627,19 @@ def search(
         from unweighted ones, so a calibrated floor does not apply to them
         (``discover(min_score="auto")`` warns and skips it). Default ``None``
         weighs every surface equally, as before.
+    variant_weight : in ``[0, 1]``: demotes the scores of the formulator's
+        *variants* (every produced query other than ``query``, compared trimmed
+        and case-folded) before the cross-query merge takes the best score per
+        surface. ``1.0`` (default) keeps today's merge; below ``1.0`` the original
+        outranks its formulations unless a variant matches clearly better, which
+        guards against query drift (cf. RM3's interpolation, query2doc's repeated
+        query). Negative scores (a dense cosine) move down, not up. It only helps
+        when the formulator returns the original among its queries (a formulator
+        that returns only variants, or one rewritten query, is scaled uniformly or
+        not at all), and a ``rerank`` stage replaces the scores it weighted.
+        Weighted scores are on a different scale from unweighted ones, so
+        ``discover(min_score="auto")`` warns and skips the calibrated floor.
+        No effect without ``formulate``.
     dep_boost : an optional :data:`ScoreBoost` (``hit -> float``) whose value is
         added to each fetched candidate's score after fusion and the reranker,
         before the per-artifact collapse -- a structural signal next to the
@@ -632,6 +659,8 @@ def search(
     if fusion not in FUSIONS:
         raise ValueError(f"unknown fusion {fusion!r}; expected one of {FUSIONS}")
     weights = _check_surface_weights(surface_weights)
+    if not (math.isfinite(variant_weight) and 0 <= variant_weight <= 1):
+        raise ValueError(f"variant_weight must be in [0, 1], got {variant_weight!r}")
 
     # Materialize once: surfaces may be a one-shot iterable, and it is both the
     # filter input and part of the BM25 cache key.
@@ -660,24 +689,28 @@ def search(
             )
             merged: list[SearchHit] = []
             for q in queries:
-                merged.extend(
-                    search(
-                        corpus,
-                        q,
-                        k=depth,
-                        filter=filter,
-                        surfaces=surfaces,
-                        per_artifact=False,
-                        mode=mode,
-                        fusion=fusion,
-                        rrf_k=rrf_k,
-                        alpha=alpha,
-                        bm25_sat_k=bm25_sat_k,
-                        fetch_k=fetch_k,
-                        bm25=bm25,
-                        surface_weights=weights,
-                    )
+                found = search(
+                    corpus,
+                    q,
+                    k=depth,
+                    filter=filter,
+                    surfaces=surfaces,
+                    per_artifact=False,
+                    mode=mode,
+                    fusion=fusion,
+                    rrf_k=rrf_k,
+                    alpha=alpha,
+                    bm25_sat_k=bm25_sat_k,
+                    fetch_k=fetch_k,
+                    bm25=bm25,
+                    surface_weights=weights,
                 )
+                if variant_weight != 1.0 and _norm_query(q) != _norm_query(asked):
+                    found = [
+                        replace(h, score=_demote(h.score, variant_weight))
+                        for h in found
+                    ]
+                merged.extend(found)
             if rerank is not None and merged:
                 merged = _rerank_hits(
                     corpus,

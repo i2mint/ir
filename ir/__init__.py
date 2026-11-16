@@ -48,7 +48,7 @@ from .expand import (
     parent_policy,
     sentence_window_policy,
 )
-from .formulate import Formulator, make_llm_formulator
+from .formulate import Formulator, make_keyword_formulator, make_llm_formulator
 from .graph import (
     CorpusGraph,
     EdgeExtractor,
@@ -166,6 +166,7 @@ __all__ = [
     "parent_policy",
     "tag_source",
     "make_llm_formulator",
+    "make_keyword_formulator",
     "Formulator",
     "select",
     "disclose",
