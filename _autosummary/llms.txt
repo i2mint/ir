@@ -17,6 +17,7 @@
 - [ir.graph](ir.graph.html.md): The semantic link graph — typed edges between artifacts (report 12).
 - [ir.index](ir.index.html.md): The indexing pipeline and incremental maintenance.
 - [ir.maintenance](ir.maintenance.html.md): Idempotent background-work runner — &#96;ir maintain&#96; (issue #58).
+- [ir.miss](ir.miss.html.md): Lexical miss signals: did a keyword search actually find what was asked for?
 - [ir.policy](ir.policy.html.md): Per-corpus policy — how a corpus is segmented/stored and what background work it gets.
 - [ir.registry](ir.registry.html.md): Named-corpus registry — persistent, reusable corpus definitions.
 - [ir.requirements](ir.requirements.html.md): Dependency check for &#96;ir&#96;: name what is missing and how to install it.

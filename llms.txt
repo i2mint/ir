@@ -19,6 +19,7 @@
 - [ir.graph](_autosummary/ir.graph.html.md): The semantic link graph — typed edges between artifacts (report 12).
 - [ir.index](_autosummary/ir.index.html.md): The indexing pipeline and incremental maintenance.
 - [ir.maintenance](_autosummary/ir.maintenance.html.md): Idempotent background-work runner — &#96;ir maintain&#96; (issue #58).
+- [ir.miss](_autosummary/ir.miss.html.md): Lexical miss signals: did a keyword search actually find what was asked for?
 - [ir.policy](_autosummary/ir.policy.html.md): Per-corpus policy — how a corpus is segmented/stored and what background work it gets.
 - [ir.registry](_autosummary/ir.registry.html.md): Named-corpus registry — persistent, reusable corpus definitions.
 - [ir.requirements](_autosummary/ir.requirements.html.md): Dependency check for &#96;ir&#96;: name what is missing and how to install it.
@@ -32,7 +33,7 @@
 - [ir.synopsis](_autosummary/ir.synopsis.html.md): Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).
 - [ir.tools](_autosummary/ir.tools.html.md): Agent-callable tool surface over &#96;ir&#96; — plain functions returning JSON-ready
 - [For AI agents](ai-agents.html.md): &#96;ir&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-16 07:36 UTC&#42;&#42; from commit &lt;a href="https://github.com/i2m...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-16 07:43 UTC&#42;&#42; from commit &lt;a href="https://github.com/i2m...
 
 ## Optional
 

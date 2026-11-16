@@ -37,6 +37,7 @@
       tag_source
       make_llm_formulator
       make_keyword_formulator
+      lexical_miss
       select
       disclose
       discover
@@ -99,6 +100,7 @@
    graph
    index
    maintenance
+   miss
    policy
    registry
    requirements

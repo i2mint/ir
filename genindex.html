@@ -125,6 +125,7 @@
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.graph.html">ir.graph</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.index.html">ir.index</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.maintenance.html">ir.maintenance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.miss.html">ir.miss</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.policy.html">ir.policy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.registry.html">ir.registry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/ir.requirements.html">ir.requirements</a></li>
@@ -880,13 +881,20 @@
         <li><a href="_autosummary/ir.index.html#module-ir.index">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li>
     ir.maintenance
 
       <ul style="list-style-type:none">
         <li><a href="_autosummary/ir.maintenance.html#module-ir.maintenance">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
+      <li>
+    ir.miss
+
+      <ul style="list-style-type:none">
+        <li><a href="_autosummary/ir.miss.html#module-ir.miss">module</a>
 </li>
       </ul></li>
       <li>
@@ -1031,14 +1039,20 @@
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.level_histogram">level_histogram() (in module ir.eval)</a>
 </li>
+      <li><a href="_autosummary/ir.html#ir.lexical_miss">lexical_miss() (in module ir)</a>
+
+      <ul style="list-style-type:none">
+        <li><a href="_autosummary/ir.miss.html#ir.miss.lexical_miss">(in module ir.miss)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.html#ir.CorpusStore.link_items">link_items() (ir.CorpusStore method)</a>
 
       <ul style="list-style-type:none">
         <li><a href="_autosummary/ir.store.html#ir.store.CorpusStore.link_items">(ir.store.CorpusStore method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.schedule.html#ir.schedule.LOAD_BEARING_ENV_VARS">LOAD_BEARING_ENV_VARS (in module ir.schedule)</a>
 </li>
       <li><a href="_autosummary/ir.eval.html#ir.eval.load_calibration">load_calibration() (in module ir.eval)</a>
@@ -1168,14 +1182,14 @@
         <li><a href="_autosummary/ir.store.html#ir.store.CorpusStore.memory">(ir.store.CorpusStore class method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.html#ir.MaintenancePolicy.merged">merged() (ir.MaintenancePolicy method)</a>
 
       <ul style="list-style-type:none">
         <li><a href="_autosummary/ir.policy.html#ir.policy.MaintenancePolicy.merged">(ir.policy.MaintenancePolicy method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul style="margin-left:0;list-style-type:none">
       <li><a href="_autosummary/ir.html#ir.Disclosure.metadata">metadata (ir.Disclosure attribute)</a>
 
       <ul style="list-style-type:none">
@@ -1231,6 +1245,8 @@
         <li><a href="_autosummary/ir.index.html#module-ir.index">ir.index</a>
 </li>
         <li><a href="_autosummary/ir.maintenance.html#module-ir.maintenance">ir.maintenance</a>
+</li>
+        <li><a href="_autosummary/ir.miss.html#module-ir.miss">ir.miss</a>
 </li>
         <li><a href="_autosummary/ir.policy.html#module-ir.policy">ir.policy</a>
 </li>
@@ -1709,8 +1725,12 @@
 </li>
       <li><a href="_autosummary/ir.strategy.html#ir.strategy.strategy_to_spec">strategy_to_spec() (in module ir.strategy)</a>
 </li>
-      <li><a href="_autosummary/ir.html#ir.Selection.sufficient">sufficient (ir.Selection property)</a>
+      <li><a href="_autosummary/ir.html#ir.DiscoveryResult.sufficient">sufficient (ir.DiscoveryResult property)</a>
+
+      <ul style="list-style-type:none">
+        <li><a href="_autosummary/ir.html#ir.Selection.sufficient">(ir.Selection property)</a>
 </li>
+      </ul></li>
       <li><a href="_autosummary/ir.html#ir.Disclosure.summary">summary (ir.Disclosure attribute)</a>
 </li>
       <li><a href="_autosummary/ir.html#ir.Surface">Surface (class in ir)</a>
@@ -1910,7 +1930,7 @@
 </footer>
     </div>
     
-    <script src="_static/documentation_options.js?v=3015fd79"></script>
+    <script src="_static/documentation_options.js?v=946d7960"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>

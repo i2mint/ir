@@ -1,4 +1,4 @@
-> built 2026-11-16 07:36 UTC from 12ff372 (master) · ir 0.1.66. Details: build_info.json
+> built 2026-11-16 07:43 UTC from eecd7b4 (master) · ir 0.1.67. Details: build_info.json
 
 # index.html.md
 
@@ -3082,6 +3082,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`tag_source`](_autosummary/ir.html.md#ir.tag_source)(hits, source)                           | Stamp *source* on every hit that doesn't already carry one.                                                                                |
 | [`make_llm_formulator`](_autosummary/ir.html.md#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                               |
 | [`make_keyword_formulator`](_autosummary/ir.html.md#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                       |
+| [`lexical_miss`](_autosummary/ir.html.md#ir.lexical_miss)(hits, \*[, required, candidates])     | Miss signals for the committed `hits`; `{"miss": bool, ...}`.                                                                              |
 | [`select`](_autosummary/ir.html.md#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                 |
 | [`disclose`](_autosummary/ir.html.md#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                    |
 | [`discover`](_autosummary/ir.html.md#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                     |
@@ -3795,6 +3796,10 @@ facade can return it directly.
 
 The committed artifact ids, best-first.
 
+#### *property* sufficient *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Committed something, and no `required_terms` is missing (a signal only).
+
 #### to_dict()
 
 JSON-serializable result for the qh / HTTP surface.
@@ -4076,7 +4081,9 @@ The committed artifact ids, best-first.
 A model-free sufficiency *hint* for an agent’s Evaluator (ir_09 §3).
 
 `True` when this selection committed to at least one item (i.e. did not
-abstain). It is a **signal, not a directive**: the re-query / `refinement`
+abstain) and, when `select(required_terms=...)` was asked, no required term
+is missing from the committed hits (`signals["lexical_miss"]`, see
+[`ir.miss`](_autosummary/ir.miss.html.md#module-ir.miss)). It is a **signal, not a directive**: the re-query / `refinement`
 decision and the loop belong to the agent layer (the back-edge, ir_09 §4)
 — `ir` derives this from its own outcome and never acts on it.
 
@@ -4362,7 +4369,7 @@ Reveal the payload of each selected hit at `level` — append-only, pure.
   read: the [`Selection`](_autosummary/ir.html.md#ir.Selection) and its hits are never mutated, so a caller
   can disclose append-only without disturbing a cached ranked prefix.
 
-### ir.discover(corpus, query, , k=10, mode='hybrid', strategy='conservative', disclose_level='metadata', filter=None, surfaces=None, max_k=3, rel=0.9, gap_ratio=0.5, min_score=None, merge='rrf', merge_weights=None, merge_rrf_k=None, loader=None, store=None, expand=None, dedup_by='auto', \*\*search_kw)
+### ir.discover(corpus, query, , k=10, mode='hybrid', strategy='conservative', disclose_level='metadata', filter=None, surfaces=None, max_k=3, rel=0.9, gap_ratio=0.5, min_score=None, merge='rrf', merge_weights=None, merge_rrf_k=None, loader=None, store=None, expand=None, dedup_by='auto', required_terms=(), \*\*search_kw)
 
 Find and commit to the capabilities for `query` — the one search tool.
 
@@ -4465,6 +4472,11 @@ list the model must then filter under context rot.
     collapses by `name` for the `skills` corpus
     (`DFLT_DEDUP_BY`) and leaves other corpora alone; `None`
     keeps every hit; any other string names a metadata key.
+  * **required_terms** ([`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – terms the answer must mention (an entity the user named).
+    The committed hits are checked for them; `signals["lexical_miss"]`
+    reports the result ([`ir.miss.lexical_miss()`](_autosummary/ir.miss.html.md#ir.miss.lexical_miss)) and
+    `DiscoveryResult.sufficient` is False if one is absent. A signal for
+    the agent layer’s Evaluator, never a re-query.
   * **\*\*search_kw** ([`Any`](https://docs.python.org/3/library/typing.html#typing.Any)) – any other [`ir.retrieve.search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search) keyword (`rrf_k`,
     `rerank`, `bm25`, …).
 * **Return type:**
@@ -4557,6 +4569,25 @@ interact, via weighted Reciprocal Rank Fusion: each hit contributes
   is ordinal: valid for ordering and relative cuts, meaningless against
   absolute floors — apply calibrated `min_score` floors per source,
   *before* fusing (see ir_07/ir_08 and `ir.discover`’s federated form).
+
+### ir.lexical_miss(hits, , required=(), candidates=None)
+
+Miss signals for the committed `hits`; `{"miss": bool, ...}`.
+
+`required` are terms the answer must mention. `candidates` (all retrieved
+hits, a superset of `hits`) enables `zero_hits` over retrieval and
+`missing_in_candidates`; without it the committed hits stand in for both.
+
+```pycon
+>>> hit = SearchHit("a", "doc", 1.0, "the acme invoice")
+>>> lexical_miss([hit], required=["acme", "globex"])["missing_required"]
+['globex']
+>>> lexical_miss([])["miss"]
+True
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
 ### ir.maintain(name=None, , all=False, now=None, dry_run=False)
 
@@ -4928,7 +4959,7 @@ single function serves any corpus.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### ir.select(hits, , strategy='conservative', max_k=3, rel=0.9, gap_ratio=0.5, min_score=None)
+### ir.select(hits, , strategy='conservative', max_k=3, rel=0.9, gap_ratio=0.5, min_score=None, required_terms=())
 
 Commit to a subset of ranked `hits` — the selection stage.
 
@@ -4948,6 +4979,10 @@ Commit to a subset of ranked `hits` — the selection stage.
   * **min_score** ([`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – optional absolute floor; with `"conservative"` the selector
     abstains when even the top hit falls below it (also usable as the
     `"abs_threshold"` floor).
+  * **required_terms** ([`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – terms the answer must mention; when given, the committed
+    hits are checked for them and `signals["lexical_miss"]` (see
+    [`ir.miss`](_autosummary/ir.miss.html.md#module-ir.miss)) is added, which turns `Selection.sufficient` False if
+    one is absent. A signal only: the selection itself is unchanged.
 * **Return type:**
   [`Selection`](_autosummary/ir.html.md#ir.Selection)
 * **Returns:**
@@ -5046,6 +5081,7 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 | [`graph`](_autosummary/ir.graph.html.md#module-ir.graph)               | The semantic link graph — typed edges between artifacts (report 12).                                                   |
 | [`index`](_autosummary/ir.index.html.md#module-ir.index)               | The indexing pipeline and incremental maintenance.                                                                     |
 | [`maintenance`](_autosummary/ir.maintenance.html.md#module-ir.maintenance)   | Idempotent background-work runner — `ir maintain` (issue #58).                                                         |
+| [`miss`](_autosummary/ir.miss.html.md#module-ir.miss)                 | Lexical miss signals: did a keyword search actually find what was asked for?                                           |
 | [`policy`](_autosummary/ir.policy.html.md#module-ir.policy)             | Per-corpus policy — how a corpus is segmented/stored and what background work it gets.                                 |
 | [`registry`](_autosummary/ir.registry.html.md#module-ir.registry)         | Named-corpus registry — persistent, reusable corpus definitions.                                                       |
 | [`requirements`](_autosummary/ir.requirements.html.md#module-ir.requirements) | Dependency check for `ir`: name what is missing and how to install it.                                                 |
@@ -5270,6 +5306,58 @@ menu suggests while the agent may be mid-run.
 
 A lock whose owning process is gone, or which is older than *stale_after*, is
 reclaimed — a killed run must not wedge maintenance forever.
+
+
+# _autosummary/ir.miss.html.md
+
+# ir.miss
+
+Lexical miss signals: did a keyword search actually find what was asked for?
+
+A deterministic search returns *something* for almost any query, so “got hits”
+says little about whether the right thing was found. These are model-free,
+auditable facts an agent’s Evaluator (raglab) can use to decide to reformulate
+(ir_13 §1.3, ir_09 §3):
+
+- `zero_hits`: retrieval returned nothing;
+- `missing_required`: terms the answer must mention (an entity the user named)
+  that appear in none of the committed hits;
+- `missing_in_candidates`: the subset of those absent from every *retrieved*
+  candidate too, which separates “retrieval missed it, reformulate” from “the
+  selection was too tight, widen it”.
+
+Matching is whole-word, case-insensitive, per `\w` boundary. Known limits: no
+word boundaries in CJK text (`東京` is not found inside a sentence), no plural or
+spelling folding (`invoice` vs `invoices`, `ci-cd` vs `CI/CD`), no Unicode
+normalisation. Fold both sides first if that matters.
+
+They are **signals, never directives**: ir reports them (`Selection.signals`,
+`Selection.sufficient`) and never re-queries; the back-edge belongs to the
+agent layer.
+
+### Functions
+
+| [`lexical_miss`](_autosummary/ir.miss.html.md#ir.miss.lexical_miss)(hits, \*[, required, candidates])   | Miss signals for the committed `hits`; `{"miss": bool, ...}`.   |
+|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
+
+### ir.miss.lexical_miss(hits, , required=(), candidates=None)
+
+Miss signals for the committed `hits`; `{"miss": bool, ...}`.
+
+`required` are terms the answer must mention. `candidates` (all retrieved
+hits, a superset of `hits`) enables `zero_hits` over retrieval and
+`missing_in_candidates`; without it the committed hits stand in for both.
+
+```pycon
+>>> hit = SearchHit("a", "doc", 1.0, "the acme invoice")
+>>> lexical_miss([hit], required=["acme", "globex"])["missing_required"]
+['globex']
+>>> lexical_miss([])["miss"]
+True
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
 
 # _autosummary/ir.policy.html.md
@@ -7928,16 +8016,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-16 07:36 UTC** from commit <a href="https://github.com/i2mint/ir/commit/12ff372d3f34b06822d6172132f194cb27e1c7d5"><code>12ff372</code></a> on branch <code>master</code>, for **ir 0.1.66** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-16 07:43 UTC** from commit <a href="https://github.com/i2mint/ir/commit/eecd7b4150f7ad4d0d77748a58534cea383b3007"><code>eecd7b4</code></a> on branch <code>master</code>, for **ir 0.1.67** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.67) is behind the latest release on PyPI (0.1.68): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/12ff372d3f34b06822d6172132f194cb27e1c7d5"><code>12ff372d3f34b06822d6172132f194cb27e1c7d5</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/eecd7b4150f7ad4d0d77748a58534cea383b3007"><code>eecd7b4150f7ad4d0d77748a58534cea383b3007</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7948,9 +8038,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43824870566">43824870566</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43825559111">43825559111</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>12ff372d3f34b06822d6172132f194cb27e1c7d5</code> (in the history of the built commit) |
+| Event commit | <code>eecd7b4150f7ad4d0d77748a58534cea383b3007</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7975,13 +8065,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.66/">0.1.66</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.68/">0.1.68</a>, newer than the documented version (0.1.67).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 12ff372d3f34b06822d6172132f194cb27e1c7d5
+git checkout eecd7b4150f7ad4d0d77748a58534cea383b3007
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

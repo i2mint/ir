@@ -70,6 +70,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`tag_source`](#ir.tag_source)(hits, source)                           | Stamp *source* on every hit that doesn't already carry one.                                                                                |
 | [`make_llm_formulator`](#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                               |
 | [`make_keyword_formulator`](#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                       |
+| [`lexical_miss`](#ir.lexical_miss)(hits, \*[, required, candidates])     | Miss signals for the committed `hits`; `{"miss": bool, ...}`.                                                                              |
 | [`select`](#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                 |
 | [`disclose`](#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                    |
 | [`discover`](#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                     |
@@ -783,6 +784,10 @@ facade can return it directly.
 
 The committed artifact ids, best-first.
 
+#### *property* sufficient *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Committed something, and no `required_terms` is missing (a signal only).
+
 #### to_dict()
 
 JSON-serializable result for the qh / HTTP surface.
@@ -1064,7 +1069,9 @@ The committed artifact ids, best-first.
 A model-free sufficiency *hint* for an agent’s Evaluator (ir_09 §3).
 
 `True` when this selection committed to at least one item (i.e. did not
-abstain). It is a **signal, not a directive**: the re-query / `refinement`
+abstain) and, when `select(required_terms=...)` was asked, no required term
+is missing from the committed hits (`signals["lexical_miss"]`, see
+[`ir.miss`](ir.miss.html.md#module-ir.miss)). It is a **signal, not a directive**: the re-query / `refinement`
 decision and the loop belong to the agent layer (the back-edge, ir_09 §4)
 — `ir` derives this from its own outcome and never acts on it.
 
@@ -1350,7 +1357,7 @@ Reveal the payload of each selected hit at `level` — append-only, pure.
   read: the [`Selection`](#ir.Selection) and its hits are never mutated, so a caller
   can disclose append-only without disturbing a cached ranked prefix.
 
-### ir.discover(corpus, query, , k=10, mode='hybrid', strategy='conservative', disclose_level='metadata', filter=None, surfaces=None, max_k=3, rel=0.9, gap_ratio=0.5, min_score=None, merge='rrf', merge_weights=None, merge_rrf_k=None, loader=None, store=None, expand=None, dedup_by='auto', \*\*search_kw)
+### ir.discover(corpus, query, , k=10, mode='hybrid', strategy='conservative', disclose_level='metadata', filter=None, surfaces=None, max_k=3, rel=0.9, gap_ratio=0.5, min_score=None, merge='rrf', merge_weights=None, merge_rrf_k=None, loader=None, store=None, expand=None, dedup_by='auto', required_terms=(), \*\*search_kw)
 
 Find and commit to the capabilities for `query` — the one search tool.
 
@@ -1453,6 +1460,11 @@ list the model must then filter under context rot.
     collapses by `name` for the `skills` corpus
     (`DFLT_DEDUP_BY`) and leaves other corpora alone; `None`
     keeps every hit; any other string names a metadata key.
+  * **required_terms** ([`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – terms the answer must mention (an entity the user named).
+    The committed hits are checked for them; `signals["lexical_miss"]`
+    reports the result ([`ir.miss.lexical_miss()`](ir.miss.html.md#ir.miss.lexical_miss)) and
+    `DiscoveryResult.sufficient` is False if one is absent. A signal for
+    the agent layer’s Evaluator, never a re-query.
   * **\*\*search_kw** ([`Any`](https://docs.python.org/3/library/typing.html#typing.Any)) – any other [`ir.retrieve.search()`](ir.retrieve.html.md#ir.retrieve.search) keyword (`rrf_k`,
     `rerank`, `bm25`, …).
 * **Return type:**
@@ -1545,6 +1557,25 @@ interact, via weighted Reciprocal Rank Fusion: each hit contributes
   is ordinal: valid for ordering and relative cuts, meaningless against
   absolute floors — apply calibrated `min_score` floors per source,
   *before* fusing (see ir_07/ir_08 and `ir.discover`’s federated form).
+
+### ir.lexical_miss(hits, , required=(), candidates=None)
+
+Miss signals for the committed `hits`; `{"miss": bool, ...}`.
+
+`required` are terms the answer must mention. `candidates` (all retrieved
+hits, a superset of `hits`) enables `zero_hits` over retrieval and
+`missing_in_candidates`; without it the committed hits stand in for both.
+
+```pycon
+>>> hit = SearchHit("a", "doc", 1.0, "the acme invoice")
+>>> lexical_miss([hit], required=["acme", "globex"])["missing_required"]
+['globex']
+>>> lexical_miss([])["miss"]
+True
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
 ### ir.maintain(name=None, , all=False, now=None, dry_run=False)
 
@@ -1916,7 +1947,7 @@ single function serves any corpus.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### ir.select(hits, , strategy='conservative', max_k=3, rel=0.9, gap_ratio=0.5, min_score=None)
+### ir.select(hits, , strategy='conservative', max_k=3, rel=0.9, gap_ratio=0.5, min_score=None, required_terms=())
 
 Commit to a subset of ranked `hits` — the selection stage.
 
@@ -1936,6 +1967,10 @@ Commit to a subset of ranked `hits` — the selection stage.
   * **min_score** ([`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – optional absolute floor; with `"conservative"` the selector
     abstains when even the top hit falls below it (also usable as the
     `"abs_threshold"` floor).
+  * **required_terms** ([`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – terms the answer must mention; when given, the committed
+    hits are checked for them and `signals["lexical_miss"]` (see
+    [`ir.miss`](ir.miss.html.md#module-ir.miss)) is added, which turns `Selection.sufficient` False if
+    one is absent. A signal only: the selection itself is unchanged.
 * **Return type:**
   [`Selection`](#ir.Selection)
 * **Returns:**
@@ -2034,6 +2069,7 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 | [`graph`](ir.graph.html.md#module-ir.graph)               | The semantic link graph — typed edges between artifacts (report 12).                                                   |
 | [`index`](ir.index.html.md#module-ir.index)               | The indexing pipeline and incremental maintenance.                                                                     |
 | [`maintenance`](ir.maintenance.html.md#module-ir.maintenance)   | Idempotent background-work runner — `ir maintain` (issue #58).                                                         |
+| [`miss`](ir.miss.html.md#module-ir.miss)                 | Lexical miss signals: did a keyword search actually find what was asked for?                                           |
 | [`policy`](ir.policy.html.md#module-ir.policy)             | Per-corpus policy — how a corpus is segmented/stored and what background work it gets.                                 |
 | [`registry`](ir.registry.html.md#module-ir.registry)         | Named-corpus registry — persistent, reusable corpus definitions.                                                       |
 | [`requirements`](ir.requirements.html.md#module-ir.requirements) | Dependency check for `ir`: name what is missing and how to install it.                                                 |

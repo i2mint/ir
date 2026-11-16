@@ -1,0 +1,12 @@
+ir.miss
+=======
+
+.. automodule:: ir.miss
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      lexical_miss
+   
