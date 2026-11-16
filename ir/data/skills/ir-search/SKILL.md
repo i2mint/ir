@@ -68,7 +68,7 @@ Research and measurements behind this: `misc/docs/ir_13` (keyword/regex vs embed
 
 ```bash
 ir synonyms acmecorp                         # aliases + a ready grep regex
-ir search reports "acmecorp invoice" -m lexical --expand   # the variants, fused, original first
+ir search reports "acmecorp invoice" -m lexical --expand   # the variants, fused, original first (-v 0.5 / --variant-weight 0.5 demotes the variants)
 ir search reports "invoice" -m lexical --filter '{"project": "dol"}'   # hard metadata filter (JSON; $in/$ne/$and... ; same on discover)
 ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname" --miss-query "ac invoice" --found "<id>" --corpus reports   # the miss + what it found, so it can be re-tested
 ir synonyms-replay reports                   # which entries still help (dry run; --apply demotes the ones that do not)

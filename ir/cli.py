@@ -171,6 +171,7 @@ def search(
     rerank_text="surface",
     expand=False,
     filter=None,
+    variant_weight=1.0,
 ):
     """Search a built corpus and print the top-k hits.
 
@@ -182,7 +183,8 @@ def search(
     picks what it reads: surface (default) | artifact. Reranked scores are on the
     reranker's own scale. ``--expand`` also searches the query's variants from the
     synonym ledger (``ir synonyms``) and fuses them (best score per artifact across
-    the variants; the original query is always one of them). ``--filter`` is a
+    the variants; the original query is always one of them; ``--variant-weight 0.5``
+    demotes the variants against the query itself, to keep the original on top). ``--filter`` is a
     JSON metadata filter in the Mongo-style form of ``ir.search(filter=...)``,
     e.g. ``--filter '{"project": "dol"}'`` or ``'{"source": {"$in": ["a", "b"]}}'``;
     operators: $eq $ne $in $nin $gt $gte $lt $lte $exists, plus $and/$or/$not.
@@ -197,7 +199,7 @@ def search(
         mode=mode,
         fusion=fusion,
         **_rerank_kw(rerank, rerank_text),
-        **_expand_kw(expand, name),
+        **_expand_kw(expand, name, variant_weight),
         **_filter_kw(filter),
     )
     for h in hits:
@@ -207,13 +209,22 @@ def search(
     return "\n".join(lines) or "(no matches)"
 
 
-def _expand_kw(expand, name):
-    """Search kwargs for ledger-based query expansion; empty (today's behavior) when off."""
+def _expand_kw(expand, name, variant_weight=1.0):
+    """Search kwargs for ledger-based query expansion; empty (today's behavior) when off.
+
+    ``variant_weight`` (below 1.0) demotes the expansion variants against the query
+    itself; it needs ``--expand`` (without a formulator there are no variants).
+    """
     if not expand:
+        if variant_weight != 1.0:
+            raise SystemExit("--variant-weight needs --expand (no variants otherwise)")
         return {}
     from .synonyms import make_synonym_formulator
 
-    return {"formulate": make_synonym_formulator(corpus=name)}
+    kw = {"formulate": make_synonym_formulator(corpus=name)}
+    if variant_weight != 1.0:
+        kw["variant_weight"] = float(variant_weight)
+    return kw
 
 
 def _filter_kw(filter):
@@ -265,6 +276,7 @@ def discover(
     rerank_text="surface",
     expand=False,
     filter=None,
+    variant_weight=1.0,
 ):
     """Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -302,7 +314,7 @@ def discover(
         min_score=floor,
         fusion=fusion,
         **_rerank_kw(rerank, rerank_text),
-        **_expand_kw(expand, name),
+        **_expand_kw(expand, name, variant_weight),
         **_filter_kw(filter),
     )
     if result.abstained:
