@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import subprocess
 import time
 
 import pytest
@@ -12,7 +13,7 @@ from ir.grep import grep_hits, make_grep_retriever
 HAS_RG = shutil.which("rg") is not None
 BACKENDS = [
     False,
-    pytest.param(None, marks=pytest.mark.skipif(not HAS_RG, reason="no rg")),
+    pytest.param(True, marks=pytest.mark.skipif(not HAS_RG, reason="no rg")),
 ]
 
 
@@ -36,6 +37,7 @@ def test_scores_are_matching_line_counts_best_first(tree, use_rg):
         ("proj1/b.md", 1.0),
     ]
     assert hits[1].text == "Acme invoice" and hits[1].surface_kind == "grep"
+    assert hits[1].metadata["path"] == "proj1/a.md"  # relative: no local path leaks
     assert hits[0].metadata["n_matches"] == 3
 
 
@@ -44,7 +46,7 @@ def test_case_fixed_glob_and_k(tree, use_rg):
     exact = grep_hits("Acme", roots=tree, ignore_case=False, use_rg=use_rg)
     assert [h.artifact_id for h in exact] == ["proj1/a.md"]
     assert len(grep_hits("acme", roots=tree, k=1, use_rg=use_rg)) == 1
-    md = grep_hits("acme", roots=tree, glob="**/*.md", use_rg=use_rg)
+    md = grep_hits("acme", roots=tree, glob="*.md", use_rg=use_rg)
     assert {h.artifact_id for h in md} == {"proj1/a.md", "proj1/b.md"}
     assert grep_hits("a.m", roots=tree, fixed=True, use_rg=use_rg) == []
     assert grep_hits("ac.e", roots=tree, use_rg=use_rg)
@@ -61,9 +63,9 @@ def test_filter_is_pushed_into_the_scan_before_files_are_read(tree, monkeypatch)
     from ir import grep as g
 
     seen = []
-    real = g._python_counts
+    real = g._count_and_first
     monkeypatch.setattr(
-        g, "_python_counts", lambda files, rx: seen.extend(files) or real(files, rx)
+        g, "_count_and_first", lambda f, rx: seen.append(f) or real(f, rx)
     )
     hits = grep_hits(
         "acme",
@@ -115,7 +117,7 @@ def test_bad_regex_and_missing_rg_are_clear_errors(tree, monkeypatch):
 @pytest.mark.skipif(not HAS_RG, reason="no rg")
 def test_rg_incompatible_regex_falls_back_to_python(tree):
     # a lookahead: rg's default engine cannot compile it, Python re can
-    hits = grep_hits(r"acme(?= invoice)", roots=tree, use_rg=None)
+    hits = grep_hits(r"acme(?= invoice)", roots=tree, use_rg=True)
     assert [h.artifact_id for h in hits] == ["proj1/a.md"]
 
 
@@ -123,12 +125,20 @@ def test_retriever_contract_binds_roots_and_allows_overrides(tree):
     retr = make_grep_retriever(tree, use_rg=False, source="notes")
     hits = retr("acme", k=1)
     assert len(hits) == 1 and hits[0].source == "notes"
-    assert retr.roots == tree
+    assert retr.roots == [tree]
+    other = retr("acme", roots=tree / "proj1")
+    assert {h.artifact_id for h in other} == {"a.md", "b.md"}
+    with pytest.raises(TypeError):
+        retr("acme", mode="hybrid")  # unknown overrides are not silently dropped
     assert ir.grep_hits is grep_hits and ir.make_grep_retriever is make_grep_retriever
 
 
-def test_grep_hits_fuse_with_an_index_ranking(tree):
-    """Grep hits are ordinary SearchHits: they merge with any other Retriever's."""
+def test_a_generator_of_roots_survives_repeated_calls(tree):
+    retr = make_grep_retriever((p for p in [tree]), use_rg=False)
+    assert retr("acme") and retr("acme")
+
+
+def test_grep_hits_are_ordinary_hits_that_merge_with_an_index_ranking(tree):
     from ir.base import best_per_artifact
 
     src = ir.CorpusSource.from_mapping(
@@ -137,6 +147,97 @@ def test_grep_hits_fuse_with_an_index_ranking(tree):
         strategy=ir.WholeText(),
     )
     corpus = ir.build(src, store=ir.CorpusStore.memory(), embedder="light")
-    index_hits = ir.search(corpus, "acme", mode="lexical")
-    merged = best_per_artifact(index_hits + grep_hits("acme", roots=tree, use_rg=False))
+    merged = best_per_artifact(
+        ir.search(corpus, "acme", mode="lexical")
+        + grep_hits("acme", roots=tree, use_rg=False)
+    )
     assert {"proj1/a.md", "proj2/c.txt"} <= {h.artifact_id for h in merged}
+
+
+# ----- review findings: backend equivalence, ids, privacy, guards -------------- #
+
+
+@pytest.mark.skipif(not HAS_RG, reason="no rg")
+def test_rg_really_runs_and_a_newline_in_a_filename_is_fine(tree, monkeypatch):
+    weird = tree / "line\nbreak.txt"
+    try:
+        weird.write_text("acme\n")
+    except OSError:
+        pytest.skip("filesystem forbids newlines in names")
+    calls = []
+    real = subprocess.run
+    monkeypatch.setattr(
+        subprocess, "run", lambda *a, **k: calls.append(a[0]) or real(*a, **k)
+    )
+    hits = grep_hits("acme", roots=tree, use_rg=True)
+    assert calls and "line\nbreak.txt" in {h.artifact_id for h in hits}
+
+
+@pytest.mark.parametrize("use_rg", BACKENDS)
+def test_crlf_anchors_and_cr_only_lines_agree_across_backends(tmp_path, use_rg):
+    (tmp_path / "crlf.txt").write_bytes(b"acme\r\nx acme\r\nacme\r\n")
+    (tmp_path / "cr.txt").write_bytes(b"acme\racme\racme\r")
+    anchored = grep_hits(r"acme$", roots=tmp_path, glob="crlf.txt", use_rg=use_rg)
+    assert [h.score for h in anchored] == [3.0]  # `$` sees through the CR of CRLF
+    cr = grep_hits("acme", roots=tmp_path, glob="cr.txt", use_rg=use_rg)
+    assert [h.score for h in cr] == [1.0]  # a lone CR does not end a line
+
+
+def test_same_relative_path_in_two_roots_is_an_error_unless_id_of_is_given(tmp_path):
+    for r in ("A", "B"):
+        (tmp_path / r).mkdir()
+        (tmp_path / r / "n.md").write_text("acme\n")
+    with pytest.raises(ValueError, match="share the id"):
+        grep_hits("acme", roots=[tmp_path / "A", tmp_path / "B"], use_rg=False)
+    hits = grep_hits(
+        "acme",
+        roots=[tmp_path / "A", tmp_path / "B"],
+        use_rg=False,
+        id_of=lambda root, p: f"{root.name}/{p.name}",
+    )
+    assert {h.artifact_id for h in hits} == {"A/n.md", "B/n.md"}
+
+
+def test_absolute_paths_are_opt_in_and_user_metadata_cannot_shadow_path(tree):
+    h = grep_hits(
+        "acme", roots=tree, use_rg=False, metadata_of=lambda p: {"path": "x"}
+    )[0]
+    assert not os.path.isabs(h.metadata["path"])
+    h = grep_hits("acme", roots=tree, use_rg=False, absolute_paths=True)[0]
+    assert os.path.isabs(h.metadata["path"])
+
+
+def test_symlinks_out_of_the_root_and_excluded_dirs_are_not_read(tmp_path):
+    outside = tmp_path / "outside.txt"
+    outside.write_text("acme\n")
+    root = tmp_path / "root"
+    (root / ".git").mkdir(parents=True)
+    (root / ".git" / "cfg").write_text("acme\n")
+    (root / "ok.md").write_text("acme\n")
+    try:
+        (root / "link.md").symlink_to(outside)
+    except OSError:
+        pytest.skip("no symlinks")
+    assert [h.artifact_id for h in grep_hits("acme", roots=root, use_rg=False)] == [
+        "ok.md"
+    ]
+    allowed = grep_hits("acme", roots=root, use_rg=False, exclude_dirs=())
+    assert {h.artifact_id for h in allowed} == {"ok.md", ".git/cfg"}
+
+
+@pytest.mark.parametrize(
+    "kw",
+    [
+        {"k": 0},
+        {"k": -1},
+        {"k": None},
+        {"recency_half_life_days": 0},
+        {"recency_half_life_days": -3},
+        {"weight_of": lambda p: -1.0},
+        {"weight_of": lambda p: float("nan")},
+        {"weight_of": lambda p: float("inf")},
+    ],
+)
+def test_scoring_inputs_are_validated(tree, kw):
+    with pytest.raises(ValueError):
+        grep_hits("acme", roots=tree, use_rg=False, **kw)
