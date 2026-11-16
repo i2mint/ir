@@ -51,7 +51,7 @@
     "--help"
    ],
    "rc": 0,
-   "usage": "PROG search [-h] [-k K] [-m MODE] [--fusion FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] [--filter FILTER] name query"
+   "usage": "PROG search [-h] [-k K] [-m MODE] [--fusion FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] [--filter FILTER] [-v VARIANT_WEIGHT] name query"
   },
   {
    "argv": [
@@ -59,7 +59,7 @@
     "--help"
    ],
    "rc": 0,
-   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [--fusion FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] [--filter FILTER] name query"
+   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [--fusion FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] [--filter FILTER] [-v VARIANT_WEIGHT] name query"
   },
   {
    "argv": [
@@ -195,7 +195,7 @@
     "onlyname"
    ],
    "rc": 2,
-   "usage": "PROG search [-h] [-k K] [-m MODE] [--fusion FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] [--filter FILTER] name query"
+   "usage": "PROG search [-h] [-k K] [-m MODE] [--fusion FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] [--filter FILTER] [-v VARIANT_WEIGHT] name query"
   },
   {
    "argv": [
@@ -237,7 +237,7 @@
     "--k"
    ],
    "rc": 2,
-   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [--fusion FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] [--filter FILTER] name query"
+   "usage": "PROG discover [-h] [-k K] [--mode MODE] [-s STRATEGY] [-d] [--min-score MIN_SCORE] [--fusion FUSION] [--rerank RERANK] [--rerank-text RERANK_TEXT] [-e] [--filter FILTER] [-v VARIANT_WEIGHT] name query"
   },
   {
    "argv": [

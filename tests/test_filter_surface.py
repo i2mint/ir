@@ -92,3 +92,71 @@ def test_discover_short_f_is_fusion():
 
     ns = mk_parser().parse_args(["discover", "n", "q", "-f", "blend"])
     assert ns.fusion == "blend"
+
+
+# ----- --variant-weight (#148) --------------------------------------------- #
+
+
+def test_variant_weight_needs_expand():
+    with pytest.raises(SystemExit, match="--expand"):
+        cli._expand_kw(False, "c", 0.5)
+    assert cli._expand_kw(False, "c") == {}
+    assert cli._expand_kw(False, "c", 1.0) == {}
+
+
+@pytest.mark.parametrize("bad", [2, -0.5, float("nan"), float("inf")])
+def test_variant_weight_out_of_range_is_a_clean_exit(bad):
+    with pytest.raises(SystemExit, match=r"\[0, 1\]"):
+        cli._expand_kw(True, "c", bad)
+
+
+def test_variant_weight_is_forwarded_with_expand(monkeypatch):
+    kw = cli._expand_kw(True, "c", 0.5)
+    assert kw["variant_weight"] == 0.5 and callable(kw["formulate"])
+    assert "variant_weight" not in cli._expand_kw(True, "c")  # default: today's merge
+
+
+def test_cli_search_and_discover_parse_and_apply_variant_weight(
+    monkeypatch, tmp_path, corpus
+):
+    from ir.__main__ import mk_parser
+
+    ns = mk_parser().parse_args(["search", "n", "q", "-e", "--variant-weight", "0.5"])
+    assert (ns.expand, ns.variant_weight) == (True, 0.5)
+    ns = mk_parser().parse_args(
+        ["discover", "n", "q", "-e", "--variant-weight", "0.25"]
+    )
+    assert ns.variant_weight == 0.25
+
+    ledger = tmp_path / "s.jsonl"
+    ledger.write_text('{"terms": ["banana", "plantain"]}\n')
+    monkeypatch.setenv("IR_SYNONYMS", str(ledger))
+    monkeypatch.setattr(cli, "_open_ready", lambda name: corpus)
+    base = cli.search("filt", "plantain", mode="lexical", expand=True)
+    weighted = cli.search(
+        "filt", "plantain", mode="lexical", expand=True, variant_weight=0.5
+    )
+    assert "  b  " in base and "  b  " in weighted  # the variant still finds b
+    s_base = float(base.split()[0])
+    s_weighted = float(weighted.split()[0])
+    assert s_weighted == pytest.approx(s_base * 0.5, rel=1e-2)
+
+
+def test_variant_weight_demotes_only_the_variants_end_to_end(monkeypatch, tmp_path):
+    docs = {"b": "banana bread", "d": "plantain stew", "c": "cherry pie"}
+    src = ir.CorpusSource.from_mapping(docs, name="vw", strategy=ir.WholeText())
+    corpus = ir.build(src, store=CorpusStore.memory(), embedder="light")
+    ledger = tmp_path / "s.jsonl"
+    ledger.write_text('{"terms": ["banana", "plantain"]}\n')
+    monkeypatch.setenv("IR_SYNONYMS", str(ledger))
+    monkeypatch.setattr(cli, "_open_ready", lambda name: corpus)
+
+    def scores(**kw):
+        out = cli.search("vw", "plantain", mode="lexical", expand=True, **kw)
+        return {ln.split()[1]: float(ln.split()[0]) for ln in out.splitlines()}
+
+    base, weighted = scores(), scores(variant_weight=0.5)
+    assert weighted["d"] == pytest.approx(base["d"])  # the query's own hit is untouched
+    assert weighted["b"] == pytest.approx(
+        base["b"] * 0.5, rel=1e-2
+    )  # the variant's halves
