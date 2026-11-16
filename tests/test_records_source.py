@@ -167,3 +167,20 @@ def test_metadata_only_change_is_reindexed(tmp_path, monkeypatch):
     mod.state = [{"id": "x", "text": "same text here", "pages": "p.2"}]
     ir.build_corpus("metatest", embedder="light")
     assert pages() == ["p.2"]
+
+
+def test_records_signal_is_unchanged_without_metadata_keys():
+    import ef
+    from ir.sources import records_change_signal
+
+    r = {"id": "x", "text": "hello", "pages": "p.1"}
+    assert records_change_signal()("x", r) == ef.content_hash(r)
+
+
+def test_records_signal_sees_every_field_for_a_custom_text_key():
+    from ir.sources import records_change_signal
+
+    sig = records_change_signal(text_key="body")
+    assert sig("x", {"body": "t", "title": "a"}) != sig(
+        "x", {"body": "t", "title": "b"}
+    )

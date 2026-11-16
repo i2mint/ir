@@ -81,9 +81,13 @@ def records_change_signal(
 ) -> Callable[[str, Any], str]:
     """Change signal for record dicts: covers the text **and** the stored metadata.
 
-    ``ef.content_hash`` of a record dict ignores its non-text fields, so a record
-    whose filter metadata changed upstream (same text) would never be rebuilt and
-    stay filterable under the old value.
+    ``ef.content_hash`` of a record with a ``text`` field hashes the text only, so a
+    record whose filter metadata changed upstream (same text) would never be
+    rebuilt and stay filterable under the old value. With the default
+    ``text_key`` this adds ``metadata_keys`` through ``ef``'s ``content_keys`` (and
+    is identical to the old signal when there are none). With another
+    ``text_key`` the whole record is hashed, so no field a strategy may read goes
+    stale.
 
     >>> sig = records_change_signal(metadata_keys=["pages"])
     >>> a = sig("x", {"text": "t", "pages": "p.1"})
@@ -91,19 +95,20 @@ def records_change_signal(
     True
     >>> a == sig("x", {"text": "t", "pages": "p.2"})
     False
+    >>> body = records_change_signal(text_key="body")
+    >>> body("x", {"body": "t", "title": "a"}) == body("x", {"body": "t", "title": "b"})
+    False
     """
+    import ef
+
     keys = tuple(metadata_keys)
 
     def signal(artifact_id: str, raw: Any) -> str:
         if not isinstance(raw, Mapping):
-            return content_hash_signal(artifact_id, raw)
-        # Hash a JSON string: ``ef.content_hash`` of a dict looks only at its text.
-        payload = {
-            "text": raw.get(text_key),
-            "metadata": {k: raw[k] for k in keys if k in raw},
-        }
-        text = json.dumps(payload, sort_keys=True, default=str)
-        return hashlib.sha256(text.encode()).hexdigest()
+            return ef.content_hash(raw)
+        if text_key == "text":
+            return ef.content_hash(raw, content_keys=keys)
+        return ef.content_hash(json.dumps(raw, sort_keys=True, default=str))
 
     return signal
 
