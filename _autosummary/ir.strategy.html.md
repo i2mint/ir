@@ -35,6 +35,7 @@ custom strategies need only match the [`IndexingStrategy`](#ir.strategy.Indexing
 
 | [`balanced_windows`](#ir.strategy.balanced_windows)(text, \*, size[, overlap])   | Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.   |
 |------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`fold_text`](#ir.strategy.fold_text)(text)                               | Case-fold *text* and strip accents from Latin and Greek letters only.                     |
 | [`is_simple_param`](#ir.strategy.is_simple_param)(value)                        | Whether a constructor parameter is JSON-simple (scalar, or a tuple/list of scalars).      |
 | [`strategy_from_spec`](#ir.strategy.strategy_from_spec)(spec)                      | Reconstruct a shipped strategy from a `{"name", "params"}` spec.                          |
 | [`strategy_to_spec`](#ir.strategy.strategy_to_spec)(strategy)                    | A `{"name", "params"}` spec for a shipped, scalar-param strategy.                         |
@@ -133,6 +134,10 @@ field names. A key listed in both `head` and `fields` is read once.
 
 Every record key this strategy reads (for change signals).
 
+#### *property* synopsis_fields *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]*
+
+The keys a synopsis should summarize (`ir.with_synopsis` reads this).
+
 ### *class* ir.strategy.IndexingStrategy(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -218,6 +223,35 @@ BM25 would favour).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.strategy.fold_text(text)
+
+Case-fold *text* and strip accents from Latin and Greek letters only.
+
+Applies NFKC first (full-width letters, ligatures and compatibility forms fold
+in), then `casefold`, then removes accents of Latin/Greek letters, mapping
+strokes and ligature-letters (`ø đ ł æ œ þ`) to ASCII. Safe for mixed-script
+text: marks that carry meaning elsewhere are left alone (kana voicing `が`,
+Hangul syllables, Devanagari virama, Thai tone marks, Cyrillic `й`/`ё`).
+Use it as a `Fields(normalize=...)` normalizer (by reference:
+`"ir.strategy:fold_text"`) **and** apply it to queries, e.g.
+`formulate=fold_text` (a `str -> str` is a valid formulator), since folding
+acts on whichever side runs it. A synopsis written by an LLM
+(`ir.with_synopsis`) is not folded.
+
+```pycon
+>>> fold_text("Crème BRÛLÉE Straße Đà Nẵng Łódź")
+'creme brulee strasse da nang lodz'
+>>> fold_text("Ｃｒèｍｅ")
+'creme'
+>>> fold_text("Αθήνα")
+'αθηνα'
+>>> fold_text("がぎ 한국어 हिन्दी Йё ไก่")
+'がぎ 한국어 हिन्दी йё ไก่'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### ir.strategy.is_simple_param(value)
 

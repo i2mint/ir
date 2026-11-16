@@ -16,6 +16,7 @@ ir.strategy
    .. autosummary::
    
       balanced_windows
+      fold_text
       is_simple_param
       strategy_from_spec
       strategy_to_spec

@@ -1,4 +1,4 @@
-> built 2026-11-16 08:37 UTC from 04eadd0 (master) · ir 0.1.70. Details: build_info.json
+> built 2026-11-16 08:44 UTC from dfee7de (master) · ir 0.1.71. Details: build_info.json
 
 # index.html.md
 
@@ -3971,6 +3971,10 @@ field names. A key listed in both `head` and `fields` is read once.
 
 Every record key this strategy reads (for change signals).
 
+#### *property* synopsis_fields *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]*
+
+The keys a synopsis should summarize (`ir.with_synopsis` reads this).
+
 ### *class* ir.GraphStore(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -7508,6 +7512,7 @@ custom strategies need only match the [`IndexingStrategy`](_autosummary/ir.strat
 
 | [`balanced_windows`](_autosummary/ir.strategy.html.md#ir.strategy.balanced_windows)(text, \*, size[, overlap])   | Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.   |
 |------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`fold_text`](_autosummary/ir.strategy.html.md#ir.strategy.fold_text)(text)                               | Case-fold *text* and strip accents from Latin and Greek letters only.                     |
 | [`is_simple_param`](_autosummary/ir.strategy.html.md#ir.strategy.is_simple_param)(value)                        | Whether a constructor parameter is JSON-simple (scalar, or a tuple/list of scalars).      |
 | [`strategy_from_spec`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_from_spec)(spec)                      | Reconstruct a shipped strategy from a `{"name", "params"}` spec.                          |
 | [`strategy_to_spec`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_to_spec)(strategy)                    | A `{"name", "params"}` spec for a shipped, scalar-param strategy.                         |
@@ -7606,6 +7611,10 @@ field names. A key listed in both `head` and `fields` is read once.
 
 Every record key this strategy reads (for change signals).
 
+#### *property* synopsis_fields *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]*
+
+The keys a synopsis should summarize (`ir.with_synopsis` reads this).
+
 ### *class* ir.strategy.IndexingStrategy(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -7691,6 +7700,35 @@ BM25 would favour).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.strategy.fold_text(text)
+
+Case-fold *text* and strip accents from Latin and Greek letters only.
+
+Applies NFKC first (full-width letters, ligatures and compatibility forms fold
+in), then `casefold`, then removes accents of Latin/Greek letters, mapping
+strokes and ligature-letters (`ø đ ł æ œ þ`) to ASCII. Safe for mixed-script
+text: marks that carry meaning elsewhere are left alone (kana voicing `が`,
+Hangul syllables, Devanagari virama, Thai tone marks, Cyrillic `й`/`ё`).
+Use it as a `Fields(normalize=...)` normalizer (by reference:
+`"ir.strategy:fold_text"`) **and** apply it to queries, e.g.
+`formulate=fold_text` (a `str -> str` is a valid formulator), since folding
+acts on whichever side runs it. A synopsis written by an LLM
+(`ir.with_synopsis`) is not folded.
+
+```pycon
+>>> fold_text("Crème BRÛLÉE Straße Đà Nẵng Łódź")
+'creme brulee strasse da nang lodz'
+>>> fold_text("Ｃｒèｍｅ")
+'creme'
+>>> fold_text("Αθήνα")
+'αθηνα'
+>>> fold_text("がぎ 한국어 हिन्दी Йё ไก่")
+'がぎ 한국어 हिन्दी йё ไก่'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### ir.strategy.is_simple_param(value)
 
@@ -8339,16 +8377,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-16 08:37 UTC** from commit <a href="https://github.com/i2mint/ir/commit/04eadd07eb375ca4f20a261cd77ad2f65b2dba5d"><code>04eadd0</code></a> on branch <code>master</code>, for **ir 0.1.70** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-16 08:44 UTC** from commit <a href="https://github.com/i2mint/ir/commit/dfee7ded625045049d3c6cabd8a96e33df057f0a"><code>dfee7de</code></a> on branch <code>master</code>, for **ir 0.1.71** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.71) is behind the latest release on PyPI (0.1.72): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/04eadd07eb375ca4f20a261cd77ad2f65b2dba5d"><code>04eadd07eb375ca4f20a261cd77ad2f65b2dba5d</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/dfee7ded625045049d3c6cabd8a96e33df057f0a"><code>dfee7ded625045049d3c6cabd8a96e33df057f0a</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8359,9 +8399,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43832523432">43832523432</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43833486796">43833486796</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>04eadd07eb375ca4f20a261cd77ad2f65b2dba5d</code> (in the history of the built commit) |
+| Event commit | <code>dfee7ded625045049d3c6cabd8a96e33df057f0a</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8386,13 +8426,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.70/">0.1.70</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.72/">0.1.72</a>, newer than the documented version (0.1.71).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 04eadd07eb375ca4f20a261cd77ad2f65b2dba5d
+git checkout dfee7ded625045049d3c6cabd8a96e33df057f0a
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

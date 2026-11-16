@@ -477,123 +477,128 @@
 </span><span id="line-279">        <span class="bp">self</span><span class="o">.</span><span class="n">synthesizer_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_synthesizer_id</span><span class="p">(</span><span class="n">synthesizer_id</span><span class="p">)</span>
 </span><span id="line-280">        <span class="bp">self</span><span class="o">.</span><span class="n">synopsis_kind</span> <span class="o">=</span> <span class="n">synopsis_kind</span>
 </span><span id="line-281">
-</span><span id="line-282">    <span class="nd">@staticmethod</span>
-</span><span id="line-283">    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_when_id</span><span class="p">(</span><span class="n">when</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Predicate</span><span class="p">],</span> <span class="n">explicit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="line-284"><span class="w">        </span><span class="sd">"""Identity of the gate for staleness (``"always"`` for no gate)."""</span>
-</span><span id="line-285">        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="line-286">            <span class="k">if</span> <span class="n">explicit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-287">                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"with_synopsis: when_id requires a `when` predicate"</span><span class="p">)</span>
-</span><span id="line-288">            <span class="k">if</span> <span class="n">when</span> <span class="o">!=</span> <span class="n">ALWAYS</span><span class="p">:</span>
-</span><span id="line-289">                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="line-290">                    <span class="sa">f</span><span class="s2">"with_synopsis: when must be </span><span class="si">{</span><span class="n">ALWAYS</span><span class="si">!r}</span><span class="s2"> or a callable "</span>
-</span><span id="line-291">                    <span class="sa">f</span><span class="s2">"Artifact -&gt; bool, got </span><span class="si">{</span><span class="n">when</span><span class="si">!r}</span><span class="s2">"</span>
-</span><span id="line-292">                <span class="p">)</span>
-</span><span id="line-293">            <span class="k">return</span> <span class="n">ALWAYS</span>
-</span><span id="line-294">        <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">when</span><span class="p">):</span>
-</span><span id="line-295">            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"with_synopsis: when must be callable, got </span><span class="si">{</span><span class="n">when</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="line-296">        <span class="n">stamped</span> <span class="o">=</span> <span class="n">explicit</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="s2">"when_id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="line-297">        <span class="k">if</span> <span class="n">stamped</span><span class="p">:</span>
-</span><span id="line-298">            <span class="k">return</span> <span class="n">stamped</span>
-</span><span id="line-299">        <span class="n">qualname</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="s2">"__qualname__"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
-</span><span id="line-300">        <span class="k">if</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">"&lt;lambda&gt;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">"&lt;locals&gt;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span><span class="p">:</span>
-</span><span id="line-301">            <span class="k">return</span> <span class="n">qualname</span>
-</span><span id="line-302">        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-</span><span id="line-303">            <span class="s2">"with_synopsis: could not derive a stable identity for the `when` "</span>
-</span><span id="line-304">            <span class="s2">"predicate (an unnamed lambda or a local closure), so changing it will "</span>
-</span><span id="line-305">            <span class="s2">"not re-synthesize — pass when_id=... to track it."</span><span class="p">,</span>
-</span><span id="line-306">            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-</span><span id="line-307">        <span class="p">)</span>
-</span><span id="line-308">        <span class="k">return</span> <span class="s2">"custom"</span>
-</span><span id="line-309">
-</span><span id="line-310">    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_synthesizer_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">explicit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="line-311"><span class="w">        </span><span class="sd">"""Identity for staleness: explicit id, else a stamp, else a stable name.</span>
-</span><span id="line-312">
-</span><span id="line-313"><span class="sd">        An explicit ``synthesizer_id`` wins; else a ``synthesizer_id`` the</span>
-</span><span id="line-314"><span class="sd">        synthesizer carries (e.g. :func:`make_llm_synthesizer`'s). Failing both,</span>
-</span><span id="line-315"><span class="sd">        a *named* callable's ``__qualname__`` is a stable identity — but an</span>
-</span><span id="line-316"><span class="sd">        unnamed lambda (``"&lt;lambda&gt;"``) or a local closure (``"&lt;locals&gt;"``) is</span>
-</span><span id="line-317"><span class="sd">        **not**: distinct such callables share one qualname, so swapping them</span>
-</span><span id="line-318"><span class="sd">        would silently *not* re-synthesize. In that case we warn and fall back to</span>
-</span><span id="line-319"><span class="sd">        a sentinel, surfacing the lost guarantee at construction time.</span>
-</span><span id="line-320"><span class="sd">        """</span>
-</span><span id="line-321">        <span class="n">stamped</span> <span class="o">=</span> <span class="n">explicit</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">,</span> <span class="s2">"synthesizer_id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="line-322">        <span class="k">if</span> <span class="n">stamped</span><span class="p">:</span>
-</span><span id="line-323">            <span class="k">return</span> <span class="n">stamped</span>
-</span><span id="line-324">        <span class="n">qualname</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">,</span> <span class="s2">"__qualname__"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
-</span><span id="line-325">        <span class="k">if</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">"&lt;lambda&gt;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">"&lt;locals&gt;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span><span class="p">:</span>
-</span><span id="line-326">            <span class="k">return</span> <span class="n">qualname</span>
-</span><span id="line-327">        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-</span><span id="line-328">            <span class="s2">"with_synopsis: could not derive a stable identity for the injected "</span>
-</span><span id="line-329">            <span class="s2">"synthesizer (an unnamed lambda or a local closure), so synopsis "</span>
-</span><span id="line-330">            <span class="s2">"staleness tracking is disabled — pass synthesizer_id=... so that "</span>
-</span><span id="line-331">            <span class="s2">"swapping the synthesizer re-synthesizes the corpus on the next build."</span><span class="p">,</span>
-</span><span id="line-332">            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-</span><span id="line-333">        <span class="p">)</span>
-</span><span id="line-334">        <span class="k">return</span> <span class="s2">"custom"</span>
-</span><span id="line-335">
-</span><span id="line-336">    <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexPlan</span><span class="p">:</span>
-</span><span id="line-337">        <span class="n">plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>
-</span><span id="line-338">        <span class="n">artifact</span> <span class="o">=</span> <span class="n">Artifact</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}))</span>
-</span><span id="line-339">        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">artifact</span><span class="p">):</span>
-</span><span id="line-340">            <span class="k">return</span> <span class="n">plan</span>  <span class="c1"># gated out: no synthesis call, no synopsis surface</span>
-</span><span id="line-341">        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">(</span><span class="n">artifact</span><span class="p">)</span>
-</span><span id="line-342">        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span>
-</span><span id="line-343">        <span class="k">if</span> <span class="n">text</span><span class="p">:</span>
-</span><span id="line-344">            <span class="n">synopsis</span> <span class="o">=</span> <span class="n">Surface</span><span class="p">(</span>
-</span><span id="line-345">                <span class="n">artifact_id</span><span class="p">,</span>
-</span><span id="line-346">                <span class="bp">self</span><span class="o">.</span><span class="n">synopsis_kind</span><span class="p">,</span>
-</span><span id="line-347">                <span class="n">text</span><span class="p">,</span>
-</span><span id="line-348">                <span class="n">granularity</span><span class="o">=</span><span class="s2">"document"</span><span class="p">,</span>
-</span><span id="line-349">                <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"synthesizer_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesizer_id</span><span class="p">},</span>
-</span><span id="line-350">            <span class="p">)</span>
-</span><span id="line-351">            <span class="n">plan</span><span class="o">.</span><span class="n">surfaces</span> <span class="o">=</span> <span class="p">[</span><span class="n">synopsis</span><span class="p">,</span> <span class="o">*</span><span class="n">plan</span><span class="o">.</span><span class="n">surfaces</span><span class="p">]</span>
-</span><span id="line-352">        <span class="k">return</span> <span class="n">plan</span>
-</span><span id="line-353">
-</span><span id="line-354">
+</span><span id="line-282">    <span class="nd">@property</span>
+</span><span id="line-283">    <span class="k">def</span><span class="w"> </span><span class="nf">reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+</span><span id="line-284"><span class="w">        </span><span class="sd">"""The wrapped strategy's ``reads`` (so a records change signal still sees them)."""</span>
+</span><span id="line-285">        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="p">,</span> <span class="s2">"reads"</span><span class="p">,</span> <span class="p">()))</span>
+</span><span id="line-286">
+</span><span id="line-287">    <span class="nd">@staticmethod</span>
+</span><span id="line-288">    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_when_id</span><span class="p">(</span><span class="n">when</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Predicate</span><span class="p">],</span> <span class="n">explicit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-289"><span class="w">        </span><span class="sd">"""Identity of the gate for staleness (``"always"`` for no gate)."""</span>
+</span><span id="line-290">        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="line-291">            <span class="k">if</span> <span class="n">explicit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-292">                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"with_synopsis: when_id requires a `when` predicate"</span><span class="p">)</span>
+</span><span id="line-293">            <span class="k">if</span> <span class="n">when</span> <span class="o">!=</span> <span class="n">ALWAYS</span><span class="p">:</span>
+</span><span id="line-294">                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="line-295">                    <span class="sa">f</span><span class="s2">"with_synopsis: when must be </span><span class="si">{</span><span class="n">ALWAYS</span><span class="si">!r}</span><span class="s2"> or a callable "</span>
+</span><span id="line-296">                    <span class="sa">f</span><span class="s2">"Artifact -&gt; bool, got </span><span class="si">{</span><span class="n">when</span><span class="si">!r}</span><span class="s2">"</span>
+</span><span id="line-297">                <span class="p">)</span>
+</span><span id="line-298">            <span class="k">return</span> <span class="n">ALWAYS</span>
+</span><span id="line-299">        <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">when</span><span class="p">):</span>
+</span><span id="line-300">            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"with_synopsis: when must be callable, got </span><span class="si">{</span><span class="n">when</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-301">        <span class="n">stamped</span> <span class="o">=</span> <span class="n">explicit</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="s2">"when_id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="line-302">        <span class="k">if</span> <span class="n">stamped</span><span class="p">:</span>
+</span><span id="line-303">            <span class="k">return</span> <span class="n">stamped</span>
+</span><span id="line-304">        <span class="n">qualname</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="s2">"__qualname__"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+</span><span id="line-305">        <span class="k">if</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">"&lt;lambda&gt;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">"&lt;locals&gt;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span><span class="p">:</span>
+</span><span id="line-306">            <span class="k">return</span> <span class="n">qualname</span>
+</span><span id="line-307">        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+</span><span id="line-308">            <span class="s2">"with_synopsis: could not derive a stable identity for the `when` "</span>
+</span><span id="line-309">            <span class="s2">"predicate (an unnamed lambda or a local closure), so changing it will "</span>
+</span><span id="line-310">            <span class="s2">"not re-synthesize — pass when_id=... to track it."</span><span class="p">,</span>
+</span><span id="line-311">            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+</span><span id="line-312">        <span class="p">)</span>
+</span><span id="line-313">        <span class="k">return</span> <span class="s2">"custom"</span>
+</span><span id="line-314">
+</span><span id="line-315">    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_synthesizer_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">explicit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="line-316"><span class="w">        </span><span class="sd">"""Identity for staleness: explicit id, else a stamp, else a stable name.</span>
+</span><span id="line-317">
+</span><span id="line-318"><span class="sd">        An explicit ``synthesizer_id`` wins; else a ``synthesizer_id`` the</span>
+</span><span id="line-319"><span class="sd">        synthesizer carries (e.g. :func:`make_llm_synthesizer`'s). Failing both,</span>
+</span><span id="line-320"><span class="sd">        a *named* callable's ``__qualname__`` is a stable identity — but an</span>
+</span><span id="line-321"><span class="sd">        unnamed lambda (``"&lt;lambda&gt;"``) or a local closure (``"&lt;locals&gt;"``) is</span>
+</span><span id="line-322"><span class="sd">        **not**: distinct such callables share one qualname, so swapping them</span>
+</span><span id="line-323"><span class="sd">        would silently *not* re-synthesize. In that case we warn and fall back to</span>
+</span><span id="line-324"><span class="sd">        a sentinel, surfacing the lost guarantee at construction time.</span>
+</span><span id="line-325"><span class="sd">        """</span>
+</span><span id="line-326">        <span class="n">stamped</span> <span class="o">=</span> <span class="n">explicit</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">,</span> <span class="s2">"synthesizer_id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="line-327">        <span class="k">if</span> <span class="n">stamped</span><span class="p">:</span>
+</span><span id="line-328">            <span class="k">return</span> <span class="n">stamped</span>
+</span><span id="line-329">        <span class="n">qualname</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">,</span> <span class="s2">"__qualname__"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+</span><span id="line-330">        <span class="k">if</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">"&lt;lambda&gt;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span> <span class="ow">and</span> <span class="s2">"&lt;locals&gt;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qualname</span><span class="p">:</span>
+</span><span id="line-331">            <span class="k">return</span> <span class="n">qualname</span>
+</span><span id="line-332">        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+</span><span id="line-333">            <span class="s2">"with_synopsis: could not derive a stable identity for the injected "</span>
+</span><span id="line-334">            <span class="s2">"synthesizer (an unnamed lambda or a local closure), so synopsis "</span>
+</span><span id="line-335">            <span class="s2">"staleness tracking is disabled — pass synthesizer_id=... so that "</span>
+</span><span id="line-336">            <span class="s2">"swapping the synthesizer re-synthesizes the corpus on the next build."</span><span class="p">,</span>
+</span><span id="line-337">            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+</span><span id="line-338">        <span class="p">)</span>
+</span><span id="line-339">        <span class="k">return</span> <span class="s2">"custom"</span>
+</span><span id="line-340">
+</span><span id="line-341">    <span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexPlan</span><span class="p">:</span>
+</span><span id="line-342">        <span class="n">plan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strategy</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>
+</span><span id="line-343">        <span class="n">artifact</span> <span class="o">=</span> <span class="n">Artifact</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">artifact_id</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="n">raw</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}))</span>
+</span><span id="line-344">        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">artifact</span><span class="p">):</span>
+</span><span id="line-345">            <span class="k">return</span> <span class="n">plan</span>  <span class="c1"># gated out: no synthesis call, no synopsis surface</span>
+</span><span id="line-346">        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesize</span><span class="p">(</span><span class="n">artifact</span><span class="p">)</span>
+</span><span id="line-347">        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span>
+</span><span id="line-348">        <span class="k">if</span> <span class="n">text</span><span class="p">:</span>
+</span><span id="line-349">            <span class="n">synopsis</span> <span class="o">=</span> <span class="n">Surface</span><span class="p">(</span>
+</span><span id="line-350">                <span class="n">artifact_id</span><span class="p">,</span>
+</span><span id="line-351">                <span class="bp">self</span><span class="o">.</span><span class="n">synopsis_kind</span><span class="p">,</span>
+</span><span id="line-352">                <span class="n">text</span><span class="p">,</span>
+</span><span id="line-353">                <span class="n">granularity</span><span class="o">=</span><span class="s2">"document"</span><span class="p">,</span>
+</span><span id="line-354">                <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"synthesizer_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesizer_id</span><span class="p">},</span>
+</span><span id="line-355">            <span class="p">)</span>
+</span><span id="line-356">            <span class="n">plan</span><span class="o">.</span><span class="n">surfaces</span> <span class="o">=</span> <span class="p">[</span><span class="n">synopsis</span><span class="p">,</span> <span class="o">*</span><span class="n">plan</span><span class="o">.</span><span class="n">surfaces</span><span class="p">]</span>
+</span><span id="line-357">        <span class="k">return</span> <span class="n">plan</span>
+</span><span id="line-358">
+</span><span id="line-359">
 <div class="viewcode-block" id="with_synopsis">
 <a class="viewcode-back" href="../../_autosummary/ir.synopsis.html#ir.with_synopsis">[docs]</a>
-</span><span id="line-355"><span class="k">def</span><span class="w"> </span><span class="nf">with_synopsis</span><span class="p">(</span>
-</span><span id="line-356">    <span class="n">strategy</span><span class="p">:</span> <span class="n">IndexingStrategy</span><span class="p">,</span>
-</span><span id="line-357">    <span class="o">*</span><span class="p">,</span>
-</span><span id="line-358">    <span class="n">synthesize</span><span class="p">:</span> <span class="n">Synthesizer</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-359">    <span class="n">synthesizer_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-360">    <span class="n">synopsis_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SYNOPSIS_KIND</span><span class="p">,</span>
-</span><span id="line-361">    <span class="n">when</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Predicate</span><span class="p">]</span> <span class="o">=</span> <span class="n">ALWAYS</span><span class="p">,</span>
-</span><span id="line-362">    <span class="n">when_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-363"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexingStrategy</span><span class="p">:</span>
-</span><span id="line-364"><span class="w">    </span><span class="sd">"""Wrap *strategy* to add one LLM-derived ``synopsis`` surface per artifact.</span>
-</span><span id="line-365">
-</span><span id="line-366"><span class="sd">    Args:</span>
-</span><span id="line-367"><span class="sd">        strategy: the inner :class:`~ir.strategy.IndexingStrategy` (``Chunked``,</span>
-</span><span id="line-368"><span class="sd">            ``Package``, ...). Its surfaces are kept; the synopsis is prepended.</span>
-</span><span id="line-369"><span class="sd">        synthesize: an injectable ``Artifact -&gt; str`` (test double / custom</span>
-</span><span id="line-370"><span class="sd">            summarizer). Omitted → :func:`make_llm_synthesizer` (lazy ``aix``).</span>
-</span><span id="line-371"><span class="sd">        synthesizer_id: explicit identity stamp for staleness (recommended when</span>
-</span><span id="line-372"><span class="sd">            injecting an unnamed callable / lambda). Omitted → the synthesizer's</span>
-</span><span id="line-373"><span class="sd">            own ``synthesizer_id`` / ``__qualname__``.</span>
-</span><span id="line-374"><span class="sd">        synopsis_kind: the surface kind (default ``"synopsis"``, a summary kind).</span>
-</span><span id="line-375"><span class="sd">        when: ``"always"`` (default: every artifact) or a predicate</span>
-</span><span id="line-376"><span class="sd">            ``Artifact -&gt; bool``; the synthesizer is called, and a synopsis</span>
-</span><span id="line-377"><span class="sd">            surface added, only where it returns true (e.g.</span>
-</span><span id="line-378"><span class="sd">            :data:`thin_description_predicate`). A predicate that raises</span>
-</span><span id="line-379"><span class="sd">            propagates.</span>
-</span><span id="line-380"><span class="sd">        when_id: explicit identity stamp for an unnamed predicate (staleness);</span>
-</span><span id="line-381"><span class="sd">            omitted → the predicate's ``when_id`` / ``__qualname__``.</span>
-</span><span id="line-382">
-</span><span id="line-383"><span class="sd">    Returns:</span>
-</span><span id="line-384"><span class="sd">        an :class:`~ir.strategy.IndexingStrategy` usable anywhere a strategy is —</span>
-</span><span id="line-385"><span class="sd">        ``ir.CorpusSource.from_mapping(docs, name=..., strategy=with_synopsis(...))``.</span>
-</span><span id="line-386">
-</span><span id="line-387"><span class="sd">    &gt;&gt;&gt; strat = with_synopsis(Chunked(), synthesize=lambda a: "a summary")  # doctest: +SKIP</span>
-</span><span id="line-388"><span class="sd">    """</span>
-</span><span id="line-389">    <span class="k">return</span> <span class="n">_SynopsisStrategy</span><span class="p">(</span>
-</span><span id="line-390">        <span class="n">strategy</span><span class="p">,</span>
-</span><span id="line-391">        <span class="n">synthesize</span><span class="o">=</span><span class="n">synthesize</span><span class="p">,</span>
-</span><span id="line-392">        <span class="n">synthesizer_id</span><span class="o">=</span><span class="n">synthesizer_id</span><span class="p">,</span>
-</span><span id="line-393">        <span class="n">synopsis_kind</span><span class="o">=</span><span class="n">synopsis_kind</span><span class="p">,</span>
-</span><span id="line-394">        <span class="n">when</span><span class="o">=</span><span class="n">when</span><span class="p">,</span>
-</span><span id="line-395">        <span class="n">when_id</span><span class="o">=</span><span class="n">when_id</span><span class="p">,</span>
-</span><span id="line-396">    <span class="p">)</span></div>
+</span><span id="line-360"><span class="k">def</span><span class="w"> </span><span class="nf">with_synopsis</span><span class="p">(</span>
+</span><span id="line-361">    <span class="n">strategy</span><span class="p">:</span> <span class="n">IndexingStrategy</span><span class="p">,</span>
+</span><span id="line-362">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-363">    <span class="n">synthesize</span><span class="p">:</span> <span class="n">Synthesizer</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-364">    <span class="n">synthesizer_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-365">    <span class="n">synopsis_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SYNOPSIS_KIND</span><span class="p">,</span>
+</span><span id="line-366">    <span class="n">when</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Predicate</span><span class="p">]</span> <span class="o">=</span> <span class="n">ALWAYS</span><span class="p">,</span>
+</span><span id="line-367">    <span class="n">when_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-368"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexingStrategy</span><span class="p">:</span>
+</span><span id="line-369"><span class="w">    </span><span class="sd">"""Wrap *strategy* to add one LLM-derived ``synopsis`` surface per artifact.</span>
+</span><span id="line-370">
+</span><span id="line-371"><span class="sd">    Args:</span>
+</span><span id="line-372"><span class="sd">        strategy: the inner :class:`~ir.strategy.IndexingStrategy` (``Chunked``,</span>
+</span><span id="line-373"><span class="sd">            ``Package``, ...). Its surfaces are kept; the synopsis is prepended.</span>
+</span><span id="line-374"><span class="sd">        synthesize: an injectable ``Artifact -&gt; str`` (test double / custom</span>
+</span><span id="line-375"><span class="sd">            summarizer). Omitted → :func:`make_llm_synthesizer` (lazy ``aix``).</span>
+</span><span id="line-376"><span class="sd">        synthesizer_id: explicit identity stamp for staleness (recommended when</span>
+</span><span id="line-377"><span class="sd">            injecting an unnamed callable / lambda). Omitted → the synthesizer's</span>
+</span><span id="line-378"><span class="sd">            own ``synthesizer_id`` / ``__qualname__``.</span>
+</span><span id="line-379"><span class="sd">        synopsis_kind: the surface kind (default ``"synopsis"``, a summary kind).</span>
+</span><span id="line-380"><span class="sd">        when: ``"always"`` (default: every artifact) or a predicate</span>
+</span><span id="line-381"><span class="sd">            ``Artifact -&gt; bool``; the synthesizer is called, and a synopsis</span>
+</span><span id="line-382"><span class="sd">            surface added, only where it returns true (e.g.</span>
+</span><span id="line-383"><span class="sd">            :data:`thin_description_predicate`). A predicate that raises</span>
+</span><span id="line-384"><span class="sd">            propagates.</span>
+</span><span id="line-385"><span class="sd">        when_id: explicit identity stamp for an unnamed predicate (staleness);</span>
+</span><span id="line-386"><span class="sd">            omitted → the predicate's ``when_id`` / ``__qualname__``.</span>
+</span><span id="line-387">
+</span><span id="line-388"><span class="sd">    Returns:</span>
+</span><span id="line-389"><span class="sd">        an :class:`~ir.strategy.IndexingStrategy` usable anywhere a strategy is —</span>
+</span><span id="line-390"><span class="sd">        ``ir.CorpusSource.from_mapping(docs, name=..., strategy=with_synopsis(...))``.</span>
+</span><span id="line-391">
+</span><span id="line-392"><span class="sd">    &gt;&gt;&gt; strat = with_synopsis(Chunked(), synthesize=lambda a: "a summary")  # doctest: +SKIP</span>
+</span><span id="line-393"><span class="sd">    """</span>
+</span><span id="line-394">    <span class="k">return</span> <span class="n">_SynopsisStrategy</span><span class="p">(</span>
+</span><span id="line-395">        <span class="n">strategy</span><span class="p">,</span>
+</span><span id="line-396">        <span class="n">synthesize</span><span class="o">=</span><span class="n">synthesize</span><span class="p">,</span>
+</span><span id="line-397">        <span class="n">synthesizer_id</span><span class="o">=</span><span class="n">synthesizer_id</span><span class="p">,</span>
+</span><span id="line-398">        <span class="n">synopsis_kind</span><span class="o">=</span><span class="n">synopsis_kind</span><span class="p">,</span>
+</span><span id="line-399">        <span class="n">when</span><span class="o">=</span><span class="n">when</span><span class="p">,</span>
+</span><span id="line-400">        <span class="n">when_id</span><span class="o">=</span><span class="n">when_id</span><span class="p">,</span>
+</span><span id="line-401">    <span class="p">)</span></div>
 
 </span></code></pre></div>
     </div></div>
@@ -608,7 +613,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=3b2b39e9"></script>
+    <script src="../../_static/documentation_options.js?v=9f53bdf0"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>

@@ -837,6 +837,10 @@ field names. A key listed in both `head` and `fields` is read once.
 
 Every record key this strategy reads (for change signals).
 
+#### *property* synopsis_fields *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]*
+
+The keys a synopsis should summarize (`ir.with_synopsis` reads this).
+
 ### *class* ir.GraphStore(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
