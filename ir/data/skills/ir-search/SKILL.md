@@ -70,7 +70,8 @@ Research and measurements behind this: `misc/docs/ir_13` (keyword/regex vs embed
 ir synonyms acmecorp                         # aliases + a ready grep regex
 ir search reports "acmecorp invoice" -m lexical --expand   # the variants, fused, original first
 ir search reports "invoice" -m lexical --filter '{"project": "dol"}'   # hard metadata filter (JSON; $in/$ne/$and... ; same on discover)
-ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname; found <id> after a miss"
+ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname" --miss-query "ac invoice" --found "<id>" --corpus reports   # the miss + what it found, so it can be re-tested
+ir synonyms-replay reports                   # which entries still help (dry run; --apply demotes the ones that do not)
 ```
 
 Add an entry only when all four hold: a query missed, a reformulation found the target, you read and verified it, and the bridging word is corpus-specific (you would not have produced it unprompted). `--oneway` for renames and acronyms (old name finds new content, not the reverse). The ledger lives in the user's config dir (`ir synonyms` prints its path); it is private, never commit it.

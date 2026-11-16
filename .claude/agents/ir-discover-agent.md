@@ -122,7 +122,7 @@ have enough strong matches or a round adds nothing new (dry). Switch route
 When a miss was bridged by a **corpus-specific** word (a nickname, a renamed
 package, private jargon, not a general synonym) and you verified the find, say so
 in your return under "Ledger proposal: `ir synonyms-add "<term>, <alias>" --note
-"<why>"`" so the caller can record it; you are read-only and do not add it
+"<why>" --miss-query "<the query that missed>" --found "<verified id(s)>" --corpus <name>`" (the miss and the found ids let `ir synonyms-replay` re-test it later) so the caller can record it; you are read-only and do not add it
 yourself.
 
 ### 7. Coverage safety net

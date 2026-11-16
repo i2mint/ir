@@ -1,18 +1,21 @@
 """Replay the synonym ledger through ``ir.eval``: keep the entries that earn their place.
 
-A ledger entry is added after one verified find. Whether it keeps helping, or ever
-helped beyond that find, is testable: an entry's ``provenance`` names the query that
-missed and the artifact ids the vocabulary found (see :mod:`ir.synonyms`), which is a
-:class:`ir.eval.DiscoveryCase`. :func:`replay_ledger` scores each such case twice,
-with and without the entry's expansion, through :func:`ir.eval.evaluate_discovery`
-(so the numbers are the harness's), and says whether the entry ``helps``, has
-``no_effect`` or ``hurts``. With ``apply=True`` it records the win in ``uses`` and
-demotes entries that do not help (they are kept in the file, with ``status:
-"demoted"``, and are no longer loaded).
+A ledger entry is added after one verified find. Whether it keeps helping is testable:
+an entry's ``provenance`` names the query that missed and the artifact ids the
+vocabulary found (see :mod:`ir.synonyms`), which is a :class:`ir.eval.DiscoveryCase`.
+:func:`replay_ledger` scores each such case twice, with and without the entry's
+expansion, through :func:`ir.eval.evaluate_discovery` (so the numbers are the
+harness's), and says whether the entry ``helps``, has ``no_effect`` or ``hurts``.
 
-Entries without provenance are ``unverifiable`` and left alone. Replay returns
-verdicts and, optionally, rewrites the ledger; it never searches on its own
-initiative and holds no loop (ir/raglab boundary).
+What it will not do is judge on thin evidence: an entry is ``unverifiable`` when it has
+no provenance, when its gold ids are not in this corpus (a global entry replayed on
+the wrong corpus, or a corpus rebuilt since), or when ``vd`` is unavailable so lexical
+scores are not the real ones. With ``apply=True`` the verdicts are written back
+(:func:`apply_verdicts`): a win bumps ``verified`` and re-activates a demoted entry; a
+``hurts`` demotes; a ``no_effect`` demotes only an entry that has never won a replay
+(the miss may simply be fixed by now). Demoted entries stay in the file and are no
+longer loaded by default. Replay returns verdicts and optionally patches the ledger; it
+never searches on its own initiative and holds no loop (ir/raglab boundary).
 """
 
 from __future__ import annotations
@@ -22,14 +25,14 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-from .eval import DiscoveryCase, evaluate_discovery
+from .eval import DiscoveryCase, evaluate_discovery, validate_cases
 from .synonyms import (
     ACTIVE,
     DEMOTED,
     SynonymEntry,
     load_synonyms,
     make_synonym_formulator,
-    write_synonyms,
+    update_entries,
 )
 
 #: Verdicts of one entry's replay.
@@ -49,7 +52,7 @@ class EntryVerdict:
     with_entry: float | None = None
 
 
-def case_of(entry: SynonymEntry, *, corpus: str | None = None) -> DiscoveryCase | None:
+def case_of(entry: SynonymEntry) -> DiscoveryCase | None:
     """The :class:`~ir.eval.DiscoveryCase` an entry's provenance encodes, if complete."""
     prov = entry.provenance or {}
     query, found = prov.get("miss_query"), prov.get("found_ids")
@@ -60,17 +63,14 @@ def case_of(entry: SynonymEntry, *, corpus: str | None = None) -> DiscoveryCase 
     return DiscoveryCase(
         query=query,
         gold=tuple(str(i) for i in found),
-        corpus=corpus or entry.corpus,
+        corpus=prov.get("corpus") or entry.corpus,
     )
 
 
-def _score(
-    corpus: Any, case: DiscoveryCase, *, mode: str, k: int, **search_kw
-) -> float:
-    report = evaluate_discovery(
+def _report(corpus: Any, case: DiscoveryCase, *, mode: str, k: int, **search_kw):
+    return evaluate_discovery(
         corpus, [case], mode=mode, k_values=[k], primary_k=k, **search_kw
     )
-    return float(report.primary or 0.0)
 
 
 def replay_entry(
@@ -82,16 +82,62 @@ def replay_entry(
     epsilon: float = DFLT_EPSILON,
     **search_kw: Any,
 ) -> EntryVerdict:
-    """Replay one entry: NDCG@k of its miss case without, then with, its expansion."""
+    """Replay one entry: NDCG@k of its miss case without, then with, its expansion.
+
+    ``mode`` defaults to ``lexical`` (the ledger serves keyword search; ``ir.eval``
+    itself defaults to ``hybrid``). ``formulate`` cannot be passed: the entry's own
+    expansion is the thing under test.
+    """
+    if "formulate" in search_kw:
+        raise ValueError(
+            "replay_entry tests the entry's own formulator; drop formulate="
+        )
     case = case_of(entry)
     if case is None:
         return EntryVerdict(entry, UNVERIFIABLE)
-    base = _score(corpus, case, mode=mode, k=k, **search_kw)
-    formulate = make_synonym_formulator([entry])
-    with_entry = _score(corpus, case, mode=mode, k=k, formulate=formulate, **search_kw)
-    delta = with_entry - base
+    if case.corpus and case.corpus != getattr(corpus, "name", corpus):
+        return EntryVerdict(entry, UNVERIFIABLE)  # the miss happened elsewhere
+    if validate_cases(corpus, [case]):  # gold ids absent from this corpus
+        return EntryVerdict(entry, UNVERIFIABLE)
+    base = _report(corpus, case, mode=mode, k=k, **search_kw)
+    withe = _report(
+        corpus,
+        case,
+        mode=mode,
+        k=k,
+        formulate=make_synonym_formulator([entry]),
+        **search_kw,
+    )
+    if base.vd_degraded or withe.vd_degraded:  # scores are not the requested mode's
+        return EntryVerdict(entry, UNVERIFIABLE)
+    before, after = float(base.primary or 0.0), float(withe.primary or 0.0)
+    delta = after - before
     verdict = HELPS if delta > epsilon else HURTS if delta < -epsilon else NO_EFFECT
-    return EntryVerdict(entry, verdict, base, with_entry)
+    return EntryVerdict(entry, verdict, before, after)
+
+
+def apply_verdicts(
+    verdicts: Sequence[EntryVerdict],
+) -> list[tuple[SynonymEntry, SynonymEntry]]:
+    """The ``(old, new)`` entry changes a set of verdicts implies (pure; no I/O).
+
+    >>> e = SynonymEntry(("a1", "b1"))
+    >>> [(n.verified, n.status) for _, n in apply_verdicts([EntryVerdict(e, HELPS)])]
+    [(1, 'active')]
+    >>> [(n.verified, n.status) for _, n in apply_verdicts([EntryVerdict(e, HURTS)])]
+    [(0, 'demoted')]
+    """
+    changes = []
+    for v in verdicts:
+        e = v.entry
+        if v.verdict == HELPS:
+            new = replace(e, verified=e.verified + 1, status=ACTIVE)
+        elif v.verdict == HURTS or (v.verdict == NO_EFFECT and e.verified == 0):
+            new = replace(e, status=DEMOTED)
+        else:
+            continue
+        changes.append((e, new))
+    return changes
 
 
 def replay_ledger(
@@ -104,27 +150,23 @@ def replay_ledger(
     k: int = 10,
     **search_kw: Any,
 ) -> list[EntryVerdict]:
-    """Replay every active entry of the ledger against ``corpus``; see the module doc.
+    """Replay the ledger's entries for ``corpus`` (demoted ones too, so a win re-activates).
 
-    ``entries`` defaults to the ledger's active entries for this corpus. With
-    ``apply=True`` the *whole* ledger at ``path`` is rewritten: a ``helps`` entry
-    gets ``uses + 1``; ``no_effect`` and ``hurts`` entries become ``status:
-    "demoted"``; unverifiable entries (and entries of other corpora) are untouched.
+    ``entries`` overrides what to replay (a dry run only: ``apply`` with it raises,
+    since the ledger lines are then not the ones being judged). With ``apply=True``
+    the verdicts are patched into the ledger at ``path`` line by line
+    (:func:`ir.synonyms.update_entries`); unverifiable entries, entries of other
+    corpora and every line this code does not understand are left untouched.
     """
+    if entries is not None and apply:
+        raise ValueError("apply=True replays the ledger itself; do not pass entries=")
     name = getattr(corpus, "name", corpus if isinstance(corpus, str) else None)
-    active = list(entries) if entries is not None else load_synonyms(path, corpus=name)
-    verdicts = [replay_entry(corpus, e, mode=mode, k=k, **search_kw) for e in active]
-    if apply and entries is None:
-        # entries hold a dict (provenance), so they are matched by their ledger line
-        verdict_of = {v.entry.to_json(): v.verdict for v in verdicts}
-        updated = []
-        for e in load_synonyms(path, include_demoted=True):
-            verdict = verdict_of.get(e.to_json())
-            if verdict in (None, UNVERIFIABLE):
-                updated.append(e)
-            elif verdict == HELPS:
-                updated.append(replace(e, uses=e.uses + 1, status=ACTIVE))
-            else:
-                updated.append(replace(e, status=DEMOTED))
-        write_synonyms(updated, path)
+    pool = (
+        list(entries)
+        if entries is not None
+        else load_synonyms(path, corpus=name, include_demoted=True)
+    )
+    verdicts = [replay_entry(corpus, e, mode=mode, k=k, **search_kw) for e in pool]
+    if apply:
+        update_entries(apply_verdicts(verdicts), path)
     return verdicts

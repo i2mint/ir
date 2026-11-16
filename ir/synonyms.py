@@ -17,7 +17,7 @@ path with ``$IR_SYNONYMS``)::
 expands to the rest. ``corpus`` (optional) limits an entry to one corpus. An entry
 may carry ``provenance`` (``{"miss_query": ..., "found_ids": [...]}``: the search that
 missed and what the vocabulary found), which lets :func:`ir.synonyms_eval.replay_ledger`
-re-test it; ``uses`` (replay wins) and ``status`` (``"demoted"`` entries are not
+re-test it; ``verified`` (the number of replays it won) and ``status`` (``"demoted"`` entries are not
 loaded by default) are maintained by that replay. The ledger
 is the user's private data: it lives in their config dir, never in a repo.
 
@@ -41,7 +41,8 @@ import json
 import os
 import re
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import asdict, dataclass
+from collections import defaultdict, deque
+from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
 
@@ -69,14 +70,19 @@ class SynonymEntry:
     added: str = ""
     corpus: str | None = None
     provenance: Mapping[str, object] | None = None
-    uses: int = 0
+    verified: int = 0
     status: str = ACTIVE
+    #: the ledger line this entry was read from (``""`` if built in code); lets
+    #: :func:`update_entries` patch exactly that line and leave the rest verbatim.
+    source_line: str = field(default="", compare=False, repr=False)
 
     def to_json(self) -> str:
         d = {
             k: v
             for k, v in asdict(self).items()
-            if v not in (None, "", False, 0) and not (k == "status" and v == ACTIVE)
+            if k != "source_line"
+            and v not in (None, "", False, 0)
+            and not (k == "status" and v == ACTIVE)
         }
         d["terms"] = list(self.terms)
         return json.dumps(d, ensure_ascii=False)
@@ -131,8 +137,9 @@ def load_synonyms(
             provenance=d.get("provenance")
             if isinstance(d.get("provenance"), dict)
             else None,
-            uses=int(d.get("uses", 0) or 0),
+            verified=int(d.get("verified", 0) or 0),
             status=str(d.get("status") or ACTIVE),
+            source_line=line,
         )
         if e.status == DEMOTED and not include_demoted:
             continue
@@ -273,18 +280,51 @@ def make_synonym_formulator(
     return formulate
 
 
-def write_synonyms(
-    entries: Iterable[SynonymEntry], path: str | Path | None = None
-) -> Path:
-    """Rewrite the whole ledger from ``entries`` (atomically: temp file, then rename).
+def update_entries(
+    changes: Iterable[tuple[SynonymEntry, SynonymEntry]],
+    path: str | Path | None = None,
+) -> int:
+    """Rewrite the ledger with ``(old, new)`` entry changes; every other line stays verbatim.
 
-    The one place that rewrites rather than appends; used to persist replay results.
-    Pass the *full* entry list (``load_synonyms(include_demoted=True)``), since
-    anything left out is dropped.
+    ``old`` must come from :func:`load_synonyms` (it carries the line it was read
+    from). Only ``verified`` and ``status`` are taken from ``new``, and they are
+    patched into the original JSON object, so comments, malformed lines and unknown
+    keys a user hand-wrote survive. A line that changed since it was read (an edit
+    or another writer) is left alone. The file is replaced atomically (unique temp
+    file, then rename); an ``ir synonyms-add`` append landing between the final read
+    and the rename could still be lost, so keep replays out of concurrent writers.
+    Returns the number of lines patched.
     """
+    import tempfile
+
     p = Path(path) if path else ledger_path()
-    p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_suffix(p.suffix + ".tmp")
-    tmp.write_text("".join(e.to_json() + "\n" for e in entries), encoding="utf-8")
-    tmp.replace(p)
-    return p
+    pending: dict[str, deque] = defaultdict(deque)
+    for old, new in changes:
+        if old.source_line:
+            pending[old.source_line].append(new)
+    if not pending:
+        return 0
+    lines = p.read_text(encoding="utf-8").splitlines()
+    patched = 0
+    for i, line in enumerate(lines):
+        queue = pending.get(line)
+        if not queue:
+            continue
+        new = queue.popleft()
+        d = json.loads(line)
+        for key, value in (("verified", new.verified), ("status", new.status)):
+            if value in (0, ACTIVE):
+                d.pop(key, None)
+            else:
+                d[key] = value
+        lines[i] = json.dumps(d, ensure_ascii=False)
+        patched += 1
+    fd, tmp = tempfile.mkstemp(dir=p.parent, prefix=p.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write("".join(line + "\n" for line in lines))
+        os.replace(tmp, p)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+    return patched

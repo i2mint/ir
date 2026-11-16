@@ -5,21 +5,21 @@
   {
    "argv": [],
    "rc": 0,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add,synonyms-replay} ..."
   },
   {
    "argv": [
     "--help"
    ],
    "rc": 0,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add,synonyms-replay} ..."
   },
   {
    "argv": [
     "-h"
    ],
    "rc": 0,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add,synonyms-replay} ..."
   },
   {
    "argv": [
@@ -146,7 +146,7 @@
     "no-such-command"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add,synonyms-replay} ..."
   },
   {
    "argv": [
@@ -170,7 +170,7 @@
     "x"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add,synonyms-replay} ..."
   },
   {
    "argv": [
@@ -179,7 +179,7 @@
     "b"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add,synonyms-replay} ..."
   },
   {
    "argv": [
@@ -203,7 +203,7 @@
     "positional-not-allowed"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add,synonyms-replay} ..."
   },
   {
    "argv": [
@@ -218,7 +218,7 @@
     "extra"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add,synonyms-replay} ..."
   },
   {
    "argv": [
@@ -227,7 +227,7 @@
     "b"
    ],
    "rc": 2,
-   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add} ..."
+   "usage": "PROG [-h] {ls,register,build,search,discover,coverage,info,maintain,schedule,rm,eval,eval-gen,eval-select,sweep-select,calibrate-min-score,synonyms,synonyms-add,synonyms-replay} ..."
   },
   {
    "argv": [
