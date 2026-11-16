@@ -48,10 +48,12 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import numbers
 import warnings
+from collections import OrderedDict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import replace
 from types import SimpleNamespace
@@ -148,6 +150,11 @@ def _dense_ranked(
     return [(ids[candidates[o]], float(scores[o])) for o in order]
 
 
+#: How many per-candidate-set BM25 indexes a corpus keeps (least recently used
+#: evicted first). Each is a full tokenized copy of its slice, so this bounds memory.
+BM25_CACHE_MAXSIZE = 8
+
+
 def _candidate_key(
     surfaces: tuple[str, ...] | None, filter: Mapping[str, Any] | None
 ) -> tuple:
@@ -158,11 +165,17 @@ def _candidate_key(
     searches sharing both can share one BM25 index. The filter is canonicalized
     with sorted keys so logically-equal filters land on the same cache entry.
     """
-    f = json.dumps(filter, sort_keys=True, default=str) if filter is not None else None
-    return (surfaces, f)
+    if filter is None:
+        return (surfaces, None)
+    # A digest, not the JSON text: an ``$in`` filter over many ids is megabytes
+    # of string, which would be held as the dict key for as long as it is cached.
+    text = json.dumps(filter, sort_keys=True, default=str)
+    return (surfaces, hashlib.sha1(text.encode()).hexdigest())
 
 
-def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
+def _bm25_index_for(
+    corpus, ids, metas, candidates, cache_key, *, maxsize=BM25_CACHE_MAXSIZE
+):
     """A ``vd.BM25Index`` over the candidate texts, cached on the corpus instance.
 
     BM25's term statistics (document frequencies, lengths) are
@@ -192,12 +205,13 @@ def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
 
     cache = getattr(corpus, "_bm25_index_cache", None)
     if cache is None:
-        cache = {}
+        cache = OrderedDict()
         try:
             corpus._bm25_index_cache = cache
         except Exception:
             pass  # corpus doesn't admit attribute caching → build fresh each call
     if cache_key in cache:
+        cache.move_to_end(cache_key)
         return cache[cache_key]
 
     collection = {
@@ -208,6 +222,8 @@ def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
     }
     index = BM25Index(collection)
     cache[cache_key] = index
+    while len(cache) > maxsize:  # LRU: a service with varied filters stays bounded
+        cache.popitem(last=False)
     return index
 
 
