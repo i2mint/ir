@@ -69,6 +69,7 @@ from typing import Any, Callable
 from .base import POINTER_KEYS, SearchHit, best_per_artifact
 from .expand import NeighborhoodPolicy, SeedNotFound
 from .expand import expand as _expand
+from .miss import lexical_miss
 from .rerank import (
     DFLT_RERANK_MAX_CHARS,
     calibration_key,
@@ -167,11 +168,7 @@ class Selection:
         decision and the loop belong to the agent layer (the back-edge, ir_09 §4)
         — ``ir`` derives this from its own outcome and never acts on it.
         """
-        return (
-            not self.abstained
-            and len(self.selected) > 0
-            and not (self.signals.get("lexical_miss") or {}).get("miss")
-        )
+        return _sufficient(self.abstained, len(self.selected), self.signals)
 
     def to_dict(self) -> dict:
         """JSON-serializable form (scores cast to ``float``)."""
@@ -184,6 +181,12 @@ class Selection:
             "signals": dict(self.signals),
             "n_candidates": len(self.candidates),
         }
+
+
+def _sufficient(abstained: bool, n_committed: int, signals: Mapping[str, Any]) -> bool:
+    """Committed something, and (if asked) no required term is missing."""
+    miss = (signals.get("lexical_miss") or {}).get("miss")
+    return not abstained and n_committed > 0 and not miss
 
 
 def _hit_to_dict(hit: SearchHit) -> dict:
@@ -379,9 +382,11 @@ def select(
     )
     if not required_terms:
         return selection
-    from .miss import lexical_miss
-
-    miss = lexical_miss(selection.selected, required=required_terms)
+    if isinstance(required_terms, str):  # a bare string is one term, not letters
+        required_terms = [required_terms]
+    miss = lexical_miss(
+        selection.selected, required=required_terms, candidates=selection.candidates
+    )
     return replace(selection, signals={**selection.signals, "lexical_miss": miss})
 
 
@@ -867,8 +872,7 @@ class DiscoveryResult:
     @property
     def sufficient(self) -> bool:
         """Committed something, and no ``required_terms`` is missing (a signal only)."""
-        miss = (self.signals.get("lexical_miss") or {}).get("miss")
-        return not self.abstained and bool(self.results) and not miss
+        return _sufficient(self.abstained, len(self.results), self.signals)
 
     def to_dict(self) -> dict:
         """JSON-serializable result for the qh / HTTP surface."""
@@ -882,6 +886,7 @@ class DiscoveryResult:
             "reason": self.reason,
             "n_retrieved": self.n_retrieved,
             "n_selected": len(self.results),
+            "sufficient": self.sufficient,
             "signals": dict(self.signals),
         }
 

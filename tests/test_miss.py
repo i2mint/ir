@@ -38,14 +38,25 @@ def test_required_terms_are_checked_across_all_the_hits():
     ]
 
 
-def test_only_via_variants():
-    hits = [_hit("the invoice was paid")]
-    kw = dict(query="billing statement", variants=["invoice payment"])
-    assert lexical_miss(hits, **kw)["only_via_variants"] is True
-    # the original's own terms appear: not "only via variants"
-    assert lexical_miss([_hit("billing invoice")], **kw)["only_via_variants"] is False
-    # no variants given: never evaluated
-    assert lexical_miss(hits, query="billing")["only_via_variants"] is False
+def test_candidates_separate_a_retrieval_miss_from_a_tight_selection():
+    committed = [_hit("acme invoice", "a")]
+    pool = [*committed, _hit("globex refund", "b")]
+    m = lexical_miss(committed, required=["globex", "initech"], candidates=pool)
+    assert m["missing_required"] == ["globex", "initech"]
+    assert m["missing_in_candidates"] == ["initech"]  # globex was retrieved, not chosen
+    assert not m["zero_hits"]
+
+
+def test_abstained_selection_with_candidates_is_not_zero_hits():
+    m = lexical_miss([], required=["acme"], candidates=[_hit("acme")])
+    assert m["zero_hits"] is False and m["missing_required"] == ["acme"]
+    assert m["missing_in_candidates"] == []
+
+
+def test_a_bare_string_is_one_term_not_letters():
+    assert lexical_miss([_hit("acme")], required="acme")["miss"] is False
+    sel = select([_hit("acme")], required_terms="acme")
+    assert sel.sufficient and sel.signals["lexical_miss"]["missing_required"] == []
 
 
 def test_select_without_required_terms_is_unchanged():
@@ -73,7 +84,11 @@ def corpus():
 
 def test_discover_reports_the_signal(corpus):
     ok = ir.discover(corpus, "acme invoice", mode="lexical", required_terms=["acme"])
-    assert ok.sufficient and ok.to_dict()["signals"]["lexical_miss"]["miss"] is False
+    assert (
+        ok.sufficient
+        and ok.to_dict()["sufficient"] is True
+        and ok.to_dict()["signals"]["lexical_miss"]["miss"] is False
+    )
     bad = ir.discover(corpus, "acme invoice", mode="lexical", required_terms=["globex"])
     assert not bad.sufficient and bad.ids == ok.ids
     assert bad.signals["lexical_miss"]["missing_required"] == ["globex"]
@@ -83,4 +98,6 @@ def test_discover_reports_the_signal(corpus):
 
 def test_federated_discover_forwards_required_terms(corpus):
     res = ir.discover([corpus], "acme invoice", mode="lexical", required_terms=["x"])
-    assert not res.sufficient
+    assert res.ids and not res.sufficient
+    assert res.signals["lexical_miss"]["missing_required"] == ["x"]
+    assert res.to_dict()["sufficient"] is False

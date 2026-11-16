@@ -5,12 +5,17 @@ says little about whether the right thing was found. These are model-free,
 auditable facts an agent's Evaluator (raglab) can use to decide to reformulate
 (ir_13 §1.3, ir_09 §3):
 
-- ``zero_hits``: nothing came back;
+- ``zero_hits``: retrieval returned nothing;
 - ``missing_required``: terms the answer must mention (an entity the user named)
-  that appear in none of the top hits;
-- ``only_via_variants``: the hits mention none of the original query's terms and
-  only terms of an expansion variant (a synonym-ledger variant may have matched
-  by accident).
+  that appear in none of the committed hits;
+- ``missing_in_candidates``: the subset of those absent from every *retrieved*
+  candidate too, which separates "retrieval missed it, reformulate" from "the
+  selection was too tight, widen it".
+
+Matching is whole-word, case-insensitive, per ``\\w`` boundary. Known limits: no
+word boundaries in CJK text (``東京`` is not found inside a sentence), no plural or
+spelling folding (``invoice`` vs ``invoices``, ``ci-cd`` vs ``CI/CD``), no Unicode
+normalisation. Fold both sides first if that matters.
 
 They are **signals, never directives**: ir reports them (``Selection.signals``,
 ``Selection.sufficient``) and never re-queries; the back-edge belongs to the
@@ -25,60 +30,47 @@ from typing import Any
 
 from .base import SearchHit
 
-#: Query words shorter than this are ignored by ``only_via_variants`` (stop-ish noise).
-MIN_TERM_LEN = 3
-
 _WORD = re.compile(r"\w+", re.UNICODE)
-
-
-def _terms(text: str, *, min_len: int = MIN_TERM_LEN) -> set[str]:
-    return {w for w in _WORD.findall(text.casefold()) if len(w) >= min_len}
 
 
 def _mentions(haystack: str, term: str) -> bool:
     """Whole-word, case-insensitive containment (a multi-word term must appear as a phrase)."""
-    pattern = (
-        r"(?<!\w)" + r"\s+".join(map(re.escape, term.casefold().split())) + r"(?!\w)"
-    )
-    return re.search(pattern, haystack) is not None
+    words = [re.escape(w) for w in term.casefold().split()]
+    return re.search(r"(?<!\w)" + r"\s+".join(words) + r"(?!\w)", haystack) is not None
+
+
+def _text_of(hits: Iterable[SearchHit]) -> str:
+    return "\n".join(h.text for h in hits).casefold()
 
 
 def lexical_miss(
     hits: Sequence[SearchHit],
     *,
-    query: str = "",
     required: Iterable[str] = (),
-    variants: Iterable[str] = (),
+    candidates: Sequence[SearchHit] | None = None,
 ) -> dict[str, Any]:
-    """Miss signals for ``hits`` (the top-k of one search); ``{"miss": bool, ...}``.
+    """Miss signals for the committed ``hits``; ``{"miss": bool, ...}``.
 
-    ``required`` are terms the answer must mention; ``variants`` are the expansion
-    queries that were searched alongside ``query`` (``only_via_variants`` is only
-    evaluated when both ``query`` and ``variants`` are given).
+    ``required`` are terms the answer must mention. ``candidates`` (all retrieved
+    hits, a superset of ``hits``) enables ``zero_hits`` over retrieval and
+    ``missing_in_candidates``; without it the committed hits stand in for both.
 
     >>> hit = SearchHit("a", "doc", 1.0, "the acme invoice")
     >>> lexical_miss([hit], required=["acme", "globex"])["missing_required"]
     ['globex']
     >>> lexical_miss([])["miss"]
     True
-    >>> lexical_miss([hit], query="billing", variants=["invoice"])["only_via_variants"]
-    True
     """
-    text = "\n".join(h.text for h in hits).casefold()
-    missing = [t for t in required if t.strip() and not _mentions(text, t)]
-    only_via_variants = False
-    if hits and query and variants:
-        original = _terms(query)
-        variant = set().union(*(_terms(v) for v in variants)) - original
-        only_via_variants = (
-            bool(original)
-            and not any(_mentions(text, t) for t in original)
-            and any(_mentions(text, t) for t in variant)
-        )
-    zero = not hits
+    if isinstance(required, str):
+        required = [required]
+    required = [t for t in required if t.strip()]
+    pool = hits if candidates is None else candidates
+    text, pool_text = _text_of(hits), _text_of(pool)
+    missing = [t for t in required if not _mentions(text, t)]
+    zero = not pool
     return {
-        "miss": zero or bool(missing) or only_via_variants,
+        "miss": zero or bool(missing),
         "zero_hits": zero,
         "missing_required": missing,
-        "only_via_variants": only_via_variants,
+        "missing_in_candidates": [t for t in missing if not _mentions(pool_text, t)],
     }
