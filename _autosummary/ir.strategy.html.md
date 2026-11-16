@@ -16,6 +16,8 @@ Shipped strategies:
 - [`Chunked`](#ir.strategy.Chunked) — split the text into overlapping chunks (one surface each).
 - [`Skill`](#ir.strategy.Skill) — embed `name + description` only (the body stays on disk,
   per the capability-discovery research); name/parent become filter fields.
+- [`Fields`](#ir.strategy.Fields) — a record’s named text fields (head + body, balanced windows,
+  optional normalizer); one surface per record or per field.
 - [`Package`](#ir.strategy.Package) — `name + description` plus README chunks as surfaces;
   name/owner/deps become filter fields (AI synopsis / problem-class surfaces
   are a documented extension).
@@ -31,20 +33,23 @@ custom strategies need only match the [`IndexingStrategy`](#ir.strategy.Indexing
 
 ### Functions
 
-| [`strategy_from_spec`](#ir.strategy.strategy_from_spec)(spec)   | Reconstruct a shipped strategy from a `{"name", "params"}` spec.   |
-|-----------------------------------------------------------------------------|--------------------------------------------------------------------|
-| [`strategy_to_spec`](#ir.strategy.strategy_to_spec)(strategy) | A `{"name", "params"}` spec for a shipped, scalar-param strategy.  |
-| [`text_of`](#ir.strategy.text_of)(raw[, text_key])   | Best-effort text extraction from a raw artifact payload.           |
+| [`balanced_windows`](#ir.strategy.balanced_windows)(text, \*, size[, overlap])   | Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.   |
+|------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`is_simple_param`](#ir.strategy.is_simple_param)(value)                        | Whether a constructor parameter is JSON-simple (scalar, or a tuple/list of scalars).      |
+| [`strategy_from_spec`](#ir.strategy.strategy_from_spec)(spec)                      | Reconstruct a shipped strategy from a `{"name", "params"}` spec.                          |
+| [`strategy_to_spec`](#ir.strategy.strategy_to_spec)(strategy)                    | A `{"name", "params"}` spec for a shipped, scalar-param strategy.                         |
+| [`text_of`](#ir.strategy.text_of)(raw[, text_key])                      | Best-effort text extraction from a raw artifact payload.                                  |
 
 ### Classes
 
-| [`Chunked`](#ir.strategy.Chunked)(\*[, chunk_size, overlap, text_key, ...])   | Split the artifact's text into overlapping chunk surfaces.              |
-|------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| [`ClaudeTurn`](#ir.strategy.ClaudeTurn)(\*[, include_full])                      | Index a Claude Code session turn-pair: user prompt + assistant summary. |
-| [`IndexingStrategy`](#ir.strategy.IndexingStrategy)(\*args, \*\*kwargs)                | Decompose one artifact into filter fields + embeddable surfaces.        |
-| [`Package`](#ir.strategy.Package)(\*[, chunk_size, overlap, ...])             | Package strategy: `name + description` surface plus README chunks.      |
-| [`Skill`](#ir.strategy.Skill)()                                             | Capability strategy: embed `name + description` only.                   |
-| [`WholeText`](#ir.strategy.WholeText)(\*[, text_key, kind])                     | One surface = the entire text.                                          |
+| [`Chunked`](#ir.strategy.Chunked)(\*[, chunk_size, overlap, text_key, ...])   | Split the artifact's text into overlapping chunk surfaces.                    |
+|------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| [`ClaudeTurn`](#ir.strategy.ClaudeTurn)(\*[, include_full])                      | Index a Claude Code session turn-pair: user prompt + assistant summary.       |
+| [`Fields`](#ir.strategy.Fields)(fields, \*[, head, layout, normalize, ...])  | Index a record's named text fields (a catalogue item: name, place, prose...). |
+| [`IndexingStrategy`](#ir.strategy.IndexingStrategy)(\*args, \*\*kwargs)                | Decompose one artifact into filter fields + embeddable surfaces.              |
+| [`Package`](#ir.strategy.Package)(\*[, chunk_size, overlap, ...])             | Package strategy: `name + description` surface plus README chunks.            |
+| [`Skill`](#ir.strategy.Skill)()                                             | Capability strategy: embed `name + description` only.                         |
+| [`WholeText`](#ir.strategy.WholeText)(\*[, text_key, kind])                     | One surface = the entire text.                                                |
 
 ### *class* ir.strategy.Chunked(, chunk_size=1200, overlap=200, text_key=None, kind='chunk', max_tokens=None, token_model=None)
 
@@ -87,6 +92,46 @@ it. We target 250 (not 254) to leave headroom for the two special tokens
 (`[CLS]`/`[SEP]`) *and* the ±1–2 token drift when an offset-sliced
 substring is re-tokenized on its own — so an embedded chunk stays within
 budget and its tail is never silently truncated (see `_chunk_text()`).
+
+### *class* ir.strategy.Fields(fields, , head=(), layout='record', normalize=None, normalize_id=None, max_chars=1200, overlap=200, kind='record')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Index a record’s named text fields (a catalogue item: name, place, prose…).
+
+`fields` are the body keys, read in order; `head` are keys (a name, a
+place) that lead the record. Two layouts:
+
+- `layout="record"` (default): one surface per window of the body, with the
+  head text **prefixed to every window**, so a word in the name and a word in
+  the place only score together because they share a surface. Measured on 12
+  judged requests over ~44k records: BM25 hit@1 0.92 vs 0.58 for `"fields"`.
+- `layout="fields"`: one surface per field (head and body), `kind` = the
+  field name, so a query can target one field with `surfaces={...}`.
+
+`normalize` (a `str -> str` callable, or a `"module:attr"` reference to
+one, case/accent folding…) is applied to every text before indexing. \*\*It
+acts on the index side only\*\*: apply the same function to queries (e.g.
+through `formulate=`), or folded text will never match an unfolded query.
+A reference is persisted in a registry spec and is its own identity; a
+callable is not persisted, and is identified by its qualified name or an
+explicit `normalize_id` (required for a lambda or closure).
+`max_chars` / `overlap` window the *body* with [`balanced_windows()`](#ir.strategy.balanced_windows)
+(the head is prefixed to each window and not itself windowed, so keep it short).
+`kind` names the surface in the `"record"` layout; `"fields"` uses the
+field names. A key listed in both `head` and `fields` is read once.
+[`reads`](#ir.strategy.Fields.reads) lists every key the strategy reads, so a change signal can cover them.
+
+```pycon
+>>> plan = Fields(fields=["about"], head=["name", "place"]).decompose(
+...     "r1", {"name": "Louvre", "place": "Paris", "about": "A museum."})
+>>> [(s.kind, s.text) for s in plan.surfaces]
+[('record', 'Louvre\nParis\nA museum.')]
+```
+
+#### *property* reads *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]*
+
+Every record key this strategy reads (for change signals).
 
 ### *class* ir.strategy.IndexingStrategy(\*args, \*\*kwargs)
 
@@ -132,7 +177,7 @@ strategy change) — read it with `metadata.get("n_chunks")`.
 The record fields a synopsis is written from (see [`ir.synopsis.with_synopsis()`](ir.synopsis.html.md#ir.synopsis.with_synopsis)):
 prose only. The record’s `path` (a local absolute path) and `deps` never go to an LLM.
 
-### ir.strategy.STRATEGY_REGISTRY *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [type](https://docs.python.org/3/builtins/functions.html#type)]* *= {'Chunked': <class 'ir.strategy.Chunked'>, 'ClaudeTurn': <class 'ir.strategy.ClaudeTurn'>, 'Package': <class 'ir.strategy.Package'>, 'Skill': <class 'ir.strategy.Skill'>, 'WholeText': <class 'ir.strategy.WholeText'>}*
+### ir.strategy.STRATEGY_REGISTRY *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [type](https://docs.python.org/3/builtins/functions.html#type)]* *= {'Chunked': <class 'ir.strategy.Chunked'>, 'ClaudeTurn': <class 'ir.strategy.ClaudeTurn'>, 'Fields': <class 'ir.strategy.Fields'>, 'Package': <class 'ir.strategy.Package'>, 'Skill': <class 'ir.strategy.Skill'>, 'WholeText': <class 'ir.strategy.WholeText'>}*
 
 Shipped strategies addressable by name, for persisting an
 [`IndexingStrategy`](#ir.strategy.IndexingStrategy) in a registry entry and reconstructing it (#58).
@@ -152,6 +197,39 @@ parent are filter fields.
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 One surface = the entire text. Sensible default for a naive corpus.
+
+### ir.strategy.balanced_windows(text, , size, overlap=0)
+
+Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.
+
+`n = ceil((L - overlap) / (size - overlap))` windows, each `ceil((L +
+(n - 1) * overlap) / n)` long, so a text just past the limit becomes two
+halves, not one full window plus a sliver (which length normalisation in
+BM25 would favour).
+
+```pycon
+>>> balanced_windows("a" * 10, size=10)
+['aaaaaaaaaa']
+>>> [len(w) for w in balanced_windows("a" * 11, size=10)]
+[6, 5]
+>>> [len(w) for w in balanced_windows("a" * 25, size=10, overlap=2)]
+[10, 10, 9]
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.strategy.is_simple_param(value)
+
+Whether a constructor parameter is JSON-simple (scalar, or a tuple/list of scalars).
+
+The shared test behind a strategy’s persisted spec ([`strategy_to_spec()`](#ir.strategy.strategy_to_spec))
+and its build identity (`ir.index._strategy_id`), so a parameter such as
+[`Fields`](#ir.strategy.Fields)’s `fields` both round-trips through the registry and
+re-decomposes a corpus when it changes.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### ir.strategy.strategy_from_spec(spec)
 

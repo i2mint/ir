@@ -83,34 +83,35 @@ the reviewing search subagent shipped under `.claude/`.
 
 ### Classes
 
-| [`Artifact`](#ir.Artifact)(id, raw[, metadata])                     | A logical corpus item before decomposition into surfaces.                                                                    |
-|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| [`Surface`](#ir.Surface)(artifact_id, kind, text[, ...])           | One embeddable unit derived from an artifact.                                                                                |
-| [`Record`](#ir.Record)(id, artifact_id, surface_kind, ...[, ...]) | A stored, embedded surface — one row of the index.                                                                           |
-| [`SearchHit`](#ir.SearchHit)(artifact_id, surface_kind, score, text) | A scored record returned by retrieval (higher score = closer).                                                               |
-| [`IndexPlan`](#ir.IndexPlan)([filter_fields, surfaces])              | An [`IndexingStrategy`](ir.strategy.html.md#ir.strategy.IndexingStrategy)'s output for one artifact. |
-| [`IndexingStrategy`](#ir.IndexingStrategy)(\*args, \*\*kwargs)              | Decompose one artifact into filter fields + embeddable surfaces.                                                             |
-| [`WholeText`](#ir.WholeText)(\*[, text_key, kind])                   | One surface = the entire text.                                                                                               |
-| [`Chunked`](#ir.Chunked)(\*[, chunk_size, overlap, text_key, ...]) | Split the artifact's text into overlapping chunk surfaces.                                                                   |
-| [`Skill`](#ir.Skill)()                                           | Capability strategy: embed `name + description` only.                                                                        |
-| [`Package`](#ir.Package)(\*[, chunk_size, overlap, ...])           | Package strategy: `name + description` surface plus README chunks.                                                           |
-| [`ClaudeTurn`](#ir.ClaudeTurn)(\*[, include_full])                    | Index a Claude Code session turn-pair: user prompt + assistant summary.                                                      |
-| [`CorpusSource`](#ir.CorpusSource)(name, scope[, ...])                  | A corpus definition: scope + change signal + strategy + embedder.                                                            |
-| [`CorpusStore`](#ir.CorpusStore)(meta, vectors, ledger, config[, ...]) | Repository bundling the meta/vectors/ledger/config views of one corpus.                                                      |
-| [`Corpus`](#ir.Corpus)(name, store, embedder, embedder_id)        | A built, queryable corpus: a store plus its embedder.                                                                        |
-| [`CoverageReport`](#ir.CoverageReport)(name, on_disk, indexed, excluded)  | Disk-vs-index coverage for a filesystem-backed corpus.                                                                       |
-| [`GraphStore`](#ir.GraphStore)(\*args, \*\*kwargs)                    | Structural contract a traversal operator binds to — node + neighbors.                                                        |
-| [`CorpusGraph`](#ir.CorpusGraph)(store_or_corpus)                      | A [`GraphStore`](#ir.GraphStore) over one corpus — artifact nodes, `links` edges.               |
-| [`WalkPolicy`](#ir.WalkPolicy)(\*args, \*\*kwargs)                    | The pluggable strategy of a walk — graph semantics, not safety.                                                              |
-| [`WalkState`](#ir.WalkState)(query, max_depth, budget[, ...])        | The operator-owned state of one [`traverse()`](#ir.traverse) call — the safety home.          |
-| [`Passage`](#ir.Passage)(artifact_id, surface_kind, score, text)   | An expanded hit: the seed's identity + the stitched neighborhood text.                                                       |
-| [`Selection`](#ir.Selection)(selected, candidates, abstained, ...)   | A selector's commitment: the chosen subset of a ranked candidate list.                                                       |
-| [`Disclosure`](#ir.Disclosure)(artifact_id, level, name, score, ...)  | The progressively-disclosed payload for one selected artifact.                                                               |
-| [`DiscoveryResult`](#ir.DiscoveryResult)(query, mode, strategy, ...)       | The result of [`discover()`](#ir.discover) — retrieve → select → (optional) disclose.         |
-| [`MaintenanceResult`](#ir.MaintenanceResult)(name, ran, reason[, ...])       | What [`maintain_corpus()`](#ir.maintain_corpus) did (or would do) for one corpus.                    |
-| [`MaintenancePolicy`](#ir.MaintenancePolicy)([reindex, synopsis])            | The background-work policy for one corpus (reindex + synopsis).                                                              |
-| [`ReindexPolicy`](#ir.ReindexPolicy)([on, every_hours])                  | When to (incrementally) rebuild a corpus.                                                                                    |
-| [`SynopsisPolicy`](#ir.SynopsisPolicy)([enabled, scope, ...])             | Whether/when to attach (expensive, LLM-generated) synopses.                                                                  |
+| [`Artifact`](#ir.Artifact)(id, raw[, metadata])                      | A logical corpus item before decomposition into surfaces.                                                                    |
+|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| [`Surface`](#ir.Surface)(artifact_id, kind, text[, ...])            | One embeddable unit derived from an artifact.                                                                                |
+| [`Record`](#ir.Record)(id, artifact_id, surface_kind, ...[, ...])  | A stored, embedded surface — one row of the index.                                                                           |
+| [`SearchHit`](#ir.SearchHit)(artifact_id, surface_kind, score, text)  | A scored record returned by retrieval (higher score = closer).                                                               |
+| [`IndexPlan`](#ir.IndexPlan)([filter_fields, surfaces])               | An [`IndexingStrategy`](ir.strategy.html.md#ir.strategy.IndexingStrategy)'s output for one artifact. |
+| [`IndexingStrategy`](#ir.IndexingStrategy)(\*args, \*\*kwargs)               | Decompose one artifact into filter fields + embeddable surfaces.                                                             |
+| [`WholeText`](#ir.WholeText)(\*[, text_key, kind])                    | One surface = the entire text.                                                                                               |
+| [`Chunked`](#ir.Chunked)(\*[, chunk_size, overlap, text_key, ...])  | Split the artifact's text into overlapping chunk surfaces.                                                                   |
+| [`Fields`](#ir.Fields)(fields, \*[, head, layout, normalize, ...]) | Index a record's named text fields (a catalogue item: name, place, prose...).                                                |
+| [`Skill`](#ir.Skill)()                                            | Capability strategy: embed `name + description` only.                                                                        |
+| [`Package`](#ir.Package)(\*[, chunk_size, overlap, ...])            | Package strategy: `name + description` surface plus README chunks.                                                           |
+| [`ClaudeTurn`](#ir.ClaudeTurn)(\*[, include_full])                     | Index a Claude Code session turn-pair: user prompt + assistant summary.                                                      |
+| [`CorpusSource`](#ir.CorpusSource)(name, scope[, ...])                   | A corpus definition: scope + change signal + strategy + embedder.                                                            |
+| [`CorpusStore`](#ir.CorpusStore)(meta, vectors, ledger, config[, ...])  | Repository bundling the meta/vectors/ledger/config views of one corpus.                                                      |
+| [`Corpus`](#ir.Corpus)(name, store, embedder, embedder_id)         | A built, queryable corpus: a store plus its embedder.                                                                        |
+| [`CoverageReport`](#ir.CoverageReport)(name, on_disk, indexed, excluded)   | Disk-vs-index coverage for a filesystem-backed corpus.                                                                       |
+| [`GraphStore`](#ir.GraphStore)(\*args, \*\*kwargs)                     | Structural contract a traversal operator binds to — node + neighbors.                                                        |
+| [`CorpusGraph`](#ir.CorpusGraph)(store_or_corpus)                       | A [`GraphStore`](#ir.GraphStore) over one corpus — artifact nodes, `links` edges.               |
+| [`WalkPolicy`](#ir.WalkPolicy)(\*args, \*\*kwargs)                     | The pluggable strategy of a walk — graph semantics, not safety.                                                              |
+| [`WalkState`](#ir.WalkState)(query, max_depth, budget[, ...])         | The operator-owned state of one [`traverse()`](#ir.traverse) call — the safety home.          |
+| [`Passage`](#ir.Passage)(artifact_id, surface_kind, score, text)    | An expanded hit: the seed's identity + the stitched neighborhood text.                                                       |
+| [`Selection`](#ir.Selection)(selected, candidates, abstained, ...)    | A selector's commitment: the chosen subset of a ranked candidate list.                                                       |
+| [`Disclosure`](#ir.Disclosure)(artifact_id, level, name, score, ...)   | The progressively-disclosed payload for one selected artifact.                                                               |
+| [`DiscoveryResult`](#ir.DiscoveryResult)(query, mode, strategy, ...)        | The result of [`discover()`](#ir.discover) — retrieve → select → (optional) disclose.         |
+| [`MaintenanceResult`](#ir.MaintenanceResult)(name, ran, reason[, ...])        | What [`maintain_corpus()`](#ir.maintain_corpus) did (or would do) for one corpus.                    |
+| [`MaintenancePolicy`](#ir.MaintenancePolicy)([reindex, synopsis])             | The background-work policy for one corpus (reindex + synopsis).                                                              |
+| [`ReindexPolicy`](#ir.ReindexPolicy)([on, every_hours])                   | When to (incrementally) rebuild a corpus.                                                                                    |
+| [`SynopsisPolicy`](#ir.SynopsisPolicy)([enabled, scope, ...])              | Whether/when to attach (expensive, LLM-generated) synopses.                                                                  |
 
 ### *class* ir.Artifact(id, raw, metadata=dict())
 
@@ -787,6 +788,46 @@ JSON-serializable result for the qh / HTTP surface.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### *class* ir.Fields(fields, , head=(), layout='record', normalize=None, normalize_id=None, max_chars=1200, overlap=200, kind='record')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Index a record’s named text fields (a catalogue item: name, place, prose…).
+
+`fields` are the body keys, read in order; `head` are keys (a name, a
+place) that lead the record. Two layouts:
+
+- `layout="record"` (default): one surface per window of the body, with the
+  head text **prefixed to every window**, so a word in the name and a word in
+  the place only score together because they share a surface. Measured on 12
+  judged requests over ~44k records: BM25 hit@1 0.92 vs 0.58 for `"fields"`.
+- `layout="fields"`: one surface per field (head and body), `kind` = the
+  field name, so a query can target one field with `surfaces={...}`.
+
+`normalize` (a `str -> str` callable, or a `"module:attr"` reference to
+one, case/accent folding…) is applied to every text before indexing. \*\*It
+acts on the index side only\*\*: apply the same function to queries (e.g.
+through `formulate=`), or folded text will never match an unfolded query.
+A reference is persisted in a registry spec and is its own identity; a
+callable is not persisted, and is identified by its qualified name or an
+explicit `normalize_id` (required for a lambda or closure).
+`max_chars` / `overlap` window the *body* with `balanced_windows()`
+(the head is prefixed to each window and not itself windowed, so keep it short).
+`kind` names the surface in the `"record"` layout; `"fields"` uses the
+field names. A key listed in both `head` and `fields` is read once.
+[`reads`](#ir.Fields.reads) lists every key the strategy reads, so a change signal can cover them.
+
+```pycon
+>>> plan = Fields(fields=["about"], head=["name", "place"]).decompose(
+...     "r1", {"name": "Louvre", "place": "Paris", "about": "A museum."})
+>>> [(s.kind, s.text) for s in plan.surfaces]
+[('record', 'Louvre\nParis\nA museum.')]
+```
+
+#### *property* reads *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]*
+
+Every record key this strategy reads (for change signals).
 
 ### *class* ir.GraphStore(\*args, \*\*kwargs)
 

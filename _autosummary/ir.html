@@ -318,61 +318,64 @@ the reviewing search subagent shipped under <code class="docutils literal notran
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.Chunked" title="ir.Chunked"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Chunked</span></code></a>(*[, chunk_size, overlap, text_key, ...])</p></td>
 <td><p>Split the artifact's text into overlapping chunk surfaces.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.Skill" title="ir.Skill"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Skill</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.Fields" title="ir.Fields"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Fields</span></code></a>(fields, *[, head, layout, normalize, ...])</p></td>
+<td><p>Index a record's named text fields (a catalogue item: name, place, prose...).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.Skill" title="ir.Skill"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Skill</span></code></a>()</p></td>
 <td><p>Capability strategy: embed <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">+</span> <span class="pre">description</span></code> only.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.Package" title="ir.Package"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Package</span></code></a>(*[, chunk_size, overlap, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.Package" title="ir.Package"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Package</span></code></a>(*[, chunk_size, overlap, ...])</p></td>
 <td><p>Package strategy: <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">+</span> <span class="pre">description</span></code> surface plus README chunks.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.ClaudeTurn" title="ir.ClaudeTurn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClaudeTurn</span></code></a>(*[, include_full])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.ClaudeTurn" title="ir.ClaudeTurn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClaudeTurn</span></code></a>(*[, include_full])</p></td>
 <td><p>Index a Claude Code session turn-pair: user prompt + assistant summary.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.CorpusSource" title="ir.CorpusSource"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CorpusSource</span></code></a>(name, scope[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.CorpusSource" title="ir.CorpusSource"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CorpusSource</span></code></a>(name, scope[, ...])</p></td>
 <td><p>A corpus definition: scope + change signal + strategy + embedder.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.CorpusStore" title="ir.CorpusStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CorpusStore</span></code></a>(meta, vectors, ledger, config[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.CorpusStore" title="ir.CorpusStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CorpusStore</span></code></a>(meta, vectors, ledger, config[, ...])</p></td>
 <td><p>Repository bundling the meta/vectors/ledger/config views of one corpus.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.Corpus" title="ir.Corpus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Corpus</span></code></a>(name, store, embedder, embedder_id)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.Corpus" title="ir.Corpus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Corpus</span></code></a>(name, store, embedder, embedder_id)</p></td>
 <td><p>A built, queryable corpus: a store plus its embedder.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.CoverageReport" title="ir.CoverageReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoverageReport</span></code></a>(name, on_disk, indexed, excluded)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.CoverageReport" title="ir.CoverageReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoverageReport</span></code></a>(name, on_disk, indexed, excluded)</p></td>
 <td><p>Disk-vs-index coverage for a filesystem-backed corpus.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.GraphStore" title="ir.GraphStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GraphStore</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.GraphStore" title="ir.GraphStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GraphStore</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Structural contract a traversal operator binds to — node + neighbors.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.CorpusGraph" title="ir.CorpusGraph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CorpusGraph</span></code></a>(store_or_corpus)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.CorpusGraph" title="ir.CorpusGraph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CorpusGraph</span></code></a>(store_or_corpus)</p></td>
 <td><p>A <a class="reference internal" href="#ir.GraphStore" title="ir.GraphStore"><code class="xref py py-data docutils literal notranslate"><span class="pre">GraphStore</span></code></a> over one corpus — artifact nodes, <code class="docutils literal notranslate"><span class="pre">links</span></code> edges.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.WalkPolicy" title="ir.WalkPolicy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WalkPolicy</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.WalkPolicy" title="ir.WalkPolicy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WalkPolicy</span></code></a>(*args, **kwargs)</p></td>
 <td><p>The pluggable strategy of a walk — graph semantics, not safety.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.WalkState" title="ir.WalkState"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WalkState</span></code></a>(query, max_depth, budget[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.WalkState" title="ir.WalkState"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WalkState</span></code></a>(query, max_depth, budget[, ...])</p></td>
 <td><p>The operator-owned state of one <a class="reference internal" href="#ir.traverse" title="ir.traverse"><code class="xref py py-func docutils literal notranslate"><span class="pre">traverse()</span></code></a> call — the safety home.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.Passage" title="ir.Passage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Passage</span></code></a>(artifact_id, surface_kind, score, text)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.Passage" title="ir.Passage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Passage</span></code></a>(artifact_id, surface_kind, score, text)</p></td>
 <td><p>An expanded hit: the seed's identity + the stitched neighborhood text.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.Selection" title="ir.Selection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Selection</span></code></a>(selected, candidates, abstained, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.Selection" title="ir.Selection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Selection</span></code></a>(selected, candidates, abstained, ...)</p></td>
 <td><p>A selector's commitment: the chosen subset of a ranked candidate list.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.Disclosure" title="ir.Disclosure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Disclosure</span></code></a>(artifact_id, level, name, score, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.Disclosure" title="ir.Disclosure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Disclosure</span></code></a>(artifact_id, level, name, score, ...)</p></td>
 <td><p>The progressively-disclosed payload for one selected artifact.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.DiscoveryResult" title="ir.DiscoveryResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DiscoveryResult</span></code></a>(query, mode, strategy, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.DiscoveryResult" title="ir.DiscoveryResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DiscoveryResult</span></code></a>(query, mode, strategy, ...)</p></td>
 <td><p>The result of <a class="reference internal" href="#ir.discover" title="ir.discover"><code class="xref py py-func docutils literal notranslate"><span class="pre">discover()</span></code></a> — retrieve → select → (optional) disclose.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.MaintenanceResult" title="ir.MaintenanceResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a>(name, ran, reason[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.MaintenanceResult" title="ir.MaintenanceResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a>(name, ran, reason[, ...])</p></td>
 <td><p>What <a class="reference internal" href="#ir.maintain_corpus" title="ir.maintain_corpus"><code class="xref py py-func docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a> did (or would do) for one corpus.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.MaintenancePolicy" title="ir.MaintenancePolicy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MaintenancePolicy</span></code></a>([reindex, synopsis])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.MaintenancePolicy" title="ir.MaintenancePolicy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MaintenancePolicy</span></code></a>([reindex, synopsis])</p></td>
 <td><p>The background-work policy for one corpus (reindex + synopsis).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.ReindexPolicy" title="ir.ReindexPolicy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReindexPolicy</span></code></a>([on, every_hours])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.ReindexPolicy" title="ir.ReindexPolicy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReindexPolicy</span></code></a>([on, every_hours])</p></td>
 <td><p>When to (incrementally) rebuild a corpus.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.SynopsisPolicy" title="ir.SynopsisPolicy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SynopsisPolicy</span></code></a>([enabled, scope, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.SynopsisPolicy" title="ir.SynopsisPolicy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SynopsisPolicy</span></code></a>([enabled, scope, ...])</p></td>
 <td><p>Whether/when to attach (expensive, LLM-generated) synopses.</p></td>
 </tr>
 </tbody>
@@ -1191,6 +1194,47 @@ facade can return it directly.</p>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span></p>
 </dd>
 </dl>
+</dd></dl>
+</dd></dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="ir.Fields">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">Fields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">head</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'record'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_chars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'record'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/strategy.html#Fields"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.Fields" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.Fields'">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></p>
+<p>Index a record’s named text fields (a catalogue item: name, place, prose…).</p>
+<p><code class="docutils literal notranslate"><span class="pre">fields</span></code> are the body keys, read in order; <code class="docutils literal notranslate"><span class="pre">head</span></code> are keys (a name, a
+place) that lead the record. Two layouts:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">layout="record"</span></code> (default): one surface per window of the body, with the
+head text <strong>prefixed to every window</strong>, so a word in the name and a word in
+the place only score together because they share a surface. Measured on 12
+judged requests over ~44k records: BM25 hit@1 0.92 vs 0.58 for <code class="docutils literal notranslate"><span class="pre">"fields"</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">layout="fields"</span></code>: one surface per field (head and body), <code class="docutils literal notranslate"><span class="pre">kind</span></code> = the
+field name, so a query can target one field with <code class="docutils literal notranslate"><span class="pre">surfaces={...}</span></code>.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">normalize</span></code> (a <code class="docutils literal notranslate"><span class="pre">str</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code> callable, or a <code class="docutils literal notranslate"><span class="pre">"module:attr"</span></code> reference to
+one, case/accent folding…) is applied to every text before indexing. **It
+acts on the index side only**: apply the same function to queries (e.g.
+through <code class="docutils literal notranslate"><span class="pre">formulate=</span></code>), or folded text will never match an unfolded query.
+A reference is persisted in a registry spec and is its own identity; a
+callable is not persisted, and is identified by its qualified name or an
+explicit <code class="docutils literal notranslate"><span class="pre">normalize_id</span></code> (required for a lambda or closure).
+<code class="docutils literal notranslate"><span class="pre">max_chars</span></code> / <code class="docutils literal notranslate"><span class="pre">overlap</span></code> window the <em>body</em> with <code class="xref py py-func docutils literal notranslate"><span class="pre">balanced_windows()</span></code>
+(the head is prefixed to each window and not itself windowed, so keep it short).
+<code class="docutils literal notranslate"><span class="pre">kind</span></code> names the surface in the <code class="docutils literal notranslate"><span class="pre">"record"</span></code> layout; <code class="docutils literal notranslate"><span class="pre">"fields"</span></code> uses the
+field names. A key listed in both <code class="docutils literal notranslate"><span class="pre">head</span></code> and <code class="docutils literal notranslate"><span class="pre">fields</span></code> is read once.
+<a class="reference internal" href="#ir.Fields.reads" title="ir.Fields.reads"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reads</span></code></a> lists every key the strategy reads, so a change signal can cover them.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="gp">&gt;&gt;&gt; </span><span class="n">plan</span> <span class="o">=</span> <span class="n">Fields</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">"about"</span><span class="p">],</span> <span class="n">head</span><span class="o">=</span><span class="p">[</span><span class="s2">"name"</span><span class="p">,</span> <span class="s2">"place"</span><span class="p">])</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span>
+</span><span id="line-2"><span class="gp">... </span>    <span class="s2">"r1"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Louvre"</span><span class="p">,</span> <span class="s2">"place"</span><span class="p">:</span> <span class="s2">"Paris"</span><span class="p">,</span> <span class="s2">"about"</span><span class="p">:</span> <span class="s2">"A museum."</span><span class="p">})</span>
+</span><span id="line-3"><span class="gp">&gt;&gt;&gt; </span><span class="p">[(</span><span class="n">s</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">plan</span><span class="o">.</span><span class="n">surfaces</span><span class="p">]</span>
+</span><span id="line-4"><span class="go">[('record', 'Louvre\nParis\nA museum.')]</span>
+</span></code></pre></div>
+</div>
+<dl class="field-list simple">
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="ir.Fields.reads">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">reads</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" rel="nofollow noopener" title="(in Python v3.15)"><span class="pre">tuple</span><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" rel="nofollow noopener" title="(in Python v3.15)"><span class="pre">str</span><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.Fields.reads" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.Fields.reads'">¶</a></dt>
+<dd><p>Every record key this strategy reads (for change signals).</p>
 </dd></dl>
 </dd></dl>
 <dl class="py class">
@@ -2657,6 +2701,10 @@ omitted → the predicate’s <code class="docutils literal notranslate"><span c
 <li><a :data-current="activeSection === '#ir.DiscoveryResult.to_dict'" class="reference internal" href="#ir.DiscoveryResult.to_dict"><code class="docutils literal notranslate"><span class="pre">DiscoveryResult.to_dict()</span></code></a></li>
 </ul>
 </li>
+<li><a :data-current="activeSection === '#ir.Fields'" class="reference internal" href="#ir.Fields"><code class="docutils literal notranslate"><span class="pre">Fields</span></code></a><ul>
+<li><a :data-current="activeSection === '#ir.Fields.reads'" class="reference internal" href="#ir.Fields.reads"><code class="docutils literal notranslate"><span class="pre">Fields.reads</span></code></a></li>
+</ul>
+</li>
 <li><a :data-current="activeSection === '#ir.GraphStore'" class="reference internal" href="#ir.GraphStore"><code class="docutils literal notranslate"><span class="pre">GraphStore</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.IndexPlan'" class="reference internal" href="#ir.IndexPlan"><code class="docutils literal notranslate"><span class="pre">IndexPlan</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.IndexingStrategy'" class="reference internal" href="#ir.IndexingStrategy"><code class="docutils literal notranslate"><span class="pre">IndexingStrategy</span></code></a></li>
@@ -2751,7 +2799,7 @@ omitted → the predicate’s <code class="docutils literal notranslate"><span c
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=a395f30a"></script>
+<script src="../_static/documentation_options.js?v=07ed7713"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

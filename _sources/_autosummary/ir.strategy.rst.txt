@@ -15,6 +15,8 @@ ir.strategy
 
    .. autosummary::
    
+      balanced_windows
+      is_simple_param
       strategy_from_spec
       strategy_to_spec
       text_of
@@ -25,6 +27,7 @@ ir.strategy
    
       Chunked
       ClaudeTurn
+      Fields
       IndexingStrategy
       Package
       Skill

@@ -60,6 +60,7 @@
       IndexingStrategy
       WholeText
       Chunked
+      Fields
       Skill
       Package
       ClaudeTurn

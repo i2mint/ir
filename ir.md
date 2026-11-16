@@ -1,4 +1,4 @@
-> built 2026-11-16 07:18 UTC from 32237a2 (master) · ir 0.1.64. Details: build_info.json
+> built 2026-11-16 07:30 UTC from 4347e2e (master) · ir 0.1.65. Details: build_info.json
 
 # index.html.md
 
@@ -3064,34 +3064,35 @@ the reviewing search subagent shipped under `.claude/`.
 
 ### Classes
 
-| [`Artifact`](_autosummary/ir.html.md#ir.Artifact)(id, raw[, metadata])                     | A logical corpus item before decomposition into surfaces.                                                                    |
-|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| [`Surface`](_autosummary/ir.html.md#ir.Surface)(artifact_id, kind, text[, ...])           | One embeddable unit derived from an artifact.                                                                                |
-| [`Record`](_autosummary/ir.html.md#ir.Record)(id, artifact_id, surface_kind, ...[, ...]) | A stored, embedded surface — one row of the index.                                                                           |
-| [`SearchHit`](_autosummary/ir.html.md#ir.SearchHit)(artifact_id, surface_kind, score, text) | A scored record returned by retrieval (higher score = closer).                                                               |
-| [`IndexPlan`](_autosummary/ir.html.md#ir.IndexPlan)([filter_fields, surfaces])              | An [`IndexingStrategy`](_autosummary/ir.strategy.html.md#ir.strategy.IndexingStrategy)'s output for one artifact. |
-| [`IndexingStrategy`](_autosummary/ir.html.md#ir.IndexingStrategy)(\*args, \*\*kwargs)              | Decompose one artifact into filter fields + embeddable surfaces.                                                             |
-| [`WholeText`](_autosummary/ir.html.md#ir.WholeText)(\*[, text_key, kind])                   | One surface = the entire text.                                                                                               |
-| [`Chunked`](_autosummary/ir.html.md#ir.Chunked)(\*[, chunk_size, overlap, text_key, ...]) | Split the artifact's text into overlapping chunk surfaces.                                                                   |
-| [`Skill`](_autosummary/ir.html.md#ir.Skill)()                                           | Capability strategy: embed `name + description` only.                                                                        |
-| [`Package`](_autosummary/ir.html.md#ir.Package)(\*[, chunk_size, overlap, ...])           | Package strategy: `name + description` surface plus README chunks.                                                           |
-| [`ClaudeTurn`](_autosummary/ir.html.md#ir.ClaudeTurn)(\*[, include_full])                    | Index a Claude Code session turn-pair: user prompt + assistant summary.                                                      |
-| [`CorpusSource`](_autosummary/ir.html.md#ir.CorpusSource)(name, scope[, ...])                  | A corpus definition: scope + change signal + strategy + embedder.                                                            |
-| [`CorpusStore`](_autosummary/ir.html.md#ir.CorpusStore)(meta, vectors, ledger, config[, ...]) | Repository bundling the meta/vectors/ledger/config views of one corpus.                                                      |
-| [`Corpus`](_autosummary/ir.html.md#ir.Corpus)(name, store, embedder, embedder_id)        | A built, queryable corpus: a store plus its embedder.                                                                        |
-| [`CoverageReport`](_autosummary/ir.html.md#ir.CoverageReport)(name, on_disk, indexed, excluded)  | Disk-vs-index coverage for a filesystem-backed corpus.                                                                       |
-| [`GraphStore`](_autosummary/ir.html.md#ir.GraphStore)(\*args, \*\*kwargs)                    | Structural contract a traversal operator binds to — node + neighbors.                                                        |
-| [`CorpusGraph`](_autosummary/ir.html.md#ir.CorpusGraph)(store_or_corpus)                      | A [`GraphStore`](_autosummary/ir.html.md#ir.GraphStore) over one corpus — artifact nodes, `links` edges.               |
-| [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy)(\*args, \*\*kwargs)                    | The pluggable strategy of a walk — graph semantics, not safety.                                                              |
-| [`WalkState`](_autosummary/ir.html.md#ir.WalkState)(query, max_depth, budget[, ...])        | The operator-owned state of one [`traverse()`](_autosummary/ir.html.md#ir.traverse) call — the safety home.          |
-| [`Passage`](_autosummary/ir.html.md#ir.Passage)(artifact_id, surface_kind, score, text)   | An expanded hit: the seed's identity + the stitched neighborhood text.                                                       |
-| [`Selection`](_autosummary/ir.html.md#ir.Selection)(selected, candidates, abstained, ...)   | A selector's commitment: the chosen subset of a ranked candidate list.                                                       |
-| [`Disclosure`](_autosummary/ir.html.md#ir.Disclosure)(artifact_id, level, name, score, ...)  | The progressively-disclosed payload for one selected artifact.                                                               |
-| [`DiscoveryResult`](_autosummary/ir.html.md#ir.DiscoveryResult)(query, mode, strategy, ...)       | The result of [`discover()`](_autosummary/ir.html.md#ir.discover) — retrieve → select → (optional) disclose.         |
-| [`MaintenanceResult`](_autosummary/ir.html.md#ir.MaintenanceResult)(name, ran, reason[, ...])       | What [`maintain_corpus()`](_autosummary/ir.html.md#ir.maintain_corpus) did (or would do) for one corpus.                    |
-| [`MaintenancePolicy`](_autosummary/ir.html.md#ir.MaintenancePolicy)([reindex, synopsis])            | The background-work policy for one corpus (reindex + synopsis).                                                              |
-| [`ReindexPolicy`](_autosummary/ir.html.md#ir.ReindexPolicy)([on, every_hours])                  | When to (incrementally) rebuild a corpus.                                                                                    |
-| [`SynopsisPolicy`](_autosummary/ir.html.md#ir.SynopsisPolicy)([enabled, scope, ...])             | Whether/when to attach (expensive, LLM-generated) synopses.                                                                  |
+| [`Artifact`](_autosummary/ir.html.md#ir.Artifact)(id, raw[, metadata])                      | A logical corpus item before decomposition into surfaces.                                                                    |
+|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| [`Surface`](_autosummary/ir.html.md#ir.Surface)(artifact_id, kind, text[, ...])            | One embeddable unit derived from an artifact.                                                                                |
+| [`Record`](_autosummary/ir.html.md#ir.Record)(id, artifact_id, surface_kind, ...[, ...])  | A stored, embedded surface — one row of the index.                                                                           |
+| [`SearchHit`](_autosummary/ir.html.md#ir.SearchHit)(artifact_id, surface_kind, score, text)  | A scored record returned by retrieval (higher score = closer).                                                               |
+| [`IndexPlan`](_autosummary/ir.html.md#ir.IndexPlan)([filter_fields, surfaces])               | An [`IndexingStrategy`](_autosummary/ir.strategy.html.md#ir.strategy.IndexingStrategy)'s output for one artifact. |
+| [`IndexingStrategy`](_autosummary/ir.html.md#ir.IndexingStrategy)(\*args, \*\*kwargs)               | Decompose one artifact into filter fields + embeddable surfaces.                                                             |
+| [`WholeText`](_autosummary/ir.html.md#ir.WholeText)(\*[, text_key, kind])                    | One surface = the entire text.                                                                                               |
+| [`Chunked`](_autosummary/ir.html.md#ir.Chunked)(\*[, chunk_size, overlap, text_key, ...])  | Split the artifact's text into overlapping chunk surfaces.                                                                   |
+| [`Fields`](_autosummary/ir.html.md#ir.Fields)(fields, \*[, head, layout, normalize, ...]) | Index a record's named text fields (a catalogue item: name, place, prose...).                                                |
+| [`Skill`](_autosummary/ir.html.md#ir.Skill)()                                            | Capability strategy: embed `name + description` only.                                                                        |
+| [`Package`](_autosummary/ir.html.md#ir.Package)(\*[, chunk_size, overlap, ...])            | Package strategy: `name + description` surface plus README chunks.                                                           |
+| [`ClaudeTurn`](_autosummary/ir.html.md#ir.ClaudeTurn)(\*[, include_full])                     | Index a Claude Code session turn-pair: user prompt + assistant summary.                                                      |
+| [`CorpusSource`](_autosummary/ir.html.md#ir.CorpusSource)(name, scope[, ...])                   | A corpus definition: scope + change signal + strategy + embedder.                                                            |
+| [`CorpusStore`](_autosummary/ir.html.md#ir.CorpusStore)(meta, vectors, ledger, config[, ...])  | Repository bundling the meta/vectors/ledger/config views of one corpus.                                                      |
+| [`Corpus`](_autosummary/ir.html.md#ir.Corpus)(name, store, embedder, embedder_id)         | A built, queryable corpus: a store plus its embedder.                                                                        |
+| [`CoverageReport`](_autosummary/ir.html.md#ir.CoverageReport)(name, on_disk, indexed, excluded)   | Disk-vs-index coverage for a filesystem-backed corpus.                                                                       |
+| [`GraphStore`](_autosummary/ir.html.md#ir.GraphStore)(\*args, \*\*kwargs)                     | Structural contract a traversal operator binds to — node + neighbors.                                                        |
+| [`CorpusGraph`](_autosummary/ir.html.md#ir.CorpusGraph)(store_or_corpus)                       | A [`GraphStore`](_autosummary/ir.html.md#ir.GraphStore) over one corpus — artifact nodes, `links` edges.               |
+| [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy)(\*args, \*\*kwargs)                     | The pluggable strategy of a walk — graph semantics, not safety.                                                              |
+| [`WalkState`](_autosummary/ir.html.md#ir.WalkState)(query, max_depth, budget[, ...])         | The operator-owned state of one [`traverse()`](_autosummary/ir.html.md#ir.traverse) call — the safety home.          |
+| [`Passage`](_autosummary/ir.html.md#ir.Passage)(artifact_id, surface_kind, score, text)    | An expanded hit: the seed's identity + the stitched neighborhood text.                                                       |
+| [`Selection`](_autosummary/ir.html.md#ir.Selection)(selected, candidates, abstained, ...)    | A selector's commitment: the chosen subset of a ranked candidate list.                                                       |
+| [`Disclosure`](_autosummary/ir.html.md#ir.Disclosure)(artifact_id, level, name, score, ...)   | The progressively-disclosed payload for one selected artifact.                                                               |
+| [`DiscoveryResult`](_autosummary/ir.html.md#ir.DiscoveryResult)(query, mode, strategy, ...)        | The result of [`discover()`](_autosummary/ir.html.md#ir.discover) — retrieve → select → (optional) disclose.         |
+| [`MaintenanceResult`](_autosummary/ir.html.md#ir.MaintenanceResult)(name, ran, reason[, ...])        | What [`maintain_corpus()`](_autosummary/ir.html.md#ir.maintain_corpus) did (or would do) for one corpus.                    |
+| [`MaintenancePolicy`](_autosummary/ir.html.md#ir.MaintenancePolicy)([reindex, synopsis])             | The background-work policy for one corpus (reindex + synopsis).                                                              |
+| [`ReindexPolicy`](_autosummary/ir.html.md#ir.ReindexPolicy)([on, every_hours])                   | When to (incrementally) rebuild a corpus.                                                                                    |
+| [`SynopsisPolicy`](_autosummary/ir.html.md#ir.SynopsisPolicy)([enabled, scope, ...])              | Whether/when to attach (expensive, LLM-generated) synopses.                                                                  |
 
 ### *class* ir.Artifact(id, raw, metadata=dict())
 
@@ -3768,6 +3769,46 @@ JSON-serializable result for the qh / HTTP surface.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### *class* ir.Fields(fields, , head=(), layout='record', normalize=None, normalize_id=None, max_chars=1200, overlap=200, kind='record')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Index a record’s named text fields (a catalogue item: name, place, prose…).
+
+`fields` are the body keys, read in order; `head` are keys (a name, a
+place) that lead the record. Two layouts:
+
+- `layout="record"` (default): one surface per window of the body, with the
+  head text **prefixed to every window**, so a word in the name and a word in
+  the place only score together because they share a surface. Measured on 12
+  judged requests over ~44k records: BM25 hit@1 0.92 vs 0.58 for `"fields"`.
+- `layout="fields"`: one surface per field (head and body), `kind` = the
+  field name, so a query can target one field with `surfaces={...}`.
+
+`normalize` (a `str -> str` callable, or a `"module:attr"` reference to
+one, case/accent folding…) is applied to every text before indexing. \*\*It
+acts on the index side only\*\*: apply the same function to queries (e.g.
+through `formulate=`), or folded text will never match an unfolded query.
+A reference is persisted in a registry spec and is its own identity; a
+callable is not persisted, and is identified by its qualified name or an
+explicit `normalize_id` (required for a lambda or closure).
+`max_chars` / `overlap` window the *body* with `balanced_windows()`
+(the head is prefixed to each window and not itself windowed, so keep it short).
+`kind` names the surface in the `"record"` layout; `"fields"` uses the
+field names. A key listed in both `head` and `fields` is read once.
+[`reads`](_autosummary/ir.html.md#ir.Fields.reads) lists every key the strategy reads, so a change signal can cover them.
+
+```pycon
+>>> plan = Fields(fields=["about"], head=["name", "place"]).decompose(
+...     "r1", {"name": "Louvre", "place": "Paris", "about": "A museum."})
+>>> [(s.kind, s.text) for s in plan.surfaces]
+[('record', 'Louvre\nParis\nA museum.')]
+```
+
+#### *property* reads *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]*
+
+Every record key this strategy reads (for change signals).
 
 ### *class* ir.GraphStore(\*args, \*\*kwargs)
 
@@ -6797,7 +6838,7 @@ Manifest package directories, then fleet repos the manifest does not name.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
 
-### ir.sources.records_change_signal(, text_key='text', metadata_keys=())
+### ir.sources.records_change_signal(, text_key='text', metadata_keys=(), read_keys=())
 
 Change signal for record dicts: covers the text **and** the stored metadata.
 
@@ -6807,7 +6848,8 @@ rebuilt and stay filterable under the old value. With the default
 `text_key` this adds `metadata_keys` through `ef`’s `content_keys` (and
 is identical to the old signal when there are none). With another
 `text_key` the whole record is hashed, so no field a strategy may read goes
-stale.
+stale. `read_keys` (a strategy’s `reads`, e.g. [`Fields`](_autosummary/ir.html.md#ir.Fields)) join
+the hash as well.
 
 ```pycon
 >>> sig = records_change_signal(metadata_keys=["pages"])
@@ -7137,6 +7179,8 @@ Shipped strategies:
 - [`Chunked`](_autosummary/ir.strategy.html.md#ir.strategy.Chunked) — split the text into overlapping chunks (one surface each).
 - [`Skill`](_autosummary/ir.strategy.html.md#ir.strategy.Skill) — embed `name + description` only (the body stays on disk,
   per the capability-discovery research); name/parent become filter fields.
+- [`Fields`](_autosummary/ir.strategy.html.md#ir.strategy.Fields) — a record’s named text fields (head + body, balanced windows,
+  optional normalizer); one surface per record or per field.
 - [`Package`](_autosummary/ir.strategy.html.md#ir.strategy.Package) — `name + description` plus README chunks as surfaces;
   name/owner/deps become filter fields (AI synopsis / problem-class surfaces
   are a documented extension).
@@ -7152,20 +7196,23 @@ custom strategies need only match the [`IndexingStrategy`](_autosummary/ir.strat
 
 ### Functions
 
-| [`strategy_from_spec`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_from_spec)(spec)   | Reconstruct a shipped strategy from a `{"name", "params"}` spec.   |
-|-----------------------------------------------------------------------------|--------------------------------------------------------------------|
-| [`strategy_to_spec`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_to_spec)(strategy) | A `{"name", "params"}` spec for a shipped, scalar-param strategy.  |
-| [`text_of`](_autosummary/ir.strategy.html.md#ir.strategy.text_of)(raw[, text_key])   | Best-effort text extraction from a raw artifact payload.           |
+| [`balanced_windows`](_autosummary/ir.strategy.html.md#ir.strategy.balanced_windows)(text, \*, size[, overlap])   | Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.   |
+|------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`is_simple_param`](_autosummary/ir.strategy.html.md#ir.strategy.is_simple_param)(value)                        | Whether a constructor parameter is JSON-simple (scalar, or a tuple/list of scalars).      |
+| [`strategy_from_spec`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_from_spec)(spec)                      | Reconstruct a shipped strategy from a `{"name", "params"}` spec.                          |
+| [`strategy_to_spec`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_to_spec)(strategy)                    | A `{"name", "params"}` spec for a shipped, scalar-param strategy.                         |
+| [`text_of`](_autosummary/ir.strategy.html.md#ir.strategy.text_of)(raw[, text_key])                      | Best-effort text extraction from a raw artifact payload.                                  |
 
 ### Classes
 
-| [`Chunked`](_autosummary/ir.strategy.html.md#ir.strategy.Chunked)(\*[, chunk_size, overlap, text_key, ...])   | Split the artifact's text into overlapping chunk surfaces.              |
-|------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| [`ClaudeTurn`](_autosummary/ir.strategy.html.md#ir.strategy.ClaudeTurn)(\*[, include_full])                      | Index a Claude Code session turn-pair: user prompt + assistant summary. |
-| [`IndexingStrategy`](_autosummary/ir.strategy.html.md#ir.strategy.IndexingStrategy)(\*args, \*\*kwargs)                | Decompose one artifact into filter fields + embeddable surfaces.        |
-| [`Package`](_autosummary/ir.strategy.html.md#ir.strategy.Package)(\*[, chunk_size, overlap, ...])             | Package strategy: `name + description` surface plus README chunks.      |
-| [`Skill`](_autosummary/ir.strategy.html.md#ir.strategy.Skill)()                                             | Capability strategy: embed `name + description` only.                   |
-| [`WholeText`](_autosummary/ir.strategy.html.md#ir.strategy.WholeText)(\*[, text_key, kind])                     | One surface = the entire text.                                          |
+| [`Chunked`](_autosummary/ir.strategy.html.md#ir.strategy.Chunked)(\*[, chunk_size, overlap, text_key, ...])   | Split the artifact's text into overlapping chunk surfaces.                    |
+|------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| [`ClaudeTurn`](_autosummary/ir.strategy.html.md#ir.strategy.ClaudeTurn)(\*[, include_full])                      | Index a Claude Code session turn-pair: user prompt + assistant summary.       |
+| [`Fields`](_autosummary/ir.strategy.html.md#ir.strategy.Fields)(fields, \*[, head, layout, normalize, ...])  | Index a record's named text fields (a catalogue item: name, place, prose...). |
+| [`IndexingStrategy`](_autosummary/ir.strategy.html.md#ir.strategy.IndexingStrategy)(\*args, \*\*kwargs)                | Decompose one artifact into filter fields + embeddable surfaces.              |
+| [`Package`](_autosummary/ir.strategy.html.md#ir.strategy.Package)(\*[, chunk_size, overlap, ...])             | Package strategy: `name + description` surface plus README chunks.            |
+| [`Skill`](_autosummary/ir.strategy.html.md#ir.strategy.Skill)()                                             | Capability strategy: embed `name + description` only.                         |
+| [`WholeText`](_autosummary/ir.strategy.html.md#ir.strategy.WholeText)(\*[, text_key, kind])                     | One surface = the entire text.                                                |
 
 ### *class* ir.strategy.Chunked(, chunk_size=1200, overlap=200, text_key=None, kind='chunk', max_tokens=None, token_model=None)
 
@@ -7208,6 +7255,46 @@ it. We target 250 (not 254) to leave headroom for the two special tokens
 (`[CLS]`/`[SEP]`) *and* the ±1–2 token drift when an offset-sliced
 substring is re-tokenized on its own — so an embedded chunk stays within
 budget and its tail is never silently truncated (see `_chunk_text()`).
+
+### *class* ir.strategy.Fields(fields, , head=(), layout='record', normalize=None, normalize_id=None, max_chars=1200, overlap=200, kind='record')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Index a record’s named text fields (a catalogue item: name, place, prose…).
+
+`fields` are the body keys, read in order; `head` are keys (a name, a
+place) that lead the record. Two layouts:
+
+- `layout="record"` (default): one surface per window of the body, with the
+  head text **prefixed to every window**, so a word in the name and a word in
+  the place only score together because they share a surface. Measured on 12
+  judged requests over ~44k records: BM25 hit@1 0.92 vs 0.58 for `"fields"`.
+- `layout="fields"`: one surface per field (head and body), `kind` = the
+  field name, so a query can target one field with `surfaces={...}`.
+
+`normalize` (a `str -> str` callable, or a `"module:attr"` reference to
+one, case/accent folding…) is applied to every text before indexing. \*\*It
+acts on the index side only\*\*: apply the same function to queries (e.g.
+through `formulate=`), or folded text will never match an unfolded query.
+A reference is persisted in a registry spec and is its own identity; a
+callable is not persisted, and is identified by its qualified name or an
+explicit `normalize_id` (required for a lambda or closure).
+`max_chars` / `overlap` window the *body* with [`balanced_windows()`](_autosummary/ir.strategy.html.md#ir.strategy.balanced_windows)
+(the head is prefixed to each window and not itself windowed, so keep it short).
+`kind` names the surface in the `"record"` layout; `"fields"` uses the
+field names. A key listed in both `head` and `fields` is read once.
+[`reads`](_autosummary/ir.strategy.html.md#ir.strategy.Fields.reads) lists every key the strategy reads, so a change signal can cover them.
+
+```pycon
+>>> plan = Fields(fields=["about"], head=["name", "place"]).decompose(
+...     "r1", {"name": "Louvre", "place": "Paris", "about": "A museum."})
+>>> [(s.kind, s.text) for s in plan.surfaces]
+[('record', 'Louvre\nParis\nA museum.')]
+```
+
+#### *property* reads *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]*
+
+Every record key this strategy reads (for change signals).
 
 ### *class* ir.strategy.IndexingStrategy(\*args, \*\*kwargs)
 
@@ -7253,7 +7340,7 @@ strategy change) — read it with `metadata.get("n_chunks")`.
 The record fields a synopsis is written from (see [`ir.synopsis.with_synopsis()`](_autosummary/ir.synopsis.html.md#ir.synopsis.with_synopsis)):
 prose only. The record’s `path` (a local absolute path) and `deps` never go to an LLM.
 
-### ir.strategy.STRATEGY_REGISTRY *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [type](https://docs.python.org/3/builtins/functions.html#type)]* *= {'Chunked': <class 'ir.strategy.Chunked'>, 'ClaudeTurn': <class 'ir.strategy.ClaudeTurn'>, 'Package': <class 'ir.strategy.Package'>, 'Skill': <class 'ir.strategy.Skill'>, 'WholeText': <class 'ir.strategy.WholeText'>}*
+### ir.strategy.STRATEGY_REGISTRY *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [type](https://docs.python.org/3/builtins/functions.html#type)]* *= {'Chunked': <class 'ir.strategy.Chunked'>, 'ClaudeTurn': <class 'ir.strategy.ClaudeTurn'>, 'Fields': <class 'ir.strategy.Fields'>, 'Package': <class 'ir.strategy.Package'>, 'Skill': <class 'ir.strategy.Skill'>, 'WholeText': <class 'ir.strategy.WholeText'>}*
 
 Shipped strategies addressable by name, for persisting an
 [`IndexingStrategy`](_autosummary/ir.strategy.html.md#ir.strategy.IndexingStrategy) in a registry entry and reconstructing it (#58).
@@ -7273,6 +7360,39 @@ parent are filter fields.
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 One surface = the entire text. Sensible default for a naive corpus.
+
+### ir.strategy.balanced_windows(text, , size, overlap=0)
+
+Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.
+
+`n = ceil((L - overlap) / (size - overlap))` windows, each `ceil((L +
+(n - 1) * overlap) / n)` long, so a text just past the limit becomes two
+halves, not one full window plus a sliver (which length normalisation in
+BM25 would favour).
+
+```pycon
+>>> balanced_windows("a" * 10, size=10)
+['aaaaaaaaaa']
+>>> [len(w) for w in balanced_windows("a" * 11, size=10)]
+[6, 5]
+>>> [len(w) for w in balanced_windows("a" * 25, size=10, overlap=2)]
+[10, 10, 9]
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### ir.strategy.is_simple_param(value)
+
+Whether a constructor parameter is JSON-simple (scalar, or a tuple/list of scalars).
+
+The shared test behind a strategy’s persisted spec ([`strategy_to_spec()`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_to_spec))
+and its build identity (`ir.index._strategy_id`), so a parameter such as
+[`Fields`](_autosummary/ir.strategy.html.md#ir.strategy.Fields)’s `fields` both round-trips through the registry and
+re-decomposes a corpus when it changes.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### ir.strategy.strategy_from_spec(spec)
 
@@ -7743,18 +7863,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-16 07:18 UTC** from commit <a href="https://github.com/i2mint/ir/commit/32237a2e135c2131e67bcce8020542f8df130737"><code>32237a2</code></a> on branch <code>master</code>, for **ir 0.1.64** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-16 07:30 UTC** from commit <a href="https://github.com/i2mint/ir/commit/4347e2ef31fa1462fe9e591be7b59a35b864b19b"><code>4347e2e</code></a> on branch <code>master</code>, for **ir 0.1.65** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.64) is behind the latest release on PyPI (0.1.65): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/32237a2e135c2131e67bcce8020542f8df130737"><code>32237a2e135c2131e67bcce8020542f8df130737</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/4347e2ef31fa1462fe9e591be7b59a35b864b19b"><code>4347e2ef31fa1462fe9e591be7b59a35b864b19b</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7765,9 +7883,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43822701643">43822701643</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43824203501">43824203501</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>32237a2e135c2131e67bcce8020542f8df130737</code> (in the history of the built commit) |
+| Event commit | <code>4347e2ef31fa1462fe9e591be7b59a35b864b19b</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7792,13 +7910,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.65/">0.1.65</a>, newer than the documented version (0.1.64).
+Latest release: <a href="https://pypi.org/project/ir/0.1.65/">0.1.65</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 32237a2e135c2131e67bcce8020542f8df130737
+git checkout 4347e2ef31fa1462fe9e591be7b59a35b864b19b
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

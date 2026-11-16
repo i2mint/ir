@@ -306,7 +306,7 @@ Manifest package directories, then fleet repos the manifest does not name.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
 
-### ir.sources.records_change_signal(, text_key='text', metadata_keys=())
+### ir.sources.records_change_signal(, text_key='text', metadata_keys=(), read_keys=())
 
 Change signal for record dicts: covers the text **and** the stored metadata.
 
@@ -316,7 +316,8 @@ rebuilt and stay filterable under the old value. With the default
 `text_key` this adds `metadata_keys` through `ef`’s `content_keys` (and
 is identical to the old signal when there are none). With another
 `text_key` the whole record is hashed, so no field a strategy may read goes
-stale.
+stale. `read_keys` (a strategy’s `reads`, e.g. [`Fields`](ir.html.md#ir.Fields)) join
+the hash as well.
 
 ```pycon
 >>> sig = records_change_signal(metadata_keys=["pages"])
