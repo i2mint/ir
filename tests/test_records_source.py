@@ -7,6 +7,8 @@ by another package (astern's session synopses / turns) round-trip through
 ``corpora.json`` and rebuild in a fresh process.
 """
 
+import json
+
 import pytest
 
 import ir
@@ -183,4 +185,57 @@ def test_records_signal_sees_every_field_for_a_custom_text_key():
     sig = records_change_signal(text_key="body")
     assert sig("x", {"body": "t", "title": "a"}) != sig(
         "x", {"body": "t", "title": "b"}
+    )
+
+
+def test_records_signal_is_stable_for_set_valued_metadata():
+    """#144: set order varies per process; the signal must not."""
+    import subprocess
+    import sys
+
+    from ir.sources import records_change_signal
+
+    code = (
+        "from ir.sources import records_change_signal as r;"
+        "s=r(metadata_keys=['tags'],text_key='text');"
+        "print(s('x',{'text':'t','tags':{'alpha','beta','gamma','delta','eps'}}))"
+    )
+    outs = {
+        subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            env={**__import__("os").environ, "PYTHONHASHSEED": str(seed)},
+            check=True,
+        ).stdout
+        for seed in (1, 2, 3)
+    }
+    assert len(outs) == 1
+    sig = records_change_signal(metadata_keys=["tags"])
+    assert sig("x", {"text": "t", "tags": {"a", "b"}}) == sig(
+        "x", {"text": "t", "tags": {"b", "a"}}
+    )
+    assert sig("x", {"text": "t", "tags": {"a"}}) != sig(
+        "x", {"text": "t", "tags": {"b"}}
+    )
+
+
+def test_signal_ignores_what_it_does_not_hash_and_matches_the_old_hash_without_sets():
+    import ef
+
+    from ir.sources import records_change_signal
+
+    cyclic = {"text": "t"}
+    cyclic["parent"] = cyclic  # an unhashed cycle used to be fine and must stay fine
+    assert records_change_signal()("x", cyclic) == ef.content_hash(cyclic)
+    plain = {"text": "t", "pages": ["p.1", "p.2"], "n": (1, 2)}
+    sig = records_change_signal(metadata_keys=["pages"])
+    assert sig("x", plain) == ef.content_hash(plain, content_keys=["pages"])
+    whole = records_change_signal(text_key="body")
+    rec = {"body": "t", "tags": ["a", "b"]}
+    assert whole("x", rec) == ef.content_hash(
+        json.dumps(rec, sort_keys=True, default=str)
+    )
+    assert whole("x", {"body": "t", "tags": {"a", "b"}}) == whole(
+        "x", {"body": "t", "tags": {"b", "a"}}
     )
