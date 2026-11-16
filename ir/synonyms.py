@@ -14,7 +14,11 @@ path with ``$IR_SYNONYMS``)::
     {"terms": ["vd", "vector database"], "oneway": true, "note": "vd expands, not back"}
 
 ``terms`` are equivalent (each expands to the others); with ``oneway`` only the first
-expands to the rest. ``corpus`` (optional) limits an entry to one corpus. The ledger
+expands to the rest. ``corpus`` (optional) limits an entry to one corpus. An entry
+may carry ``provenance`` (``{"miss_query": ..., "found_ids": [...]}``: the search that
+missed and what the vocabulary found), which lets :func:`ir.synonyms_eval.replay_ledger`
+re-test it; ``verified`` (the number of replays it won) and ``status`` (``"demoted"`` entries are not
+loaded by default) are maintained by that replay. The ledger
 is the user's private data: it lives in their config dir, never in a repo.
 
 Three uses, one source: :func:`term_regex` builds an alternation for grep,
@@ -36,10 +40,14 @@ from __future__ import annotations
 import json
 import os
 import re
-from collections.abc import Iterable, Sequence
-from dataclasses import asdict, dataclass
+from collections.abc import Iterable, Mapping, Sequence
+from collections import defaultdict, deque
+from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
+
+#: Ledger entry statuses: ``DEMOTED`` entries are kept (for audit) but not loaded.
+ACTIVE, DEMOTED = "active", "demoted"
 
 #: The ledger's file name inside :func:`ir.config.config_dir`.
 DFLT_LEDGER_NAME = "synonyms.jsonl"
@@ -61,9 +69,21 @@ class SynonymEntry:
     note: str = ""
     added: str = ""
     corpus: str | None = None
+    provenance: Mapping[str, object] | None = None
+    verified: int = 0
+    status: str = ACTIVE
+    #: the ledger line this entry was read from (``""`` if built in code); lets
+    #: :func:`update_entries` patch exactly that line and leave the rest verbatim.
+    source_line: str = field(default="", compare=False, repr=False)
 
     def to_json(self) -> str:
-        d = {k: v for k, v in asdict(self).items() if v not in (None, "", False)}
+        d = {
+            k: v
+            for k, v in asdict(self).items()
+            if k != "source_line"
+            and v not in (None, "", False, 0)
+            and not (k == "status" and v == ACTIVE)
+        }
         d["terms"] = list(self.terms)
         return json.dumps(d, ensure_ascii=False)
 
@@ -79,16 +99,21 @@ def ledger_path() -> Path:
 
 
 def load_synonyms(
-    path: str | Path | None = None, *, corpus: str | None = None
+    path: str | Path | None = None,
+    *,
+    corpus: str | None = None,
+    include_demoted: bool = False,
 ) -> list[SynonymEntry]:
     """The ledger's entries (those for all corpora, plus ``corpus``'s own).
+
+    Demoted entries are skipped unless ``include_demoted``.
 
     A missing ledger is an empty one; a malformed line is skipped, so a hand edit
     gone wrong never breaks search.
     """
     p = Path(path) if path else ledger_path()
     try:
-        lines = p.read_text(encoding="utf-8").splitlines()
+        lines = p.read_text(encoding="utf-8").split("\n")  # not splitlines: U+2028 etc.
     except OSError:
         return []
     out = []
@@ -96,7 +121,8 @@ def load_synonyms(
         try:
             d = json.loads(line)
             raw = d["terms"]
-        except (ValueError, KeyError, TypeError):
+            verified = int(d.get("verified", 0) or 0)
+        except (ValueError, KeyError, TypeError, AttributeError):
             continue
         if not isinstance(raw, list):  # a string would split into characters
             continue
@@ -109,7 +135,15 @@ def load_synonyms(
             note=str(d.get("note", "")),
             added=str(d.get("added", "")),
             corpus=d.get("corpus"),
+            provenance=d.get("provenance")
+            if isinstance(d.get("provenance"), dict)
+            else None,
+            verified=verified,
+            status=str(d.get("status") or ACTIVE),
+            source_line=line,
         )
+        if e.status == DEMOTED and not include_demoted:
+            continue
         if e.corpus is None or corpus is None or e.corpus == corpus:
             out.append(e)
     return out
@@ -121,9 +155,14 @@ def add_synonyms(
     note: str = "",
     oneway: bool = False,
     corpus: str | None = None,
+    provenance: Mapping[str, object] | None = None,
     path: str | Path | None = None,
 ) -> SynonymEntry:
     """Append one entry to the ledger (creating it) and return it.
+
+    ``provenance`` records the miss that prompted the entry
+    (``{"miss_query": ..., "found_ids": [...]}``, optionally ``"fix_query"``) so a
+    later replay can verify the entry still helps.
 
     Add an entry only after a verified find that the corpus-specific word made
     possible; general-language synonyms are the searcher's job, not the ledger's.
@@ -137,6 +176,7 @@ def add_synonyms(
         note=note,
         added=date.today().isoformat(),
         corpus=corpus,
+        provenance=dict(provenance) if provenance else None,
     )
     p = Path(path) if path else ledger_path()
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -239,3 +279,55 @@ def make_synonym_formulator(
         return expand_query(query, es, max_variants=max_variants)
 
     return formulate
+
+
+def update_entries(
+    changes: Iterable[tuple[SynonymEntry, SynonymEntry]],
+    path: str | Path | None = None,
+) -> int:
+    """Rewrite the ledger with ``(old, new)`` entry changes; every other line stays verbatim.
+
+    ``old`` must come from :func:`load_synonyms` (it carries the line it was read
+    from). Only ``verified`` and ``status`` are taken from ``new``, and they are
+    patched into the original JSON object, so comments, malformed lines and unknown
+    keys a user hand-wrote survive. A line that changed since it was read (an edit
+    or another writer) is left alone. The file is replaced atomically (unique temp
+    file, then rename); an ``ir synonyms-add`` append landing between the final read
+    and the rename could still be lost, so keep replays out of concurrent writers.
+    Returns the number of lines patched.
+    """
+    import tempfile
+
+    p = (Path(path) if path else ledger_path()).resolve()  # keep a symlinked ledger
+    pending: dict[str, deque] = defaultdict(deque)
+    for old, new in changes:
+        if old.source_line:
+            pending[old.source_line].append(new)
+    if not pending:
+        return 0
+    lines = p.read_text(encoding="utf-8").split("\n")  # same split as load_synonyms
+    patched = 0
+    for i, line in enumerate(lines):
+        queue = pending.get(line)
+        if not queue:
+            continue
+        new = queue.popleft()
+        d = json.loads(line)
+        for key, value in (("verified", new.verified), ("status", new.status)):
+            if value in (0, ACTIVE):
+                d.pop(key, None)
+            else:
+                d[key] = value
+        lines[i] = json.dumps(d, ensure_ascii=False)
+        patched += 1
+    if not patched:
+        return 0
+    fd, tmp = tempfile.mkstemp(dir=p.parent, prefix=p.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+        os.replace(tmp, p)
+    except BaseException:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+    return patched

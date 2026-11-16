@@ -697,19 +697,71 @@ def synonyms(term=None, *, corpus=None):
     return f"aliases: {', '.join(terms)}\nregex:   {term_regex(terms)}"
 
 
-def synonyms_add(terms, *, note="", oneway=False, corpus=None):
+def synonyms_add(
+    terms, *, note="", oneway=False, corpus=None, miss_query=None, found=None
+):
     """Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.
 
     ``ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname"``. Add only
     after a verified find that the word made possible; ``--oneway`` makes the first
     term expand to the others but not back; ``--corpus`` scopes the entry.
+    ``--miss-query "the query that missed" --found "id1,id2"`` records the miss and
+    what the word found, so the entry can later be replayed through ``ir.eval``
+    (``ir.synonyms_eval.replay_ledger``) and demoted if it does not help.
     """
     from .synonyms import add_synonyms, ledger_path
 
+    provenance = None
+    if miss_query or found:
+        if not (miss_query and found):
+            raise SystemExit("--miss-query and --found go together")
+        provenance = {
+            "miss_query": miss_query,
+            "found_ids": [i.strip() for i in str(found).split(",") if i.strip()],
+            **({"corpus": corpus} if corpus else {}),
+        }
     e = add_synonyms(
-        [t for t in str(terms).split(",")], note=note, oneway=oneway, corpus=corpus
+        [t for t in str(terms).split(",")],
+        note=note,
+        oneway=oneway,
+        corpus=corpus,
+        provenance=provenance,
     )
     return f"added to {ledger_path()}: {e.to_json()}"
+
+
+@_report_embedder_errors
+def synonyms_replay(name, *, apply=False, mode="lexical"):
+    """Replay the synonym ledger's entries against corpus NAME and say which still help.
+
+    Each entry recorded with ``--miss-query`` / ``--found`` is searched with and without
+    its expansion through ``ir.eval``: ``helps``, ``no_effect``, ``hurts`` or
+    ``unverifiable`` (no provenance, its ids are not in this corpus, or vd missing).
+    Dry run by default; ``--apply`` bumps ``verified`` on a win and demotes a ``hurts``
+    (or a ``no_effect`` that never won). Demoted entries stay in the file but stop
+    expanding searches.
+    """
+    from .synonyms import update_entries
+    from .synonyms_eval import apply_verdicts, replay_ledger
+
+    corpus = _open_ready(name)
+    verdicts = replay_ledger(corpus, mode=mode)
+    if not verdicts:
+        return f"(no ledger entries for {name!r})"
+    lines = []
+    for v in verdicts:
+        scores = (
+            f"  ndcg {v.without:.3f} -> {v.with_entry:.3f}"
+            if v.without is not None
+            else ""
+        )
+        lines.append(f"{v.verdict:<12}{' = '.join(v.entry.terms)}{scores}")
+    changes = apply_verdicts(verdicts)
+    if apply:
+        lines.append(f"{update_entries(changes)} ledger line(s) updated")
+    else:
+        lines.append(f"{len(changes)} ledger line(s) would change (use --apply)")
+    return "\n".join(lines)
 
 
 COMMANDS = [
@@ -730,4 +782,5 @@ COMMANDS = [
     calibrate_min_score,
     synonyms,
     synonyms_add,
+    synonyms_replay,
 ]
