@@ -388,14 +388,10 @@ def test_default_generator_prompts_substitute_placeholders(monkeypatch):
     monkeypatch.setattr(aix_prompts, "chat", fake_chat)
     gen = eg.make_default_query_generator()
     out = gen("DESC_MARKER", n=4)
-    assert (
-        "DESC_MARKER" in captured["prompt"] and "Write 4 natural" in captured["prompt"]
-    )
+    assert "DESC_MARKER" in captured["prompt"] and "Write 4 natural" in captured["prompt"]
     assert out == ["q1", "q2", "q3", "q4"]
 
-    monkeypatch.setattr(
-        aix_prompts, "chat", lambda p, **k: captured.update(prompt=p) or "t"
-    )
+    monkeypatch.setattr(aix_prompts, "chat", lambda p, **k: captured.update(prompt=p) or "t")
     eg.make_default_abstention_generator()(n=2, theme="THEME_MARKER")
     assert "THEME_MARKER" in captured["prompt"]
 

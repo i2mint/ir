@@ -59,9 +59,7 @@ def _run(argv):
     )
 
 
-@pytest.mark.parametrize(
-    "case", CASES, ids=lambda c: " ".join(c["argv"]) or "(no args)"
-)
+@pytest.mark.parametrize("case", CASES, ids=lambda c: " ".join(c["argv"]) or "(no args)")
 def test_grammar_matches_the_argh_recording(case):
     """Every recorded vector still exits the same way with the same usage line."""
     proc = _run(case["argv"])

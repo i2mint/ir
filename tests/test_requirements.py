@@ -87,9 +87,7 @@ def test_version_satisfies(monkeypatch, use_packaging, installed, specifier, ok)
 def test_non_plain_versions_are_judged_by_packaging_or_hold(monkeypatch):
     monkeypatch.setitem(sys.modules, "packaging.specifiers", None)  # stdlib path
     for installed in ("0.2.0rc1", "0.2.dev0", "0.1.post1", "1!0.1", "1.0+local"):
-        assert (
-            _req.version_satisfies(installed, "<0.2") is True
-        )  # never blocks on a doubt
+        assert _req.version_satisfies(installed, "<0.2") is True  # never blocks on a doubt
     pytest.importorskip("packaging")
     monkeypatch.undo()
     assert _req.version_satisfies("0.2.0rc1", "<0.2") is False  # PEP 440
@@ -120,9 +118,7 @@ def test_installed_dependency_outside_the_bounds_is_named(monkeypatch):
     bounds = {"cw": ">=0.1.1,<0.2", "numpy": ""}
     found = _req.unsatisfied_requirements(bounds=bounds)
     assert found == [("cw", "0.2.0", ">=0.1.1,<0.2")]
-    with pytest.raises(
-        UnsatisfiedRequirements, match=r"cw 0\.2\.0 \(needs >=0\.1\.1,<0\.2\)"
-    ):
+    with pytest.raises(UnsatisfiedRequirements, match=r"cw 0\.2\.0 \(needs >=0\.1\.1,<0\.2\)"):
         check_requirements(bounds=bounds)
 
 

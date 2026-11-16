@@ -256,25 +256,13 @@ def test_regressions_flags_dropped_positive_and_risen_distractor():
     assert report.regressions(threshold=100) == []
     # absent/0 ranks are reported as None (1-based ranks: 0 would read as "top")
     report2 = ev.ComparisonReport(
-        k=20,
-        themes=("graphs",),
-        labels=("baseline", "candidate"),
+        k=20, themes=("graphs",), labels=("baseline", "candidate"),
         baseline="baseline",
-        metrics={
-            "baseline": {"graphs": {"ndcg": 0.5}},
-            "candidate": {"graphs": {"ndcg": 0.4}},
-        },
-        deltas={
-            "graphs": {
-                "kroki": {
-                    "role": "hard_positive",
-                    "by_label": {
-                        "baseline": {"rank": 3, "score": 0.4},
-                        "candidate": {"rank": 0, "score": None},
-                    },
-                }
-            }
-        },  # vanished
+        metrics={"baseline": {"graphs": {"ndcg": 0.5}},
+                 "candidate": {"graphs": {"ndcg": 0.4}}},
+        deltas={"graphs": {"kroki": {"role": "hard_positive", "by_label": {
+            "baseline": {"rank": 3, "score": 0.4},
+            "candidate": {"rank": 0, "score": None}}}}},  # vanished
     )
     assert report2.regressions()[0]["candidate_rank"] is None
 
@@ -293,16 +281,12 @@ def test_gain_with_partial_gains_defaults_to_zero():
 def test_derive_named_sets_honors_cached_is_distractor():
     cases = [
         # cached True overrides the observed-floor rule (here observed is absent)
-        ev.PackageRelevanceCase(
-            "x", labels={"embeddings": "none"}, is_distractor={"embeddings": True}
-        ),
+        ev.PackageRelevanceCase("x", labels={"embeddings": "none"},
+                                is_distractor={"embeddings": True}),
         # cached False suppresses what the floor rule would otherwise flag
-        ev.PackageRelevanceCase(
-            "y",
-            labels={"embeddings": "none"},
-            observed={"embeddings": 0.9},
-            is_distractor={"embeddings": False},
-        ),
+        ev.PackageRelevanceCase("y", labels={"embeddings": "none"},
+                                observed={"embeddings": 0.9},
+                                is_distractor={"embeddings": False}),
     ]
     ns = ev.derive_named_sets(cases, "embeddings", observed_floor=0.4)
     assert ns.distractors == ("x",)
@@ -319,31 +303,18 @@ def test_compare_indexings_guards_bad_args():
     corpus = _corpus()
     cases = _cases()
     with pytest.raises(ValueError, match="rank_depth"):
-        ev.compare_indexings(
-            {"b": corpus},
-            cases,
-            themes=("graphs",),
-            probes=_probes(),
-            k=20,
-            rank_depth=5,
-        )
+        ev.compare_indexings({"b": corpus}, cases, themes=("graphs",),
+                             probes=_probes(), k=20, rank_depth=5)
     with pytest.raises(ValueError, match="no probe text"):
-        ev.compare_indexings(
-            {"b": corpus},
-            cases,
-            themes=("graphs", "missing"),
-            probes={"graphs": "g"},
-            k=5,
-            rank_depth=50,
-        )
+        ev.compare_indexings({"b": corpus}, cases, themes=("graphs", "missing"),
+                             probes={"graphs": "g"}, k=5, rank_depth=50)
 
 
 def test_evaluate_named_sets_theme_defaults_to_named_sets_theme():
     corpus = _corpus()
     ns = ev.derive_named_sets(_cases(), "graphs", observed_floor=0.4)
-    report = ev.evaluate_named_sets(
-        corpus, ns, probe=_probes()["graphs"], mode="dense", k=5
-    )
+    report = ev.evaluate_named_sets(corpus, ns, probe=_probes()["graphs"],
+                                    mode="dense", k=5)
     assert report.theme == "graphs"
 
 
@@ -386,32 +357,14 @@ def test_compare_indexings_per_label_search_kw_guards():
     corpus = _corpus()
     cases = _cases()
     with pytest.raises(ValueError, match="unknown label"):
-        ev.compare_indexings(
-            {"b": corpus},
-            cases,
-            themes=THEMES,
-            probes=_probes(),
-            k=5,
-            search_kw_by_label={"nope": {}},
-        )
+        ev.compare_indexings({"b": corpus}, cases, themes=THEMES, probes=_probes(),
+                             k=5, search_kw_by_label={"nope": {}})
     with pytest.raises(ValueError, match="rank_depth"):
-        ev.compare_indexings(
-            {"b": corpus},
-            cases,
-            themes=THEMES,
-            probes=_probes(),
-            k=5,
-            search_kw_by_label={"b": {"k": 3}},
-        )
+        ev.compare_indexings({"b": corpus}, cases, themes=THEMES, probes=_probes(),
+                             k=5, search_kw_by_label={"b": {"k": 3}})
     with pytest.raises(ValueError, match="per_artifact"):
-        ev.compare_indexings(
-            {"b": corpus},
-            cases,
-            themes=THEMES,
-            probes=_probes(),
-            k=5,
-            search_kw_by_label={"b": {"per_artifact": False}},
-        )
+        ev.compare_indexings({"b": corpus}, cases, themes=THEMES, probes=_probes(),
+                             k=5, search_kw_by_label={"b": {"per_artifact": False}})
 
 
 def test_compare_indexings_scores_a_ranker_arm():
@@ -440,11 +393,8 @@ def test_compare_indexings_scores_a_ranker_arm():
     # the fused arm really was run: scored as its own ranking
     theme = THEMES[0]
     row, _ = ev.score_ranking(
-        [h.artifact_id for h in fused(_probes()[theme], k=1000)],
-        cases,
-        theme,
-        k=5,
-        named_sets=named[theme],
+        [h.artifact_id for h in fused(_probes()[theme], k=1000)], cases, theme,
+        k=5, named_sets=named[theme],
     )
     assert report.metrics["fused"][theme] == row
 
@@ -460,9 +410,8 @@ def test_compare_indexings_ranker_is_cut_to_rank_depth_and_may_be_lazy():
         yield from hits
 
     kw = dict(themes=THEMES, probes=_probes(), named_sets=named, mode="dense", k=2)
-    report = ev.compare_indexings(
-        {"corpus": corpus, "greedy": greedy}, cases, rank_depth=3, **kw
-    )
+    report = ev.compare_indexings({"corpus": corpus, "greedy": greedy}, cases,
+                                  rank_depth=3, **kw)
     for ids in report.deltas.values():
         for info in ids.values():
             ranks = info["by_label"]

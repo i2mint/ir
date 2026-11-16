@@ -459,7 +459,6 @@ def test_dedup_hits_collapses_copies_to_best():
     ]
     assert [h.artifact_id for h in _dedup_hits(hits, "name")] == ["a", "b", "n1", "n2"]
     assert _dedup_hits(hits, None) == hits
-
     # "auto" only collapses for corpora listed in DFLT_DEDUP_BY
     class C:
         name = "skills"

@@ -104,9 +104,7 @@ def test_calibration_separates_and_drives_abstention(mini_corpus, mini_cases):
 
     # And the floor actually abstains on out-of-scope while committing in-scope.
     abstention = next(c for c in mini_cases if c.gold_is_none)
-    out = discover(
-        mini_corpus, abstention.query, mode="dense", min_score=calib.min_score
-    )
+    out = discover(mini_corpus, abstention.query, mode="dense", min_score=calib.min_score)
     assert out.abstained
 
     in_scope = next(c for c in mini_cases if not c.gold_is_none)
