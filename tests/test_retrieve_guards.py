@@ -60,3 +60,28 @@ def test_hybrid_without_vd_falls_back_to_dense(monkeypatch):
     # Hybrid degrades to the dense ranking: non-empty, with the lexical match on top.
     assert hits
     assert hits[0].artifact_id == "a"
+
+
+def test_bm25_cache_is_bounded_and_keys_are_small():
+    from ir import retrieve
+
+    corpus = _corpus()
+    for i in range(retrieve.BM25_CACHE_MAXSIZE + 5):
+        # a distinct, large filter per call, as a service with structured filters
+        big = {"k": {"$nin": [f"x{j}" for j in range(i, i + 2000)]}}
+        corpus.search("alpha", mode="lexical", filter=big)
+    cache = corpus._bm25_index_cache
+    assert len(cache) == retrieve.BM25_CACHE_MAXSIZE
+    assert all(len(repr(key)) < 200 for key in cache)
+
+
+def test_bm25_cache_hit_protects_hot_key():
+    from ir import retrieve
+
+    corpus = _corpus()
+    corpus.search("alpha", mode="lexical")
+    hot = next(iter(corpus._bm25_index_cache))
+    for i in range(retrieve.BM25_CACHE_MAXSIZE * 2):
+        corpus.search("alpha", mode="lexical")  # keeps the hot key recent
+        corpus.search("alpha", mode="lexical", filter={"k": {"$nin": [f"x{i}"]}})
+    assert hot in corpus._bm25_index_cache

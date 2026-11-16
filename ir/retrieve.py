@@ -48,10 +48,13 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import numbers
+import threading
 import warnings
+from collections import OrderedDict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import replace
 from types import SimpleNamespace
@@ -148,6 +151,12 @@ def _dense_ranked(
     return [(ids[candidates[o]], float(scores[o])) for o in order]
 
 
+#: How many per-candidate-set BM25 indexes a corpus keeps (least recently used
+#: evicted first). Each is a full tokenized copy of its slice, so this bounds memory.
+BM25_CACHE_MAXSIZE = 8
+_BM25_CACHE_LOCK = threading.Lock()
+
+
 def _candidate_key(
     surfaces: tuple[str, ...] | None, filter: Mapping[str, Any] | None
 ) -> tuple:
@@ -158,8 +167,12 @@ def _candidate_key(
     searches sharing both can share one BM25 index. The filter is canonicalized
     with sorted keys so logically-equal filters land on the same cache entry.
     """
-    f = json.dumps(filter, sort_keys=True, default=str) if filter is not None else None
-    return (surfaces, f)
+    if filter is None:
+        return (surfaces, None)
+    # A digest, not the JSON text: an ``$in`` filter over many ids is megabytes
+    # of string, which would be held as the dict key for as long as it is cached.
+    text = json.dumps(filter, sort_keys=True, default=str)
+    return (surfaces, hashlib.sha1(text.encode()).hexdigest())
 
 
 def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
@@ -178,6 +191,9 @@ def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
     duplicated and BM25 covers only the already-filtered candidates. Returns
     ``None`` (with a warning) if ``vd`` is unavailable, letting lexical mode
     return nothing and hybrid degrade to dense.
+
+    At most ``BM25_CACHE_MAXSIZE`` indexes are kept (LRU, the unfiltered one
+    included); a workload rotating through more filters rebuilds on each miss.
     """
     try:
         from vd import BM25Index
@@ -192,13 +208,16 @@ def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
 
     cache = getattr(corpus, "_bm25_index_cache", None)
     if cache is None:
-        cache = {}
+        cache = OrderedDict()
         try:
             corpus._bm25_index_cache = cache
         except Exception:
             pass  # corpus doesn't admit attribute caching → build fresh each call
-    if cache_key in cache:
-        return cache[cache_key]
+    with _BM25_CACHE_LOCK:  # searches may run in a server threadpool
+        index = cache.get(cache_key)
+        if index is not None:
+            cache.move_to_end(cache_key)
+            return index
 
     collection = {
         ids[j]: SimpleNamespace(
@@ -207,7 +226,10 @@ def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
         for j in candidates
     }
     index = BM25Index(collection)
-    cache[cache_key] = index
+    with _BM25_CACHE_LOCK:
+        cache[cache_key] = index
+        while len(cache) > BM25_CACHE_MAXSIZE:  # LRU: varied filters stay bounded
+            cache.popitem(last=False)
     return index
 
 
