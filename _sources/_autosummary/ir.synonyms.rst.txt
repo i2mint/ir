@@ -8,6 +8,8 @@ ir.synonyms
 
    .. autosummary::
    
+      ACTIVE
+      DEMOTED
       DFLT_LEDGER_NAME
       SHORT_TERM_CHARS
       DFLT_MAX_VARIANTS
@@ -23,6 +25,7 @@ ir.synonyms
       load_synonyms
       make_synonym_formulator
       term_regex
+      update_entries
    
    .. rubric:: Classes
 

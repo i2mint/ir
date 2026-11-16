@@ -25,4 +25,5 @@ ir.cli
       sweep_select
       synonyms
       synonyms_add
+      synonyms_replay
    

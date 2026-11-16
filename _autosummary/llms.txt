@@ -28,6 +28,7 @@
 - [ir.store](ir.store.html.md): Persistence for &#96;ir&#96; — the repository layer over &#96;dol&#96; key-value views.
 - [ir.strategy](ir.strategy.html.md): Indexing strategies — the “what do we index?” seam.
 - [ir.synonyms](ir.synonyms.html.md): The synonym ledger: corpus vocabulary an agent learns, for keyword and regex search.
+- [ir.synonyms_eval](ir.synonyms_eval.html.md): Replay the synonym ledger through &#96;ir.eval&#96;: keep the entries that earn their place.
 - [ir.synopsis](ir.synopsis.html.md): Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).
 - [ir.tools](ir.tools.html.md): Agent-callable tool surface over &#96;ir&#96; — plain functions returning JSON-ready
 

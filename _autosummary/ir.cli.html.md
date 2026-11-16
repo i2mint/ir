@@ -47,7 +47,8 @@ ir search session_turns "acmecorp invoice" -m lexical --expand
 | [`search`](#ir.cli.search)(name, query, \*[, k, mode, fusion, ...])    | Search a built corpus and print the top-k hits.                                      |
 | [`sweep_select`](#ir.cli.sweep_select)(name, cases, \*[, strategy, ...])     | Sweep selector knobs (max_k × rel) against a case file; print the grid + best.       |
 | [`synonyms`](#ir.cli.synonyms)([term, corpus])                           | Show what the synonym ledger knows: a term's aliases and grep regex, or all entries. |
-| [`synonyms_add`](#ir.cli.synonyms_add)(terms, \*[, note, oneway, corpus])    | Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.    |
+| [`synonyms_add`](#ir.cli.synonyms_add)(terms, \*[, note, oneway, ...])       | Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.    |
+| [`synonyms_replay`](#ir.cli.synonyms_replay)(name, \*[, apply, mode])           | Replay the synonym ledger's entries against corpus NAME and say which still help.    |
 
 ### ir.cli.build(name, , embedder=None, full=True)
 
@@ -211,10 +212,24 @@ private vocabulary (nicknames, renamed packages, jargon) learned from misses. Us
 the printed regex in `rg` / `astern grep`; `ir search --expand` uses the
 same entries. Add with `ir synonyms-add`.
 
-### ir.cli.synonyms_add(terms, , note='', oneway=False, corpus=None)
+### ir.cli.synonyms_add(terms, , note='', oneway=False, corpus=None, miss_query=None, found=None)
 
 Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.
 
 `ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname"`. Add only
 after a verified find that the word made possible; `--oneway` makes the first
 term expand to the others but not back; `--corpus` scopes the entry.
+`--miss-query "the query that missed" --found "id1,id2"` records the miss and
+what the word found, so the entry can later be replayed through `ir.eval`
+(`ir.synonyms_eval.replay_ledger`) and demoted if it does not help.
+
+### ir.cli.synonyms_replay(name, , apply=False, mode='lexical')
+
+Replay the synonym ledger’s entries against corpus NAME and say which still help.
+
+Each entry recorded with `--miss-query` / `--found` is searched with and without
+its expansion through `ir.eval`: `helps`, `no_effect`, `hurts` or
+`unverifiable` (no provenance, its ids are not in this corpus, or vd missing).
+Dry run by default; `--apply` bumps `verified` on a win and demotes a `hurts`
+(or a `no_effect` that never won). Demoted entries stay in the file but stop
+expanding searches.

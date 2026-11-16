@@ -35,7 +35,7 @@
 <link href="../_static/epythet.css?v=3c662399" rel="stylesheet" type="text/css"/>
 <link href="../search.html" rel="search" title="Search"/>
 <link href="../genindex.html" rel="index" title="Index"/>
-<link href="ir.synopsis.html" rel="next" title="ir.synopsis"/>
+<link href="ir.synonyms_eval.html" rel="next" title="ir.synonyms_eval"/>
 <link href="ir.strategy.html" rel="prev" title="ir.strategy"/>
 </head>
 <body :class="{ 'overflow-hidden': showSidebar }" class="min-h-screen font-sans antialiased bg-background text-foreground" x-data="{ showSidebar: false, showScrollTop: false }">
@@ -106,6 +106,7 @@
 <li class="toctree-l3"><a class="reference internal" href="ir.store.html">ir.store</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.strategy.html">ir.strategy</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">ir.synonyms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ir.synonyms_eval.html">ir.synonyms_eval</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.synopsis.html">ir.synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.tools.html">ir.tools</a></li>
 </ul>
@@ -153,7 +154,11 @@ path with <code class="docutils literal notranslate"><span class="pre">$IR_SYNON
 </span></code></pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">terms</span></code> are equivalent (each expands to the others); with <code class="docutils literal notranslate"><span class="pre">oneway</span></code> only the first
-expands to the rest. <code class="docutils literal notranslate"><span class="pre">corpus</span></code> (optional) limits an entry to one corpus. The ledger
+expands to the rest. <code class="docutils literal notranslate"><span class="pre">corpus</span></code> (optional) limits an entry to one corpus. An entry
+may carry <code class="docutils literal notranslate"><span class="pre">provenance</span></code> (<code class="docutils literal notranslate"><span class="pre">{"miss_query":</span> <span class="pre">...,</span> <span class="pre">"found_ids":</span> <span class="pre">[...]}</span></code>: the search that
+missed and what the vocabulary found), which lets <a class="reference internal" href="ir.synonyms_eval.html#ir.synonyms_eval.replay_ledger" title="ir.synonyms_eval.replay_ledger"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.synonyms_eval.replay_ledger()</span></code></a>
+re-test it; <code class="docutils literal notranslate"><span class="pre">verified</span></code> (the number of replays it won) and <code class="docutils literal notranslate"><span class="pre">status</span></code> (<code class="docutils literal notranslate"><span class="pre">"demoted"</span></code> entries are not
+loaded by default) are maintained by that replay. The ledger
 is the user’s private data: it lives in their config dir, never in a repo.</p>
 <p>Three uses, one source: <a class="reference internal" href="#ir.synonyms.term_regex" title="ir.synonyms.term_regex"><code class="xref py py-func docutils literal notranslate"><span class="pre">term_regex()</span></code></a> builds an alternation for grep,
 <a class="reference internal" href="#ir.synonyms.expand_query" title="ir.synonyms.expand_query"><code class="xref py py-func docutils literal notranslate"><span class="pre">expand_query()</span></code></a> produces query variants, and <a class="reference internal" href="#ir.synonyms.make_synonym_formulator" title="ir.synonyms.make_synonym_formulator"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_synonym_formulator()</span></code></a>
@@ -171,6 +176,12 @@ LLM; the original query always comes first).</p>
 <p class="rubric">Module Attributes</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.synonyms.ACTIVE" title="ir.synonyms.ACTIVE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ACTIVE</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DEMOTED</span></code> entries are kept (for audit) but not loaded.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.synonyms.DEMOTED" title="ir.synonyms.DEMOTED"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEMOTED</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DEMOTED</span></code> entries are kept (for audit) but not loaded.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.synonyms.DFLT_LEDGER_NAME" title="ir.synonyms.DFLT_LEDGER_NAME"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DFLT_LEDGER_NAME</span></code></a></p></td>
 <td><p>The ledger's file name inside <a class="reference internal" href="ir.config.html#ir.config.config_dir" title="ir.config.config_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.config.config_dir()</span></code></a>.</p></td>
 </tr>
@@ -197,7 +208,7 @@ LLM; the original query always comes first).</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.synonyms.ledger_path" title="ir.synonyms.ledger_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ledger_path</span></code></a>()</p></td>
 <td><p>Where the ledger lives: <code class="docutils literal notranslate"><span class="pre">$IR_SYNONYMS</span></code>, else <code class="docutils literal notranslate"><span class="pre">&lt;config_dir&gt;/synonyms.jsonl</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.synonyms.load_synonyms" title="ir.synonyms.load_synonyms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_synonyms</span></code></a>([path, corpus])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.synonyms.load_synonyms" title="ir.synonyms.load_synonyms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_synonyms</span></code></a>([path, corpus, include_demoted])</p></td>
 <td><p>The ledger's entries (those for all corpora, plus <code class="docutils literal notranslate"><span class="pre">corpus</span></code>'s own).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.synonyms.make_synonym_formulator" title="ir.synonyms.make_synonym_formulator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_synonym_formulator</span></code></a>([entries, path, ...])</p></td>
@@ -205,6 +216,9 @@ LLM; the original query always comes first).</p>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.synonyms.term_regex" title="ir.synonyms.term_regex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">term_regex</span></code></a>(terms)</p></td>
 <td><p>One alternation matching any of <code class="docutils literal notranslate"><span class="pre">terms</span></code>, tolerant of <code class="docutils literal notranslate"><span class="pre">-</span></code>/<code class="docutils literal notranslate"><span class="pre">_</span></code>/space.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.synonyms.update_entries" title="ir.synonyms.update_entries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_entries</span></code></a>(changes[, path])</p></td>
+<td><p>Rewrite the ledger with <code class="docutils literal notranslate"><span class="pre">(old,</span> <span class="pre">new)</span></code> entry changes; every other line stays verbatim.</p></td>
 </tr>
 </tbody>
 </table>
@@ -216,6 +230,26 @@ LLM; the original query always comes first).</p>
 </tr>
 </tbody>
 </table>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.synonyms.ACTIVE">
+<span class="sig-prename descclassname"><span class="pre">ir.synonyms.</span></span><span class="sig-name descname"><span class="pre">ACTIVE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'active'</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.ACTIVE" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.ACTIVE'">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">DEMOTED</span></code> entries are kept (for audit) but not loaded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Ledger entry statuses</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.synonyms.DEMOTED">
+<span class="sig-prename descclassname"><span class="pre">ir.synonyms.</span></span><span class="sig-name descname"><span class="pre">DEMOTED</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'demoted'</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.DEMOTED" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.DEMOTED'">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">DEMOTED</span></code> entries are kept (for audit) but not loaded.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Ledger entry statuses</p>
+</dd>
+</dl>
+</dd></dl>
 <dl class="py data">
 <dt class="sig sig-object py" id="ir.synonyms.DFLT_LEDGER_NAME">
 <span class="sig-prename descclassname"><span class="pre">ir.synonyms.</span></span><span class="sig-name descname"><span class="pre">DFLT_LEDGER_NAME</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'synonyms.jsonl'</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.DFLT_LEDGER_NAME" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.DFLT_LEDGER_NAME'">¶</a></dt>
@@ -234,16 +268,25 @@ regex, so <code class="docutils literal notranslate"><span class="pre">ac</span>
 </dd></dl>
 <dl class="py class">
 <dt class="sig sig-object py" id="ir.synonyms.SynonymEntry">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.synonyms.</span></span><span class="sig-name descname"><span class="pre">SynonymEntry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oneway</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">note</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">added</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/synonyms.html#SynonymEntry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.SynonymEntry" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.SynonymEntry'">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.synonyms.</span></span><span class="sig-name descname"><span class="pre">SynonymEntry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oneway</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">note</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">added</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verified</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'active'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/synonyms.html#SynonymEntry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.SynonymEntry" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.SynonymEntry'">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></p>
 <p>One ledger line: equivalent <code class="docutils literal notranslate"><span class="pre">terms</span></code> (or <code class="docutils literal notranslate"><span class="pre">oneway</span></code> from the first).</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ir.synonyms.SynonymEntry.source_line">
+<span class="sig-name descname"><span class="pre">source_line</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" rel="nofollow noopener" title="(in Python v3.15)"><span class="pre">str</span><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.SynonymEntry.source_line" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.SynonymEntry.source_line'">¶</a></dt>
+<dd><p>the ledger line this entry was read from (<code class="docutils literal notranslate"><span class="pre">""</span></code> if built in code); lets
+<a class="reference internal" href="#ir.synonyms.update_entries" title="ir.synonyms.update_entries"><code class="xref py py-func docutils literal notranslate"><span class="pre">update_entries()</span></code></a> patch exactly that line and leave the rest verbatim.</p>
+</dd></dl>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.synonyms.add_synonyms">
-<span class="sig-prename descclassname"><span class="pre">ir.synonyms.</span></span><span class="sig-name descname"><span class="pre">add_synonyms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">note</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oneway</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/synonyms.html#add_synonyms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.add_synonyms" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.add_synonyms'">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">ir.synonyms.</span></span><span class="sig-name descname"><span class="pre">add_synonyms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">note</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oneway</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/synonyms.html#add_synonyms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.add_synonyms" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.add_synonyms'">¶</a></dt>
 <dd><p>Append one entry to the ledger (creating it) and return it.</p>
+<p><code class="docutils literal notranslate"><span class="pre">provenance</span></code> records the miss that prompted the entry
+(<code class="docutils literal notranslate"><span class="pre">{"miss_query":</span> <span class="pre">...,</span> <span class="pre">"found_ids":</span> <span class="pre">[...]}</span></code>, optionally <code class="docutils literal notranslate"><span class="pre">"fix_query"</span></code>) so a
+later replay can verify the entry still helps.</p>
 <p>Add an entry only after a verified find that the corpus-specific word made
 possible; general-language synonyms are the searcher’s job, not the ledger’s.</p>
 <dl class="field-list simple">
@@ -285,8 +328,9 @@ possible; general-language synonyms are the searcher’s job, not the ledger’s
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.synonyms.load_synonyms">
-<span class="sig-prename descclassname"><span class="pre">ir.synonyms.</span></span><span class="sig-name descname"><span class="pre">load_synonyms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/synonyms.html#load_synonyms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.load_synonyms" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.load_synonyms'">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">ir.synonyms.</span></span><span class="sig-name descname"><span class="pre">load_synonyms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_demoted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/synonyms.html#load_synonyms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.load_synonyms" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.load_synonyms'">¶</a></dt>
 <dd><p>The ledger’s entries (those for all corpora, plus <code class="docutils literal notranslate"><span class="pre">corpus</span></code>’s own).</p>
+<p>Demoted entries are skipped unless <code class="docutils literal notranslate"><span class="pre">include_demoted</span></code>.</p>
 <p>A missing ledger is an empty one; a malformed line is skipped, so a hand edit
 gone wrong never breaks search.</p>
 <dl class="field-list simple">
@@ -321,14 +365,37 @@ word boundaries.</p>
 </dd>
 </dl>
 </dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.synonyms.update_entries">
+<span class="sig-prename descclassname"><span class="pre">ir.synonyms.</span></span><span class="sig-name descname"><span class="pre">update_entries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">changes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/synonyms.html#update_entries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.synonyms.update_entries" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.synonyms.update_entries'">¶</a></dt>
+<dd><p>Rewrite the ledger with <code class="docutils literal notranslate"><span class="pre">(old,</span> <span class="pre">new)</span></code> entry changes; every other line stays verbatim.</p>
+<p><code class="docutils literal notranslate"><span class="pre">old</span></code> must come from <a class="reference internal" href="#ir.synonyms.load_synonyms" title="ir.synonyms.load_synonyms"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_synonyms()</span></code></a> (it carries the line it was read
+from). Only <code class="docutils literal notranslate"><span class="pre">verified</span></code> and <code class="docutils literal notranslate"><span class="pre">status</span></code> are taken from <code class="docutils literal notranslate"><span class="pre">new</span></code>, and they are
+patched into the original JSON object, so comments, malformed lines and unknown
+keys a user hand-wrote survive. A line that changed since it was read (an edit
+or another writer) is left alone. The file is replaced atomically (unique temp
+file, then rename); an <code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">synonyms-add</span></code> append landing between the final read
+and the rename could still be lost, so keep replays out of concurrent writers.
+Returns the number of lines patched.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span></p>
+</dd>
+</dl>
+</dd></dl>
 </section>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
+<li><a :data-current="activeSection === '#ir.synonyms.ACTIVE'" class="reference internal" href="#ir.synonyms.ACTIVE"><code class="docutils literal notranslate"><span class="pre">ACTIVE</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.synonyms.DEMOTED'" class="reference internal" href="#ir.synonyms.DEMOTED"><code class="docutils literal notranslate"><span class="pre">DEMOTED</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.synonyms.DFLT_LEDGER_NAME'" class="reference internal" href="#ir.synonyms.DFLT_LEDGER_NAME"><code class="docutils literal notranslate"><span class="pre">DFLT_LEDGER_NAME</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.synonyms.DFLT_MAX_VARIANTS'" class="reference internal" href="#ir.synonyms.DFLT_MAX_VARIANTS"><code class="docutils literal notranslate"><span class="pre">DFLT_MAX_VARIANTS</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.synonyms.SHORT_TERM_CHARS'" class="reference internal" href="#ir.synonyms.SHORT_TERM_CHARS"><code class="docutils literal notranslate"><span class="pre">SHORT_TERM_CHARS</span></code></a></li>
-<li><a :data-current="activeSection === '#ir.synonyms.SynonymEntry'" class="reference internal" href="#ir.synonyms.SynonymEntry"><code class="docutils literal notranslate"><span class="pre">SynonymEntry</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.synonyms.SynonymEntry'" class="reference internal" href="#ir.synonyms.SynonymEntry"><code class="docutils literal notranslate"><span class="pre">SynonymEntry</span></code></a><ul>
+<li><a :data-current="activeSection === '#ir.synonyms.SynonymEntry.source_line'" class="reference internal" href="#ir.synonyms.SynonymEntry.source_line"><code class="docutils literal notranslate"><span class="pre">SynonymEntry.source_line</span></code></a></li>
+</ul>
+</li>
 <li><a :data-current="activeSection === '#ir.synonyms.add_synonyms'" class="reference internal" href="#ir.synonyms.add_synonyms"><code class="docutils literal notranslate"><span class="pre">add_synonyms()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.synonyms.aliases'" class="reference internal" href="#ir.synonyms.aliases"><code class="docutils literal notranslate"><span class="pre">aliases()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.synonyms.expand_query'" class="reference internal" href="#ir.synonyms.expand_query"><code class="docutils literal notranslate"><span class="pre">expand_query()</span></code></a></li>
@@ -336,6 +403,7 @@ word boundaries.</p>
 <li><a :data-current="activeSection === '#ir.synonyms.load_synonyms'" class="reference internal" href="#ir.synonyms.load_synonyms"><code class="docutils literal notranslate"><span class="pre">load_synonyms()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.synonyms.make_synonym_formulator'" class="reference internal" href="#ir.synonyms.make_synonym_formulator"><code class="docutils literal notranslate"><span class="pre">make_synonym_formulator()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.synonyms.term_regex'" class="reference internal" href="#ir.synonyms.term_regex"><code class="docutils literal notranslate"><span class="pre">term_regex()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.synonyms.update_entries'" class="reference internal" href="#ir.synonyms.update_entries"><code class="docutils literal notranslate"><span class="pre">update_entries()</span></code></a></li>
 </ul>
 </div>
 </aside>
@@ -349,7 +417,7 @@ word boundaries.</p>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=946d7960"></script>
+<script src="../_static/documentation_options.js?v=7c77daa2"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

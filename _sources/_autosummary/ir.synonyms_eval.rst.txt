@@ -1,0 +1,31 @@
+ir.synonyms\_eval
+=================
+
+.. automodule:: ir.synonyms_eval
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      HELPS
+      NO_EFFECT
+      HURTS
+      UNVERIFIABLE
+      DFLT_EPSILON
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      apply_verdicts
+      case_of
+      replay_entry
+      replay_ledger
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      EntryVerdict
+   

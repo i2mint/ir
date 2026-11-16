@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-16T07:43:18Z",
+  "built_at": "2026-11-16T07:54:39Z",
   "package": {
     "name": "ir",
-    "version": "0.1.67",
+    "version": "0.1.68",
     "display_name": "ir",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "eecd7b4150f7ad4d0d77748a58534cea383b3007",
-    "short_commit": "eecd7b4",
+    "commit": "7a7f7b7f18c9dce17c29c313f819da87eafe0624",
+    "short_commit": "7a7f7b7",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/ir",
-    "commit_url": "https://github.com/i2mint/ir/commit/eecd7b4150f7ad4d0d77748a58534cea383b3007",
+    "commit_url": "https://github.com/i2mint/ir/commit/7a7f7b7f18c9dce17c29c313f819da87eafe0624",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/ir",
-    "sha": "eecd7b4150f7ad4d0d77748a58534cea383b3007",
+    "sha": "7a7f7b7f18c9dce17c29c313f819da87eafe0624",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "43825559111",
-    "run_url": "https://github.com/i2mint/ir/actions/runs/43825559111",
+    "run_id": "43826954474",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/43826954474",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -55,21 +55,19 @@
     "docs_dir": "docsrc"
   },
   "site": {
-    "modules_documented": 25,
-    "objects_documented": 546
+    "modules_documented": 26,
+    "objects_documented": 561
   },
   "pypi": {
     "checked": true,
     "latest": "0.1.68",
-    "relation": "behind",
+    "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout eecd7b4150f7ad4d0d77748a58534cea383b3007\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout 7a7f7b7f18c9dce17c29c313f819da87eafe0624\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": false,
-    "notes": [
-      "The documented version (0.1.67) is behind the latest release on PyPI (0.1.68): `pip install ir` gives newer code than these docs describe."
-    ]
+    "aligned": true,
+    "notes": []
   }
 }

@@ -2057,28 +2057,29 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 
 ### Modules
 
-| [`base`](ir.base.html.md#module-ir.base)                 | Core data model for `ir`.                                                                                              |
-|--------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| [`cli`](ir.cli.html.md#module-ir.cli)                   | Command-line surface for `ir` (dispatched by cw).                                                                      |
-| [`config`](ir.config.html.md#module-ir.config)             | Filesystem locations and process-wide defaults for `ir`.                                                               |
-| [`coverage`](ir.coverage.html.md#module-ir.coverage)         | Corpus-coverage diagnostic — what's on disk vs. what's actually indexed.                                               |
-| [`embed`](ir.embed.html.md#module-ir.embed)               | Embedder resolution for `ir` — a decent local default, a light fallback.                                               |
-| [`eval`](ir.eval.html.md#module-ir.eval)                 | Capability-discovery evaluation — measuring how well a corpus is *found*.                                              |
-| [`eval_gen`](ir.eval_gen.html.md#module-ir.eval_gen)         | LLM-backed generation of evaluation cases for [`ir.eval`](ir.eval.html.md#module-ir.eval). |
-| [`formulate`](ir.formulate.html.md#module-ir.formulate)       | Query formulation — the Formulator seam (ir_09 §3).                                                                    |
-| [`graph`](ir.graph.html.md#module-ir.graph)               | The semantic link graph — typed edges between artifacts (report 12).                                                   |
-| [`index`](ir.index.html.md#module-ir.index)               | The indexing pipeline and incremental maintenance.                                                                     |
-| [`maintenance`](ir.maintenance.html.md#module-ir.maintenance)   | Idempotent background-work runner — `ir maintain` (issue #58).                                                         |
-| [`miss`](ir.miss.html.md#module-ir.miss)                 | Lexical miss signals: did a keyword search actually find what was asked for?                                           |
-| [`policy`](ir.policy.html.md#module-ir.policy)             | Per-corpus policy — how a corpus is segmented/stored and what background work it gets.                                 |
-| [`registry`](ir.registry.html.md#module-ir.registry)         | Named-corpus registry — persistent, reusable corpus definitions.                                                       |
-| [`requirements`](ir.requirements.html.md#module-ir.requirements) | Dependency check for `ir`: name what is missing and how to install it.                                                 |
-| [`rerank`](ir.rerank.html.md#module-ir.rerank)             | The precision stage: a cross-encoder rerank over the first-stage candidates.                                           |
-| [`retrieve`](ir.retrieve.html.md#module-ir.retrieve)         | Retrieval — hard metadata filtering + dense / lexical / hybrid ranking.                                                |
-| [`schedule`](ir.schedule.html.md#module-ir.schedule)         | Install and operate the OS job that runs `ir maintain` — `ir schedule` (issue #75).                                    |
-| [`sources`](ir.sources.html.md#module-ir.sources)           | Defining a corpus source — an abstract strategy plus parameters.                                                       |
-| [`store`](ir.store.html.md#module-ir.store)               | Persistence for `ir` — the repository layer over `dol` key-value views.                                                |
-| [`strategy`](ir.strategy.html.md#module-ir.strategy)         | Indexing strategies — the "what do we index?" seam.                                                                    |
-| [`synonyms`](ir.synonyms.html.md#module-ir.synonyms)         | The synonym ledger: corpus vocabulary an agent learns, for keyword and regex search.                                   |
-| [`synopsis`](ir.synopsis.html.md#module-ir.synopsis)         | Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).                                           |
-| [`tools`](ir.tools.html.md#module-ir.tools)               | Agent-callable tool surface over `ir` — plain functions returning JSON-ready dicts, deliberately MCP/HTTP-agnostic.    |
+| [`base`](ir.base.html.md#module-ir.base)                   | Core data model for `ir`.                                                                                              |
+|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| [`cli`](ir.cli.html.md#module-ir.cli)                     | Command-line surface for `ir` (dispatched by cw).                                                                      |
+| [`config`](ir.config.html.md#module-ir.config)               | Filesystem locations and process-wide defaults for `ir`.                                                               |
+| [`coverage`](ir.coverage.html.md#module-ir.coverage)           | Corpus-coverage diagnostic — what's on disk vs. what's actually indexed.                                               |
+| [`embed`](ir.embed.html.md#module-ir.embed)                 | Embedder resolution for `ir` — a decent local default, a light fallback.                                               |
+| [`eval`](ir.eval.html.md#module-ir.eval)                   | Capability-discovery evaluation — measuring how well a corpus is *found*.                                              |
+| [`eval_gen`](ir.eval_gen.html.md#module-ir.eval_gen)           | LLM-backed generation of evaluation cases for [`ir.eval`](ir.eval.html.md#module-ir.eval). |
+| [`formulate`](ir.formulate.html.md#module-ir.formulate)         | Query formulation — the Formulator seam (ir_09 §3).                                                                    |
+| [`graph`](ir.graph.html.md#module-ir.graph)                 | The semantic link graph — typed edges between artifacts (report 12).                                                   |
+| [`index`](ir.index.html.md#module-ir.index)                 | The indexing pipeline and incremental maintenance.                                                                     |
+| [`maintenance`](ir.maintenance.html.md#module-ir.maintenance)     | Idempotent background-work runner — `ir maintain` (issue #58).                                                         |
+| [`miss`](ir.miss.html.md#module-ir.miss)                   | Lexical miss signals: did a keyword search actually find what was asked for?                                           |
+| [`policy`](ir.policy.html.md#module-ir.policy)               | Per-corpus policy — how a corpus is segmented/stored and what background work it gets.                                 |
+| [`registry`](ir.registry.html.md#module-ir.registry)           | Named-corpus registry — persistent, reusable corpus definitions.                                                       |
+| [`requirements`](ir.requirements.html.md#module-ir.requirements)   | Dependency check for `ir`: name what is missing and how to install it.                                                 |
+| [`rerank`](ir.rerank.html.md#module-ir.rerank)               | The precision stage: a cross-encoder rerank over the first-stage candidates.                                           |
+| [`retrieve`](ir.retrieve.html.md#module-ir.retrieve)           | Retrieval — hard metadata filtering + dense / lexical / hybrid ranking.                                                |
+| [`schedule`](ir.schedule.html.md#module-ir.schedule)           | Install and operate the OS job that runs `ir maintain` — `ir schedule` (issue #75).                                    |
+| [`sources`](ir.sources.html.md#module-ir.sources)             | Defining a corpus source — an abstract strategy plus parameters.                                                       |
+| [`store`](ir.store.html.md#module-ir.store)                 | Persistence for `ir` — the repository layer over `dol` key-value views.                                                |
+| [`strategy`](ir.strategy.html.md#module-ir.strategy)           | Indexing strategies — the "what do we index?" seam.                                                                    |
+| [`synonyms`](ir.synonyms.html.md#module-ir.synonyms)           | The synonym ledger: corpus vocabulary an agent learns, for keyword and regex search.                                   |
+| [`synonyms_eval`](ir.synonyms_eval.html.md#module-ir.synonyms_eval) | Replay the synonym ledger through `ir.eval`: keep the entries that earn their place.                                   |
+| [`synopsis`](ir.synopsis.html.md#module-ir.synopsis)           | Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).                                           |
+| [`tools`](ir.tools.html.md#module-ir.tools)                 | Agent-callable tool surface over `ir` — plain functions returning JSON-ready dicts, deliberately MCP/HTTP-agnostic.    |

@@ -136,6 +136,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../_autosummary/ir.store.html">ir.store</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../_autosummary/ir.strategy.html">ir.strategy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../_autosummary/ir.synonyms.html">ir.synonyms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../_autosummary/ir.synonyms_eval.html">ir.synonyms_eval</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../_autosummary/ir.synopsis.html">ir.synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../_autosummary/ir.tools.html">ir.tools</a></li>
 </ul>
@@ -937,41 +938,97 @@
 </span><span id="line-699">
 <div class="viewcode-block" id="synonyms_add">
 <a class="viewcode-back" href="../../_autosummary/ir.cli.html#ir.cli.synonyms_add">[docs]</a>
-</span><span id="line-700"><span class="k">def</span><span class="w"> </span><span class="nf">synonyms_add</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">oneway</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">corpus</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-</span><span id="line-701"><span class="w">    </span><span class="sd">"""Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.</span>
-</span><span id="line-702">
-</span><span id="line-703"><span class="sd">    ``ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname"``. Add only</span>
-</span><span id="line-704"><span class="sd">    after a verified find that the word made possible; ``--oneway`` makes the first</span>
-</span><span id="line-705"><span class="sd">    term expand to the others but not back; ``--corpus`` scopes the entry.</span>
-</span><span id="line-706"><span class="sd">    """</span>
-</span><span id="line-707">    <span class="kn">from</span><span class="w"> </span><span class="nn">.synonyms</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_synonyms</span><span class="p">,</span> <span class="n">ledger_path</span>
-</span><span id="line-708">
-</span><span id="line-709">    <span class="n">e</span> <span class="o">=</span> <span class="n">add_synonyms</span><span class="p">(</span>
-</span><span id="line-710">        <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">terms</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)],</span> <span class="n">note</span><span class="o">=</span><span class="n">note</span><span class="p">,</span> <span class="n">oneway</span><span class="o">=</span><span class="n">oneway</span><span class="p">,</span> <span class="n">corpus</span><span class="o">=</span><span class="n">corpus</span>
-</span><span id="line-711">    <span class="p">)</span>
-</span><span id="line-712">    <span class="k">return</span> <span class="sa">f</span><span class="s2">"added to </span><span class="si">{</span><span class="n">ledger_path</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">to_json</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span></div>
-
+</span><span id="line-700"><span class="k">def</span><span class="w"> </span><span class="nf">synonyms_add</span><span class="p">(</span>
+</span><span id="line-701">    <span class="n">terms</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">note</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">oneway</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">corpus</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">miss_query</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">found</span><span class="o">=</span><span class="kc">None</span>
+</span><span id="line-702"><span class="p">):</span>
+</span><span id="line-703"><span class="w">    </span><span class="sd">"""Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.</span>
+</span><span id="line-704">
+</span><span id="line-705"><span class="sd">    ``ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname"``. Add only</span>
+</span><span id="line-706"><span class="sd">    after a verified find that the word made possible; ``--oneway`` makes the first</span>
+</span><span id="line-707"><span class="sd">    term expand to the others but not back; ``--corpus`` scopes the entry.</span>
+</span><span id="line-708"><span class="sd">    ``--miss-query "the query that missed" --found "id1,id2"`` records the miss and</span>
+</span><span id="line-709"><span class="sd">    what the word found, so the entry can later be replayed through ``ir.eval``</span>
+</span><span id="line-710"><span class="sd">    (``ir.synonyms_eval.replay_ledger``) and demoted if it does not help.</span>
+</span><span id="line-711"><span class="sd">    """</span>
+</span><span id="line-712">    <span class="kn">from</span><span class="w"> </span><span class="nn">.synonyms</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_synonyms</span><span class="p">,</span> <span class="n">ledger_path</span>
 </span><span id="line-713">
-</span><span id="line-714">
-</span><span id="line-715"><span class="n">COMMANDS</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="line-716">    <span class="n">ls</span><span class="p">,</span>
-</span><span id="line-717">    <span class="n">register</span><span class="p">,</span>
-</span><span id="line-718">    <span class="n">build</span><span class="p">,</span>
-</span><span id="line-719">    <span class="n">search</span><span class="p">,</span>
-</span><span id="line-720">    <span class="n">discover</span><span class="p">,</span>
-</span><span id="line-721">    <span class="n">coverage</span><span class="p">,</span>
-</span><span id="line-722">    <span class="n">info</span><span class="p">,</span>
-</span><span id="line-723">    <span class="n">maintain</span><span class="p">,</span>
-</span><span id="line-724">    <span class="n">schedule</span><span class="p">,</span>
-</span><span id="line-725">    <span class="n">rm</span><span class="p">,</span>
-</span><span id="line-726">    <span class="nb">eval</span><span class="p">,</span>
-</span><span id="line-727">    <span class="n">eval_gen</span><span class="p">,</span>
-</span><span id="line-728">    <span class="n">eval_select</span><span class="p">,</span>
-</span><span id="line-729">    <span class="n">sweep_select</span><span class="p">,</span>
-</span><span id="line-730">    <span class="n">calibrate_min_score</span><span class="p">,</span>
-</span><span id="line-731">    <span class="n">synonyms</span><span class="p">,</span>
-</span><span id="line-732">    <span class="n">synonyms_add</span><span class="p">,</span>
-</span><span id="line-733"><span class="p">]</span>
+</span><span id="line-714">    <span class="n">provenance</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="line-715">    <span class="k">if</span> <span class="n">miss_query</span> <span class="ow">or</span> <span class="n">found</span><span class="p">:</span>
+</span><span id="line-716">        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">miss_query</span> <span class="ow">and</span> <span class="n">found</span><span class="p">):</span>
+</span><span id="line-717">            <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">"--miss-query and --found go together"</span><span class="p">)</span>
+</span><span id="line-718">        <span class="n">provenance</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="line-719">            <span class="s2">"miss_query"</span><span class="p">:</span> <span class="n">miss_query</span><span class="p">,</span>
+</span><span id="line-720">            <span class="s2">"found_ids"</span><span class="p">:</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">found</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">strip</span><span class="p">()],</span>
+</span><span id="line-721">            <span class="o">**</span><span class="p">({</span><span class="s2">"corpus"</span><span class="p">:</span> <span class="n">corpus</span><span class="p">}</span> <span class="k">if</span> <span class="n">corpus</span> <span class="k">else</span> <span class="p">{}),</span>
+</span><span id="line-722">        <span class="p">}</span>
+</span><span id="line-723">    <span class="n">e</span> <span class="o">=</span> <span class="n">add_synonyms</span><span class="p">(</span>
+</span><span id="line-724">        <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">terms</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)],</span>
+</span><span id="line-725">        <span class="n">note</span><span class="o">=</span><span class="n">note</span><span class="p">,</span>
+</span><span id="line-726">        <span class="n">oneway</span><span class="o">=</span><span class="n">oneway</span><span class="p">,</span>
+</span><span id="line-727">        <span class="n">corpus</span><span class="o">=</span><span class="n">corpus</span><span class="p">,</span>
+</span><span id="line-728">        <span class="n">provenance</span><span class="o">=</span><span class="n">provenance</span><span class="p">,</span>
+</span><span id="line-729">    <span class="p">)</span>
+</span><span id="line-730">    <span class="k">return</span> <span class="sa">f</span><span class="s2">"added to </span><span class="si">{</span><span class="n">ledger_path</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">to_json</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span></div>
+
+</span><span id="line-731">
+</span><span id="line-732">
+<div class="viewcode-block" id="synonyms_replay">
+<a class="viewcode-back" href="../../_autosummary/ir.cli.html#ir.cli.synonyms_replay">[docs]</a>
+</span><span id="line-733"><span class="nd">@_report_embedder_errors</span>
+</span><span id="line-734"><span class="k">def</span><span class="w"> </span><span class="nf">synonyms_replay</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">apply</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"lexical"</span><span class="p">):</span>
+</span><span id="line-735"><span class="w">    </span><span class="sd">"""Replay the synonym ledger's entries against corpus NAME and say which still help.</span>
+</span><span id="line-736">
+</span><span id="line-737"><span class="sd">    Each entry recorded with ``--miss-query`` / ``--found`` is searched with and without</span>
+</span><span id="line-738"><span class="sd">    its expansion through ``ir.eval``: ``helps``, ``no_effect``, ``hurts`` or</span>
+</span><span id="line-739"><span class="sd">    ``unverifiable`` (no provenance, its ids are not in this corpus, or vd missing).</span>
+</span><span id="line-740"><span class="sd">    Dry run by default; ``--apply`` bumps ``verified`` on a win and demotes a ``hurts``</span>
+</span><span id="line-741"><span class="sd">    (or a ``no_effect`` that never won). Demoted entries stay in the file but stop</span>
+</span><span id="line-742"><span class="sd">    expanding searches.</span>
+</span><span id="line-743"><span class="sd">    """</span>
+</span><span id="line-744">    <span class="kn">from</span><span class="w"> </span><span class="nn">.synonyms</span><span class="w"> </span><span class="kn">import</span> <span class="n">update_entries</span>
+</span><span id="line-745">    <span class="kn">from</span><span class="w"> </span><span class="nn">.synonyms_eval</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_verdicts</span><span class="p">,</span> <span class="n">replay_ledger</span>
+</span><span id="line-746">
+</span><span id="line-747">    <span class="n">corpus</span> <span class="o">=</span> <span class="n">_open_ready</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+</span><span id="line-748">    <span class="n">verdicts</span> <span class="o">=</span> <span class="n">replay_ledger</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+</span><span id="line-749">    <span class="k">if</span> <span class="ow">not</span> <span class="n">verdicts</span><span class="p">:</span>
+</span><span id="line-750">        <span class="k">return</span> <span class="sa">f</span><span class="s2">"(no ledger entries for </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">)"</span>
+</span><span id="line-751">    <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="line-752">    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">verdicts</span><span class="p">:</span>
+</span><span id="line-753">        <span class="n">scores</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="line-754">            <span class="sa">f</span><span class="s2">"  ndcg </span><span class="si">{</span><span class="n">v</span><span class="o">.</span><span class="n">without</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">v</span><span class="o">.</span><span class="n">with_entry</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="line-755">            <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">without</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="line-756">            <span class="k">else</span> <span class="s2">""</span>
+</span><span id="line-757">        <span class="p">)</span>
+</span><span id="line-758">        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">v</span><span class="o">.</span><span class="n">verdict</span><span class="si">:</span><span class="s2">&lt;12</span><span class="si">}{</span><span class="s1">' = '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">entry</span><span class="o">.</span><span class="n">terms</span><span class="p">)</span><span class="si">}{</span><span class="n">scores</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-759">    <span class="n">changes</span> <span class="o">=</span> <span class="n">apply_verdicts</span><span class="p">(</span><span class="n">verdicts</span><span class="p">)</span>
+</span><span id="line-760">    <span class="k">if</span> <span class="n">apply</span><span class="p">:</span>
+</span><span id="line-761">        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">update_entries</span><span class="p">(</span><span class="n">changes</span><span class="p">)</span><span class="si">}</span><span class="s2"> ledger line(s) updated"</span><span class="p">)</span>
+</span><span id="line-762">    <span class="k">else</span><span class="p">:</span>
+</span><span id="line-763">        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">changes</span><span class="p">)</span><span class="si">}</span><span class="s2"> ledger line(s) would change (use --apply)"</span><span class="p">)</span>
+</span><span id="line-764">    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+
+</span><span id="line-765">
+</span><span id="line-766">
+</span><span id="line-767"><span class="n">COMMANDS</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="line-768">    <span class="n">ls</span><span class="p">,</span>
+</span><span id="line-769">    <span class="n">register</span><span class="p">,</span>
+</span><span id="line-770">    <span class="n">build</span><span class="p">,</span>
+</span><span id="line-771">    <span class="n">search</span><span class="p">,</span>
+</span><span id="line-772">    <span class="n">discover</span><span class="p">,</span>
+</span><span id="line-773">    <span class="n">coverage</span><span class="p">,</span>
+</span><span id="line-774">    <span class="n">info</span><span class="p">,</span>
+</span><span id="line-775">    <span class="n">maintain</span><span class="p">,</span>
+</span><span id="line-776">    <span class="n">schedule</span><span class="p">,</span>
+</span><span id="line-777">    <span class="n">rm</span><span class="p">,</span>
+</span><span id="line-778">    <span class="nb">eval</span><span class="p">,</span>
+</span><span id="line-779">    <span class="n">eval_gen</span><span class="p">,</span>
+</span><span id="line-780">    <span class="n">eval_select</span><span class="p">,</span>
+</span><span id="line-781">    <span class="n">sweep_select</span><span class="p">,</span>
+</span><span id="line-782">    <span class="n">calibrate_min_score</span><span class="p">,</span>
+</span><span id="line-783">    <span class="n">synonyms</span><span class="p">,</span>
+</span><span id="line-784">    <span class="n">synonyms_add</span><span class="p">,</span>
+</span><span id="line-785">    <span class="n">synonyms_replay</span><span class="p">,</span>
+</span><span id="line-786"><span class="p">]</span>
 </span></code></pre></div>
     </div></div>
           </main>
@@ -985,7 +1042,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=946d7960"></script>
+    <script src="../../_static/documentation_options.js?v=7c77daa2"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>

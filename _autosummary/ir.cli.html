@@ -106,6 +106,7 @@
 <li class="toctree-l3"><a class="reference internal" href="ir.store.html">ir.store</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.strategy.html">ir.strategy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.synonyms.html">ir.synonyms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ir.synonyms_eval.html">ir.synonyms_eval</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.synopsis.html">ir.synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ir.tools.html">ir.tools</a></li>
 </ul>
@@ -215,8 +216,11 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.cli.synonyms" title="ir.cli.synonyms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">synonyms</span></code></a>([term, corpus])</p></td>
 <td><p>Show what the synonym ledger knows: a term's aliases and grep regex, or all entries.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.cli.synonyms_add" title="ir.cli.synonyms_add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">synonyms_add</span></code></a>(terms, *[, note, oneway, corpus])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.cli.synonyms_add" title="ir.cli.synonyms_add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">synonyms_add</span></code></a>(terms, *[, note, oneway, ...])</p></td>
 <td><p>Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.cli.synonyms_replay" title="ir.cli.synonyms_replay"><code class="xref py py-obj docutils literal notranslate"><span class="pre">synonyms_replay</span></code></a>(name, *[, apply, mode])</p></td>
+<td><p>Replay the synonym ledger's entries against corpus NAME and say which still help.</p></td>
 </tr>
 </tbody>
 </table>
@@ -386,11 +390,25 @@ same entries. Add with <code class="docutils literal notranslate"><span class="p
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.cli.synonyms_add">
-<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">synonyms_add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">note</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oneway</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/cli.html#synonyms_add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.cli.synonyms_add" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.cli.synonyms_add'">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">synonyms_add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">terms</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">note</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oneway</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">corpus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">miss_query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">found</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/cli.html#synonyms_add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.cli.synonyms_add" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.cli.synonyms_add'">¶</a></dt>
 <dd><p>Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.</p>
 <p><code class="docutils literal notranslate"><span class="pre">ir</span> <span class="pre">synonyms-add</span> <span class="pre">"acmecorp,</span> <span class="pre">acme</span> <span class="pre">corp,</span> <span class="pre">ac"</span> <span class="pre">--note</span> <span class="pre">"client</span> <span class="pre">nickname"</span></code>. Add only
 after a verified find that the word made possible; <code class="docutils literal notranslate"><span class="pre">--oneway</span></code> makes the first
-term expand to the others but not back; <code class="docutils literal notranslate"><span class="pre">--corpus</span></code> scopes the entry.</p>
+term expand to the others but not back; <code class="docutils literal notranslate"><span class="pre">--corpus</span></code> scopes the entry.
+<code class="docutils literal notranslate"><span class="pre">--miss-query</span> <span class="pre">"the</span> <span class="pre">query</span> <span class="pre">that</span> <span class="pre">missed"</span> <span class="pre">--found</span> <span class="pre">"id1,id2"</span></code> records the miss and
+what the word found, so the entry can later be replayed through <code class="docutils literal notranslate"><span class="pre">ir.eval</span></code>
+(<code class="docutils literal notranslate"><span class="pre">ir.synonyms_eval.replay_ledger</span></code>) and demoted if it does not help.</p>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.cli.synonyms_replay">
+<span class="sig-prename descclassname"><span class="pre">ir.cli.</span></span><span class="sig-name descname"><span class="pre">synonyms_replay</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'lexical'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/cli.html#synonyms_replay"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.cli.synonyms_replay" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.cli.synonyms_replay'">¶</a></dt>
+<dd><p>Replay the synonym ledger’s entries against corpus NAME and say which still help.</p>
+<p>Each entry recorded with <code class="docutils literal notranslate"><span class="pre">--miss-query</span></code> / <code class="docutils literal notranslate"><span class="pre">--found</span></code> is searched with and without
+its expansion through <code class="docutils literal notranslate"><span class="pre">ir.eval</span></code>: <code class="docutils literal notranslate"><span class="pre">helps</span></code>, <code class="docutils literal notranslate"><span class="pre">no_effect</span></code>, <code class="docutils literal notranslate"><span class="pre">hurts</span></code> or
+<code class="docutils literal notranslate"><span class="pre">unverifiable</span></code> (no provenance, its ids are not in this corpus, or vd missing).
+Dry run by default; <code class="docutils literal notranslate"><span class="pre">--apply</span></code> bumps <code class="docutils literal notranslate"><span class="pre">verified</span></code> on a win and demotes a <code class="docutils literal notranslate"><span class="pre">hurts</span></code>
+(or a <code class="docutils literal notranslate"><span class="pre">no_effect</span></code> that never won). Demoted entries stay in the file but stop
+expanding searches.</p>
 </dd></dl>
 </section>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
@@ -413,6 +431,7 @@ term expand to the others but not back; <code class="docutils literal notranslat
 <li><a :data-current="activeSection === '#ir.cli.sweep_select'" class="reference internal" href="#ir.cli.sweep_select"><code class="docutils literal notranslate"><span class="pre">sweep_select()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.cli.synonyms'" class="reference internal" href="#ir.cli.synonyms"><code class="docutils literal notranslate"><span class="pre">synonyms()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.cli.synonyms_add'" class="reference internal" href="#ir.cli.synonyms_add"><code class="docutils literal notranslate"><span class="pre">synonyms_add()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.cli.synonyms_replay'" class="reference internal" href="#ir.cli.synonyms_replay"><code class="docutils literal notranslate"><span class="pre">synonyms_replay()</span></code></a></li>
 </ul>
 </div>
 </aside>
@@ -426,7 +445,7 @@ term expand to the others but not back; <code class="docutils literal notranslat
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=946d7960"></script>
+<script src="../_static/documentation_options.js?v=7c77daa2"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
