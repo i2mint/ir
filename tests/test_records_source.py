@@ -184,3 +184,35 @@ def test_records_signal_sees_every_field_for_a_custom_text_key():
     assert sig("x", {"body": "t", "title": "a"}) != sig(
         "x", {"body": "t", "title": "b"}
     )
+
+
+def test_records_signal_is_stable_for_set_valued_metadata():
+    """#144: set order varies per process; the signal must not."""
+    import subprocess
+    import sys
+
+    from ir.sources import records_change_signal
+
+    code = (
+        "from ir.sources import records_change_signal as r;"
+        "s=r(metadata_keys=['tags'],text_key='text');"
+        "print(s('x',{'text':'t','tags':{'alpha','beta','gamma','delta','eps'}}))"
+    )
+    outs = {
+        subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            env={**__import__("os").environ, "PYTHONHASHSEED": str(seed)},
+            check=True,
+        ).stdout
+        for seed in (1, 2, 3)
+    }
+    assert len(outs) == 1
+    sig = records_change_signal(metadata_keys=["tags"])
+    assert sig("x", {"text": "t", "tags": {"a", "b"}}) == sig(
+        "x", {"text": "t", "tags": {"b", "a"}}
+    )
+    assert sig("x", {"text": "t", "tags": {"a"}}) != sig(
+        "x", {"text": "t", "tags": {"b"}}
+    )

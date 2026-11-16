@@ -76,6 +76,21 @@ def content_hash_signal(artifact_id: str, raw: Any) -> str:
     return ef.content_hash(raw)
 
 
+def _canonical(value: Any) -> Any:
+    """``value`` with sets as sorted lists (recursively), so its hash is stable.
+
+    A ``set`` stringifies in an order that varies with hash randomisation, so a record
+    with set-valued metadata would look changed on every fresh-process build.
+    """
+    if isinstance(value, (set, frozenset)):
+        return sorted((_canonical(v) for v in value), key=repr)
+    if isinstance(value, Mapping):
+        return {k: _canonical(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_canonical(v) for v in value]
+    return value
+
+
 def records_change_signal(
     *,
     text_key: str = "text",
@@ -110,6 +125,7 @@ def records_change_signal(
     def signal(artifact_id: str, raw: Any) -> str:
         if not isinstance(raw, Mapping):
             return ef.content_hash(raw)
+        raw = _canonical(raw)
         if text_key == "text":
             return ef.content_hash(raw, content_keys=keys)
         return ef.content_hash(json.dumps(raw, sort_keys=True, default=str))
