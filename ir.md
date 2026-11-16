@@ -1,4 +1,4 @@
-> built 2026-11-16 09:37 UTC from 74f9ff1 (master) · ir 0.1.72. Details: build_info.json
+> built 2026-11-16 09:42 UTC from 5eac725 (master) · ir 0.1.73. Details: build_info.json
 
 # index.html.md
 
@@ -647,7 +647,7 @@ file that is on disk but missing from the index (rebuild with `ir build` to
 fix). Catches the ingestion gaps that back-translation evals structurally
 cannot — a doc that was never indexed can never be an eval gold id.
 
-### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface', expand=False, filter=None)
+### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface', expand=False, filter=None, variant_weight=1.0)
 
 Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -742,7 +742,7 @@ remove: stop the schedule and delete its definition.
 dry_run: print the definition that would be written, and write nothing.
 backend: launchd | cron (default: whichever this machine provides).
 
-### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface', expand=False, filter=None)
+### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface', expand=False, filter=None, variant_weight=1.0)
 
 Search a built corpus and print the top-k hits.
 
@@ -754,7 +754,9 @@ the search warns and keeps the first-stage ranking); `--rerank-text`
 picks what it reads: surface (default) | artifact. Reranked scores are on the
 reranker’s own scale. `--expand` also searches the query’s variants from the
 synonym ledger (`ir synonyms`) and fuses them (best score per artifact across
-the variants; the original query is always one of them). `--filter` is a
+the variants; the original query is always one of them; `--variant-weight 0.5`
+demotes the variants against the query itself, to keep the original on top; 0
+keeps variant-only hits at the tail; a `--rerank` stage replaces the weighted scores). `--filter` is a
 JSON metadata filter in the Mongo-style form of `ir.search(filter=...)`,
 e.g. `--filter '{"project": "dol"}'` or `'{"source": {"$in": ["a", "b"]}}'`;
 operators: $eq $ne $in $nin $gt $gte $lt $lte $exists, plus $and/$or/$not.
@@ -8396,7 +8398,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-16 09:37 UTC** from commit <a href="https://github.com/i2mint/ir/commit/74f9ff1d52886bf43071dfb47209d2d3db6b6a00"><code>74f9ff1</code></a> on branch <code>master</code>, for **ir 0.1.72** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-16 09:42 UTC** from commit <a href="https://github.com/i2mint/ir/commit/5eac7259a4d165776a26e763cf49e78849b4292d"><code>5eac725</code></a> on branch <code>master</code>, for **ir 0.1.73** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -8405,7 +8407,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/74f9ff1d52886bf43071dfb47209d2d3db6b6a00"><code>74f9ff1d52886bf43071dfb47209d2d3db6b6a00</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/5eac7259a4d165776a26e763cf49e78849b4292d"><code>5eac7259a4d165776a26e763cf49e78849b4292d</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8416,9 +8418,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43841134736">43841134736</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43841909915">43841909915</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>74f9ff1d52886bf43071dfb47209d2d3db6b6a00</code> (in the history of the built commit) |
+| Event commit | <code>5eac7259a4d165776a26e763cf49e78849b4292d</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8443,13 +8445,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.72/">0.1.72</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.73/">0.1.73</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 74f9ff1d52886bf43071dfb47209d2d3db6b6a00
+git checkout 5eac7259a4d165776a26e763cf49e78849b4292d
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

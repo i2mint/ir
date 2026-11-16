@@ -81,7 +81,7 @@ file that is on disk but missing from the index (rebuild with `ir build` to
 fix). Catches the ingestion gaps that back-translation evals structurally
 cannot — a doc that was never indexed can never be an eval gold id.
 
-### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface', expand=False, filter=None)
+### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface', expand=False, filter=None, variant_weight=1.0)
 
 Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -176,7 +176,7 @@ remove: stop the schedule and delete its definition.
 dry_run: print the definition that would be written, and write nothing.
 backend: launchd | cron (default: whichever this machine provides).
 
-### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface', expand=False, filter=None)
+### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface', expand=False, filter=None, variant_weight=1.0)
 
 Search a built corpus and print the top-k hits.
 
@@ -188,7 +188,9 @@ the search warns and keeps the first-stage ranking); `--rerank-text`
 picks what it reads: surface (default) | artifact. Reranked scores are on the
 reranker’s own scale. `--expand` also searches the query’s variants from the
 synonym ledger (`ir synonyms`) and fuses them (best score per artifact across
-the variants; the original query is always one of them). `--filter` is a
+the variants; the original query is always one of them; `--variant-weight 0.5`
+demotes the variants against the query itself, to keep the original on top; 0
+keeps variant-only hits at the tail; a `--rerank` stage replaces the weighted scores). `--filter` is a
 JSON metadata filter in the Mongo-style form of `ir.search(filter=...)`,
 e.g. `--filter '{"project": "dol"}'` or `'{"source": {"$in": ["a", "b"]}}'`;
 operators: $eq $ne $in $nin $gt $gte $lt $lte $exists, plus $and/$or/$not.
