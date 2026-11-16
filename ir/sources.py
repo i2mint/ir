@@ -421,7 +421,8 @@ class CorpusSource:
         """Markdown reports under projects' ``docs/`` and ``misc/docs/`` trees.
 
         Walks each ``*/*/docs`` and ``*/*/misc/docs`` folder, and those of
-        pocket repos (``i/_zodals/<repo>/docs``, see :func:`iter_pocket_repos`), **recursively**
+        pocket repos (``i/_zodals/<repo>/docs``, see :func:`iter_pocket_repos`) and
+        root-level private companions (``_name/docs``, see :func:`iter_companion_repos`), **recursively**
         (``recursive=True``, default) so reports nested one or more levels deep —
         ``docs/research/…``, ``docs/decisions/…``, ``docs/adr/…`` — are indexed,
         not just files sitting directly in the folder. Pass ``recursive=False``
@@ -758,22 +759,47 @@ def iter_pocket_repos(root: Path):
                 yield repo
 
 
+#: Folder-name prefix of a private companion repository at the projects root.
+COMPANION_PREFIX = "_"
+
+
+def iter_companion_repos(root: Path):
+    """Yield private companion repos ``<root>/_name``: git repos named with a leading ``_``.
+
+    A ``_name`` repository beside ``name`` holds that project's private design
+    documents. Only a folder whose ``.git`` is a **directory** counts, so working
+    folders like ``_agent_work`` or ``_tmp`` (no repo) and worktrees (a ``.git`` file,
+    docs duplicated elsewhere) stay out, as for :func:`iter_pocket_repos`.
+    """
+    for repo in sorted(root.glob(f"{COMPANION_PREFIX}*")):
+        # ``__name`` is tooling data, and a symlink would index its target twice
+        if repo.name.startswith(COMPANION_PREFIX * 2) or repo.is_symlink():
+            continue
+        if (repo / ".git").is_dir():
+            yield repo
+
+
 def iter_report_doc_folders(root: Path):
     """Yield each existing report doc folder under *root*.
 
     ``*/*/docs`` and ``*/*/misc/docs`` (a repo at ``<letter>/<repo>``), plus the
-    same two folders of every pocket repo (:func:`iter_pocket_repos`). The single
+    same two folders of every pocket repo (:func:`iter_pocket_repos`) and of every
+    root-level private companion (:func:`iter_companion_repos`). The single
     enumeration both ingestion and :func:`ir.coverage.reports_coverage` use.
     """
-    for pattern in REPORT_DOC_GLOBS:
-        for folder in root.glob(pattern):
-            if folder.is_dir():
-                yield folder
-    for repo in iter_pocket_repos(root):
-        for sub in REPO_DOC_SUBDIRS:
-            folder = repo / sub
-            if folder.is_dir():
-                yield folder
+    seen: set[Path] = set()  # a companion's misc/docs is also matched by */*/docs
+    candidates = (
+        folder for pattern in REPORT_DOC_GLOBS for folder in root.glob(pattern)
+    )
+    repos = (*iter_pocket_repos(root), *iter_companion_repos(root))
+    candidates = (
+        *candidates,
+        *(repo / sub for repo in repos for sub in REPO_DOC_SUBDIRS),
+    )
+    for folder in candidates:
+        if folder.is_dir() and folder not in seen:
+            seen.add(folder)
+            yield folder
 
 
 def _iter_md_reports(
@@ -819,7 +845,8 @@ def _project_of(rel_path: str, root: Path | None = None) -> str:
     """``i/dol/docs/x.md`` -> ``dol`` (the package folder name).
 
     With *root*, a pocket repo resolves to the repo, not the pocket:
-    ``i/_zodals/zodal-groups/docs/x.md`` -> ``zodal-groups``.
+    ``i/_zodals/zodal-groups/docs/x.md`` -> ``zodal-groups``, and a root-level private
+    companion to its folder: ``_name/docs/x.md`` -> ``_name``.
     """
     parts = Path(rel_path).parts
     if (
@@ -829,6 +856,14 @@ def _project_of(rel_path: str, root: Path | None = None) -> str:
         and (root / parts[0] / parts[1] / parts[2] / ".git").is_dir()
     ):
         return parts[2]
+    if (
+        root is not None
+        and parts
+        and parts[0].startswith(COMPANION_PREFIX)
+        and not parts[0].startswith(COMPANION_PREFIX * 2)
+        and (root / parts[0] / ".git").is_dir()
+    ):
+        return parts[0]  # a root-level private companion: ``_name/docs/x.md``
     return parts[1] if len(parts) >= 2 else (parts[0] if parts else "")
 
 
