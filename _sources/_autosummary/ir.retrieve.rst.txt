@@ -13,6 +13,7 @@ ir.retrieve
       DFLT_RRF_K
       DFLT_BLEND_ALPHA
       DFLT_BM25_SAT_K
+      BM25_CACHE_MAXSIZE
       ScoreBoost
       Identity
       Retriever

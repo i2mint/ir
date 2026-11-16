@@ -1,4 +1,4 @@
-> built 2026-11-11 11:00 UTC from b82e9b2 (master) · ir 0.1.61. Details: build_info.json
+> built 2026-11-16 07:08 UTC from 6cca033 (master) · ir 0.1.62. Details: build_info.json
 
 # index.html.md
 
@@ -5808,15 +5808,16 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 
 ### Module Attributes
 
-| [`MODES`](_autosummary/ir.retrieve.html.md#ir.retrieve.MODES)            | Ranking modes accepted by [`search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search).                                                                                                                                                                                                                                                                                                         |
-|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`FUSIONS`](_autosummary/ir.retrieve.html.md#ir.retrieve.FUSIONS)          | Hybrid fusion methods accepted by [`search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search) (`mode="hybrid"`).                                                                                                                                                                                                                                                                               |
-| [`DFLT_RRF_K`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_RRF_K)       | RRF rank constant — the `k` of `1 / (k + rank)` (standard default 60).                                                                                                                                                                                                                                                                                                                       |
-| [`DFLT_BLEND_ALPHA`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_BLEND_ALPHA) | Dense weight in the `"blend"` fusion convex combination (`1-alpha` on the bounded lexical term).                                                                                                                                                                                                                                                                                             |
-| [`DFLT_BM25_SAT_K`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_BM25_SAT_K)  | `bm25 -> bm25/(bm25+k)`, a bounded squash to `[0, 1)` that needs no *per-query* normalization (which would erase the absolute-magnitude signal abstention calibration depends on).                                                                                                                                                                                                           |
-| [`ScoreBoost`](_autosummary/ir.retrieve.html.md#ir.retrieve.ScoreBoost)       | `hit -> float`, added to each candidate's score after fusion and the reranker, before the per-artifact collapse.                                                                                                                                                                                                                                                                             |
-| [`Identity`](_autosummary/ir.retrieve.html.md#ir.retrieve.Identity)         | `None` (default — hits from different sources never merge; same id, different corpus = different artifact), the string `"pointer"` (merge hits whose [`pointer`](_autosummary/ir.base.html.md#ir.base.SearchHit.pointer) match — opt-in, for corpora that genuinely index the same files), or any `hit -> hashable` callable (a falsy key falls back to per-source identity). |
-| [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever)        | `(query, **overrides) -> list[SearchHit]` — ir_09's Retriever leaf (one query, one corpus) as a swappable callable.                                                                                                                                                                                                                                                                          |
+| [`MODES`](_autosummary/ir.retrieve.html.md#ir.retrieve.MODES)              | Ranking modes accepted by [`search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search).                                                                                                                                                                                                                                                                                                         |
+|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`FUSIONS`](_autosummary/ir.retrieve.html.md#ir.retrieve.FUSIONS)            | Hybrid fusion methods accepted by [`search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search) (`mode="hybrid"`).                                                                                                                                                                                                                                                                               |
+| [`DFLT_RRF_K`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_RRF_K)         | RRF rank constant — the `k` of `1 / (k + rank)` (standard default 60).                                                                                                                                                                                                                                                                                                                       |
+| [`DFLT_BLEND_ALPHA`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_BLEND_ALPHA)   | Dense weight in the `"blend"` fusion convex combination (`1-alpha` on the bounded lexical term).                                                                                                                                                                                                                                                                                             |
+| [`DFLT_BM25_SAT_K`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_BM25_SAT_K)    | `bm25 -> bm25/(bm25+k)`, a bounded squash to `[0, 1)` that needs no *per-query* normalization (which would erase the absolute-magnitude signal abstention calibration depends on).                                                                                                                                                                                                           |
+| [`BM25_CACHE_MAXSIZE`](_autosummary/ir.retrieve.html.md#ir.retrieve.BM25_CACHE_MAXSIZE) | How many per-candidate-set BM25 indexes a corpus keeps (least recently used evicted first).                                                                                                                                                                                                                                                                                                  |
+| [`ScoreBoost`](_autosummary/ir.retrieve.html.md#ir.retrieve.ScoreBoost)         | `hit -> float`, added to each candidate's score after fusion and the reranker, before the per-artifact collapse.                                                                                                                                                                                                                                                                             |
+| [`Identity`](_autosummary/ir.retrieve.html.md#ir.retrieve.Identity)           | `None` (default — hits from different sources never merge; same id, different corpus = different artifact), the string `"pointer"` (merge hits whose [`pointer`](_autosummary/ir.base.html.md#ir.base.SearchHit.pointer) match — opt-in, for corpora that genuinely index the same files), or any `hit -> hashable` callable (a falsy key falls back to per-source identity). |
+| [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever)          | `(query, **overrides) -> list[SearchHit]` — ir_09's Retriever leaf (one query, one corpus) as a swappable callable.                                                                                                                                                                                                                                                                          |
 
 ### Functions
 
@@ -5831,6 +5832,11 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 
 | [`NoLedgerEntry`](_autosummary/ir.retrieve.html.md#ir.retrieve.NoLedgerEntry)   | The corpus has no ledger entry for the requested artifact.   |
 |------------------------------------------------------------------|--------------------------------------------------------------|
+
+### ir.retrieve.BM25_CACHE_MAXSIZE *= 8*
+
+How many per-candidate-set BM25 indexes a corpus keeps (least recently used
+evicted first). Each is a full tokenized copy of its slice, so this bounds memory.
 
 ### ir.retrieve.DFLT_BLEND_ALPHA *= 0.5*
 
@@ -7697,18 +7703,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-11 11:00 UTC** from commit <a href="https://github.com/i2mint/ir/commit/b82e9b2a9f08db9c8bb8456b74c640e47678443f"><code>b82e9b2</code></a> on branch <code>master</code>, for **ir 0.1.61** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-16 07:08 UTC** from commit <a href="https://github.com/i2mint/ir/commit/6cca03340393842967adf6a527692146ecbf773a"><code>6cca033</code></a> on branch <code>master</code>, for **ir 0.1.62** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.61) is behind the latest release on PyPI (0.1.62): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/b82e9b2a9f08db9c8bb8456b74c640e47678443f"><code>b82e9b2a9f08db9c8bb8456b74c640e47678443f</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/6cca03340393842967adf6a527692146ecbf773a"><code>6cca03340393842967adf6a527692146ecbf773a</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7719,9 +7723,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43008164347">43008164347</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43821400834">43821400834</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>b82e9b2a9f08db9c8bb8456b74c640e47678443f</code> (in the history of the built commit) |
+| Event commit | <code>6cca03340393842967adf6a527692146ecbf773a</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7746,13 +7750,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.62/">0.1.62</a>, newer than the documented version (0.1.61).
+Latest release: <a href="https://pypi.org/project/ir/0.1.62/">0.1.62</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout b82e9b2a9f08db9c8bb8456b74c640e47678443f
+git checkout 6cca03340393842967adf6a527692146ecbf773a
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
