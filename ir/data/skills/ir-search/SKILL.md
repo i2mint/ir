@@ -42,7 +42,7 @@ relevance. This skill adds that intelligence via Claude Code.
 
 | Corpus | What's in it |
 |---|---|
-| `reports` | Project docs / research / design notes / ADRs — Markdown under every project's `docs/` and `misc/docs/` **and their subdirectories** (`research/`, `decisions/`, `adr/`, …). |
+| `reports` | Project docs / research / design notes / ADRs — Markdown under every project's `docs/` and `misc/docs/` **and their subdirectories** (`research/`, `decisions/`, `adr/`, …), including private companion repos (`_name` at the projects root). |
 | `packages` | The local Python package ecosystem — one card per package (name + description + README). |
 | `skills` | Agent skills (`SKILL.md` capabilities). |
 | `session_synopses`, `session_turns`, `subagent_turns` | Past Claude Code sessions, fed by `astern` from every account and machine it syncs. Prefer the `astern-recall` skill (`astern grep` / `astern recall`): it refreshes the sources first and adds a no-index regex route. |

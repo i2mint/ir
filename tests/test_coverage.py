@@ -252,8 +252,33 @@ def test_companion_reports_are_tagged_with_the_companion_folder(tmp_path):
     _make_companion_tree(tmp_path)
     assert _project_of("_secret/docs/research/design.md", tmp_path) == "_secret"
     assert _project_of("t/secret/docs/public.md", tmp_path) == "secret"
-    # without a root, or for a folder that is not a repo, the old path-only answer
+    # a folder that is not a repo keeps the old path-only answer
     assert _project_of("_agent_work/docs/scratch.md", tmp_path) == "docs"
+    # a real repo nested inside a companion is a pocket repo and wins
+    nested = tmp_path / "_secret" / "teams" / "inner"
+    (nested / ".git").mkdir(parents=True)
+    assert _project_of("_secret/teams/inner/docs/x.md", tmp_path) == "inner"
+
+
+def test_companion_enumeration_skips_symlinks_and_double_underscore_and_dedupes(
+    tmp_path,
+):
+    import os
+
+    from ir.sources import iter_companion_repos, iter_report_doc_folders
+
+    _make_companion_tree(tmp_path)
+    (tmp_path / "__tooling" / ".git").mkdir(parents=True)
+    (tmp_path / "__tooling" / "docs").mkdir()
+    (tmp_path / "t" / "_real" / ".git").mkdir(parents=True)
+    try:
+        os.symlink(tmp_path / "t" / "_real", tmp_path / "_alias")
+    except OSError:
+        pass
+    assert [p.name for p in iter_companion_repos(tmp_path)] == ["_secret"]
+    folders = list(iter_report_doc_folders(tmp_path))
+    assert len(folders) == len(set(folders))  # misc/docs not yielded twice
+    assert tmp_path / "_secret" / "misc" / "docs" in folders
 
 
 def test_coverage_lists_a_companions_docs_and_a_discover_finds_them(
