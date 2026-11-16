@@ -142,3 +142,28 @@ def test_records_is_not_auto_registered_from_a_bare_name(tmp_path, monkeypatch):
 
 def test_records_kind_defaults_to_interval_reindex():
     assert ir.default_policy_for_kind("records").reindex.on == "interval"
+
+
+def test_metadata_only_change_is_reindexed(tmp_path, monkeypatch):
+    """#137: a record whose filter metadata changed (same text) is rebuilt."""
+    import sys
+    import types
+
+    _isolate(tmp_path, monkeypatch)
+    mod = types.ModuleType("tmpfetch137")
+    mod.state = [{"id": "x", "text": "same text here", "pages": "p.1"}]
+    mod.fetch = lambda: [dict(r) for r in mod.state]
+    monkeypatch.setitem(sys.modules, "tmpfetch137", mod)
+    ir.register(
+        "metatest", "records", fetcher="tmpfetch137:fetch", metadata_keys=["pages"]
+    )
+
+    def pages():
+        hits = ir.search("metatest", "same text", k=1, mode="lexical")
+        return [h.metadata["pages"] for h in hits]
+
+    ir.build_corpus("metatest", embedder="light")
+    assert pages() == ["p.1"]
+    mod.state = [{"id": "x", "text": "same text here", "pages": "p.2"}]
+    ir.build_corpus("metatest", embedder="light")
+    assert pages() == ["p.2"]

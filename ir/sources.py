@@ -76,6 +76,38 @@ def content_hash_signal(artifact_id: str, raw: Any) -> str:
     return ef.content_hash(raw)
 
 
+def records_change_signal(
+    *, text_key: str = "text", metadata_keys: Iterable[str] = ()
+) -> Callable[[str, Any], str]:
+    """Change signal for record dicts: covers the text **and** the stored metadata.
+
+    ``ef.content_hash`` of a record dict ignores its non-text fields, so a record
+    whose filter metadata changed upstream (same text) would never be rebuilt and
+    stay filterable under the old value.
+
+    >>> sig = records_change_signal(metadata_keys=["pages"])
+    >>> a = sig("x", {"text": "t", "pages": "p.1"})
+    >>> a == sig("x", {"text": "t", "pages": "p.1", "other": 1})
+    True
+    >>> a == sig("x", {"text": "t", "pages": "p.2"})
+    False
+    """
+    keys = tuple(metadata_keys)
+
+    def signal(artifact_id: str, raw: Any) -> str:
+        if not isinstance(raw, Mapping):
+            return content_hash_signal(artifact_id, raw)
+        # Hash a JSON string: ``ef.content_hash`` of a dict looks only at its text.
+        payload = {
+            "text": raw.get(text_key),
+            "metadata": {k: raw[k] for k in keys if k in raw},
+        }
+        text = json.dumps(payload, sort_keys=True, default=str)
+        return hashlib.sha256(text.encode()).hexdigest()
+
+    return signal
+
+
 def resolve_fetcher(fetcher: Any) -> Callable[[], list]:
     """Resolve a fetcher spec to a zero-argument callable returning records.
 
@@ -281,6 +313,10 @@ class CorpusSource:
                 return {}
             return {k: raw[k] for k in keys if k in raw}
 
+        kwargs.setdefault(
+            "change_signal",
+            records_change_signal(text_key=text_key, metadata_keys=keys),
+        )
         return cls(
             name=name,
             scope=scope,
