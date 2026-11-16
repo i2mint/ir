@@ -63,12 +63,13 @@ from __future__ import annotations
 import math
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Callable
 
 from .base import POINTER_KEYS, SearchHit, best_per_artifact
 from .expand import NeighborhoodPolicy, SeedNotFound
 from .expand import expand as _expand
+from .miss import lexical_miss
 from .rerank import (
     DFLT_RERANK_MAX_CHARS,
     calibration_key,
@@ -161,11 +162,13 @@ class Selection:
         """A model-free sufficiency *hint* for an agent's Evaluator (ir_09 §3).
 
         ``True`` when this selection committed to at least one item (i.e. did not
-        abstain). It is a **signal, not a directive**: the re-query / ``refinement``
+        abstain) and, when ``select(required_terms=...)`` was asked, no required term
+        is missing from the committed hits (``signals["lexical_miss"]``, see
+        :mod:`ir.miss`). It is a **signal, not a directive**: the re-query / ``refinement``
         decision and the loop belong to the agent layer (the back-edge, ir_09 §4)
         — ``ir`` derives this from its own outcome and never acts on it.
         """
-        return not self.abstained and len(self.selected) > 0
+        return _sufficient(self.abstained, len(self.selected), self.signals)
 
     def to_dict(self) -> dict:
         """JSON-serializable form (scores cast to ``float``)."""
@@ -178,6 +181,12 @@ class Selection:
             "signals": dict(self.signals),
             "n_candidates": len(self.candidates),
         }
+
+
+def _sufficient(abstained: bool, n_committed: int, signals: Mapping[str, Any]) -> bool:
+    """Committed something, and (if asked) no required term is missing."""
+    miss = (signals.get("lexical_miss") or {}).get("miss")
+    return not abstained and n_committed > 0 and not miss
 
 
 def _hit_to_dict(hit: SearchHit) -> dict:
@@ -335,6 +344,7 @@ def select(
     rel: float = DFLT_REL_THRESHOLD,
     gap_ratio: float = DFLT_GAP_RATIO,
     min_score: float | None = None,
+    required_terms: Sequence[str] = (),
 ) -> Selection:
     """Commit to a subset of ranked ``hits`` — the selection stage.
 
@@ -354,10 +364,42 @@ def select(
         min_score: optional absolute floor; with ``"conservative"`` the selector
             abstains when even the top hit falls below it (also usable as the
             ``"abs_threshold"`` floor).
+        required_terms: terms the answer must mention; when given, the committed
+            hits are checked for them and ``signals["lexical_miss"]`` (see
+            :mod:`ir.miss`) is added, which turns ``Selection.sufficient`` False if
+            one is absent. A signal only: the selection itself is unchanged.
 
     Returns:
         a :class:`Selection`. ``abstained`` is True iff ``selected`` is empty.
     """
+    selection = _select(
+        hits,
+        strategy=strategy,
+        max_k=max_k,
+        rel=rel,
+        gap_ratio=gap_ratio,
+        min_score=min_score,
+    )
+    if not required_terms:
+        return selection
+    if isinstance(required_terms, str):  # a bare string is one term, not letters
+        required_terms = [required_terms]
+    miss = lexical_miss(
+        selection.selected, required=required_terms, candidates=selection.candidates
+    )
+    return replace(selection, signals={**selection.signals, "lexical_miss": miss})
+
+
+def _select(
+    hits: Sequence[SearchHit],
+    *,
+    strategy: str | Selector,
+    max_k: int,
+    rel: float,
+    gap_ratio: float,
+    min_score: float | None,
+) -> Selection:
+    """:func:`select` without the optional miss signals."""
     hits = list(hits)
     if strategy == "conservative":
         chosen, reason, signals = _conservative_select(
@@ -827,6 +869,11 @@ class DiscoveryResult:
         """The committed artifact ids, best-first."""
         return [d.artifact_id for d in self.results]
 
+    @property
+    def sufficient(self) -> bool:
+        """Committed something, and no ``required_terms`` is missing (a signal only)."""
+        return _sufficient(self.abstained, len(self.results), self.signals)
+
     def to_dict(self) -> dict:
         """JSON-serializable result for the qh / HTTP surface."""
         return {
@@ -839,6 +886,7 @@ class DiscoveryResult:
             "reason": self.reason,
             "n_retrieved": self.n_retrieved,
             "n_selected": len(self.results),
+            "sufficient": self.sufficient,
             "signals": dict(self.signals),
         }
 
@@ -1023,6 +1071,7 @@ def discover(
     store: ResourceStore | None = None,
     expand: NeighborhoodPolicy | None = None,
     dedup_by: str | None = "auto",
+    required_terms: Sequence[str] = (),
     **search_kw: Any,
 ) -> DiscoveryResult:
     """Find and commit to the capabilities for ``query`` — the one search tool.
@@ -1088,6 +1137,11 @@ def discover(
             collapses by ``name`` for the ``skills`` corpus
             (:data:`DFLT_DEDUP_BY`) and leaves other corpora alone; ``None``
             keeps every hit; any other string names a metadata key.
+        required_terms: terms the answer must mention (an entity the user named).
+            The committed hits are checked for them; ``signals["lexical_miss"]``
+            reports the result (:func:`ir.miss.lexical_miss`) and
+            ``DiscoveryResult.sufficient`` is False if one is absent. A signal for
+            the agent layer's Evaluator, never a re-query.
         **search_kw: any other :func:`ir.retrieve.search` keyword (``rrf_k``,
             ``rerank``, ``bm25``, …).
 
@@ -1120,6 +1174,7 @@ def discover(
             store=store,
             expand=expand,
             dedup_by=dedup_by,
+            required_terms=required_terms,
             **search_kw,
         )
     if merge != "rrf" or merge_weights is not None or merge_rrf_k is not None:
@@ -1163,6 +1218,7 @@ def discover(
         rel=rel,
         gap_ratio=gap_ratio,
         min_score=min_score,
+        required_terms=required_terms,
     )
     results = disclose(
         selection,
@@ -1306,6 +1362,7 @@ def _discover_federated(
     store: ResourceStore | None,
     expand: NeighborhoodPolicy | None = None,
     dedup_by: str | None = "auto",
+    required_terms: Sequence[str] = (),
     **search_kw: Any,
 ) -> DiscoveryResult:
     """Single-shot federated discover: fan-out → gate → fuse → select → disclose.
@@ -1407,6 +1464,7 @@ def _discover_federated(
         rel=rel,
         gap_ratio=gap_ratio,
         min_score=None,
+        required_terms=required_terms,
     )
     reason = selection.reason
     if not fused and any_gated:

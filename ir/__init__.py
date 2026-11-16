@@ -85,6 +85,7 @@ from .select import (
     select,
 )
 from .sources import CorpusSource
+from .miss import lexical_miss
 from .store import CorpusStore
 from .strategy import (
     Chunked,
@@ -167,6 +168,7 @@ __all__ = [
     "tag_source",
     "make_llm_formulator",
     "make_keyword_formulator",
+    "lexical_miss",
     "Formulator",
     "select",
     "disclose",
