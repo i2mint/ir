@@ -59,6 +59,14 @@ def search(
     ).to_dict()
 
 
+def _and_filters(*filters: dict | None) -> dict | None:
+    """Conjunction of the non-empty filters (``None`` when none)."""
+    parts = [f for f in filters if f]
+    if len(parts) <= 1:
+        return parts[0] if parts else None
+    return {"$and": parts}
+
+
 def make_search(
     corpus: Any,
     *,
@@ -66,6 +74,8 @@ def make_search(
     description: str | None = None,
     k: int = 8,
     mode: str = "hybrid",
+    filter: dict | None = None,
+    expose_filter: bool = False,
     rerank: Any = None,
     rerank_text: Any = "surface",
 ) -> Callable[..., dict]:
@@ -76,14 +86,33 @@ def make_search(
     Its ``__name__`` / ``__doc__`` are set so an MCP/agent host shows a clean tool
     name and description. Use this when wiring a single-corpus connector; use
     :func:`search` when the caller should choose the corpus.
+
+    ``filter`` is a metadata filter bound into the tool (e.g. one project of a
+    shared corpus). With ``expose_filter=True`` the tool also takes a per-call
+    ``filter``, ANDed with the bound one.
     """
     label = name or (corpus if isinstance(corpus, str) else "corpus")
     safe = "".join(c if c.isalnum() else "_" for c in str(label)).strip("_") or "corpus"
 
-    def bound_search(query: str, k: int = k) -> dict:
+    def run(query, k, call_filter):
         return discover(
-            corpus, query, k=k, mode=mode, **_rerank_kw(rerank, rerank_text)
+            corpus,
+            query,
+            k=k,
+            mode=mode,
+            filter=_and_filters(filter, call_filter),
+            **_rerank_kw(rerank, rerank_text),
         ).to_dict()
+
+    if expose_filter:
+
+        def bound_search(query: str, k: int = k, filter: dict | None = None) -> dict:
+            return run(query, k, filter)
+
+    else:
+
+        def bound_search(query: str, k: int = k) -> dict:
+            return run(query, k, None)
 
     bound_search.__name__ = f"search_{safe}"
     bound_search.__doc__ = description or (

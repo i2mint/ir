@@ -235,7 +235,7 @@ def test_default_synthesizer_threads_inner_strategy_text_key(monkeypatch):
     monkeypatch.setattr(
         _syn,
         "_default_llm_summarizer",
-        lambda prompt, model, **kw: (lambda t: (seen.append(t) or "S")),
+        lambda prompt, model, **kw: lambda t: seen.append(t) or "S",
     )
     strat = with_synopsis(ir.Chunked(text_key="body"))  # default synth, no id arg
     docs = {"a": {"body": "REAL body content here", "text": "WRONG text field"}}
@@ -428,9 +428,12 @@ def test_thin_description_predicate_selects_empty_and_short_only():
     pred = ir.thin_description_predicate
     flags = {k: pred(Artifact(id=k, raw=v)) for k, v in _PKGS.items()}
     assert flags == {"empty": True, "short": True, "rich": False}
-    assert ir.make_thin_description_predicate(min_chars=3)(
-        Artifact(id="s", raw=_PKGS["short"])
-    ) is False
+    assert (
+        ir.make_thin_description_predicate(min_chars=3)(
+            Artifact(id="s", raw=_PKGS["short"])
+        )
+        is False
+    )
     # whitespace-only is thin; a non-mapping raw is judged by its own text
     assert pred(Artifact(id="w", raw={"description": "   \n"}))
     assert not pred(Artifact(id="t", raw="x" * 100))
@@ -491,9 +494,13 @@ def test_when_identity_folds_into_strategy_id_and_triggers_resynthesis():
 
 def test_when_rejects_bad_values_and_warns_on_unnamed_predicate():
     with pytest.raises(ValueError):
-        ir.with_synopsis(ir.Package(), synthesize=lambda a: "", synthesizer_id="v", when="never")
+        ir.with_synopsis(
+            ir.Package(), synthesize=lambda a: "", synthesizer_id="v", when="never"
+        )
     with pytest.raises(TypeError):
-        ir.with_synopsis(ir.Package(), synthesize=lambda a: "", synthesizer_id="v", when=3)
+        ir.with_synopsis(
+            ir.Package(), synthesize=lambda a: "", synthesizer_id="v", when=3
+        )
     with pytest.warns(UserWarning, match="when"):
         ir.with_synopsis(
             ir.Package(),
@@ -503,8 +510,11 @@ def test_when_rejects_bad_values_and_warns_on_unnamed_predicate():
         )
     # an explicit when_id silences it and is part of the id
     s = ir.with_synopsis(
-        ir.Package(), synthesize=lambda a: "", synthesizer_id="v",
-        when=lambda a: True, when_id="all-v1",
+        ir.Package(),
+        synthesize=lambda a: "",
+        synthesizer_id="v",
+        when=lambda a: True,
+        when_id="all-v1",
     )
     assert "all-v1" in _strategy_id(s)
 
@@ -513,7 +523,9 @@ def test_description_gain_drops_stale_synopsis_on_incremental_rebuild():
     synth, calls = _counting_synth()
     store = CorpusStore.memory()
     strat = ir.with_synopsis(
-        ir.Package(), synthesize=synth, synthesizer_id="v1",
+        ir.Package(),
+        synthesize=synth,
+        synthesizer_id="v1",
         when=ir.thin_description_predicate,
     )
     _build_pkgs(strat, store)
@@ -528,13 +540,18 @@ def test_description_gain_drops_stale_synopsis_on_incremental_rebuild():
 def test_gate_is_not_disabled_by_an_id_named_always():
     synth, calls = _counting_synth()
     strat = ir.with_synopsis(
-        ir.Package(), synthesize=synth, synthesizer_id="v1",
-        when=lambda a: False, when_id="always",
+        ir.Package(),
+        synthesize=synth,
+        synthesizer_id="v1",
+        when=lambda a: False,
+        when_id="always",
     )
     _build_pkgs(strat)
     assert calls == []  # the gate is honoured whatever its id is called
     with pytest.raises(ValueError, match="when_id"):
-        ir.with_synopsis(ir.Package(), synthesize=synth, synthesizer_id="v1", when_id="x")
+        ir.with_synopsis(
+            ir.Package(), synthesize=synth, synthesizer_id="v1", when_id="x"
+        )
 
 
 # --------------------------------------------------------------------------- #
@@ -635,7 +652,7 @@ def test_nested_with_synopsis_still_sends_only_the_fields(monkeypatch):
     monkeypatch.setattr(
         _syn,
         "_default_llm_summarizer",
-        lambda prompt, model, **kw: (lambda text: seen.append(text) or "s"),
+        lambda prompt, model, **kw: lambda text: seen.append(text) or "s",
     )
     outer = with_synopsis(with_synopsis(ir.Package(), synthesize=lambda a: "inner"))
     outer.synthesize(Artifact("pkg", _PACKAGE_RAW))

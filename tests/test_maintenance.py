@@ -108,7 +108,8 @@ def test_single_run_lock_excludes_a_second_run(tmp_path):
 
 
 @pytest.mark.skipif(
-    os.name != "posix", reason="pid liveness probing is POSIX-only (os.kill kills on Windows)"
+    os.name != "posix",
+    reason="pid liveness probing is POSIX-only (os.kill kills on Windows)",
 )
 def test_single_run_lock_reclaims_a_dead_holder(tmp_path):
     # A killed run must not wedge maintenance forever. On POSIX the owning pid is
