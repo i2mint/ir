@@ -184,7 +184,8 @@ def search(
     reranker's own scale. ``--expand`` also searches the query's variants from the
     synonym ledger (``ir synonyms``) and fuses them (best score per artifact across
     the variants; the original query is always one of them; ``--variant-weight 0.5``
-    demotes the variants against the query itself, to keep the original on top). ``--filter`` is a
+    demotes the variants against the query itself, to keep the original on top; 0
+    keeps variant-only hits at the tail; a ``--rerank`` stage replaces the weighted scores). ``--filter`` is a
     JSON metadata filter in the Mongo-style form of ``ir.search(filter=...)``,
     e.g. ``--filter '{"project": "dol"}'`` or ``'{"source": {"$in": ["a", "b"]}}'``;
     operators: $eq $ne $in $nin $gt $gte $lt $lte $exists, plus $and/$or/$not.
@@ -215,6 +216,10 @@ def _expand_kw(expand, name, variant_weight=1.0):
     ``variant_weight`` (below 1.0) demotes the expansion variants against the query
     itself; it needs ``--expand`` (without a formulator there are no variants).
     """
+    import math
+
+    if not (math.isfinite(variant_weight) and 0 <= variant_weight <= 1):
+        raise SystemExit("--variant-weight must be a number in [0, 1]")
     if not expand:
         if variant_weight != 1.0:
             raise SystemExit("--variant-weight needs --expand (no variants otherwise)")
