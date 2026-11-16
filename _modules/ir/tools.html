@@ -251,39 +251,68 @@
 
 </span><span id="line-60">
 </span><span id="line-61">
+</span><span id="line-62"><span class="k">def</span><span class="w"> </span><span class="nf">_and_filters</span><span class="p">(</span><span class="o">*</span><span class="n">filters</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-63"><span class="w">    </span><span class="sd">"""Conjunction of the non-empty filters (``None`` when none)."""</span>
+</span><span id="line-64">    <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">filters</span> <span class="k">if</span> <span class="n">f</span><span class="p">]</span>
+</span><span id="line-65">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="line-66">        <span class="k">return</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">parts</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="line-67">    <span class="k">return</span> <span class="p">{</span><span class="s2">"$and"</span><span class="p">:</span> <span class="n">parts</span><span class="p">}</span>
+</span><span id="line-68">
+</span><span id="line-69">
 <div class="viewcode-block" id="make_search">
 <a class="viewcode-back" href="../../_autosummary/ir.tools.html#ir.make_search">[docs]</a>
-</span><span id="line-62"><span class="k">def</span><span class="w"> </span><span class="nf">make_search</span><span class="p">(</span>
-</span><span id="line-63">    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-</span><span id="line-64">    <span class="o">*</span><span class="p">,</span>
-</span><span id="line-65">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-66">    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-67">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
-</span><span id="line-68">    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"hybrid"</span><span class="p">,</span>
-</span><span id="line-69">    <span class="n">rerank</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-70">    <span class="n">rerank_text</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="s2">"surface"</span><span class="p">,</span>
-</span><span id="line-71"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
-</span><span id="line-72"><span class="w">    </span><span class="sd">"""Return a **corpus-bound** ``search(query, k=...) -&gt; dict`` tool.</span>
-</span><span id="line-73">
-</span><span id="line-74"><span class="sd">    The returned function exposes only ``query`` (and ``k``) — the corpus is fixed</span>
-</span><span id="line-75"><span class="sd">    — so a connector built over it surfaces exactly one corpus and nothing else.</span>
-</span><span id="line-76"><span class="sd">    Its ``__name__`` / ``__doc__`` are set so an MCP/agent host shows a clean tool</span>
-</span><span id="line-77"><span class="sd">    name and description. Use this when wiring a single-corpus connector; use</span>
-</span><span id="line-78"><span class="sd">    :func:`search` when the caller should choose the corpus.</span>
-</span><span id="line-79"><span class="sd">    """</span>
-</span><span id="line-80">    <span class="n">label</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="p">(</span><span class="n">corpus</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"corpus"</span><span class="p">)</span>
-</span><span id="line-81">    <span class="n">safe</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">c</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">isalnum</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"_"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">"_"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"corpus"</span>
-</span><span id="line-82">
-</span><span id="line-83">    <span class="k">def</span><span class="w"> </span><span class="nf">bound_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">k</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span id="line-84">        <span class="k">return</span> <span class="n">discover</span><span class="p">(</span>
-</span><span id="line-85">            <span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="o">**</span><span class="n">_rerank_kw</span><span class="p">(</span><span class="n">rerank</span><span class="p">,</span> <span class="n">rerank_text</span><span class="p">)</span>
-</span><span id="line-86">        <span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
-</span><span id="line-87">
-</span><span id="line-88">    <span class="n">bound_search</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"search_</span><span class="si">{</span><span class="n">safe</span><span class="si">}</span><span class="s2">"</span>
-</span><span id="line-89">    <span class="n">bound_search</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">description</span> <span class="ow">or</span> <span class="p">(</span>
-</span><span id="line-90">        <span class="sa">f</span><span class="s2">"Search the </span><span class="si">{</span><span class="n">label</span><span class="si">!r}</span><span class="s2"> knowledge base; returns ranked, JSON results."</span>
-</span><span id="line-91">    <span class="p">)</span>
-</span><span id="line-92">    <span class="k">return</span> <span class="n">bound_search</span></div>
+</span><span id="line-70"><span class="k">def</span><span class="w"> </span><span class="nf">make_search</span><span class="p">(</span>
+</span><span id="line-71">    <span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+</span><span id="line-72">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-73">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-74">    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-75">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+</span><span id="line-76">    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"hybrid"</span><span class="p">,</span>
+</span><span id="line-77">    <span class="nb">filter</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-78">    <span class="n">expose_filter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="line-79">    <span class="n">rerank</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-80">    <span class="n">rerank_text</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="s2">"surface"</span><span class="p">,</span>
+</span><span id="line-81"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+</span><span id="line-82"><span class="w">    </span><span class="sd">"""Return a **corpus-bound** ``search(query, k=...) -&gt; dict`` tool.</span>
+</span><span id="line-83">
+</span><span id="line-84"><span class="sd">    The returned function exposes only ``query`` (and ``k``) — the corpus is fixed</span>
+</span><span id="line-85"><span class="sd">    — so a connector built over it surfaces exactly one corpus and nothing else.</span>
+</span><span id="line-86"><span class="sd">    Its ``__name__`` / ``__doc__`` are set so an MCP/agent host shows a clean tool</span>
+</span><span id="line-87"><span class="sd">    name and description. Use this when wiring a single-corpus connector; use</span>
+</span><span id="line-88"><span class="sd">    :func:`search` when the caller should choose the corpus.</span>
+</span><span id="line-89">
+</span><span id="line-90"><span class="sd">    ``filter`` is a metadata filter bound into the tool (e.g. one project of a</span>
+</span><span id="line-91"><span class="sd">    shared corpus). With ``expose_filter=True`` the tool also takes a per-call</span>
+</span><span id="line-92"><span class="sd">    ``filter``, ANDed with the bound one.</span>
+</span><span id="line-93"><span class="sd">    """</span>
+</span><span id="line-94">    <span class="n">label</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="p">(</span><span class="n">corpus</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"corpus"</span><span class="p">)</span>
+</span><span id="line-95">    <span class="n">safe</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">c</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">isalnum</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"_"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">"_"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"corpus"</span>
+</span><span id="line-96">
+</span><span id="line-97">    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">call_filter</span><span class="p">):</span>
+</span><span id="line-98">        <span class="k">return</span> <span class="n">discover</span><span class="p">(</span>
+</span><span id="line-99">            <span class="n">corpus</span><span class="p">,</span>
+</span><span id="line-100">            <span class="n">query</span><span class="p">,</span>
+</span><span id="line-101">            <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+</span><span id="line-102">            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+</span><span id="line-103">            <span class="nb">filter</span><span class="o">=</span><span class="n">_and_filters</span><span class="p">(</span><span class="nb">filter</span><span class="p">,</span> <span class="n">call_filter</span><span class="p">),</span>
+</span><span id="line-104">            <span class="o">**</span><span class="n">_rerank_kw</span><span class="p">(</span><span class="n">rerank</span><span class="p">,</span> <span class="n">rerank_text</span><span class="p">),</span>
+</span><span id="line-105">        <span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+</span><span id="line-106">
+</span><span id="line-107">    <span class="k">if</span> <span class="n">expose_filter</span><span class="p">:</span>
+</span><span id="line-108">
+</span><span id="line-109">        <span class="k">def</span><span class="w"> </span><span class="nf">bound_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">k</span><span class="p">,</span> <span class="nb">filter</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="line-110">            <span class="k">return</span> <span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="nb">filter</span><span class="p">)</span>
+</span><span id="line-111">
+</span><span id="line-112">    <span class="k">else</span><span class="p">:</span>
+</span><span id="line-113">
+</span><span id="line-114">        <span class="k">def</span><span class="w"> </span><span class="nf">bound_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">k</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="line-115">            <span class="k">return</span> <span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="line-116">
+</span><span id="line-117">    <span class="n">bound_search</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"search_</span><span class="si">{</span><span class="n">safe</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="line-118">    <span class="n">bound_search</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">description</span> <span class="ow">or</span> <span class="p">(</span>
+</span><span id="line-119">        <span class="sa">f</span><span class="s2">"Search the </span><span class="si">{</span><span class="n">label</span><span class="si">!r}</span><span class="s2"> knowledge base; returns ranked, JSON results."</span>
+</span><span id="line-120">    <span class="p">)</span>
+</span><span id="line-121">    <span class="k">return</span> <span class="n">bound_search</span></div>
 
 </span></code></pre></div>
     </div></div>
@@ -298,7 +327,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=cc64e7de"></script>
+    <script src="../../_static/documentation_options.js?v=681c63c7"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>

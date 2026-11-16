@@ -1575,7 +1575,7 @@ corpus’s `strategy_id` for staleness — a prompt or model change re-synthesiz
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### ir.make_search(corpus, , name=None, description=None, k=8, mode='hybrid', rerank=None, rerank_text='surface')
+### ir.make_search(corpus, , name=None, description=None, k=8, mode='hybrid', filter=None, expose_filter=False, rerank=None, rerank_text='surface')
 
 Return a **corpus-bound** `search(query, k=...) -> dict` tool.
 
@@ -1584,6 +1584,10 @@ The returned function exposes only `query` (and `k`) — the corpus is fixed
 Its `__name__` / `__doc__` are set so an MCP/agent host shows a clean tool
 name and description. Use this when wiring a single-corpus connector; use
 [`search()`](#ir.search) when the caller should choose the corpus.
+
+`filter` is a metadata filter bound into the tool (e.g. one project of a
+shared corpus). With `expose_filter=True` the tool also takes a per-call
+`filter`, ANDed with the bound one.
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]

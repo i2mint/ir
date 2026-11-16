@@ -278,14 +278,14 @@
 </span><span id="line-89">
 </span><span id="line-90">
 </span><span id="line-91"><span class="k">def</span><span class="w"> </span><span class="nf">_matches</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="line-92"><span class="w">    </span><span class="sd">"""Mongo-style metadata match, via ``vd`` when available."""</span>
-</span><span id="line-93">    <span class="k">try</span><span class="p">:</span>
-</span><span id="line-94">        <span class="kn">from</span><span class="w"> </span><span class="nn">vd.filters</span><span class="w"> </span><span class="kn">import</span> <span class="n">matches_filter</span>
-</span><span id="line-95">
-</span><span id="line-96">        <span class="k">return</span> <span class="n">matches_filter</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span><span class="p">),</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">filter</span><span class="p">))</span>
-</span><span id="line-97">    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-</span><span id="line-98">        <span class="c1"># Minimal equality fallback if vd is unavailable.</span>
-</span><span id="line-99">        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">==</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">filter</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+</span><span id="line-92"><span class="w">    </span><span class="sd">"""Mongo-style metadata match via ``vd``; an unsupported operator raises.</span>
+</span><span id="line-93">
+</span><span id="line-94"><span class="sd">    (An invalid filter used to be swallowed into "no matches", which an agent</span>
+</span><span id="line-95"><span class="sd">    cannot tell from a real empty result.)</span>
+</span><span id="line-96"><span class="sd">    """</span>
+</span><span id="line-97">    <span class="kn">from</span><span class="w"> </span><span class="nn">vd.filters</span><span class="w"> </span><span class="kn">import</span> <span class="n">matches_filter</span>
+</span><span id="line-98">
+</span><span id="line-99">    <span class="k">return</span> <span class="n">matches_filter</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">metadata</span><span class="p">),</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">filter</span><span class="p">))</span>
 </span><span id="line-100">
 </span><span id="line-101">
 </span><span id="line-102"><span class="k">def</span><span class="w"> </span><span class="nf">_embed_query</span><span class="p">(</span><span class="n">embedder</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
@@ -1257,7 +1257,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=cc64e7de"></script>
+    <script src="../../_static/documentation_options.js?v=681c63c7"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>

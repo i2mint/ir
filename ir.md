@@ -1,4 +1,4 @@
-> built 2026-11-16 07:08 UTC from 6cca033 (master) · ir 0.1.62. Details: build_info.json
+> built 2026-11-16 07:13 UTC from 2b5deab (master) · ir 0.1.63. Details: build_info.json
 
 # index.html.md
 
@@ -646,7 +646,7 @@ file that is on disk but missing from the index (rebuild with `ir build` to
 fix). Catches the ingestion gaps that back-translation evals structurally
 cannot — a doc that was never indexed can never be an eval gold id.
 
-### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface', expand=False)
+### ir.cli.discover(name, query, , k=10, mode='hybrid', strategy='conservative', disclose=False, min_score=None, fusion='rrf', rerank=None, rerank_text='surface', expand=False, filter=None)
 
 Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -661,7 +661,8 @@ top_k | rel_threshold | score_gap. `--rerank cross-encoder` adds the
 calibrated cross-encoder precision stage (`--rerank-text` picks what it
 reads); with `--min-score auto` it uses the floor calibrated under the same
 `--rerank` / `--rerank-text`. `--expand` adds the query’s variants from
-the synonym ledger (`ir synonyms`).
+the synonym ledger (`ir synonyms`). `--filter` takes the JSON form of the
+metadata filter (see `search`).
 
 ### ir.cli.eval(name, cases, , mode='hybrid', k=10)
 
@@ -740,7 +741,7 @@ remove: stop the schedule and delete its definition.
 dry_run: print the definition that would be written, and write nothing.
 backend: launchd | cron (default: whichever this machine provides).
 
-### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface', expand=False)
+### ir.cli.search(name, query, , k=10, mode='dense', fusion='rrf', rerank=None, rerank_text='surface', expand=False, filter=None)
 
 Search a built corpus and print the top-k hits.
 
@@ -752,7 +753,10 @@ the search warns and keeps the first-stage ranking); `--rerank-text`
 picks what it reads: surface (default) | artifact. Reranked scores are on the
 reranker’s own scale. `--expand` also searches the query’s variants from the
 synonym ledger (`ir synonyms`) and fuses them (best score per artifact across
-the variants; the original query is always one of them).
+the variants; the original query is always one of them). `--filter` is a
+JSON metadata filter in the Mongo-style form of `ir.search(filter=...)`,
+e.g. `--filter '{"project": "dol"}'` or `'{"source": {"$in": ["a", "b"]}}'`;
+operators: $eq $ne $in $nin $gt $gte $lt $lte $exists, plus $and/$or/$not.
 
 ### ir.cli.sweep_select(name, cases, , strategy='conservative', mode='hybrid', k=10, objective='selection_f1')
 
@@ -4552,7 +4556,7 @@ corpus’s `strategy_id` for staleness — a prompt or model change re-synthesiz
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### ir.make_search(corpus, , name=None, description=None, k=8, mode='hybrid', rerank=None, rerank_text='surface')
+### ir.make_search(corpus, , name=None, description=None, k=8, mode='hybrid', filter=None, expose_filter=False, rerank=None, rerank_text='surface')
 
 Return a **corpus-bound** `search(query, k=...) -> dict` tool.
 
@@ -4561,6 +4565,10 @@ The returned function exposes only `query` (and `k`) — the corpus is fixed
 Its `__name__` / `__doc__` are set so an MCP/agent host shows a clean tool
 name and description. Use this when wiring a single-corpus connector; use
 [`search()`](_autosummary/ir.html.md#ir.search) when the caller should choose the corpus.
+
+`filter` is a metadata filter bound into the tool (e.g. one project of a
+shared corpus). With `expose_filter=True` the tool also takes a per-call
+`filter`, ANDed with the bound one.
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
@@ -7662,7 +7670,7 @@ front door.
 |------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
 | [`make_search`](_autosummary/ir.tools.html.md#ir.tools.make_search)(corpus, \*[, name, description, ...])   | Return a **corpus-bound** `search(query, k=...) -> dict` tool.           |
 
-### ir.tools.make_search(corpus, , name=None, description=None, k=8, mode='hybrid', rerank=None, rerank_text='surface')
+### ir.tools.make_search(corpus, , name=None, description=None, k=8, mode='hybrid', filter=None, expose_filter=False, rerank=None, rerank_text='surface')
 
 Return a **corpus-bound** `search(query, k=...) -> dict` tool.
 
@@ -7671,6 +7679,10 @@ The returned function exposes only `query` (and `k`) — the corpus is fixed
 Its `__name__` / `__doc__` are set so an MCP/agent host shows a clean tool
 name and description. Use this when wiring a single-corpus connector; use
 [`search()`](_autosummary/ir.tools.html.md#ir.tools.search) when the caller should choose the corpus.
+
+`filter` is a metadata filter bound into the tool (e.g. one project of a
+shared corpus). With `expose_filter=True` the tool also takes a per-call
+`filter`, ANDed with the bound one.
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
@@ -7703,16 +7715,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-16 07:08 UTC** from commit <a href="https://github.com/i2mint/ir/commit/6cca03340393842967adf6a527692146ecbf773a"><code>6cca033</code></a> on branch <code>master</code>, for **ir 0.1.62** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-16 07:13 UTC** from commit <a href="https://github.com/i2mint/ir/commit/2b5deab80a5735f8ddf8410a74b7c4d4d5514876"><code>2b5deab</code></a> on branch <code>master</code>, for **ir 0.1.63** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.63) is behind the latest release on PyPI (0.1.64): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/6cca03340393842967adf6a527692146ecbf773a"><code>6cca03340393842967adf6a527692146ecbf773a</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/2b5deab80a5735f8ddf8410a74b7c4d4d5514876"><code>2b5deab80a5735f8ddf8410a74b7c4d4d5514876</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7723,9 +7737,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43821400834">43821400834</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43822075951">43822075951</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>6cca03340393842967adf6a527692146ecbf773a</code> (in the history of the built commit) |
+| Event commit | <code>2b5deab80a5735f8ddf8410a74b7c4d4d5514876</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7750,13 +7764,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.62/">0.1.62</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.64/">0.1.64</a>, newer than the documented version (0.1.63).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 6cca03340393842967adf6a527692146ecbf773a
+git checkout 2b5deab80a5735f8ddf8410a74b7c4d4d5514876
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
