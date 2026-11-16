@@ -249,8 +249,6 @@ def grep_hits(
     Python only. The score is described in the module docstring.
     """
     _check_args(k, recency_half_life_days, rg_batch)
-    if use_rg is True and not shutil.which("rg"):
-        raise RuntimeError("grep_hits(use_rg=True) but `rg` is not installed")
     if use_rg is True and not _rg_can_prefilter(
         pattern, ignore_case=ignore_case, fixed=fixed
     ):
@@ -258,6 +256,8 @@ def grep_hits(
             "grep_hits(use_rg=True) needs an ASCII literal pattern that rg and "
             "Python read identically; use use_rg=None to let ir decide"
         )
+    if use_rg is True and not shutil.which("rg"):
+        raise RuntimeError("grep_hits(use_rg=True) but `rg` is not installed")
     rx = _compile(pattern, ignore_case=ignore_case, fixed=fixed)
     from vd.filters import matches_filter
 
