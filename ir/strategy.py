@@ -30,6 +30,7 @@ import functools
 import inspect
 import math
 import re
+import unicodedata
 import warnings
 from collections.abc import Mapping, Sequence
 from typing import Any, Callable, Protocol, runtime_checkable
@@ -331,6 +332,41 @@ def is_simple_param(value: Any) -> bool:
     return isinstance(value, scalar)
 
 
+def fold_text(text: str) -> str:
+    """Case-fold *text* and strip accents from Latin and Greek letters only.
+
+    Safe for mixed-script text: marks that carry meaning elsewhere are left alone
+    (kana voicing ``が``, Hangul syllables, Devanagari virama, Thai tone marks,
+    Cyrillic ``й``/``ё``). Use it as a ``Fields(normalize=...)`` normalizer (by
+    reference: ``"ir.strategy:fold_text"``) **and** apply it to queries, e.g.
+    ``formulate=fold_text`` (a ``str -> str`` is a valid formulator), since folding
+    acts on whichever side runs it.
+
+    >>> fold_text("Crème BRÛLÉE Straße")
+    'creme brulee strasse'
+    >>> fold_text("Αθήνα")
+    'αθηνα'
+    >>> fold_text("がぎ 한국어 हिन्दी Йё ไก่")
+    'がぎ 한국어 हिन्दी йё ไก่'
+    """
+    out: list[str] = []
+    keep_marks_after = False  # was the last kept char a Latin/Greek letter?
+    for ch in unicodedata.normalize("NFC", text.casefold()):
+        if unicodedata.combining(ch) and keep_marks_after:
+            continue  # a stray accent on a Latin/Greek letter
+        if unicodedata.name(ch, "").startswith(("LATIN", "GREEK")):
+            ch = "".join(
+                c
+                for c in unicodedata.normalize("NFD", ch)
+                if not unicodedata.combining(c)
+            )
+            keep_marks_after = True
+        else:
+            keep_marks_after = False
+        out.append(ch)
+    return "".join(out)
+
+
 def balanced_windows(text: str, *, size: int, overlap: int = 0) -> list[str]:
     """Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.
 
@@ -472,6 +508,11 @@ class Fields:
     def reads(self) -> tuple[str, ...]:
         """Every record key this strategy reads (for change signals)."""
         return (*self.head, *self.fields)
+
+    @property
+    def synopsis_fields(self) -> tuple[str, ...]:
+        """The keys a synopsis should summarize (``ir.with_synopsis`` reads this)."""
+        return self.reads
 
     def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
         meta = dict(metadata or {})
