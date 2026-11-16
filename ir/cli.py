@@ -697,17 +697,34 @@ def synonyms(term=None, *, corpus=None):
     return f"aliases: {', '.join(terms)}\nregex:   {term_regex(terms)}"
 
 
-def synonyms_add(terms, *, note="", oneway=False, corpus=None):
+def synonyms_add(
+    terms, *, note="", oneway=False, corpus=None, miss_query=None, found=None
+):
     """Record corpus vocabulary in the synonym ledger: comma-separated equivalent terms.
 
     ``ir synonyms-add "acmecorp, acme corp, ac" --note "client nickname"``. Add only
     after a verified find that the word made possible; ``--oneway`` makes the first
     term expand to the others but not back; ``--corpus`` scopes the entry.
+    ``--miss-query "the query that missed" --found "id1,id2"`` records the miss and
+    what the word found, so the entry can later be replayed through ``ir.eval``
+    (``ir.synonyms_eval.replay_ledger``) and demoted if it does not help.
     """
     from .synonyms import add_synonyms, ledger_path
 
+    provenance = None
+    if miss_query or found:
+        if not (miss_query and found):
+            raise SystemExit("--miss-query and --found go together")
+        provenance = {
+            "miss_query": miss_query,
+            "found_ids": [i.strip() for i in str(found).split(",") if i.strip()],
+        }
     e = add_synonyms(
-        [t for t in str(terms).split(",")], note=note, oneway=oneway, corpus=corpus
+        [t for t in str(terms).split(",")],
+        note=note,
+        oneway=oneway,
+        corpus=corpus,
+        provenance=provenance,
     )
     return f"added to {ledger_path()}: {e.to_json()}"
 

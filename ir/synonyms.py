@@ -14,7 +14,11 @@ path with ``$IR_SYNONYMS``)::
     {"terms": ["vd", "vector database"], "oneway": true, "note": "vd expands, not back"}
 
 ``terms`` are equivalent (each expands to the others); with ``oneway`` only the first
-expands to the rest. ``corpus`` (optional) limits an entry to one corpus. The ledger
+expands to the rest. ``corpus`` (optional) limits an entry to one corpus. An entry
+may carry ``provenance`` (``{"miss_query": ..., "found_ids": [...]}``: the search that
+missed and what the vocabulary found), which lets :func:`ir.synonyms_eval.replay_ledger`
+re-test it; ``uses`` (replay wins) and ``status`` (``"demoted"`` entries are not
+loaded by default) are maintained by that replay. The ledger
 is the user's private data: it lives in their config dir, never in a repo.
 
 Three uses, one source: :func:`term_regex` builds an alternation for grep,
@@ -36,10 +40,13 @@ from __future__ import annotations
 import json
 import os
 import re
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import date
 from pathlib import Path
+
+#: Ledger entry statuses: ``DEMOTED`` entries are kept (for audit) but not loaded.
+ACTIVE, DEMOTED = "active", "demoted"
 
 #: The ledger's file name inside :func:`ir.config.config_dir`.
 DFLT_LEDGER_NAME = "synonyms.jsonl"
@@ -61,9 +68,16 @@ class SynonymEntry:
     note: str = ""
     added: str = ""
     corpus: str | None = None
+    provenance: Mapping[str, object] | None = None
+    uses: int = 0
+    status: str = ACTIVE
 
     def to_json(self) -> str:
-        d = {k: v for k, v in asdict(self).items() if v not in (None, "", False)}
+        d = {
+            k: v
+            for k, v in asdict(self).items()
+            if v not in (None, "", False, 0) and not (k == "status" and v == ACTIVE)
+        }
         d["terms"] = list(self.terms)
         return json.dumps(d, ensure_ascii=False)
 
@@ -79,9 +93,14 @@ def ledger_path() -> Path:
 
 
 def load_synonyms(
-    path: str | Path | None = None, *, corpus: str | None = None
+    path: str | Path | None = None,
+    *,
+    corpus: str | None = None,
+    include_demoted: bool = False,
 ) -> list[SynonymEntry]:
     """The ledger's entries (those for all corpora, plus ``corpus``'s own).
+
+    Demoted entries are skipped unless ``include_demoted``.
 
     A missing ledger is an empty one; a malformed line is skipped, so a hand edit
     gone wrong never breaks search.
@@ -109,7 +128,14 @@ def load_synonyms(
             note=str(d.get("note", "")),
             added=str(d.get("added", "")),
             corpus=d.get("corpus"),
+            provenance=d.get("provenance")
+            if isinstance(d.get("provenance"), dict)
+            else None,
+            uses=int(d.get("uses", 0) or 0),
+            status=str(d.get("status") or ACTIVE),
         )
+        if e.status == DEMOTED and not include_demoted:
+            continue
         if e.corpus is None or corpus is None or e.corpus == corpus:
             out.append(e)
     return out
@@ -121,9 +147,14 @@ def add_synonyms(
     note: str = "",
     oneway: bool = False,
     corpus: str | None = None,
+    provenance: Mapping[str, object] | None = None,
     path: str | Path | None = None,
 ) -> SynonymEntry:
     """Append one entry to the ledger (creating it) and return it.
+
+    ``provenance`` records the miss that prompted the entry
+    (``{"miss_query": ..., "found_ids": [...]}``, optionally ``"fix_query"``) so a
+    later replay can verify the entry still helps.
 
     Add an entry only after a verified find that the corpus-specific word made
     possible; general-language synonyms are the searcher's job, not the ledger's.
@@ -137,6 +168,7 @@ def add_synonyms(
         note=note,
         added=date.today().isoformat(),
         corpus=corpus,
+        provenance=dict(provenance) if provenance else None,
     )
     p = Path(path) if path else ledger_path()
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -239,3 +271,20 @@ def make_synonym_formulator(
         return expand_query(query, es, max_variants=max_variants)
 
     return formulate
+
+
+def write_synonyms(
+    entries: Iterable[SynonymEntry], path: str | Path | None = None
+) -> Path:
+    """Rewrite the whole ledger from ``entries`` (atomically: temp file, then rename).
+
+    The one place that rewrites rather than appends; used to persist replay results.
+    Pass the *full* entry list (``load_synonyms(include_demoted=True)``), since
+    anything left out is dropped.
+    """
+    p = Path(path) if path else ledger_path()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    tmp.write_text("".join(e.to_json() + "\n" for e in entries), encoding="utf-8")
+    tmp.replace(p)
+    return p
