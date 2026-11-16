@@ -6,7 +6,6 @@ import ir
 from ir.strategy import (
     Fields,
     balanced_windows,
-    fold_text,
     strategy_from_spec,
     strategy_to_spec,
 )
@@ -53,18 +52,46 @@ def test_missing_and_empty_fields_are_skipped():
     assert Fields(["about"]).decompose("r", "not a mapping").surfaces == []
 
 
-def test_normalize_by_name_and_by_callable():
-    rec = {"name": "Crème Brûlée"}
-    assert _texts(Fields([], head=["name"], normalize="fold").decompose("r", rec)) == [
-        ("record", "creme brulee")
-    ]
-    plan = Fields([], head=["name"], normalize=str.upper).decompose("r", rec)
+def test_normalize_callable_applies_to_every_text():
+    plan = Fields([], head=["name"], normalize=str.upper).decompose(
+        "r", {"name": "Crème Brûlée"}
+    )
     assert _texts(plan) == [("record", "CRÈME BRÛLÉE")]
-    assert fold_text("É") == "e"
-    with pytest.raises(ValueError, match="unknown normalizer"):
-        Fields(["a"], normalize="nope")
+
+
+def test_normalizer_identity_tracks_which_callable():
+    assert _strategy_id(Fields(["a"], normalize=str.upper)) != _strategy_id(
+        Fields(["a"], normalize=str.lower)
+    )
+
+
+def test_constructor_validates():
     with pytest.raises(ValueError, match="layout"):
         Fields(["a"], layout="x")
+    with pytest.raises(TypeError, match="bare string"):
+        Fields("about")
+    with pytest.raises(TypeError, match="bare string"):
+        Fields(["a"], head="name")
+    with pytest.raises(ValueError, match="overlap"):
+        Fields(["a"], max_chars=10, overlap=10)
+    with pytest.raises(ValueError, match="overlap"):
+        Fields(["a"], max_chars=0, overlap=0)
+    with pytest.raises(TypeError):
+        Fields(["a"], max_chars="12")
+
+
+def test_a_key_in_head_and_fields_is_read_once():
+    f = Fields(["name", "about"], head=["name"])
+    assert f.reads == ("name", "about")
+    plan = Fields(["name"], head=["name"], layout="fields").decompose("r", REC)
+    assert [s.kind for s in plan.surfaces] == ["name"]
+
+
+def test_fields_layout_windows_carry_chunk_metadata():
+    plan = Fields(["about"], layout="fields", max_chars=30, overlap=0).decompose(
+        "r", {"about": "x" * 50}
+    )
+    assert [s.metadata["n_chunks"] for s in plan.surfaces] == [2, 2]
 
 
 @pytest.mark.parametrize("length", [11, 12, 19, 25, 100])
@@ -90,22 +117,22 @@ def test_balanced_windows_no_sliver_and_guards():
 
 
 def test_spec_round_trip_and_identity_track_the_fields():
-    a = Fields(["about"], head=["name"], normalize="fold")
+    a = Fields(["about"], head=["name"], max_chars=500)
     clone = strategy_from_spec(strategy_to_spec(a))
     assert isinstance(clone, Fields) and clone.fields == ("about",)
-    assert clone.head == ("name",) and clone.normalize == "fold"
+    assert clone.head == ("name",) and clone.max_chars == 500
     assert _strategy_id(a) == _strategy_id(clone)
     assert _strategy_id(a) != _strategy_id(Fields(["about", "more"], head=["name"]))
 
 
-def test_fields_beats_whole_record_split_on_a_cross_field_query():
+def test_record_layout_scores_cross_field_queries_above_fields_layout():
     """A word in the name and a word in the place only score together in 'record'."""
     docs = {
         "r1": {"name": "Alpha Hotel", "place": "Lisbon", "about": "rooms"},
         "r2": {"name": "Alpha Hotel", "place": "Oslo", "about": "rooms"},
         "r3": {"name": "Beta Hotel", "place": "Lisbon", "about": "rooms"},
     }
-    ranks = {}
+    margin = {}
     for layout in ("record", "fields"):
         src = ir.CorpusSource.from_mapping(
             docs,
@@ -113,6 +140,23 @@ def test_fields_beats_whole_record_split_on_a_cross_field_query():
             strategy=Fields(["about"], head=["name", "place"], layout=layout),
         )
         corpus = ir.build(src, store=CorpusStore.memory(), embedder="light")
-        hits = corpus.search("alpha lisbon", mode="lexical", k=3)
-        ranks[layout] = [h.artifact_id for h in hits]
-    assert ranks["record"][0] == "r1"
+        hits = corpus.search("alpha lisbon", mode="lexical", k=3, per_artifact=True)
+        score = {h.artifact_id: h.score for h in hits}
+        assert max(score, key=score.get) == "r1"
+        margin[layout] = score["r1"] / max(score["r2"], score["r3"])
+    assert margin["record"] > margin["fields"]
+
+
+def test_from_records_reindexes_when_a_read_field_changes():
+    from ir.sources import CorpusSource
+
+    def mk(about):
+        return CorpusSource.from_records(
+            name="rf",
+            fetcher=lambda: [{"id": "x", "text": "t", "name": "n", "about": about}],
+            strategy=Fields(["about"], head=["name"]),
+        )
+
+    one, two = mk("first"), mk("second")
+    sig = one.change_signal
+    assert sig("x", one.scope["x"]) != sig("x", two.scope["x"])

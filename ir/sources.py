@@ -77,7 +77,10 @@ def content_hash_signal(artifact_id: str, raw: Any) -> str:
 
 
 def records_change_signal(
-    *, text_key: str = "text", metadata_keys: Iterable[str] = ()
+    *,
+    text_key: str = "text",
+    metadata_keys: Iterable[str] = (),
+    read_keys: Iterable[str] = (),
 ) -> Callable[[str, Any], str]:
     """Change signal for record dicts: covers the text **and** the stored metadata.
 
@@ -87,7 +90,8 @@ def records_change_signal(
     ``text_key`` this adds ``metadata_keys`` through ``ef``'s ``content_keys`` (and
     is identical to the old signal when there are none). With another
     ``text_key`` the whole record is hashed, so no field a strategy may read goes
-    stale.
+    stale. ``read_keys`` (a strategy's ``reads``, e.g. :class:`~ir.Fields`) join
+    the hash as well.
 
     >>> sig = records_change_signal(metadata_keys=["pages"])
     >>> a = sig("x", {"text": "t", "pages": "p.1"})
@@ -101,7 +105,7 @@ def records_change_signal(
     """
     import ef
 
-    keys = tuple(metadata_keys)
+    keys = tuple(dict.fromkeys((*metadata_keys, *read_keys)))
 
     def signal(artifact_id: str, raw: Any) -> str:
         if not isinstance(raw, Mapping):
@@ -320,7 +324,11 @@ class CorpusSource:
 
         kwargs.setdefault(
             "change_signal",
-            records_change_signal(text_key=text_key, metadata_keys=keys),
+            records_change_signal(
+                text_key=text_key,
+                metadata_keys=keys,
+                read_keys=getattr(strategy, "reads", ()),
+            ),
         )
         return cls(
             name=name,

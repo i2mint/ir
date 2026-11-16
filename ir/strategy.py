@@ -27,9 +27,9 @@ custom strategies need only match the :class:`IndexingStrategy` protocol.
 from __future__ import annotations
 
 import functools
+import inspect
 import math
 import re
-import unicodedata
 import warnings
 from collections.abc import Mapping, Sequence
 from typing import Any, Callable, Protocol, runtime_checkable
@@ -331,20 +331,6 @@ def is_simple_param(value: Any) -> bool:
     return isinstance(value, scalar)
 
 
-def fold_text(text: str) -> str:
-    """Case- and accent-fold *text* (``"Café"`` -> ``"cafe"``): the ``"fold"`` normalizer.
-
-    >>> fold_text("Crème BRÛLÉE")
-    'creme brulee'
-    """
-    decomposed = unicodedata.normalize("NFKD", text.casefold())
-    return "".join(c for c in decomposed if not unicodedata.combining(c))
-
-
-#: Text normalizers addressable by name (so a persisted spec can name one).
-NORMALIZERS: dict[str, Callable[[str], str]] = {"fold": fold_text}
-
-
 def balanced_windows(text: str, *, size: int, overlap: int = 0) -> list[str]:
     """Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.
 
@@ -396,10 +382,16 @@ class Fields:
     - ``layout="fields"``: one surface per field (head and body), ``kind`` = the
       field name, so a query can target one field with ``surfaces={...}``.
 
-    ``normalize`` (a callable, or the name ``"fold"`` for case + accent folding)
-    is applied to every text before indexing. ``max_chars`` / ``overlap`` window
-    long bodies with :func:`balanced_windows`. Name the strings, not callables, to
-    keep the strategy persistable in a registry entry.
+    ``normalize`` (a ``str -> str`` callable: case, accent folding...) is applied
+    to every text before indexing. **It acts on the index side only**: apply the
+    same function to queries (e.g. through ``formulate=``), or folded text will
+    never match an unfolded query. Its qualified name stamps the strategy's
+    identity (``normalize_id``); a callable is not persisted in a registry spec.
+    ``max_chars`` / ``overlap`` window the *body* with :func:`balanced_windows`
+    (the head is prefixed to each window and not itself windowed, so keep it short).
+    ``kind`` names the surface in the ``"record"`` layout; ``"fields"`` uses the
+    field names. A key listed in both ``head`` and ``fields`` is read once.
+    :attr:`reads` lists every key the strategy reads, so a change signal can cover them.
 
     >>> plan = Fields(fields=["about"], head=["name", "place"]).decompose(
     ...     "r1", {"name": "Louvre", "place": "Paris", "about": "A museum."})
@@ -413,33 +405,44 @@ class Fields:
         *,
         head: Sequence[str] = (),
         layout: str = "record",
-        normalize: Callable[[str], str] | str | None = None,
+        normalize: Callable[[str], str] | None = None,
         max_chars: int = 1200,
         overlap: int = 200,
         kind: str = "record",
     ):
         if layout not in ("record", "fields"):
             raise ValueError(f"layout must be 'record' or 'fields', got {layout!r}")
-        if isinstance(normalize, str) and normalize not in NORMALIZERS:
+        if isinstance(fields, str) or isinstance(head, str):
+            raise TypeError("fields and head are sequences of keys, not a bare string")
+        if not (isinstance(max_chars, int) and isinstance(overlap, int)):
+            raise TypeError("max_chars and overlap must be integers")
+        if not 0 <= overlap < max_chars:
             raise ValueError(
-                f"unknown normalizer {normalize!r}; known: {sorted(NORMALIZERS)}"
+                f"need 0 <= overlap < max_chars, got {overlap}, {max_chars}"
             )
-        self.fields = tuple(fields)
         self.head = tuple(head)
+        self.fields = tuple(k for k in fields if k not in self.head)
         self.layout = layout
         self.normalize = normalize
+        self.normalize_id = (
+            f"{getattr(normalize, '__module__', None) or type(normalize).__module__}"
+            f".{getattr(normalize, '__qualname__', type(normalize).__qualname__)}"
+            if normalize is not None
+            else None
+        )
         self.max_chars = max_chars
         self.overlap = overlap
         self.kind = kind
 
-    def _normalizer(self) -> Callable[[str], str]:
-        n = self.normalize
-        return NORMALIZERS[n] if isinstance(n, str) else (n or (lambda t: t))
+    @property
+    def reads(self) -> tuple[str, ...]:
+        """Every record key this strategy reads (for change signals)."""
+        return (*self.head, *self.fields)
 
     def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
         meta = dict(metadata or {})
         record = raw if isinstance(raw, Mapping) else {}
-        norm = self._normalizer()
+        norm = self.normalize or (lambda t: t)
 
         def text(key):
             return norm(_field_text(record.get(key))).strip()
@@ -448,11 +451,19 @@ class Fields:
             balanced_windows, size=self.max_chars, overlap=self.overlap
         )
         if self.layout == "fields":
-            surfaces = [
-                Surface(artifact_id, key, window, granularity="field")
-                for key in (*self.head, *self.fields)
-                for window in windows(text(key))
-            ]
+            surfaces = []
+            for key in self.reads:
+                parts = windows(text(key))
+                surfaces += [
+                    Surface(
+                        artifact_id,
+                        key,
+                        part,
+                        granularity="field",
+                        metadata={"chunk_index": i, "n_chunks": len(parts)},
+                    )
+                    for i, part in enumerate(parts)
+                ]
         else:
             head = "\n".join(t for t in map(text, self.head) if t)
             body = windows("\n".join(t for t in map(text, self.fields) if t))
@@ -492,10 +503,11 @@ def strategy_to_spec(strategy: Any) -> dict:
     segmentation spec.
     """
     name = type(strategy).__name__
+    ctor = inspect.signature(type(strategy)).parameters  # not identity-only stamps
     params = {
         k: list(v) if isinstance(v, tuple) else v
         for k, v in vars(strategy).items()
-        if is_simple_param(v)
+        if is_simple_param(v) and k in ctor
     }
     return {"name": name, "params": params}
 
