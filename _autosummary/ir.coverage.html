@@ -149,7 +149,8 @@ subtree — 29% of the corpus — invisibly). Back-translation evals cannot catc
 this: their gold is drawn from what is <em>already</em> indexed, so an un-indexed doc
 can never lower a metric. Coverage therefore needs its own check.</p>
 <p><a class="reference internal" href="#ir.coverage.reports_coverage" title="ir.coverage.reports_coverage"><code class="xref py py-func docutils literal notranslate"><span class="pre">reports_coverage()</span></code></a> <strong>independently</strong> walks the reports doc-trees on disk
-(the raw <code class="docutils literal notranslate"><span class="pre">*/*/docs</span></code> and <code class="docutils literal notranslate"><span class="pre">*/*/misc/docs</span></code> files, before any filtering),
+(the raw <code class="docutils literal notranslate"><span class="pre">*/*/docs</span></code> and <code class="docutils literal notranslate"><span class="pre">*/*/misc/docs</span></code> files, plus pocket repos and root-level
+<code class="docutils literal notranslate"><span class="pre">_name</span></code> companions, before any filtering),
 classifies each file with the same inclusion SSOT the ingestion walk uses
 (<a class="reference internal" href="ir.sources.html#ir.sources.report_exclude_reason" title="ir.sources.report_exclude_reason"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.sources.report_exclude_reason()</span></code></a>), and diffs the <em>should-be-indexed</em>
 set against the built corpus’s ledger — surfacing exactly the on-disk-but-absent
@@ -229,7 +230,7 @@ diff an arbitrary tree against an arbitrary index without opening a corpus.</p>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=9f53bdf0"></script>
+<script src="../_static/documentation_options.js?v=a8ab379a"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

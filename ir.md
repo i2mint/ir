@@ -1,4 +1,4 @@
-> built 2026-11-16 08:44 UTC from dfee7de (master) · ir 0.1.71. Details: build_info.json
+> built 2026-11-16 09:37 UTC from 74f9ff1 (master) · ir 0.1.72. Details: build_info.json
 
 # index.html.md
 
@@ -917,7 +917,8 @@ this: their gold is drawn from what is *already* indexed, so an un-indexed doc
 can never lower a metric. Coverage therefore needs its own check.
 
 [`reports_coverage()`](_autosummary/ir.coverage.html.md#ir.coverage.reports_coverage) **independently** walks the reports doc-trees on disk
-(the raw `*/*/docs` and `*/*/misc/docs` files, before any filtering),
+(the raw `*/*/docs` and `*/*/misc/docs` files, plus pocket repos and root-level
+`_name` companions, before any filtering),
 classifies each file with the same inclusion SSOT the ingestion walk uses
 ([`ir.sources.report_exclude_reason()`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)), and diffs the *should-be-indexed*
 set against the built corpus’s ledger — surfacing exactly the on-disk-but-absent
@@ -3498,7 +3499,8 @@ Check the server is up
 Markdown reports under projects’ `docs/` and `misc/docs/` trees.
 
 Walks each `*/*/docs` and `*/*/misc/docs` folder, and those of
-pocket repos (`i/_zodals/<repo>/docs`, see `iter_pocket_repos()`), **recursively**
+pocket repos (`i/_zodals/<repo>/docs`, see `iter_pocket_repos()`) and
+root-level private companions (`_name/docs`, see `iter_companion_repos()`), **recursively**
 (`recursive=True`, default) so reports nested one or more levels deep —
 `docs/research/…`, `docs/decisions/…`, `docs/adr/…` — are indexed,
 not just files sitting directly in the folder. Pass `recursive=False`
@@ -6872,24 +6874,30 @@ Smart-default constructors cover the common ways to define a source:
 | [`MCP_TOOL_PARAM_KEYS`](_autosummary/ir.sources.html.md#ir.sources.MCP_TOOL_PARAM_KEYS)      | Fields a tool record may carry its parameter schema under, in lookup order: fastmcp's `parameters`, the MCP wire format's `inputSchema`, and the Anthropic API's `input_schema`. |
 | [`REPORT_DOC_GLOBS`](_autosummary/ir.sources.html.md#ir.sources.REPORT_DOC_GLOBS)         | The two per-project doc-tree roots reports are drawn from (relative globs).                                                                                                      |
 | [`REPO_DOC_SUBDIRS`](_autosummary/ir.sources.html.md#ir.sources.REPO_DOC_SUBDIRS)         | The doc-tree roots inside a repo (relative to the repo folder).                                                                                                                  |
+| [`COMPANION_PREFIX`](_autosummary/ir.sources.html.md#ir.sources.COMPANION_PREFIX)         | Folder-name prefix of a private companion repository at the projects root.                                                                                                       |
 
 ### Functions
 
-| [`content_hash_signal`](_autosummary/ir.sources.html.md#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                    |
-|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
-| [`iter_pocket_repos`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.         |
-| [`iter_report_doc_folders`](_autosummary/ir.sources.html.md#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                          |
-| [`mcp_tool_record`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.          |
-| [`mcp_tool_signal`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`.    |
-| [`package_repo_dirs`](_autosummary/ir.sources.html.md#ir.sources.package_repo_dirs)([manifest])                  | Manifest package directories, then fleet repos the manifest does not name.   |
-| [`records_change_signal`](_autosummary/ir.sources.html.md#ir.sources.records_change_signal)(\*[, text_key, ...])     | Change signal for record dicts: covers the text **and** the stored metadata. |
-| [`report_exclude_reason`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.             |
-| [`resolve_fetcher`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.        |
+| [`content_hash_signal`](_autosummary/ir.sources.html.md#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                         |
+|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`iter_companion_repos`](_autosummary/ir.sources.html.md#ir.sources.iter_companion_repos)(root)                     | Yield private companion repos `<root>/_name`: git repos named with a leading `_`. |
+| [`iter_pocket_repos`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.              |
+| [`iter_report_doc_folders`](_autosummary/ir.sources.html.md#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                               |
+| [`mcp_tool_record`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.               |
+| [`mcp_tool_signal`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`.         |
+| [`package_repo_dirs`](_autosummary/ir.sources.html.md#ir.sources.package_repo_dirs)([manifest])                  | Manifest package directories, then fleet repos the manifest does not name.        |
+| [`records_change_signal`](_autosummary/ir.sources.html.md#ir.sources.records_change_signal)(\*[, text_key, ...])     | Change signal for record dicts: covers the text **and** the stored metadata.      |
+| [`report_exclude_reason`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.                  |
+| [`resolve_fetcher`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.             |
 
 ### Classes
 
 | [`CorpusSource`](_autosummary/ir.sources.html.md#ir.sources.CorpusSource)(name, scope[, ...])   | A corpus definition: scope + change signal + strategy + embedder.   |
 |-------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+
+### ir.sources.COMPANION_PREFIX *= '_'*
+
+Folder-name prefix of a private companion repository at the projects root.
 
 ### *class* ir.sources.CorpusSource(name, scope, indexing_strategy=WholeText(), change_signal=<function content_hash_signal>, embedder='default', metadata_of=None)
 
@@ -6983,7 +6991,8 @@ Check the server is up
 Markdown reports under projects’ `docs/` and `misc/docs/` trees.
 
 Walks each `*/*/docs` and `*/*/misc/docs` folder, and those of
-pocket repos (`i/_zodals/<repo>/docs`, see [`iter_pocket_repos()`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)), **recursively**
+pocket repos (`i/_zodals/<repo>/docs`, see [`iter_pocket_repos()`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)) and
+root-level private companions (`_name/docs`, see [`iter_companion_repos()`](_autosummary/ir.sources.html.md#ir.sources.iter_companion_repos)), **recursively**
 (`recursive=True`, default) so reports nested one or more levels deep —
 `docs/research/…`, `docs/decisions/…`, `docs/adr/…` — are indexed,
 not just files sitting directly in the folder. Pass `recursive=False`
@@ -7093,6 +7102,15 @@ Default change signal: a content hash of the raw payload.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
+### ir.sources.iter_companion_repos(root)
+
+Yield private companion repos `<root>/_name`: git repos named with a leading `_`.
+
+A `_name` repository beside `name` holds that project’s private design
+documents. Only a folder whose `.git` is a **directory** counts, so working
+folders like `_agent_work` or `_tmp` (no repo) and worktrees (a `.git` file,
+docs duplicated elsewhere) stay out, as for [`iter_pocket_repos()`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos).
+
 ### ir.sources.iter_pocket_repos(root)
 
 Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.
@@ -7107,7 +7125,8 @@ worktree or submodule, whose docs duplicate a checkout indexed elsewhere.
 Yield each existing report doc folder under *root*.
 
 `*/*/docs` and `*/*/misc/docs` (a repo at `<letter>/<repo>`), plus the
-same two folders of every pocket repo ([`iter_pocket_repos()`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)). The single
+same two folders of every pocket repo ([`iter_pocket_repos()`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)) and of every
+root-level private companion ([`iter_companion_repos()`](_autosummary/ir.sources.html.md#ir.sources.iter_companion_repos)). The single
 enumeration both ingestion and [`ir.coverage.reports_coverage()`](_autosummary/ir.coverage.html.md#ir.coverage.reports_coverage) use.
 
 ### ir.sources.mcp_tool_record(tool)
@@ -8377,18 +8396,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-16 08:44 UTC** from commit <a href="https://github.com/i2mint/ir/commit/dfee7ded625045049d3c6cabd8a96e33df057f0a"><code>dfee7de</code></a> on branch <code>master</code>, for **ir 0.1.71** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-16 09:37 UTC** from commit <a href="https://github.com/i2mint/ir/commit/74f9ff1d52886bf43071dfb47209d2d3db6b6a00"><code>74f9ff1</code></a> on branch <code>master</code>, for **ir 0.1.72** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.71) is behind the latest release on PyPI (0.1.72): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/dfee7ded625045049d3c6cabd8a96e33df057f0a"><code>dfee7ded625045049d3c6cabd8a96e33df057f0a</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/74f9ff1d52886bf43071dfb47209d2d3db6b6a00"><code>74f9ff1d52886bf43071dfb47209d2d3db6b6a00</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8399,9 +8416,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43833486796">43833486796</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43841134736">43841134736</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>dfee7ded625045049d3c6cabd8a96e33df057f0a</code> (in the history of the built commit) |
+| Event commit | <code>74f9ff1d52886bf43071dfb47209d2d3db6b6a00</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8426,13 +8443,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.72/">0.1.72</a>, newer than the documented version (0.1.71).
+Latest release: <a href="https://pypi.org/project/ir/0.1.72/">0.1.72</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout dfee7ded625045049d3c6cabd8a96e33df057f0a
+git checkout 74f9ff1d52886bf43071dfb47209d2d3db6b6a00
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

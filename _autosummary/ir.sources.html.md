@@ -26,24 +26,30 @@ Smart-default constructors cover the common ways to define a source:
 | [`MCP_TOOL_PARAM_KEYS`](#ir.sources.MCP_TOOL_PARAM_KEYS)      | Fields a tool record may carry its parameter schema under, in lookup order: fastmcp's `parameters`, the MCP wire format's `inputSchema`, and the Anthropic API's `input_schema`. |
 | [`REPORT_DOC_GLOBS`](#ir.sources.REPORT_DOC_GLOBS)         | The two per-project doc-tree roots reports are drawn from (relative globs).                                                                                                      |
 | [`REPO_DOC_SUBDIRS`](#ir.sources.REPO_DOC_SUBDIRS)         | The doc-tree roots inside a repo (relative to the repo folder).                                                                                                                  |
+| [`COMPANION_PREFIX`](#ir.sources.COMPANION_PREFIX)         | Folder-name prefix of a private companion repository at the projects root.                                                                                                       |
 
 ### Functions
 
-| [`content_hash_signal`](#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                    |
-|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
-| [`iter_pocket_repos`](#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.         |
-| [`iter_report_doc_folders`](#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                          |
-| [`mcp_tool_record`](#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.          |
-| [`mcp_tool_signal`](#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`.    |
-| [`package_repo_dirs`](#ir.sources.package_repo_dirs)([manifest])                  | Manifest package directories, then fleet repos the manifest does not name.   |
-| [`records_change_signal`](#ir.sources.records_change_signal)(\*[, text_key, ...])     | Change signal for record dicts: covers the text **and** the stored metadata. |
-| [`report_exclude_reason`](#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.             |
-| [`resolve_fetcher`](#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.        |
+| [`content_hash_signal`](#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                         |
+|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`iter_companion_repos`](#ir.sources.iter_companion_repos)(root)                     | Yield private companion repos `<root>/_name`: git repos named with a leading `_`. |
+| [`iter_pocket_repos`](#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.              |
+| [`iter_report_doc_folders`](#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                               |
+| [`mcp_tool_record`](#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.               |
+| [`mcp_tool_signal`](#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`.         |
+| [`package_repo_dirs`](#ir.sources.package_repo_dirs)([manifest])                  | Manifest package directories, then fleet repos the manifest does not name.        |
+| [`records_change_signal`](#ir.sources.records_change_signal)(\*[, text_key, ...])     | Change signal for record dicts: covers the text **and** the stored metadata.      |
+| [`report_exclude_reason`](#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.                  |
+| [`resolve_fetcher`](#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.             |
 
 ### Classes
 
 | [`CorpusSource`](#ir.sources.CorpusSource)(name, scope[, ...])   | A corpus definition: scope + change signal + strategy + embedder.   |
 |-------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+
+### ir.sources.COMPANION_PREFIX *= '_'*
+
+Folder-name prefix of a private companion repository at the projects root.
 
 ### *class* ir.sources.CorpusSource(name, scope, indexing_strategy=WholeText(), change_signal=<function content_hash_signal>, embedder='default', metadata_of=None)
 
@@ -137,7 +143,8 @@ Check the server is up
 Markdown reports under projects’ `docs/` and `misc/docs/` trees.
 
 Walks each `*/*/docs` and `*/*/misc/docs` folder, and those of
-pocket repos (`i/_zodals/<repo>/docs`, see [`iter_pocket_repos()`](#ir.sources.iter_pocket_repos)), **recursively**
+pocket repos (`i/_zodals/<repo>/docs`, see [`iter_pocket_repos()`](#ir.sources.iter_pocket_repos)) and
+root-level private companions (`_name/docs`, see [`iter_companion_repos()`](#ir.sources.iter_companion_repos)), **recursively**
 (`recursive=True`, default) so reports nested one or more levels deep —
 `docs/research/…`, `docs/decisions/…`, `docs/adr/…` — are indexed,
 not just files sitting directly in the folder. Pass `recursive=False`
@@ -247,6 +254,15 @@ Default change signal: a content hash of the raw payload.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
+### ir.sources.iter_companion_repos(root)
+
+Yield private companion repos `<root>/_name`: git repos named with a leading `_`.
+
+A `_name` repository beside `name` holds that project’s private design
+documents. Only a folder whose `.git` is a **directory** counts, so working
+folders like `_agent_work` or `_tmp` (no repo) and worktrees (a `.git` file,
+docs duplicated elsewhere) stay out, as for [`iter_pocket_repos()`](#ir.sources.iter_pocket_repos).
+
 ### ir.sources.iter_pocket_repos(root)
 
 Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.
@@ -261,7 +277,8 @@ worktree or submodule, whose docs duplicate a checkout indexed elsewhere.
 Yield each existing report doc folder under *root*.
 
 `*/*/docs` and `*/*/misc/docs` (a repo at `<letter>/<repo>`), plus the
-same two folders of every pocket repo ([`iter_pocket_repos()`](#ir.sources.iter_pocket_repos)). The single
+same two folders of every pocket repo ([`iter_pocket_repos()`](#ir.sources.iter_pocket_repos)) and of every
+root-level private companion ([`iter_companion_repos()`](#ir.sources.iter_companion_repos)). The single
 enumeration both ingestion and [`ir.coverage.reports_coverage()`](ir.coverage.html.md#ir.coverage.reports_coverage) use.
 
 ### ir.sources.mcp_tool_record(tool)

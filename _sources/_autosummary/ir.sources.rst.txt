@@ -13,12 +13,14 @@ ir.sources
       MCP_TOOL_PARAM_KEYS
       REPORT_DOC_GLOBS
       REPO_DOC_SUBDIRS
+      COMPANION_PREFIX
    
    .. rubric:: Functions
 
    .. autosummary::
    
       content_hash_signal
+      iter_companion_repos
       iter_pocket_repos
       iter_report_doc_folders
       mcp_tool_record

@@ -364,7 +364,8 @@ Check the server is up
 Markdown reports under projects’ `docs/` and `misc/docs/` trees.
 
 Walks each `*/*/docs` and `*/*/misc/docs` folder, and those of
-pocket repos (`i/_zodals/<repo>/docs`, see `iter_pocket_repos()`), **recursively**
+pocket repos (`i/_zodals/<repo>/docs`, see `iter_pocket_repos()`) and
+root-level private companions (`_name/docs`, see `iter_companion_repos()`), **recursively**
 (`recursive=True`, default) so reports nested one or more levels deep —
 `docs/research/…`, `docs/decisions/…`, `docs/adr/…` — are indexed,
 not just files sitting directly in the folder. Pass `recursive=False`

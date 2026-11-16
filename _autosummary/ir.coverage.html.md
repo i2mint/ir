@@ -10,7 +10,8 @@ this: their gold is drawn from what is *already* indexed, so an un-indexed doc
 can never lower a metric. Coverage therefore needs its own check.
 
 [`reports_coverage()`](#ir.coverage.reports_coverage) **independently** walks the reports doc-trees on disk
-(the raw `*/*/docs` and `*/*/misc/docs` files, before any filtering),
+(the raw `*/*/docs` and `*/*/misc/docs` files, plus pocket repos and root-level
+`_name` companions, before any filtering),
 classifies each file with the same inclusion SSOT the ingestion walk uses
 ([`ir.sources.report_exclude_reason()`](ir.sources.html.md#ir.sources.report_exclude_reason)), and diffs the *should-be-indexed*
 set against the built corpus’s ledger — surfacing exactly the on-disk-but-absent
