@@ -49,7 +49,7 @@ def test_case_fixed_glob_and_k(tree, use_rg):
     md = grep_hits("acme", roots=tree, glob="*.md", use_rg=use_rg)
     assert {h.artifact_id for h in md} == {"proj1/a.md", "proj1/b.md"}
     assert grep_hits("a.m", roots=tree, fixed=True, use_rg=use_rg) == []
-    assert grep_hits("ac.e", roots=tree, use_rg=use_rg)
+    assert grep_hits("ac.e", roots=tree, use_rg=False)
 
 
 @pytest.mark.parametrize("use_rg", BACKENDS)
@@ -114,11 +114,14 @@ def test_bad_regex_and_missing_rg_are_clear_errors(tree, monkeypatch):
     assert grep_hits("acme", roots=tree)  # default degrades to Python
 
 
-@pytest.mark.skipif(not HAS_RG, reason="no rg")
-def test_rg_incompatible_regex_falls_back_to_python(tree):
-    # a lookahead: rg's default engine cannot compile it, Python re can
-    hits = grep_hits(r"acme(?= invoice)", roots=tree, use_rg=True)
+def test_regex_patterns_are_read_in_python_and_use_rg_true_refuses_them(tree):
+    # a lookahead: only Python can read it; the default quietly uses Python
+    hits = grep_hits(r"acme(?= invoice)", roots=tree)
     assert [h.artifact_id for h in hits] == ["proj1/a.md"]
+    with pytest.raises(ValueError, match="ASCII literal"):
+        grep_hits(r"acme(?= invoice)", roots=tree, use_rg=True)
+    with pytest.raises(ValueError, match="ASCII literal"):
+        grep_hits("caf\u00e9", roots=tree, use_rg=True)
 
 
 def test_retriever_contract_binds_roots_and_allows_overrides(tree):
@@ -174,13 +177,114 @@ def test_rg_really_runs_and_a_newline_in_a_filename_is_fine(tree, monkeypatch):
 
 
 @pytest.mark.parametrize("use_rg", BACKENDS)
-def test_crlf_anchors_and_cr_only_lines_agree_across_backends(tmp_path, use_rg):
+def test_crlf_and_cr_only_lines_agree_across_backends(tmp_path, use_rg):
     (tmp_path / "crlf.txt").write_bytes(b"acme\r\nx acme\r\nacme\r\n")
     (tmp_path / "cr.txt").write_bytes(b"acme\racme\racme\r")
-    anchored = grep_hits(r"acme$", roots=tmp_path, glob="crlf.txt", use_rg=use_rg)
-    assert [h.score for h in anchored] == [3.0]  # `$` sees through the CR of CRLF
+    crlf = grep_hits("acme", roots=tmp_path, glob="crlf.txt", use_rg=use_rg)
+    assert [h.score for h in crlf] == [3.0]
     cr = grep_hits("acme", roots=tmp_path, glob="cr.txt", use_rg=use_rg)
     assert [h.score for h in cr] == [1.0]  # a lone CR does not end a line
+
+
+def test_anchors_see_through_the_cr_of_crlf(tmp_path):
+    (tmp_path / "crlf.txt").write_bytes(b"acme\r\nx acme\r\nacme\r\n")
+    assert [h.score for h in grep_hits(r"acme$", roots=tmp_path)] == [3.0]
+
+
+@pytest.mark.parametrize("ignore_case", [True, False])
+@pytest.mark.parametrize(
+    "pattern", ["acme", "istanbul", "Kelvin", "stra\u00dfe", "a b"]
+)
+def test_rg_prefilter_never_changes_the_result(tmp_path, pattern, ignore_case):
+    """Differential: with or without rg, the hits are identical (incl. fold traps)."""
+    texts = [
+        "acme here",
+        "\u0130stanbul and istanbul",
+        "\u212aelvin sign, kelvin, Kelvin",
+        "STRASSE stra\u00dfe",
+        "a b",
+        "caf\u00e9",
+        "\ufeffacme at bom",
+    ]
+    for i, t in enumerate(texts):
+        (tmp_path / f"f{i}.txt").write_text(t + "\n", encoding="utf-8")
+    kw = dict(roots=tmp_path, ignore_case=ignore_case, fixed=True)
+    with_rg = grep_hits(pattern, use_rg=None, **kw)
+    without = grep_hits(pattern, use_rg=False, **kw)
+    assert [(h.artifact_id, h.score) for h in with_rg] == [
+        (h.artifact_id, h.score) for h in without
+    ]
+
+
+@pytest.mark.skipif(not HAS_RG, reason="no rg")
+def test_rg_prefilter_result_is_what_is_read(tree, monkeypatch):
+    from ir import grep as g
+
+    read = []
+    real = g._count_and_first
+    monkeypatch.setattr(
+        g, "_count_and_first", lambda f, rx: read.append(f.name) or real(f, rx)
+    )
+    grep_hits("acme", roots=tree, use_rg=True)
+    assert sorted(read) == [
+        "a.md",
+        "b.md",
+        "c.txt",
+    ]  # d.md was dropped by rg, never read
+
+
+def test_bom_nul_and_bad_arguments(tmp_path):
+    (tmp_path / "b.md").write_bytes(b"\xef\xbb\xbf# title acme\n")
+    assert grep_hits("^# title", roots=tmp_path, use_rg=False)  # BOM stripped
+    assert grep_hits("\x00", roots=tmp_path, fixed=True) == []  # no rg crash on NUL
+    for bad in (0, -1, True):
+        with pytest.raises(ValueError, match="rg_batch"):
+            grep_hits("acme", roots=tmp_path, rg_batch=bad)
+    with pytest.raises(ValueError, match="k must"):
+        grep_hits("acme", roots=tmp_path, k=True)
+    with pytest.raises(ValueError, match="does not exist"):
+        grep_hits("acme", roots=tmp_path / "missing")
+
+
+def test_symlink_loop_does_not_crash_the_search(tmp_path):
+    (tmp_path / "ok.md").write_text("acme\n")
+    try:
+        (tmp_path / "x").symlink_to(tmp_path / "x")
+    except OSError:
+        pytest.skip("no symlinks")
+    assert [h.artifact_id for h in grep_hits("acme", roots=tmp_path, use_rg=False)] == [
+        "ok.md"
+    ]
+
+
+def test_overlapping_roots_return_a_file_once(tmp_path):
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "sub" / "n.md").write_text("acme\n")
+    hits = grep_hits("acme", roots=[tmp_path, tmp_path / "sub"], use_rg=False)
+    assert len(hits) == 1
+
+
+def test_metadata_of_runs_only_for_filtered_or_returned_files(tree):
+    calls = []
+
+    def meta(p):
+        calls.append(p.name)
+        return {"project": p.parent.name}
+
+    hits = grep_hits("acme", roots=tree, use_rg=False, metadata_of=meta, k=1)
+    assert (
+        len(calls) == 1 and hits[0].metadata["project"] == "proj2"
+    )  # one returned hit
+    calls.clear()
+    grep_hits(
+        "acme", roots=tree, use_rg=False, metadata_of=meta, filter={"project": "proj1"}
+    )
+    assert set(calls) >= {
+        "a.md",
+        "b.md",
+        "c.txt",
+        "d.md",
+    }  # the filter needs every file
 
 
 def test_same_relative_path_in_two_roots_is_an_error_unless_id_of_is_given(tmp_path):
