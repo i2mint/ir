@@ -170,6 +170,7 @@ def search(
     rerank=None,
     rerank_text="surface",
     expand=False,
+    filter=None,
 ):
     """Search a built corpus and print the top-k hits.
 
@@ -181,7 +182,10 @@ def search(
     picks what it reads: surface (default) | artifact. Reranked scores are on the
     reranker's own scale. ``--expand`` also searches the query's variants from the
     synonym ledger (``ir synonyms``) and fuses them (best score per artifact across
-    the variants; the original query is always one of them).
+    the variants; the original query is always one of them). ``--filter`` is a
+    JSON metadata filter in the Mongo-style form of ``ir.search(filter=...)``,
+    e.g. ``--filter '{"project": "dol"}'`` or ``'{"source": {"$in": ["a", "b"]}}'``;
+    operators: $eq $ne $in $nin $gt $gte $lt $lte $exists, plus $and/$or/$not.
     """
     corpus = _open_ready(name)
     if len(corpus) == 0:
@@ -194,6 +198,7 @@ def search(
         fusion=fusion,
         **_rerank_kw(rerank, rerank_text),
         **_expand_kw(expand, name),
+        **_filter_kw(filter),
     )
     for h in hits:
         # artifact_id is the unique label across corpora (skill name[@parent],
@@ -209,6 +214,33 @@ def _expand_kw(expand, name):
     from .synonyms import make_synonym_formulator
 
     return {"formulate": make_synonym_formulator(corpus=name)}
+
+
+def _filter_kw(filter):
+    """Search kwargs for a JSON metadata filter; empty (today's behavior) when unset."""
+    if filter is None or not str(filter).strip():
+        return {}
+    import json
+
+    try:
+        parsed = json.loads(filter) if isinstance(filter, str) else filter
+    except json.JSONDecodeError as e:
+        raise SystemExit(
+            f'--filter must be a JSON object, e.g. \'{{"k": "v"}}\': {e}'
+        ) from None
+    if not isinstance(parsed, dict):
+        raise SystemExit("--filter must be a JSON object (a Mongo-style filter)")
+    if not parsed:
+        return {}
+    from vd.base import UnsupportedFilterError
+    from vd.filters import validate_filter
+
+    try:
+        validate_filter(parsed)
+    except (UnsupportedFilterError, AttributeError, TypeError, ValueError) as e:
+        # vd raises a bare AttributeError for a malformed $and/$or operand
+        raise SystemExit(f"--filter: unusable filter ({e})") from None
+    return {"filter": parsed}
 
 
 def _rerank_kw(rerank, rerank_text):
@@ -232,6 +264,7 @@ def discover(
     rerank=None,
     rerank_text="surface",
     expand=False,
+    filter=None,
 ):
     """Search a corpus, commit to a distractor-robust subset, and show it.
 
@@ -246,7 +279,8 @@ def discover(
     calibrated cross-encoder precision stage (``--rerank-text`` picks what it
     reads); with ``--min-score auto`` it uses the floor calibrated under the same
     ``--rerank`` / ``--rerank-text``. ``--expand`` adds the query's variants from
-    the synonym ledger (``ir synonyms``).
+    the synonym ledger (``ir synonyms``). ``--filter`` takes the JSON form of the
+    metadata filter (see ``search``).
     """
     from .select import discover as _discover
 
@@ -269,6 +303,7 @@ def discover(
         fusion=fusion,
         **_rerank_kw(rerank, rerank_text),
         **_expand_kw(expand, name),
+        **_filter_kw(filter),
     )
     if result.abstained:
         return (

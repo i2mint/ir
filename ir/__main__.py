@@ -19,9 +19,16 @@ from .cli import COMMANDS
 CONVENTION = dataclasses.replace(cw.ARGH, naming=cw.BY_NAME_IF_KWONLY)
 
 
+#: ``--filter`` and ``--fusion`` share a first letter, and cw (like argh) then drops
+#: *both* short flags. ``-f`` has always meant ``--fusion``, so it is pinned back.
+SHORT_FLAGS = {
+    cmd: {"fusion": {"flags": ["-f", "--fusion"]}} for cmd in ("search", "discover")
+}
+
+
 def mk_parser():
     """Build ir's argument parser (a plain :class:`argparse.ArgumentParser`)."""
-    return cw.mk_parser(COMMANDS, convention=CONVENTION)
+    return cw.mk_parser(COMMANDS, convention=CONVENTION, config=SHORT_FLAGS)
 
 
 def main():
