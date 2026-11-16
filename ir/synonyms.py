@@ -113,7 +113,7 @@ def load_synonyms(
     """
     p = Path(path) if path else ledger_path()
     try:
-        lines = p.read_text(encoding="utf-8").splitlines()
+        lines = p.read_text(encoding="utf-8").split("\n")  # not splitlines: U+2028 etc.
     except OSError:
         return []
     out = []
@@ -121,7 +121,8 @@ def load_synonyms(
         try:
             d = json.loads(line)
             raw = d["terms"]
-        except (ValueError, KeyError, TypeError):
+            verified = int(d.get("verified", 0) or 0)
+        except (ValueError, KeyError, TypeError, AttributeError):
             continue
         if not isinstance(raw, list):  # a string would split into characters
             continue
@@ -137,7 +138,7 @@ def load_synonyms(
             provenance=d.get("provenance")
             if isinstance(d.get("provenance"), dict)
             else None,
-            verified=int(d.get("verified", 0) or 0),
+            verified=verified,
             status=str(d.get("status") or ACTIVE),
             source_line=line,
         )
@@ -297,14 +298,14 @@ def update_entries(
     """
     import tempfile
 
-    p = Path(path) if path else ledger_path()
+    p = (Path(path) if path else ledger_path()).resolve()  # keep a symlinked ledger
     pending: dict[str, deque] = defaultdict(deque)
     for old, new in changes:
         if old.source_line:
             pending[old.source_line].append(new)
     if not pending:
         return 0
-    lines = p.read_text(encoding="utf-8").splitlines()
+    lines = p.read_text(encoding="utf-8").split("\n")  # same split as load_synonyms
     patched = 0
     for i, line in enumerate(lines):
         queue = pending.get(line)
@@ -319,10 +320,12 @@ def update_entries(
                 d[key] = value
         lines[i] = json.dumps(d, ensure_ascii=False)
         patched += 1
+    if not patched:
+        return 0
     fd, tmp = tempfile.mkstemp(dir=p.parent, prefix=p.name + ".", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write("".join(line + "\n" for line in lines))
+            f.write("\n".join(lines))
         os.replace(tmp, p)
     except BaseException:
         Path(tmp).unlink(missing_ok=True)

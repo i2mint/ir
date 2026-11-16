@@ -741,10 +741,11 @@ def synonyms_replay(name, *, apply=False, mode="lexical"):
     (or a ``no_effect`` that never won). Demoted entries stay in the file but stop
     expanding searches.
     """
+    from .synonyms import update_entries
     from .synonyms_eval import apply_verdicts, replay_ledger
 
     corpus = _open_ready(name)
-    verdicts = replay_ledger(corpus, apply=apply, mode=mode)
+    verdicts = replay_ledger(corpus, mode=mode)
     if not verdicts:
         return f"(no ledger entries for {name!r})"
     lines = []
@@ -755,10 +756,11 @@ def synonyms_replay(name, *, apply=False, mode="lexical"):
             else ""
         )
         lines.append(f"{v.verdict:<12}{' = '.join(v.entry.terms)}{scores}")
-    changed = len(apply_verdicts(verdicts))
-    lines.append(
-        f"{changed} ledger line(s) {'updated' if apply else 'would change (use --apply)'}"
-    )
+    changes = apply_verdicts(verdicts)
+    if apply:
+        lines.append(f"{update_entries(changes)} ledger line(s) updated")
+    else:
+        lines.append(f"{len(changes)} ledger line(s) would change (use --apply)")
     return "\n".join(lines)
 
 

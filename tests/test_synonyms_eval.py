@@ -197,3 +197,32 @@ def test_cli_synonyms_add_records_provenance(tmp_path, monkeypatch):
     }
     with pytest.raises(SystemExit, match="go together"):
         cli.synonyms_add("a1, b1", miss_query="ac")
+
+
+def test_bad_verified_value_skips_the_line_not_the_search(tmp_path):
+    p = tmp_path / "s.jsonl"
+    p.write_text(
+        '{"terms": ["aa", "bb"], "verified": "x"}\n'
+        '{"terms": ["cc", "dd"], "verified": [1]}\n'
+        '{"terms": ["ee", "ff"]}\n'
+    )
+    assert [e.terms[0] for e in load_synonyms(p)] == ["ee"]
+
+
+def test_exotic_line_separators_survive_a_patch(corpus, tmp_path):
+    p = tmp_path / "s.jsonl"
+    add_synonyms(["zzz", "yyy"], note="line sep", provenance=PROV, path=p)
+    replay_ledger(corpus, path=p, apply=True)
+    (e,) = load_synonyms(p, include_demoted=True)
+    assert e.note == "line sep" and e.status == DEMOTED
+
+
+def test_no_change_means_no_rewrite(corpus, tmp_path):
+    p = tmp_path / "s.jsonl"
+    p.write_text(
+        '{"terms": ["zzz", "yyy"], "status": "demoted", "provenance": '
+        '{"miss_query": "ac", "found_ids": ["d1"]}}\n'
+    )
+    before = p.stat().st_mtime_ns
+    replay_ledger(corpus, path=p, apply=True)
+    assert p.stat().st_mtime_ns == before

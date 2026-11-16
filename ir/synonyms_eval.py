@@ -136,7 +136,8 @@ def apply_verdicts(
             new = replace(e, status=DEMOTED)
         else:
             continue
-        changes.append((e, new))
+        if (new.verified, new.status) != (e.verified, e.status):  # skip no-ops
+            changes.append((e, new))
     return changes
 
 
