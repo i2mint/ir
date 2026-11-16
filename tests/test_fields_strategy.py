@@ -200,8 +200,8 @@ def test_fold_text_strips_latin_and_greek_accents_only():
     for untouched in ("がぎぱ", "한국어", "हिन्दी", "ไก่", "йё"):
         assert fold_text(untouched) == untouched
     # a decomposed accent on a Latin letter goes too; one after kana stays
-    assert fold_text("é") == "e"
-    assert fold_text("が") == "が"
+    assert fold_text("e\u0301") == "e"
+    assert fold_text("\u304b\u3099") == "\u304c"  # NFC composes; the mark is kept
     assert fold_text("") == ""
 
 
