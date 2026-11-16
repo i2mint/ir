@@ -197,6 +197,10 @@ def test_fold_text_strips_latin_and_greek_accents_only():
 
     assert fold_text("Crème BRÛLÉE Straße") == "creme brulee strasse"
     assert fold_text("Αθήνα") == "αθηνα"
+    assert fold_text("Đà Nẵng Łódź Øre Æsop") == "da nang lodz ore aesop"
+    assert fold_text("Ｃｒèｍｅ") == "creme"
+    for text in ("Crème", "e\u0301", "Ｃｒèｍｅ ß", "Αθήνα", "がぎ", "한국어"):
+        assert fold_text(fold_text(text)) == fold_text(text)  # idempotent
     for untouched in ("がぎぱ", "한국어", "हिन्दी", "ไก่", "йё"):
         assert fold_text(untouched) == untouched
     # a decomposed accent on a Latin letter goes too; one after kana stays
@@ -246,4 +250,5 @@ def test_with_synopsis_forwards_reads_and_synopsis_fields():
     assert Fields(["about"], head=["name"]).synopsis_fields == ("name", "about")
     from ir.synopsis import _default_synthesizer
 
-    _default_synthesizer(Fields(["about"], head=["name"]))  # picks the fields, no error
+    synth = _default_synthesizer(Fields(["about"], head=["name"]))
+    assert synth.synthesizer_id.endswith(":name,about")  # the strategy's fields
