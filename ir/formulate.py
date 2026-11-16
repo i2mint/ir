@@ -134,6 +134,10 @@ def make_keyword_formulator(
     >>> f("how do we ship")
     ['how do we ship', 'deploy deployment', 'ci.yml']
     """
+
+    def _key(text: str) -> str:
+        return " ".join(str(text).split()).casefold()
+
     kwargs.setdefault("prompt", KEYWORD_FORMULATION_PROMPT)
     inner = make_llm_formulator(rewriter=rewriter, n=n, **kwargs)
 
@@ -142,6 +146,11 @@ def make_keyword_formulator(
         variants = [produced] if isinstance(produced, str) else list(produced)
         if not include_original:
             return variants
-        return [query, *(v for v in variants if v != query)]
+        seen, out = {_key(query)}, [query]
+        for v in variants:
+            if _key(v) not in seen:
+                seen.add(_key(v))
+                out.append(v)
+        return out
 
     return formulate

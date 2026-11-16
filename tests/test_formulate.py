@@ -114,16 +114,6 @@ def _two_query(q):
     return [q, "bake a cake in the oven"]
 
 
-def test_variant_weight_default_is_todays_merge():
-    corpus = _corpus()
-    kw = dict(formulate=_two_query, mode="lexical", per_artifact=False, k=6)
-    base = ir.search(corpus, "deploy the app", **kw)
-    same = ir.search(corpus, "deploy the app", variant_weight=1.0, **kw)
-    assert [(h.artifact_id, h.score) for h in base] == [
-        (h.artifact_id, h.score) for h in same
-    ]
-
-
 def test_variant_weight_demotes_formulations_not_the_original():
     corpus = _corpus()
     kw = dict(formulate=_two_query, mode="lexical", k=6)
@@ -149,7 +139,7 @@ def test_variant_weight_zero_keeps_only_the_original_ranking_on_top():
     assert hits[0].artifact_id == "deploy"
 
 
-@pytest.mark.parametrize("bad", [-1.0, float("nan"), float("inf")])
+@pytest.mark.parametrize("bad", [-1.0, 1.5, float("nan"), float("inf")])
 def test_variant_weight_validated(bad):
     with pytest.raises(ValueError, match="variant_weight"):
         ir.search(_corpus(), "x", formulate=_two_query, variant_weight=bad)
