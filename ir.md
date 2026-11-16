@@ -1,4 +1,4 @@
-> built 2026-11-16 07:13 UTC from 2b5deab (master) · ir 0.1.63. Details: build_info.json
+> built 2026-11-16 07:18 UTC from 32237a2 (master) · ir 0.1.64. Details: build_info.json
 
 # index.html.md
 
@@ -6520,15 +6520,16 @@ Smart-default constructors cover the common ways to define a source:
 
 ### Functions
 
-| [`content_hash_signal`](_autosummary/ir.sources.html.md#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                  |
-|-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| [`iter_pocket_repos`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.       |
-| [`iter_report_doc_folders`](_autosummary/ir.sources.html.md#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                        |
-| [`mcp_tool_record`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.        |
-| [`mcp_tool_signal`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`.  |
-| [`package_repo_dirs`](_autosummary/ir.sources.html.md#ir.sources.package_repo_dirs)([manifest])                  | Manifest package directories, then fleet repos the manifest does not name. |
-| [`report_exclude_reason`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.           |
-| [`resolve_fetcher`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.      |
+| [`content_hash_signal`](_autosummary/ir.sources.html.md#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                    |
+|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| [`iter_pocket_repos`](_autosummary/ir.sources.html.md#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.         |
+| [`iter_report_doc_folders`](_autosummary/ir.sources.html.md#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                          |
+| [`mcp_tool_record`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.          |
+| [`mcp_tool_signal`](_autosummary/ir.sources.html.md#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`.    |
+| [`package_repo_dirs`](_autosummary/ir.sources.html.md#ir.sources.package_repo_dirs)([manifest])                  | Manifest package directories, then fleet repos the manifest does not name.   |
+| [`records_change_signal`](_autosummary/ir.sources.html.md#ir.sources.records_change_signal)(\*[, text_key, ...])     | Change signal for record dicts: covers the text **and** the stored metadata. |
+| [`report_exclude_reason`](_autosummary/ir.sources.html.md#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.             |
+| [`resolve_fetcher`](_autosummary/ir.sources.html.md#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.        |
 
 ### Classes
 
@@ -6795,6 +6796,33 @@ Manifest package directories, then fleet repos the manifest does not name.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
+
+### ir.sources.records_change_signal(, text_key='text', metadata_keys=())
+
+Change signal for record dicts: covers the text **and** the stored metadata.
+
+`ef.content_hash` of a record with a `text` field hashes the text only, so a
+record whose filter metadata changed upstream (same text) would never be
+rebuilt and stay filterable under the old value. With the default
+`text_key` this adds `metadata_keys` through `ef`’s `content_keys` (and
+is identical to the old signal when there are none). With another
+`text_key` the whole record is hashed, so no field a strategy may read goes
+stale.
+
+```pycon
+>>> sig = records_change_signal(metadata_keys=["pages"])
+>>> a = sig("x", {"text": "t", "pages": "p.1"})
+>>> a == sig("x", {"text": "t", "pages": "p.1", "other": 1})
+True
+>>> a == sig("x", {"text": "t", "pages": "p.2"})
+False
+>>> body = records_change_signal(text_key="body")
+>>> body("x", {"body": "t", "title": "a"}) == body("x", {"body": "t", "title": "b"})
+False
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### ir.sources.report_exclude_reason(path, folder, , exclude_dirs=frozenset({'.git', '.hg', '.ipynb_checkpoints', '.obsidian', '.svn', '.tox', '.venv', '_\_pycache_\_', 'build', 'dist', 'node_modules', 'site-packages', 'venv'}))
 
@@ -7715,18 +7743,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-16 07:13 UTC** from commit <a href="https://github.com/i2mint/ir/commit/2b5deab80a5735f8ddf8410a74b7c4d4d5514876"><code>2b5deab</code></a> on branch <code>master</code>, for **ir 0.1.63** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-16 07:18 UTC** from commit <a href="https://github.com/i2mint/ir/commit/32237a2e135c2131e67bcce8020542f8df130737"><code>32237a2</code></a> on branch <code>master</code>, for **ir 0.1.64** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.1.63) is behind the latest release on PyPI (0.1.64): `pip install ir` gives newer code than these docs describe.
+- The documented version (0.1.64) is behind the latest release on PyPI (0.1.65): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/2b5deab80a5735f8ddf8410a74b7c4d4d5514876"><code>2b5deab80a5735f8ddf8410a74b7c4d4d5514876</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/32237a2e135c2131e67bcce8020542f8df130737"><code>32237a2e135c2131e67bcce8020542f8df130737</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -7737,9 +7765,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43822075951">43822075951</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43822701643">43822701643</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>2b5deab80a5735f8ddf8410a74b7c4d4d5514876</code> (in the history of the built commit) |
+| Event commit | <code>32237a2e135c2131e67bcce8020542f8df130737</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -7764,13 +7792,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.64/">0.1.64</a>, newer than the documented version (0.1.63).
+Latest release: <a href="https://pypi.org/project/ir/0.1.65/">0.1.65</a>, newer than the documented version (0.1.64).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 2b5deab80a5735f8ddf8410a74b7c4d4d5514876
+git checkout 32237a2e135c2131e67bcce8020542f8df130737
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

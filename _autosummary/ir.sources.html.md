@@ -29,15 +29,16 @@ Smart-default constructors cover the common ways to define a source:
 
 ### Functions
 
-| [`content_hash_signal`](#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                  |
-|-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| [`iter_pocket_repos`](#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.       |
-| [`iter_report_doc_folders`](#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                        |
-| [`mcp_tool_record`](#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.        |
-| [`mcp_tool_signal`](#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`.  |
-| [`package_repo_dirs`](#ir.sources.package_repo_dirs)([manifest])                  | Manifest package directories, then fleet repos the manifest does not name. |
-| [`report_exclude_reason`](#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.           |
-| [`resolve_fetcher`](#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.      |
+| [`content_hash_signal`](#ir.sources.content_hash_signal)(artifact_id, raw)          | Default change signal: a content hash of the raw payload.                    |
+|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| [`iter_pocket_repos`](#ir.sources.iter_pocket_repos)(root)                        | Yield repos one level deeper than usual: `<letter>/<pocket>/<repo>`.         |
+| [`iter_report_doc_folders`](#ir.sources.iter_report_doc_folders)(root)                  | Yield each existing report doc folder under *root*.                          |
+| [`mcp_tool_record`](#ir.sources.mcp_tool_record)(tool)                          | Normalize one duck-typed tool to `{name, description, parameters}`.          |
+| [`mcp_tool_signal`](#ir.sources.mcp_tool_signal)(artifact_id, raw)              | Change signal for a tool: SHA-256 over `(name, description, parameters)`.    |
+| [`package_repo_dirs`](#ir.sources.package_repo_dirs)([manifest])                  | Manifest package directories, then fleet repos the manifest does not name.   |
+| [`records_change_signal`](#ir.sources.records_change_signal)(\*[, text_key, ...])     | Change signal for record dicts: covers the text **and** the stored metadata. |
+| [`report_exclude_reason`](#ir.sources.report_exclude_reason)(path, folder, \*[, ...]) | Why a `*.md` under *folder* is excluded from the reports corpus.             |
+| [`resolve_fetcher`](#ir.sources.resolve_fetcher)(fetcher)                       | Resolve a fetcher spec to a zero-argument callable returning records.        |
 
 ### Classes
 
@@ -304,6 +305,33 @@ Manifest package directories, then fleet repos the manifest does not name.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
+
+### ir.sources.records_change_signal(, text_key='text', metadata_keys=())
+
+Change signal for record dicts: covers the text **and** the stored metadata.
+
+`ef.content_hash` of a record with a `text` field hashes the text only, so a
+record whose filter metadata changed upstream (same text) would never be
+rebuilt and stay filterable under the old value. With the default
+`text_key` this adds `metadata_keys` through `ef`’s `content_keys` (and
+is identical to the old signal when there are none). With another
+`text_key` the whole record is hashed, so no field a strategy may read goes
+stale.
+
+```pycon
+>>> sig = records_change_signal(metadata_keys=["pages"])
+>>> a = sig("x", {"text": "t", "pages": "p.1"})
+>>> a == sig("x", {"text": "t", "pages": "p.1", "other": 1})
+True
+>>> a == sig("x", {"text": "t", "pages": "p.2"})
+False
+>>> body = records_change_signal(text_key="body")
+>>> body("x", {"body": "t", "title": "a"}) == body("x", {"body": "t", "title": "b"})
+False
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### ir.sources.report_exclude_reason(path, folder, , exclude_dirs=frozenset({'.git', '.hg', '.ipynb_checkpoints', '.obsidian', '.svn', '.tox', '.venv', '_\_pycache_\_', 'build', 'dist', 'node_modules', 'site-packages', 'venv'}))
 
