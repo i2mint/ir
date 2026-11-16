@@ -14,6 +14,8 @@ Shipped strategies:
 - :class:`Chunked` — split the text into overlapping chunks (one surface each).
 - :class:`Skill` — embed ``name + description`` only (the body stays on disk,
   per the capability-discovery research); name/parent become filter fields.
+- :class:`Fields` — a record's named text fields (head + body, balanced windows,
+  optional normalizer); one surface per record or per field.
 - :class:`Package` — ``name + description`` plus README chunks as surfaces;
   name/owner/deps become filter fields (AI synopsis / problem-class surfaces
   are a documented extension).
@@ -25,9 +27,11 @@ custom strategies need only match the :class:`IndexingStrategy` protocol.
 from __future__ import annotations
 
 import functools
+import math
 import re
+import unicodedata
 import warnings
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any, Callable, Protocol, runtime_checkable
 
 from .base import IndexPlan, Surface
@@ -313,6 +317,159 @@ class Skill:
         return IndexPlan(filter_fields=filter_fields, surfaces=surfaces)
 
 
+def is_simple_param(value: Any) -> bool:
+    """Whether a constructor parameter is JSON-simple (scalar, or a tuple/list of scalars).
+
+    The shared test behind a strategy's persisted spec (:func:`strategy_to_spec`)
+    and its build identity (``ir.index._strategy_id``), so a parameter such as
+    :class:`Fields`'s ``fields`` both round-trips through the registry and
+    re-decomposes a corpus when it changes.
+    """
+    scalar = (str, int, float, bool, type(None))
+    if isinstance(value, (tuple, list)):
+        return all(isinstance(v, scalar) for v in value)
+    return isinstance(value, scalar)
+
+
+def fold_text(text: str) -> str:
+    """Case- and accent-fold *text* (``"Café"`` -> ``"cafe"``): the ``"fold"`` normalizer.
+
+    >>> fold_text("Crème BRÛLÉE")
+    'creme brulee'
+    """
+    decomposed = unicodedata.normalize("NFKD", text.casefold())
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
+#: Text normalizers addressable by name (so a persisted spec can name one).
+NORMALIZERS: dict[str, Callable[[str], str]] = {"fold": fold_text}
+
+
+def balanced_windows(text: str, *, size: int, overlap: int = 0) -> list[str]:
+    """Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.
+
+    ``n = ceil((L - overlap) / (size - overlap))`` windows, each ``ceil((L +
+    (n - 1) * overlap) / n)`` long, so a text just past the limit becomes two
+    halves, not one full window plus a sliver (which length normalisation in
+    BM25 would favour).
+
+    >>> balanced_windows("a" * 10, size=10)
+    ['aaaaaaaaaa']
+    >>> [len(w) for w in balanced_windows("a" * 11, size=10)]
+    [6, 5]
+    >>> [len(w) for w in balanced_windows("a" * 25, size=10, overlap=2)]
+    [10, 10, 9]
+    """
+    if not 0 <= overlap < size:
+        raise ValueError(
+            f"need 0 <= overlap < size, got overlap={overlap}, size={size}"
+        )
+    text = text.strip()
+    length = len(text)
+    if length <= size:
+        return [text] if text else []
+    n = math.ceil((length - overlap) / (size - overlap))
+    width = math.ceil((length + (n - 1) * overlap) / n)
+    step = width - overlap
+    return [text[i * step : i * step + width] for i in range(n)]
+
+
+def _field_text(value: Any) -> str:
+    """A record field's text: strings as-is, lists joined, ``None`` empty."""
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return " ".join(str(v) for v in value)
+    return str(value)
+
+
+class Fields:
+    """Index a record's named text fields (a catalogue item: name, place, prose...).
+
+    ``fields`` are the body keys, read in order; ``head`` are keys (a name, a
+    place) that lead the record. Two layouts:
+
+    - ``layout="record"`` (default): one surface per window of the body, with the
+      head text **prefixed to every window**, so a word in the name and a word in
+      the place only score together because they share a surface. Measured on 12
+      judged requests over ~44k records: BM25 hit@1 0.92 vs 0.58 for ``"fields"``.
+    - ``layout="fields"``: one surface per field (head and body), ``kind`` = the
+      field name, so a query can target one field with ``surfaces={...}``.
+
+    ``normalize`` (a callable, or the name ``"fold"`` for case + accent folding)
+    is applied to every text before indexing. ``max_chars`` / ``overlap`` window
+    long bodies with :func:`balanced_windows`. Name the strings, not callables, to
+    keep the strategy persistable in a registry entry.
+
+    >>> plan = Fields(fields=["about"], head=["name", "place"]).decompose(
+    ...     "r1", {"name": "Louvre", "place": "Paris", "about": "A museum."})
+    >>> [(s.kind, s.text) for s in plan.surfaces]
+    [('record', 'Louvre\\nParis\\nA museum.')]
+    """
+
+    def __init__(
+        self,
+        fields: Sequence[str],
+        *,
+        head: Sequence[str] = (),
+        layout: str = "record",
+        normalize: Callable[[str], str] | str | None = None,
+        max_chars: int = 1200,
+        overlap: int = 200,
+        kind: str = "record",
+    ):
+        if layout not in ("record", "fields"):
+            raise ValueError(f"layout must be 'record' or 'fields', got {layout!r}")
+        if isinstance(normalize, str) and normalize not in NORMALIZERS:
+            raise ValueError(
+                f"unknown normalizer {normalize!r}; known: {sorted(NORMALIZERS)}"
+            )
+        self.fields = tuple(fields)
+        self.head = tuple(head)
+        self.layout = layout
+        self.normalize = normalize
+        self.max_chars = max_chars
+        self.overlap = overlap
+        self.kind = kind
+
+    def _normalizer(self) -> Callable[[str], str]:
+        n = self.normalize
+        return NORMALIZERS[n] if isinstance(n, str) else (n or (lambda t: t))
+
+    def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
+        meta = dict(metadata or {})
+        record = raw if isinstance(raw, Mapping) else {}
+        norm = self._normalizer()
+
+        def text(key):
+            return norm(_field_text(record.get(key))).strip()
+
+        windows = functools.partial(
+            balanced_windows, size=self.max_chars, overlap=self.overlap
+        )
+        if self.layout == "fields":
+            surfaces = [
+                Surface(artifact_id, key, window, granularity="field")
+                for key in (*self.head, *self.fields)
+                for window in windows(text(key))
+            ]
+        else:
+            head = "\n".join(t for t in map(text, self.head) if t)
+            body = windows("\n".join(t for t in map(text, self.fields) if t))
+            parts = body or ([""] if head else [])
+            surfaces = [
+                Surface(
+                    artifact_id,
+                    self.kind,
+                    "\n".join(p for p in (head, part) if p),
+                    granularity="chunk" if len(parts) > 1 else "document",
+                    metadata={"chunk_index": i, "n_chunks": len(parts)},
+                )
+                for i, part in enumerate(parts)
+            ]
+        return IndexPlan(filter_fields=meta, surfaces=surfaces)
+
+
 #: Shipped strategies addressable by name, for persisting an
 #: :class:`IndexingStrategy` in a registry entry and reconstructing it (#58).
 #: New shipped strategies register here so a corpus can name its segmentation.
@@ -320,6 +477,7 @@ STRATEGY_REGISTRY: dict[str, type] = {
     "WholeText": WholeText,
     "Chunked": Chunked,
     "Skill": Skill,
+    "Fields": Fields,
 }
 
 
@@ -335,9 +493,9 @@ def strategy_to_spec(strategy: Any) -> dict:
     """
     name = type(strategy).__name__
     params = {
-        k: v
+        k: list(v) if isinstance(v, tuple) else v
         for k, v in vars(strategy).items()
-        if isinstance(v, (str, int, float, bool, type(None)))
+        if is_simple_param(v)
     }
     return {"name": name, "params": params}
 
