@@ -12,6 +12,11 @@ from ir.strategy import (
 from ir.index import _strategy_id
 from ir.store import CorpusStore
 
+
+def _upper(text):
+    return text.upper()
+
+
 REC = {"name": "Louvre", "place": "Paris", "about": "A museum of art.", "id": 7}
 
 
@@ -160,3 +165,25 @@ def test_from_records_reindexes_when_a_read_field_changes():
     one, two = mk("first"), mk("second")
     sig = one.change_signal
     assert sig("x", one.scope["x"]) != sig("x", two.scope["x"])
+
+
+def test_normalizer_reference_round_trips_and_resolves():
+    a = Fields([], head=["name"], normalize="test_fields_strategy:_upper")
+    clone = strategy_from_spec(strategy_to_spec(a))
+    assert clone.normalize == "test_fields_strategy:_upper"
+    assert _strategy_id(a) == _strategy_id(clone)
+    assert _texts(clone.decompose("r", {"name": "ab"})) == [("record", "AB")]
+
+
+def test_unnamed_normalizer_needs_an_explicit_id():
+    with pytest.warns(UserWarning, match="normalize_id"):
+        Fields(["a"], normalize=lambda t: t)
+    tagged = Fields(["a"], normalize=lambda t: t, normalize_id="v1")
+    other = Fields(["a"], normalize=lambda t: t, normalize_id="v2")
+    assert _strategy_id(tagged) != _strategy_id(other)
+    with pytest.raises(ValueError, match="requires a callable"):
+        Fields(["a"], normalize="test_fields_strategy:_upper", normalize_id="x")
+
+
+def test_duplicate_keys_collapse():
+    assert Fields(["a", "a"], head=["h", "h"]).reads == ("h", "a")

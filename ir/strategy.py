@@ -369,6 +369,41 @@ def _field_text(value: Any) -> str:
     return str(value)
 
 
+def _resolve_normalizer(normalize) -> Callable[[str], str]:
+    """A ``str -> str`` callable from a callable, a ``"module:attr"`` ref, or ``None``."""
+    if normalize is None:
+        return lambda text: text
+    from .sources import resolve_fetcher  # the shared "module:attr" resolver
+
+    return resolve_fetcher(normalize)
+
+
+def _normalizer_id(normalize, explicit: str | None) -> str | None:
+    """Identity stamp of a callable normalizer (``None`` for none or a named ref).
+
+    An import reference is its own identity (it is a persisted scalar). An
+    unnamed lambda or local closure has none, so the user must pass
+    ``normalize_id=`` to have a change re-index the corpus.
+    """
+    if normalize is None or isinstance(normalize, str):
+        if explicit is not None:
+            raise ValueError("normalize_id requires a callable `normalize`")
+        return None
+    if explicit:
+        return explicit
+    qualname = getattr(normalize, "__qualname__", "") or ""
+    if qualname and "<lambda>" not in qualname and "<locals>" not in qualname:
+        module = getattr(normalize, "__module__", None) or type(normalize).__module__
+        return f"{module}.{qualname}"
+    warnings.warn(
+        "Fields: could not derive a stable identity for `normalize` (an unnamed "
+        "lambda, a local closure or a partial), so changing it will not re-index; "
+        "pass normalize_id=... to track it, or a 'module:attr' reference.",
+        stacklevel=3,
+    )
+    return "custom"
+
+
 class Fields:
     """Index a record's named text fields (a catalogue item: name, place, prose...).
 
@@ -382,11 +417,13 @@ class Fields:
     - ``layout="fields"``: one surface per field (head and body), ``kind`` = the
       field name, so a query can target one field with ``surfaces={...}``.
 
-    ``normalize`` (a ``str -> str`` callable: case, accent folding...) is applied
-    to every text before indexing. **It acts on the index side only**: apply the
-    same function to queries (e.g. through ``formulate=``), or folded text will
-    never match an unfolded query. Its qualified name stamps the strategy's
-    identity (``normalize_id``); a callable is not persisted in a registry spec.
+    ``normalize`` (a ``str -> str`` callable, or a ``"module:attr"`` reference to
+    one, case/accent folding...) is applied to every text before indexing. **It
+    acts on the index side only**: apply the same function to queries (e.g.
+    through ``formulate=``), or folded text will never match an unfolded query.
+    A reference is persisted in a registry spec and is its own identity; a
+    callable is not persisted, and is identified by its qualified name or an
+    explicit ``normalize_id`` (required for a lambda or closure).
     ``max_chars`` / ``overlap`` window the *body* with :func:`balanced_windows`
     (the head is prefixed to each window and not itself windowed, so keep it short).
     ``kind`` names the surface in the ``"record"`` layout; ``"fields"`` uses the
@@ -405,7 +442,8 @@ class Fields:
         *,
         head: Sequence[str] = (),
         layout: str = "record",
-        normalize: Callable[[str], str] | None = None,
+        normalize: Callable[[str], str] | str | None = None,
+        normalize_id: str | None = None,
         max_chars: int = 1200,
         overlap: int = 200,
         kind: str = "record",
@@ -420,16 +458,12 @@ class Fields:
             raise ValueError(
                 f"need 0 <= overlap < max_chars, got {overlap}, {max_chars}"
             )
-        self.head = tuple(head)
-        self.fields = tuple(k for k in fields if k not in self.head)
+        # dict.fromkeys: drop duplicates, keep order; a head key is not re-read as body
+        self.head = tuple(dict.fromkeys(head))
+        self.fields = tuple(k for k in dict.fromkeys(fields) if k not in self.head)
         self.layout = layout
         self.normalize = normalize
-        self.normalize_id = (
-            f"{getattr(normalize, '__module__', None) or type(normalize).__module__}"
-            f".{getattr(normalize, '__qualname__', type(normalize).__qualname__)}"
-            if normalize is not None
-            else None
-        )
+        self.normalize_id = _normalizer_id(normalize, normalize_id)
         self.max_chars = max_chars
         self.overlap = overlap
         self.kind = kind
@@ -442,7 +476,7 @@ class Fields:
     def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
         meta = dict(metadata or {})
         record = raw if isinstance(raw, Mapping) else {}
-        norm = self.normalize or (lambda t: t)
+        norm = _resolve_normalizer(self.normalize)
 
         def text(key):
             return norm(_field_text(record.get(key))).strip()
@@ -503,11 +537,12 @@ def strategy_to_spec(strategy: Any) -> dict:
     segmentation spec.
     """
     name = type(strategy).__name__
-    ctor = inspect.signature(type(strategy)).parameters  # not identity-only stamps
+    ctor = inspect.signature(type(strategy)).parameters
+    open_ended = any(p.kind is p.VAR_KEYWORD for p in ctor.values())
     params = {
         k: list(v) if isinstance(v, tuple) else v
         for k, v in vars(strategy).items()
-        if is_simple_param(v) and k in ctor
+        if is_simple_param(v) and (open_ended or k in ctor)  # not identity-only stamps
     }
     return {"name": name, "params": params}
 
