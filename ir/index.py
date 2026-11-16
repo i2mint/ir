@@ -27,6 +27,7 @@ from .base import Record, ledger_key
 from .embed import make_embedder, make_embedder_for_id
 from .sources import CorpusSource
 from .store import CorpusStore
+from .strategy import is_simple_param
 
 
 def _strategy_id(strategy) -> str:
@@ -48,8 +49,8 @@ def _strategy_id(strategy) -> str:
     """
     params: dict[str, Any] = {}
     for k, v in vars(strategy).items():
-        if isinstance(v, (str, int, float, bool, type(None))):
-            params[k] = v
+        if is_simple_param(v):
+            params[k] = list(v) if isinstance(v, tuple) else v
         elif hasattr(v, "decompose"):  # a nested strategy (wrapper)
             params[k] = _strategy_id(v)
     return f"{type(strategy).__name__}:{json.dumps(params, sort_keys=True)}"

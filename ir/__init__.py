@@ -89,6 +89,7 @@ from .store import CorpusStore
 from .strategy import (
     Chunked,
     ClaudeTurn,
+    Fields,
     IndexingStrategy,
     Package,
     Skill,
@@ -124,6 +125,7 @@ __all__ = [
     "IndexingStrategy",
     "WholeText",
     "Chunked",
+    "Fields",
     "Skill",
     "Package",
     "ClaudeTurn",
