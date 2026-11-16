@@ -279,6 +279,11 @@ class _SynopsisStrategy:
         self.synthesizer_id = self._resolve_synthesizer_id(synthesizer_id)
         self.synopsis_kind = synopsis_kind
 
+    @property
+    def reads(self) -> tuple[str, ...]:
+        """The wrapped strategy's ``reads`` (so a records change signal still sees them)."""
+        return tuple(getattr(self.strategy, "reads", ()))
+
     @staticmethod
     def _resolve_when_id(when: Union[str, Predicate], explicit: str | None) -> str:
         """Identity of the gate for staleness (``"always"`` for no gate)."""

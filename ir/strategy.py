@@ -30,6 +30,7 @@ import functools
 import inspect
 import math
 import re
+import unicodedata
 import warnings
 from collections.abc import Mapping, Sequence
 from typing import Any, Callable, Protocol, runtime_checkable
@@ -331,6 +332,70 @@ def is_simple_param(value: Any) -> bool:
     return isinstance(value, scalar)
 
 
+#: Latin letters with no Unicode decomposition (strokes, ligature-letters) that a
+#: search fold should still map to ASCII, as ICU's Latin-ASCII transform does.
+_LATIN_LETTER_FOLDS = str.maketrans(
+    {
+        "ø": "o",
+        "đ": "d",
+        "ð": "d",
+        "ł": "l",
+        "ħ": "h",
+        "ŧ": "t",
+        "ı": "i",
+        "æ": "ae",
+        "œ": "oe",
+        "þ": "th",
+    }
+)
+
+
+@functools.lru_cache(maxsize=4096)
+def _fold_char(ch: str) -> tuple[str, bool]:
+    """``(folded, is_latin_or_greek)`` for one casefolded character (cached)."""
+    if not unicodedata.name(ch, "").startswith(("LATIN", "GREEK")):
+        return ch, False
+    stripped = "".join(
+        c for c in unicodedata.normalize("NFD", ch) if not unicodedata.combining(c)
+    )
+    return stripped.translate(_LATIN_LETTER_FOLDS), True
+
+
+def fold_text(text: str) -> str:
+    """Case-fold *text* and strip accents from Latin and Greek letters only.
+
+    Applies NFKC first (full-width letters, ligatures and compatibility forms fold
+    in), then ``casefold``, then removes accents of Latin/Greek letters, mapping
+    strokes and ligature-letters (``ø đ ł æ œ þ``) to ASCII. Safe for mixed-script
+    text: marks that carry meaning elsewhere are left alone (kana voicing ``が``,
+    Hangul syllables, Devanagari virama, Thai tone marks, Cyrillic ``й``/``ё``).
+    Use it as a ``Fields(normalize=...)`` normalizer (by reference:
+    ``"ir.strategy:fold_text"``) **and** apply it to queries, e.g.
+    ``formulate=fold_text`` (a ``str -> str`` is a valid formulator), since folding
+    acts on whichever side runs it. A synopsis written by an LLM
+    (``ir.with_synopsis``) is not folded.
+
+    >>> fold_text("Crème BRÛLÉE Straße Đà Nẵng Łódź")
+    'creme brulee strasse da nang lodz'
+    >>> fold_text("Ｃｒèｍｅ")
+    'creme'
+    >>> fold_text("Αθήνα")
+    'αθηνα'
+    >>> fold_text("がぎ 한국어 हिन्दी Йё ไก่")
+    'がぎ 한국어 हिन्दी йё ไก่'
+    """
+    if text.isascii():
+        return text.casefold()
+    out: list[str] = []
+    after_letter = False  # was the last kept char a Latin/Greek letter?
+    for ch in unicodedata.normalize("NFKC", text).casefold():
+        if after_letter and unicodedata.combining(ch):
+            continue  # a stray accent on a Latin/Greek letter
+        folded, after_letter = _fold_char(ch)
+        out.append(folded)
+    return "".join(out)
+
+
 def balanced_windows(text: str, *, size: int, overlap: int = 0) -> list[str]:
     """Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.
 
@@ -472,6 +537,11 @@ class Fields:
     def reads(self) -> tuple[str, ...]:
         """Every record key this strategy reads (for change signals)."""
         return (*self.head, *self.fields)
+
+    @property
+    def synopsis_fields(self) -> tuple[str, ...]:
+        """The keys a synopsis should summarize (``ir.with_synopsis`` reads this)."""
+        return self.reads
 
     def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
         meta = dict(metadata or {})

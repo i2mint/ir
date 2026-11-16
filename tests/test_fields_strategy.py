@@ -187,3 +187,68 @@ def test_unnamed_normalizer_needs_an_explicit_id():
 
 def test_duplicate_keys_collapse():
     assert Fields(["a", "a"], head=["h", "h"]).reads == ("h", "a")
+
+
+# ----- #146 follow-ups: safe fold, synopsis wrapper forwarding -------------- #
+
+
+def test_fold_text_strips_latin_and_greek_accents_only():
+    from ir.strategy import fold_text
+
+    assert fold_text("Crème BRÛLÉE Straße") == "creme brulee strasse"
+    assert fold_text("Αθήνα") == "αθηνα"
+    assert fold_text("Đà Nẵng Łódź Øre Æsop") == "da nang lodz ore aesop"
+    assert fold_text("Ｃｒèｍｅ") == "creme"
+    for text in ("Crème", "e\u0301", "Ｃｒèｍｅ ß", "Αθήνα", "がぎ", "한국어"):
+        assert fold_text(fold_text(text)) == fold_text(text)  # idempotent
+    for untouched in ("がぎぱ", "한국어", "हिन्दी", "ไก่", "йё"):
+        assert fold_text(untouched) == untouched
+    # a decomposed accent on a Latin letter goes too; one after kana stays
+    assert fold_text("e\u0301") == "e"
+    assert fold_text("\u304b\u3099") == "\u304c"  # NFC composes; the mark is kept
+    assert fold_text("") == ""
+
+
+def test_fold_text_works_as_a_normalizer_reference_and_a_formulator():
+    f = Fields([], head=["name"], normalize="ir.strategy:fold_text")
+    plan = f.decompose("r", {"name": "Crème"})
+    assert [s.text for s in plan.surfaces] == ["creme"]
+    from ir.strategy import fold_text
+
+    # the same function on the query side makes the folded index findable
+    src = ir.CorpusSource.from_mapping(
+        {"r": {"name": "Crème Brûlée"}},
+        name="fold",
+        strategy=Fields([], head=["name"], normalize=fold_text),
+    )
+    corpus = ir.build(src, store=CorpusStore.memory(), embedder="light")
+    miss = ir.search(corpus, "Crème", mode="lexical")
+    hit = ir.search(corpus, "Crème", mode="lexical", formulate=fold_text)
+    assert [h.artifact_id for h in hit] == ["r"] and not miss
+
+
+def test_with_synopsis_forwards_reads_and_synopsis_fields():
+    wrapped = ir.with_synopsis(
+        Fields(["about"], head=["name"]), synthesize=lambda raw: "summary"
+    )
+    assert wrapped.reads == ("name", "about")
+    from ir.sources import CorpusSource
+
+    src = CorpusSource.from_records(
+        name="ws",
+        fetcher=lambda: [{"id": "x", "text": "t", "name": "n", "about": "a"}],
+        strategy=wrapped,
+    )
+    other = CorpusSource.from_records(
+        name="ws",
+        fetcher=lambda: [{"id": "x", "text": "t", "name": "n", "about": "b"}],
+        strategy=wrapped,
+    )
+    assert src.change_signal("x", src.scope["x"]) != other.change_signal(
+        "x", other.scope["x"]
+    )
+    assert Fields(["about"], head=["name"]).synopsis_fields == ("name", "about")
+    from ir.synopsis import _default_synthesizer
+
+    synth = _default_synthesizer(Fields(["about"], head=["name"]))
+    assert synth.synthesizer_id.endswith(":name,about")  # the strategy's fields
