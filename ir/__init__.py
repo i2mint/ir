@@ -85,6 +85,7 @@ from .select import (
     select,
 )
 from .sources import CorpusSource
+from .grep import grep_hits, make_grep_retriever
 from .miss import lexical_miss
 from .store import CorpusStore
 from .strategy import (
@@ -169,6 +170,8 @@ __all__ = [
     "make_llm_formulator",
     "make_keyword_formulator",
     "lexical_miss",
+    "grep_hits",
+    "make_grep_retriever",
     "Formulator",
     "select",
     "disclose",
