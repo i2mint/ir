@@ -17,6 +17,7 @@
 - [ir.eval_gen](_autosummary/ir.eval_gen.html.md): LLM-backed generation of evaluation cases for &#96;ir.eval&#96;.
 - [ir.formulate](_autosummary/ir.formulate.html.md): Query formulation — the Formulator seam (ir_09 §3).
 - [ir.graph](_autosummary/ir.graph.html.md): The semantic link graph — typed edges between artifacts (report 12).
+- [ir.grep](_autosummary/ir.grep.html.md): The grep Retriever leaf: an index-free first stage over a corpus’s raw files.
 - [ir.index](_autosummary/ir.index.html.md): The indexing pipeline and incremental maintenance.
 - [ir.maintenance](_autosummary/ir.maintenance.html.md): Idempotent background-work runner — &#96;ir maintain&#96; (issue #58).
 - [ir.miss](_autosummary/ir.miss.html.md): Lexical miss signals: did a keyword search actually find what was asked for?
@@ -34,7 +35,7 @@
 - [ir.synopsis](_autosummary/ir.synopsis.html.md): Synopsis surfaces — LLM-derived summaries as an indexed surface (report 12).
 - [ir.tools](_autosummary/ir.tools.html.md): Agent-callable tool surface over &#96;ir&#96; — plain functions returning JSON-ready
 - [For AI agents](ai-agents.html.md): &#96;ir&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-16 07:54 UTC&#42;&#42; from commit &lt;a href="https://github.com/i2m...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-16 08:11 UTC&#42;&#42; from commit &lt;a href="https://github.com/i2m...
 
 ## Optional
 

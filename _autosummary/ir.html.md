@@ -40,48 +40,50 @@ the reviewing search subagent shipped under `.claude/`.
 
 ### Functions
 
-| [`resolve_reranker`](#ir.resolve_reranker)(spec)                             | The reranker `spec` names, or `None` when there is none to apply.                                                                          |
-|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| [`calibration_key`](#ir.calibration_key)(mode[, tag])                       | The key an abstention floor is stored and loaded under.                                                                                    |
-| [`search_tool`](#ir.search_tool)(query, \*, corpus[, k, mode, ...])     | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                     |
-| [`make_search`](#ir.make_search)(corpus, \*[, name, description, ...])  | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                             |
-| [`with_synopsis`](#ir.with_synopsis)(strategy, \*[, synthesize, ...])     | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                    |
-| [`make_thin_description_predicate`](#ir.make_thin_description_predicate)(\*[, ...])         | A `Predicate` true when the artifact's `field` is empty or thin.                                                                           |
-| `thin_description_predicate`(artifact)                                                              | Ready-made gate: synthesize only for packages with an empty / short description.                                                           |
-| [`make_llm_synthesizer`](#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...]) | An LLM-backed `Synthesizer` ([`Artifact`](ir.base.html.md#ir.base.Artifact) → synopsis).                       |
-| [`build`](#ir.build)(source, \*[, store, embedder, full, ...])    | Build or incrementally update *source* into a [`Corpus`](#ir.Corpus).                                     |
-| [`open_corpus`](#ir.open_corpus)(name, \*[, embedder])                  | Reopen a previously built corpus by name.                                                                                                  |
-| [`reports_coverage`](#ir.reports_coverage)([name, projects_root, ...])       | Diff the reports docs tree on disk against the built `name` corpus.                                                                        |
-| [`search`](#ir.search)(corpus, query, \*\*kwargs)                  | Search a [`Corpus`](ir.index.html.md#ir.index.Corpus) (or a corpus *name*, reopened lazily).                    |
-| [`as_retriever`](#ir.as_retriever)(corpus_or_name, \*\*search_defaults)  | Bind ONE corpus to the uniform `Retriever` contract.                                                                                       |
-| [`retrievers`](#ir.retrievers)(\*\*search_defaults)                    | A lazy `Mapping[name, Retriever]` view over the registry (ir_09 §8).                                                                       |
-| [`retriever_for`](#ir.retriever_for)(name, \*\*search_defaults)           | A [`Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.                  |
-| [`fuse_hits`](#ir.fuse_hits)(hits_by_source, \*[, rrf_k, ...])        | Merge per-source ranked hit lists into one ranking — by rank, not score.                                                                   |
-| [`dependency_evidence_boost`](#ir.dependency_evidence_boost)(relevant_libs, \*, ...)  | A `dep_boost` for [`search()`](#ir.search): reward dependencies on *relevant_libs*.                       |
-| [`records_for_artifact`](#ir.records_for_artifact)(store_or_corpus, ...[, ...])  | All stored records of *artifact_id*, ordered by `surface_index`.                                                                           |
-| [`default_edge_extractor`](#ir.default_edge_extractor)(artifact_id, ...)           | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.                                                               |
-| [`canonical_node_id`](#ir.canonical_node_id)(target, \*, source)              | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.                                                                     |
-| [`traverse`](#ir.traverse)(query, store, \*, policy[, ...])          | Walk *store* from *query* under *policy*, returning the top-*k* hits.                                                                      |
-| [`collapsed_tree_policy`](#ir.collapsed_tree_policy)(\*[, summary_kinds, ...])    | The pure-vector summary-routing / collapsed-tree [`WalkPolicy`](#ir.WalkPolicy).                              |
-| [`reverse_dependency_policy`](#ir.reverse_dependency_policy)(\*, seeds[, ...])        | A [`WalkPolicy`](#ir.WalkPolicy) that walks dependency edges backwards from *seeds*.                          |
-| [`expand`](#ir.expand)(hit, corpus, \*[, policy])                  | Expand *hit* into a [`Passage`](#ir.Passage) of its neighborhood in *corpus*.                              |
-| [`sentence_window_policy`](#ir.sentence_window_policy)([k])                        | ±\*k\* same-kind neighbors around the seed (NEXT/PREV expansion).                                                                          |
-| [`parent_policy`](#ir.parent_policy)()                                    | The whole artifact (small-to-big): every stored surface, plan order.                                                                       |
-| [`tag_source`](#ir.tag_source)(hits, source)                           | Stamp *source* on every hit that doesn't already carry one.                                                                                |
-| [`make_llm_formulator`](#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                               |
-| [`make_keyword_formulator`](#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                       |
-| [`lexical_miss`](#ir.lexical_miss)(hits, \*[, required, candidates])     | Miss signals for the committed `hits`; `{"miss": bool, ...}`.                                                                              |
-| [`select`](#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                 |
-| [`disclose`](#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                    |
-| [`discover`](#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                     |
-| [`register`](#ir.register)(name, kind, \*[, embedder, ...])          | Register (or overwrite) a named corpus definition.                                                                                         |
-| [`corpora`](#ir.corpora)()                                          | All registered corpus definitions, keyed by name.                                                                                          |
-| [`build_corpus`](#ir.build_corpus)(name, \*\*kwargs)                     | Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](ir.index.html.md#ir.index.Corpus). |
-| [`maintain`](#ir.maintain)([name, all, now, dry_run])                | Run due background work for one corpus (*name*) or every registered one (*all*).                                                           |
-| [`maintain_corpus`](#ir.maintain_corpus)(name, \*[, now, dry_run, full])    | Do the due background work for one corpus (idempotent).                                                                                    |
-| [`resolve_policy`](#ir.resolve_policy)(entry)                              | The effective policy for a registry `entry`: entry over kind over global.                                                                  |
-| [`default_policy_for_kind`](#ir.default_policy_for_kind)(kind)                      | The smart-default [`MaintenancePolicy`](#ir.MaintenancePolicy) for a corpus `kind`.                                  |
-| [`policy_for`](#ir.policy_for)(name)                                   | The effective [`ir.policy.MaintenancePolicy`](ir.policy.html.md#ir.policy.MaintenancePolicy) for corpus *name*.  |
+| [`resolve_reranker`](#ir.resolve_reranker)(spec)                             | The reranker `spec` names, or `None` when there is none to apply.                                                                               |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`calibration_key`](#ir.calibration_key)(mode[, tag])                       | The key an abstention floor is stored and loaded under.                                                                                         |
+| [`search_tool`](#ir.search_tool)(query, \*, corpus[, k, mode, ...])     | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                          |
+| [`make_search`](#ir.make_search)(corpus, \*[, name, description, ...])  | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                                  |
+| [`with_synopsis`](#ir.with_synopsis)(strategy, \*[, synthesize, ...])     | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                         |
+| [`make_thin_description_predicate`](#ir.make_thin_description_predicate)(\*[, ...])         | A `Predicate` true when the artifact's `field` is empty or thin.                                                                                |
+| `thin_description_predicate`(artifact)                                                              | Ready-made gate: synthesize only for packages with an empty / short description.                                                                |
+| [`make_llm_synthesizer`](#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...]) | An LLM-backed `Synthesizer` ([`Artifact`](ir.base.html.md#ir.base.Artifact) → synopsis).                            |
+| [`build`](#ir.build)(source, \*[, store, embedder, full, ...])    | Build or incrementally update *source* into a [`Corpus`](#ir.Corpus).                                          |
+| [`open_corpus`](#ir.open_corpus)(name, \*[, embedder])                  | Reopen a previously built corpus by name.                                                                                                       |
+| [`reports_coverage`](#ir.reports_coverage)([name, projects_root, ...])       | Diff the reports docs tree on disk against the built `name` corpus.                                                                             |
+| [`search`](#ir.search)(corpus, query, \*\*kwargs)                  | Search a [`Corpus`](ir.index.html.md#ir.index.Corpus) (or a corpus *name*, reopened lazily).                         |
+| [`as_retriever`](#ir.as_retriever)(corpus_or_name, \*\*search_defaults)  | Bind ONE corpus to the uniform `Retriever` contract.                                                                                            |
+| [`retrievers`](#ir.retrievers)(\*\*search_defaults)                    | A lazy `Mapping[name, Retriever]` view over the registry (ir_09 §8).                                                                            |
+| [`retriever_for`](#ir.retriever_for)(name, \*\*search_defaults)           | A [`Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.                       |
+| [`fuse_hits`](#ir.fuse_hits)(hits_by_source, \*[, rrf_k, ...])        | Merge per-source ranked hit lists into one ranking — by rank, not score.                                                                        |
+| [`dependency_evidence_boost`](#ir.dependency_evidence_boost)(relevant_libs, \*, ...)  | A `dep_boost` for [`search()`](#ir.search): reward dependencies on *relevant_libs*.                            |
+| [`records_for_artifact`](#ir.records_for_artifact)(store_or_corpus, ...[, ...])  | All stored records of *artifact_id*, ordered by `surface_index`.                                                                                |
+| [`default_edge_extractor`](#ir.default_edge_extractor)(artifact_id, ...)           | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.                                                                    |
+| [`canonical_node_id`](#ir.canonical_node_id)(target, \*, source)              | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.                                                                          |
+| [`traverse`](#ir.traverse)(query, store, \*, policy[, ...])          | Walk *store* from *query* under *policy*, returning the top-*k* hits.                                                                           |
+| [`collapsed_tree_policy`](#ir.collapsed_tree_policy)(\*[, summary_kinds, ...])    | The pure-vector summary-routing / collapsed-tree [`WalkPolicy`](#ir.WalkPolicy).                                   |
+| [`reverse_dependency_policy`](#ir.reverse_dependency_policy)(\*, seeds[, ...])        | A [`WalkPolicy`](#ir.WalkPolicy) that walks dependency edges backwards from *seeds*.                               |
+| [`expand`](#ir.expand)(hit, corpus, \*[, policy])                  | Expand *hit* into a [`Passage`](#ir.Passage) of its neighborhood in *corpus*.                                   |
+| [`sentence_window_policy`](#ir.sentence_window_policy)([k])                        | ±\*k\* same-kind neighbors around the seed (NEXT/PREV expansion).                                                                               |
+| [`parent_policy`](#ir.parent_policy)()                                    | The whole artifact (small-to-big): every stored surface, plan order.                                                                            |
+| [`tag_source`](#ir.tag_source)(hits, source)                           | Stamp *source* on every hit that doesn't already carry one.                                                                                     |
+| [`make_llm_formulator`](#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                                    |
+| [`make_keyword_formulator`](#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                            |
+| [`lexical_miss`](#ir.lexical_miss)(hits, \*[, required, candidates])     | Miss signals for the committed `hits`; `{"miss": bool, ...}`.                                                                                   |
+| [`grep_hits`](#ir.grep_hits)(pattern, \*, roots[, glob, k, ...])      | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
+| [`make_grep_retriever`](#ir.make_grep_retriever)(roots, \*\*grep_defaults)      | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
+| [`select`](#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                      |
+| [`disclose`](#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                         |
+| [`discover`](#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                          |
+| [`register`](#ir.register)(name, kind, \*[, embedder, ...])          | Register (or overwrite) a named corpus definition.                                                                                              |
+| [`corpora`](#ir.corpora)()                                          | All registered corpus definitions, keyed by name.                                                                                               |
+| [`build_corpus`](#ir.build_corpus)(name, \*\*kwargs)                     | Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](ir.index.html.md#ir.index.Corpus).      |
+| [`maintain`](#ir.maintain)([name, all, now, dry_run])                | Run due background work for one corpus (*name*) or every registered one (*all*).                                                                |
+| [`maintain_corpus`](#ir.maintain_corpus)(name, \*[, now, dry_run, full])    | Do the due background work for one corpus (idempotent).                                                                                         |
+| [`resolve_policy`](#ir.resolve_policy)(entry)                              | The effective policy for a registry `entry`: entry over kind over global.                                                                       |
+| [`default_policy_for_kind`](#ir.default_policy_for_kind)(kind)                      | The smart-default [`MaintenancePolicy`](#ir.MaintenancePolicy) for a corpus `kind`.                                       |
+| [`policy_for`](#ir.policy_for)(name)                                   | The effective [`ir.policy.MaintenancePolicy`](ir.policy.html.md#ir.policy.MaintenancePolicy) for corpus *name*.       |
 
 ### Classes
 
@@ -1558,6 +1560,24 @@ interact, via weighted Reciprocal Rank Fusion: each hit contributes
   absolute floors — apply calibrated `min_score` floors per source,
   *before* fusing (see ir_07/ir_08 and `ir.discover`’s federated form).
 
+### ir.grep_hits(pattern, , roots, glob='\*', k=10, ignore_case=True, fixed=False, filter=None, metadata_of=None, weight_of=None, recency_half_life_days=None, id_of=None, use_rg=None, rg_batch=500, exclude_dirs=('.git', 'node_modules', '_\_pycache_\_', '.venv'), absolute_paths=False, snippet_chars=200, source=None, now=None)
+
+The top-`k` files under `roots` whose lines match `pattern`, as hits.
+
+`pattern` is a Python regex (`fixed=True`: a literal). Files are those whose
+root-relative posix path matches the fnmatch `glob` (`*` crosses `/`, so
+`"*.md"` means every markdown file below the root); a root that is a file
+stands for itself. `filter` is applied to `metadata_of(path)` *before* any file
+is read (a filter without `metadata_of` sees `{"path", "filename"}`, the path
+relative to its root). `id_of(root, path)` names the artifact (default: the
+relative path); two files with the same id raise `ValueError` (several roots with
+a common relative path: pass `id_of`). `use_rg`: `None` = prefilter with
+`rg` if installed, `True` = require it (`RuntimeError` otherwise), `False` =
+Python only. The score is described in the module docstring.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]
+
 ### ir.lexical_miss(hits, , required=(), candidates=None)
 
 Miss signals for the committed `hits`; `{"miss": bool, ...}`.
@@ -1603,6 +1623,19 @@ whether a (synopsis-aware) reindex is due *and* permitted now, and — unless
 
 * **Return type:**
   [`MaintenanceResult`](ir.maintenance.html.md#ir.maintenance.MaintenanceResult)
+
+### ir.make_grep_retriever(roots, \*\*grep_defaults)
+
+Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) contract.
+
+The result is `retrieve(pattern, **overrides) -> list[SearchHit]` (`roots` may
+be overridden per call too), the same shape as [`ir.as_retriever()`](#ir.as_retriever), so a grep
+leaf can sit in a `Mapping[name, Retriever]` registry beside index-backed
+corpora. Overrides are the keywords of [`grep_hits()`](#ir.grep_hits); an unknown one
+(`mode=`) is a `TypeError`, not silently dropped.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]]
 
 ### ir.make_keyword_formulator(, rewriter=None, n=4, include_original=True, \*\*kwargs)
 
@@ -2067,6 +2100,7 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 | [`eval_gen`](ir.eval_gen.html.md#module-ir.eval_gen)           | LLM-backed generation of evaluation cases for [`ir.eval`](ir.eval.html.md#module-ir.eval). |
 | [`formulate`](ir.formulate.html.md#module-ir.formulate)         | Query formulation — the Formulator seam (ir_09 §3).                                                                    |
 | [`graph`](ir.graph.html.md#module-ir.graph)                 | The semantic link graph — typed edges between artifacts (report 12).                                                   |
+| [`grep`](ir.grep.html.md#module-ir.grep)                   | The grep Retriever leaf: an index-free first stage over a corpus's raw files.                                          |
 | [`index`](ir.index.html.md#module-ir.index)                 | The indexing pipeline and incremental maintenance.                                                                     |
 | [`maintenance`](ir.maintenance.html.md#module-ir.maintenance)     | Idempotent background-work runner — `ir maintain` (issue #58).                                                         |
 | [`miss`](ir.miss.html.md#module-ir.miss)                   | Lexical miss signals: did a keyword search actually find what was asked for?                                           |

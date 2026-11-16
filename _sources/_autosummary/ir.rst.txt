@@ -38,6 +38,8 @@
       make_llm_formulator
       make_keyword_formulator
       lexical_miss
+      grep_hits
+      make_grep_retriever
       select
       disclose
       discover
@@ -98,6 +100,7 @@
    eval_gen
    formulate
    graph
+   grep
    index
    maintenance
    miss

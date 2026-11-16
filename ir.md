@@ -1,4 +1,4 @@
-> built 2026-11-16 07:54 UTC from 7a7f7b7 (master) · ir 0.1.68. Details: build_info.json
+> built 2026-11-16 08:11 UTC from 268024a (master) · ir 0.1.69. Details: build_info.json
 
 # index.html.md
 
@@ -3023,6 +3023,113 @@ The one comparison key for library names: the reverse dependency index and
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 
+# _autosummary/ir.grep.html.md
+
+# ir.grep
+
+The grep Retriever leaf: an index-free first stage over a corpus’s raw files.
+
+Embedding indexes find paraphrases but miss the exact things a keyword search is for
+(a name, an identifier, an error string) and need a build step that may be stale. This
+leaf reads the files where they lie: it runs a regex (`rg` when available, else
+Python `re`) over the files under some roots and returns
+[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)s, so it can be fused with a dense or BM25 ranking like
+any other Retriever ([`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever)).
+
+Python’s `re` is the authority: `pattern` is a Python regex, lines are split on
+`\n` only (a trailing `\r` is ignored), and counts and snippets come from Python,
+so scores never depend on whether `rg` is installed. `rg` is only a prefilter that
+skips files with no possible match, and it is used **only when that is provably safe**:
+an ASCII *literal* pattern (no regex metacharacters, see `_rg_can_prefilter()`),
+since `rg` and Python read `\w`, `\s`, `.`, character classes and Unicode case
+folding differently and a prefilter that disagrees would silently drop files. Any
+other pattern is read in Python (`use_rg=True` then raises).
+
+Scoring is explicit and tunable: a file’s score is its **matching-line count**, times a
+per-file weight (`weight_of`: e.g. a title or a recent folder counts more), times an
+optional recency decay (`recency_half_life_days`: a file’s weight halves for each
+half-life of age). Metadata filters are pushed into the scan: `metadata_of(path)`
+derives a file’s metadata and a Mongo-style `filter` (the same one
+[`ir.search()`](_autosummary/ir.html.md#ir.search) takes) drops files **before** they are read.
+
+Hit metadata carries only the id-relative `path` and `filename` (never an absolute
+local path, which would leak into anything published) unless `absolute_paths=True`.
+
+It returns hits, never a loop and never a plan; whether to grep or to use the index is
+the caller’s (or the agent layer’s) choice.
+
+```pycon
+>>> import tempfile, pathlib
+>>> with tempfile.TemporaryDirectory() as d:
+...     _ = pathlib.Path(d, "a.md").write_text("Acme invoice\nnothing\nacme again")
+...     _ = pathlib.Path(d, "b.md").write_text("unrelated")
+...     hits = grep_hits("acme", roots=d, use_rg=False)
+>>> [(h.artifact_id, h.score, h.metadata["n_matches"]) for h in hits]
+[('a.md', 2.0, 2)]
+```
+
+### Module Attributes
+
+| [`DFLT_RG_BATCH`](_autosummary/ir.grep.html.md#ir.grep.DFLT_RG_BATCH)      | How many files one `rg` call is handed (keeps argv under the OS limit).                 |
+|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`DFLT_SNIPPET_CHARS`](_autosummary/ir.grep.html.md#ir.grep.DFLT_SNIPPET_CHARS) | Longest snippet kept per hit (the first matching line, trimmed).                        |
+| [`DFLT_EXCLUDE_DIRS`](_autosummary/ir.grep.html.md#ir.grep.DFLT_EXCLUDE_DIRS)  | Directories never descended into (VCS and tooling noise; override with `exclude_dirs`). |
+| [`GREP_KIND`](_autosummary/ir.grep.html.md#ir.grep.GREP_KIND)          | The `surface_kind` of a grep hit.                                                       |
+
+### Functions
+
+| [`grep_hits`](_autosummary/ir.grep.html.md#ir.grep.grep_hits)(pattern, \*, roots[, glob, k, ...])   | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
+|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`make_grep_retriever`](_autosummary/ir.grep.html.md#ir.grep.make_grep_retriever)(roots, \*\*grep_defaults)   | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
+
+### ir.grep.DFLT_EXCLUDE_DIRS *= ('.git', 'node_modules', '_\_pycache_\_', '.venv')*
+
+Directories never descended into (VCS and tooling noise; override with `exclude_dirs`).
+
+### ir.grep.DFLT_RG_BATCH *= 500*
+
+How many files one `rg` call is handed (keeps argv under the OS limit).
+
+### ir.grep.DFLT_SNIPPET_CHARS *= 200*
+
+Longest snippet kept per hit (the first matching line, trimmed).
+
+### ir.grep.GREP_KIND *= 'grep'*
+
+The `surface_kind` of a grep hit.
+
+### ir.grep.grep_hits(pattern, , roots, glob='\*', k=10, ignore_case=True, fixed=False, filter=None, metadata_of=None, weight_of=None, recency_half_life_days=None, id_of=None, use_rg=None, rg_batch=500, exclude_dirs=('.git', 'node_modules', '_\_pycache_\_', '.venv'), absolute_paths=False, snippet_chars=200, source=None, now=None)
+
+The top-`k` files under `roots` whose lines match `pattern`, as hits.
+
+`pattern` is a Python regex (`fixed=True`: a literal). Files are those whose
+root-relative posix path matches the fnmatch `glob` (`*` crosses `/`, so
+`"*.md"` means every markdown file below the root); a root that is a file
+stands for itself. `filter` is applied to `metadata_of(path)` *before* any file
+is read (a filter without `metadata_of` sees `{"path", "filename"}`, the path
+relative to its root). `id_of(root, path)` names the artifact (default: the
+relative path); two files with the same id raise `ValueError` (several roots with
+a common relative path: pass `id_of`). `use_rg`: `None` = prefilter with
+`rg` if installed, `True` = require it (`RuntimeError` otherwise), `False` =
+Python only. The score is described in the module docstring.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)]
+
+### ir.grep.make_grep_retriever(roots, \*\*grep_defaults)
+
+Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract.
+
+The result is `retrieve(pattern, **overrides) -> list[SearchHit]` (`roots` may
+be overridden per call too), the same shape as [`ir.as_retriever()`](_autosummary/ir.html.md#ir.as_retriever), so a grep
+leaf can sit in a `Mapping[name, Retriever]` registry beside index-backed
+corpora. Overrides are the keywords of [`grep_hits()`](_autosummary/ir.grep.html.md#ir.grep.grep_hits); an unknown one
+(`mode=`) is a `TypeError`, not silently dropped.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)]]
+
+
 # _autosummary/ir.html.md
 
 # ir
@@ -3067,48 +3174,50 @@ the reviewing search subagent shipped under `.claude/`.
 
 ### Functions
 
-| [`resolve_reranker`](_autosummary/ir.html.md#ir.resolve_reranker)(spec)                             | The reranker `spec` names, or `None` when there is none to apply.                                                                          |
-|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| [`calibration_key`](_autosummary/ir.html.md#ir.calibration_key)(mode[, tag])                       | The key an abstention floor is stored and loaded under.                                                                                    |
-| [`search_tool`](_autosummary/ir.html.md#ir.search_tool)(query, \*, corpus[, k, mode, ...])     | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                     |
-| [`make_search`](_autosummary/ir.html.md#ir.make_search)(corpus, \*[, name, description, ...])  | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                             |
-| [`with_synopsis`](_autosummary/ir.html.md#ir.with_synopsis)(strategy, \*[, synthesize, ...])     | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                    |
-| [`make_thin_description_predicate`](_autosummary/ir.html.md#ir.make_thin_description_predicate)(\*[, ...])         | A `Predicate` true when the artifact's `field` is empty or thin.                                                                           |
-| `thin_description_predicate`(artifact)                                                              | Ready-made gate: synthesize only for packages with an empty / short description.                                                           |
-| [`make_llm_synthesizer`](_autosummary/ir.html.md#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...]) | An LLM-backed `Synthesizer` ([`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → synopsis).                       |
-| [`build`](_autosummary/ir.html.md#ir.build)(source, \*[, store, embedder, full, ...])    | Build or incrementally update *source* into a [`Corpus`](_autosummary/ir.html.md#ir.Corpus).                                     |
-| [`open_corpus`](_autosummary/ir.html.md#ir.open_corpus)(name, \*[, embedder])                  | Reopen a previously built corpus by name.                                                                                                  |
-| [`reports_coverage`](_autosummary/ir.html.md#ir.reports_coverage)([name, projects_root, ...])       | Diff the reports docs tree on disk against the built `name` corpus.                                                                        |
-| [`search`](_autosummary/ir.html.md#ir.search)(corpus, query, \*\*kwargs)                  | Search a [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus) (or a corpus *name*, reopened lazily).                    |
-| [`as_retriever`](_autosummary/ir.html.md#ir.as_retriever)(corpus_or_name, \*\*search_defaults)  | Bind ONE corpus to the uniform `Retriever` contract.                                                                                       |
-| [`retrievers`](_autosummary/ir.html.md#ir.retrievers)(\*\*search_defaults)                    | A lazy `Mapping[name, Retriever]` view over the registry (ir_09 §8).                                                                       |
-| [`retriever_for`](_autosummary/ir.html.md#ir.retriever_for)(name, \*\*search_defaults)           | A [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.                  |
-| [`fuse_hits`](_autosummary/ir.html.md#ir.fuse_hits)(hits_by_source, \*[, rrf_k, ...])        | Merge per-source ranked hit lists into one ranking — by rank, not score.                                                                   |
-| [`dependency_evidence_boost`](_autosummary/ir.html.md#ir.dependency_evidence_boost)(relevant_libs, \*, ...)  | A `dep_boost` for [`search()`](_autosummary/ir.html.md#ir.search): reward dependencies on *relevant_libs*.                       |
-| [`records_for_artifact`](_autosummary/ir.html.md#ir.records_for_artifact)(store_or_corpus, ...[, ...])  | All stored records of *artifact_id*, ordered by `surface_index`.                                                                           |
-| [`default_edge_extractor`](_autosummary/ir.html.md#ir.default_edge_extractor)(artifact_id, ...)           | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.                                                               |
-| [`canonical_node_id`](_autosummary/ir.html.md#ir.canonical_node_id)(target, \*, source)              | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.                                                                     |
-| [`traverse`](_autosummary/ir.html.md#ir.traverse)(query, store, \*, policy[, ...])          | Walk *store* from *query* under *policy*, returning the top-*k* hits.                                                                      |
-| [`collapsed_tree_policy`](_autosummary/ir.html.md#ir.collapsed_tree_policy)(\*[, summary_kinds, ...])    | The pure-vector summary-routing / collapsed-tree [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy).                              |
-| [`reverse_dependency_policy`](_autosummary/ir.html.md#ir.reverse_dependency_policy)(\*, seeds[, ...])        | A [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy) that walks dependency edges backwards from *seeds*.                          |
-| [`expand`](_autosummary/ir.html.md#ir.expand)(hit, corpus, \*[, policy])                  | Expand *hit* into a [`Passage`](_autosummary/ir.html.md#ir.Passage) of its neighborhood in *corpus*.                              |
-| [`sentence_window_policy`](_autosummary/ir.html.md#ir.sentence_window_policy)([k])                        | ±\*k\* same-kind neighbors around the seed (NEXT/PREV expansion).                                                                          |
-| [`parent_policy`](_autosummary/ir.html.md#ir.parent_policy)()                                    | The whole artifact (small-to-big): every stored surface, plan order.                                                                       |
-| [`tag_source`](_autosummary/ir.html.md#ir.tag_source)(hits, source)                           | Stamp *source* on every hit that doesn't already carry one.                                                                                |
-| [`make_llm_formulator`](_autosummary/ir.html.md#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                               |
-| [`make_keyword_formulator`](_autosummary/ir.html.md#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                       |
-| [`lexical_miss`](_autosummary/ir.html.md#ir.lexical_miss)(hits, \*[, required, candidates])     | Miss signals for the committed `hits`; `{"miss": bool, ...}`.                                                                              |
-| [`select`](_autosummary/ir.html.md#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                 |
-| [`disclose`](_autosummary/ir.html.md#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                    |
-| [`discover`](_autosummary/ir.html.md#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                     |
-| [`register`](_autosummary/ir.html.md#ir.register)(name, kind, \*[, embedder, ...])          | Register (or overwrite) a named corpus definition.                                                                                         |
-| [`corpora`](_autosummary/ir.html.md#ir.corpora)()                                          | All registered corpus definitions, keyed by name.                                                                                          |
-| [`build_corpus`](_autosummary/ir.html.md#ir.build_corpus)(name, \*\*kwargs)                     | Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus). |
-| [`maintain`](_autosummary/ir.html.md#ir.maintain)([name, all, now, dry_run])                | Run due background work for one corpus (*name*) or every registered one (*all*).                                                           |
-| [`maintain_corpus`](_autosummary/ir.html.md#ir.maintain_corpus)(name, \*[, now, dry_run, full])    | Do the due background work for one corpus (idempotent).                                                                                    |
-| [`resolve_policy`](_autosummary/ir.html.md#ir.resolve_policy)(entry)                              | The effective policy for a registry `entry`: entry over kind over global.                                                                  |
-| [`default_policy_for_kind`](_autosummary/ir.html.md#ir.default_policy_for_kind)(kind)                      | The smart-default [`MaintenancePolicy`](_autosummary/ir.html.md#ir.MaintenancePolicy) for a corpus `kind`.                                  |
-| [`policy_for`](_autosummary/ir.html.md#ir.policy_for)(name)                                   | The effective [`ir.policy.MaintenancePolicy`](_autosummary/ir.policy.html.md#ir.policy.MaintenancePolicy) for corpus *name*.  |
+| [`resolve_reranker`](_autosummary/ir.html.md#ir.resolve_reranker)(spec)                             | The reranker `spec` names, or `None` when there is none to apply.                                                                               |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`calibration_key`](_autosummary/ir.html.md#ir.calibration_key)(mode[, tag])                       | The key an abstention floor is stored and loaded under.                                                                                         |
+| [`search_tool`](_autosummary/ir.html.md#ir.search_tool)(query, \*, corpus[, k, mode, ...])     | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                          |
+| [`make_search`](_autosummary/ir.html.md#ir.make_search)(corpus, \*[, name, description, ...])  | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                                  |
+| [`with_synopsis`](_autosummary/ir.html.md#ir.with_synopsis)(strategy, \*[, synthesize, ...])     | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                         |
+| [`make_thin_description_predicate`](_autosummary/ir.html.md#ir.make_thin_description_predicate)(\*[, ...])         | A `Predicate` true when the artifact's `field` is empty or thin.                                                                                |
+| `thin_description_predicate`(artifact)                                                              | Ready-made gate: synthesize only for packages with an empty / short description.                                                                |
+| [`make_llm_synthesizer`](_autosummary/ir.html.md#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...]) | An LLM-backed `Synthesizer` ([`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact) → synopsis).                            |
+| [`build`](_autosummary/ir.html.md#ir.build)(source, \*[, store, embedder, full, ...])    | Build or incrementally update *source* into a [`Corpus`](_autosummary/ir.html.md#ir.Corpus).                                          |
+| [`open_corpus`](_autosummary/ir.html.md#ir.open_corpus)(name, \*[, embedder])                  | Reopen a previously built corpus by name.                                                                                                       |
+| [`reports_coverage`](_autosummary/ir.html.md#ir.reports_coverage)([name, projects_root, ...])       | Diff the reports docs tree on disk against the built `name` corpus.                                                                             |
+| [`search`](_autosummary/ir.html.md#ir.search)(corpus, query, \*\*kwargs)                  | Search a [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus) (or a corpus *name*, reopened lazily).                         |
+| [`as_retriever`](_autosummary/ir.html.md#ir.as_retriever)(corpus_or_name, \*\*search_defaults)  | Bind ONE corpus to the uniform `Retriever` contract.                                                                                            |
+| [`retrievers`](_autosummary/ir.html.md#ir.retrievers)(\*\*search_defaults)                    | A lazy `Mapping[name, Retriever]` view over the registry (ir_09 §8).                                                                            |
+| [`retriever_for`](_autosummary/ir.html.md#ir.retriever_for)(name, \*\*search_defaults)           | A [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) bound to the registered corpus *name*.                       |
+| [`fuse_hits`](_autosummary/ir.html.md#ir.fuse_hits)(hits_by_source, \*[, rrf_k, ...])        | Merge per-source ranked hit lists into one ranking — by rank, not score.                                                                        |
+| [`dependency_evidence_boost`](_autosummary/ir.html.md#ir.dependency_evidence_boost)(relevant_libs, \*, ...)  | A `dep_boost` for [`search()`](_autosummary/ir.html.md#ir.search): reward dependencies on *relevant_libs*.                            |
+| [`records_for_artifact`](_autosummary/ir.html.md#ir.records_for_artifact)(store_or_corpus, ...[, ...])  | All stored records of *artifact_id*, ordered by `surface_index`.                                                                                |
+| [`default_edge_extractor`](_autosummary/ir.html.md#ir.default_edge_extractor)(artifact_id, ...)           | Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.                                                                    |
+| [`canonical_node_id`](_autosummary/ir.html.md#ir.canonical_node_id)(target, \*, source)              | Canonicalize a neighbor *target* to a `(source, artifact_id)` node id.                                                                          |
+| [`traverse`](_autosummary/ir.html.md#ir.traverse)(query, store, \*, policy[, ...])          | Walk *store* from *query* under *policy*, returning the top-*k* hits.                                                                           |
+| [`collapsed_tree_policy`](_autosummary/ir.html.md#ir.collapsed_tree_policy)(\*[, summary_kinds, ...])    | The pure-vector summary-routing / collapsed-tree [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy).                                   |
+| [`reverse_dependency_policy`](_autosummary/ir.html.md#ir.reverse_dependency_policy)(\*, seeds[, ...])        | A [`WalkPolicy`](_autosummary/ir.html.md#ir.WalkPolicy) that walks dependency edges backwards from *seeds*.                               |
+| [`expand`](_autosummary/ir.html.md#ir.expand)(hit, corpus, \*[, policy])                  | Expand *hit* into a [`Passage`](_autosummary/ir.html.md#ir.Passage) of its neighborhood in *corpus*.                                   |
+| [`sentence_window_policy`](_autosummary/ir.html.md#ir.sentence_window_policy)([k])                        | ±\*k\* same-kind neighbors around the seed (NEXT/PREV expansion).                                                                               |
+| [`parent_policy`](_autosummary/ir.html.md#ir.parent_policy)()                                    | The whole artifact (small-to-big): every stored surface, plan order.                                                                            |
+| [`tag_source`](_autosummary/ir.html.md#ir.tag_source)(hits, source)                           | Stamp *source* on every hit that doesn't already carry one.                                                                                     |
+| [`make_llm_formulator`](_autosummary/ir.html.md#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                                    |
+| [`make_keyword_formulator`](_autosummary/ir.html.md#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                            |
+| [`lexical_miss`](_autosummary/ir.html.md#ir.lexical_miss)(hits, \*[, required, candidates])     | Miss signals for the committed `hits`; `{"miss": bool, ...}`.                                                                                   |
+| [`grep_hits`](_autosummary/ir.html.md#ir.grep_hits)(pattern, \*, roots[, glob, k, ...])      | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
+| [`make_grep_retriever`](_autosummary/ir.html.md#ir.make_grep_retriever)(roots, \*\*grep_defaults)      | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
+| [`select`](_autosummary/ir.html.md#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                      |
+| [`disclose`](_autosummary/ir.html.md#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                         |
+| [`discover`](_autosummary/ir.html.md#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                          |
+| [`register`](_autosummary/ir.html.md#ir.register)(name, kind, \*[, embedder, ...])          | Register (or overwrite) a named corpus definition.                                                                                              |
+| [`corpora`](_autosummary/ir.html.md#ir.corpora)()                                          | All registered corpus definitions, keyed by name.                                                                                               |
+| [`build_corpus`](_autosummary/ir.html.md#ir.build_corpus)(name, \*\*kwargs)                     | Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus).      |
+| [`maintain`](_autosummary/ir.html.md#ir.maintain)([name, all, now, dry_run])                | Run due background work for one corpus (*name*) or every registered one (*all*).                                                                |
+| [`maintain_corpus`](_autosummary/ir.html.md#ir.maintain_corpus)(name, \*[, now, dry_run, full])    | Do the due background work for one corpus (idempotent).                                                                                         |
+| [`resolve_policy`](_autosummary/ir.html.md#ir.resolve_policy)(entry)                              | The effective policy for a registry `entry`: entry over kind over global.                                                                       |
+| [`default_policy_for_kind`](_autosummary/ir.html.md#ir.default_policy_for_kind)(kind)                      | The smart-default [`MaintenancePolicy`](_autosummary/ir.html.md#ir.MaintenancePolicy) for a corpus `kind`.                                       |
+| [`policy_for`](_autosummary/ir.html.md#ir.policy_for)(name)                                   | The effective [`ir.policy.MaintenancePolicy`](_autosummary/ir.policy.html.md#ir.policy.MaintenancePolicy) for corpus *name*.       |
 
 ### Classes
 
@@ -4585,6 +4694,24 @@ interact, via weighted Reciprocal Rank Fusion: each hit contributes
   absolute floors — apply calibrated `min_score` floors per source,
   *before* fusing (see ir_07/ir_08 and `ir.discover`’s federated form).
 
+### ir.grep_hits(pattern, , roots, glob='\*', k=10, ignore_case=True, fixed=False, filter=None, metadata_of=None, weight_of=None, recency_half_life_days=None, id_of=None, use_rg=None, rg_batch=500, exclude_dirs=('.git', 'node_modules', '_\_pycache_\_', '.venv'), absolute_paths=False, snippet_chars=200, source=None, now=None)
+
+The top-`k` files under `roots` whose lines match `pattern`, as hits.
+
+`pattern` is a Python regex (`fixed=True`: a literal). Files are those whose
+root-relative posix path matches the fnmatch `glob` (`*` crosses `/`, so
+`"*.md"` means every markdown file below the root); a root that is a file
+stands for itself. `filter` is applied to `metadata_of(path)` *before* any file
+is read (a filter without `metadata_of` sees `{"path", "filename"}`, the path
+relative to its root). `id_of(root, path)` names the artifact (default: the
+relative path); two files with the same id raise `ValueError` (several roots with
+a common relative path: pass `id_of`). `use_rg`: `None` = prefilter with
+`rg` if installed, `True` = require it (`RuntimeError` otherwise), `False` =
+Python only. The score is described in the module docstring.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)]
+
 ### ir.lexical_miss(hits, , required=(), candidates=None)
 
 Miss signals for the committed `hits`; `{"miss": bool, ...}`.
@@ -4630,6 +4757,19 @@ whether a (synopsis-aware) reindex is due *and* permitted now, and — unless
 
 * **Return type:**
   [`MaintenanceResult`](_autosummary/ir.maintenance.html.md#ir.maintenance.MaintenanceResult)
+
+### ir.make_grep_retriever(roots, \*\*grep_defaults)
+
+Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract.
+
+The result is `retrieve(pattern, **overrides) -> list[SearchHit]` (`roots` may
+be overridden per call too), the same shape as [`ir.as_retriever()`](_autosummary/ir.html.md#ir.as_retriever), so a grep
+leaf can sit in a `Mapping[name, Retriever]` registry beside index-backed
+corpora. Overrides are the keywords of [`grep_hits()`](_autosummary/ir.html.md#ir.grep_hits); an unknown one
+(`mode=`) is a `TypeError`, not silently dropped.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)]]
 
 ### ir.make_keyword_formulator(, rewriter=None, n=4, include_original=True, \*\*kwargs)
 
@@ -5094,6 +5234,7 @@ Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.
 | [`eval_gen`](_autosummary/ir.eval_gen.html.md#module-ir.eval_gen)           | LLM-backed generation of evaluation cases for [`ir.eval`](_autosummary/ir.eval.html.md#module-ir.eval). |
 | [`formulate`](_autosummary/ir.formulate.html.md#module-ir.formulate)         | Query formulation — the Formulator seam (ir_09 §3).                                                                    |
 | [`graph`](_autosummary/ir.graph.html.md#module-ir.graph)                 | The semantic link graph — typed edges between artifacts (report 12).                                                   |
+| [`grep`](_autosummary/ir.grep.html.md#module-ir.grep)                   | The grep Retriever leaf: an index-free first stage over a corpus's raw files.                                          |
 | [`index`](_autosummary/ir.index.html.md#module-ir.index)                 | The indexing pipeline and incremental maintenance.                                                                     |
 | [`maintenance`](_autosummary/ir.maintenance.html.md#module-ir.maintenance)     | Idempotent background-work runner — `ir maintain` (issue #58).                                                         |
 | [`miss`](_autosummary/ir.miss.html.md#module-ir.miss)                   | Lexical miss signals: did a keyword search actually find what was asked for?                                           |
@@ -8198,16 +8339,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-16 07:54 UTC** from commit <a href="https://github.com/i2mint/ir/commit/7a7f7b7f18c9dce17c29c313f819da87eafe0624"><code>7a7f7b7</code></a> on branch <code>master</code>, for **ir 0.1.68** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-16 08:11 UTC** from commit <a href="https://github.com/i2mint/ir/commit/268024aa60149f9244ad55049ab57b7b9aee6320"><code>268024a</code></a> on branch <code>master</code>, for **ir 0.1.69** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.69) is behind the latest release on PyPI (0.1.70): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/7a7f7b7f18c9dce17c29c313f819da87eafe0624"><code>7a7f7b7f18c9dce17c29c313f819da87eafe0624</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/268024aa60149f9244ad55049ab57b7b9aee6320"><code>268024aa60149f9244ad55049ab57b7b9aee6320</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8218,9 +8361,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43826954474">43826954474</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/43828987716">43828987716</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>7a7f7b7f18c9dce17c29c313f819da87eafe0624</code> (in the history of the built commit) |
+| Event commit | <code>268024aa60149f9244ad55049ab57b7b9aee6320</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8245,13 +8388,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.68/">0.1.68</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.70/">0.1.70</a>, newer than the documented version (0.1.69).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 7a7f7b7f18c9dce17c29c313f819da87eafe0624
+git checkout 268024aa60149f9244ad55049ab57b7b9aee6320
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

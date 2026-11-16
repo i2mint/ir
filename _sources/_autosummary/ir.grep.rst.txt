@@ -1,0 +1,22 @@
+ir.grep
+=======
+
+.. automodule:: ir.grep
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_RG_BATCH
+      DFLT_SNIPPET_CHARS
+      DFLT_EXCLUDE_DIRS
+      GREP_KIND
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      grep_hits
+      make_grep_retriever
+   

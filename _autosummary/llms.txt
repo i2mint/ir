@@ -15,6 +15,7 @@
 - [ir.eval_gen](ir.eval_gen.html.md): LLM-backed generation of evaluation cases for &#96;ir.eval&#96;.
 - [ir.formulate](ir.formulate.html.md): Query formulation — the Formulator seam (ir_09 §3).
 - [ir.graph](ir.graph.html.md): The semantic link graph — typed edges between artifacts (report 12).
+- [ir.grep](ir.grep.html.md): The grep Retriever leaf: an index-free first stage over a corpus’s raw files.
 - [ir.index](ir.index.html.md): The indexing pipeline and incremental maintenance.
 - [ir.maintenance](ir.maintenance.html.md): Idempotent background-work runner — &#96;ir maintain&#96; (issue #58).
 - [ir.miss](ir.miss.html.md): Lexical miss signals: did a keyword search actually find what was asked for?
