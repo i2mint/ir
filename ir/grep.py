@@ -215,7 +215,9 @@ def recency_weight(
     0.5
     """
     _check_args(1, half_life_days, 1)
-    return lambda path: _recency(path, half_life_days, time.time() if now is None else now)
+    return lambda path: _recency(
+        path, half_life_days, time.time() if now is None else now
+    )
 
 
 def _check_args(k: int, half_life: float | None, rg_batch: int) -> None:
