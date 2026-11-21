@@ -243,7 +243,7 @@ def _ndarray_store(rootdir) -> MutableMapping[str, np.ndarray]:
     def decode(data: bytes) -> np.ndarray:
         return np.load(io.BytesIO(data), allow_pickle=False)
 
-    return dol.wrap_kvs(files, obj_of_data=decode, data_of_obj=encode)
+    return dol.wrap_kvs(files, value_decoder=decode, value_encoder=encode)
 
 
 def _json_store(rootdir) -> MutableMapping[str, Any]:
@@ -258,7 +258,7 @@ def _json_store(rootdir) -> MutableMapping[str, Any]:
         return json.dumps(obj, indent=4).encode("utf-8")
 
     return dol.wrap_kvs(
-        _AtomicFiles(rootdir), obj_of_data=json.loads, data_of_obj=encode
+        _AtomicFiles(rootdir), value_decoder=json.loads, value_encoder=encode
     )
 
 
