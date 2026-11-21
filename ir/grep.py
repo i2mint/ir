@@ -197,6 +197,27 @@ def _recency(path: Path, half_life_days: float | None, now: float) -> float:
     return 0.5 ** (age_days / half_life_days)
 
 
+def recency_weight(
+    half_life_days: float, *, now: float | None = None
+) -> Callable[[Path], float]:
+    """A composable ``weight_of`` seam: a file's weight halves per ``half_life_days`` of age.
+
+    ``now`` pins the clock (default: the time of each call). Multiply it into your own
+    ``weight_of`` to combine it with other weights; it is what
+    ``recency_half_life_days`` uses.
+
+    >>> import os, tempfile, time
+    >>> from pathlib import Path
+    >>> with tempfile.TemporaryDirectory() as d:
+    ...     f = Path(d, "a.md"); _ = f.write_text("x")
+    ...     os.utime(f, (0, 0))
+    ...     recency_weight(10, now=10 * _SECONDS_PER_DAY)(f)
+    0.5
+    """
+    _check_args(1, half_life_days, 1)
+    return lambda path: _recency(path, half_life_days, time.time() if now is None else now)
+
+
 def _check_args(k: int, half_life: float | None, rg_batch: int) -> None:
     for name, value in (("k", k), ("rg_batch", rg_batch)):
         if not (isinstance(value, int) and not isinstance(value, bool) and value > 0):
