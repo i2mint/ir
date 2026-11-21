@@ -39,6 +39,7 @@
       make_keyword_formulator
       lexical_miss
       grep_hits
+      recency_weight
       make_grep_retriever
       select
       disclose

@@ -19,4 +19,5 @@ ir.grep
    
       grep_hits
       make_grep_retriever
+      recency_weight
    

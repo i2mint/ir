@@ -274,7 +274,7 @@
 </span><span id="line-85">    <span class="n">select</span><span class="p">,</span>
 </span><span id="line-86"><span class="p">)</span>
 </span><span id="line-87"><span class="kn">from</span><span class="w"> </span><span class="nn">.sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusSource</span>
-</span><span id="line-88"><span class="kn">from</span><span class="w"> </span><span class="nn">.grep</span><span class="w"> </span><span class="kn">import</span> <span class="n">grep_hits</span><span class="p">,</span> <span class="n">make_grep_retriever</span>
+</span><span id="line-88"><span class="kn">from</span><span class="w"> </span><span class="nn">.grep</span><span class="w"> </span><span class="kn">import</span> <span class="n">grep_hits</span><span class="p">,</span> <span class="n">make_grep_retriever</span><span class="p">,</span> <span class="n">recency_weight</span>
 </span><span id="line-89"><span class="kn">from</span><span class="w"> </span><span class="nn">.miss</span><span class="w"> </span><span class="kn">import</span> <span class="n">lexical_miss</span>
 </span><span id="line-90"><span class="kn">from</span><span class="w"> </span><span class="nn">.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusStore</span>
 </span><span id="line-91"><span class="kn">from</span><span class="w"> </span><span class="nn">.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -360,69 +360,70 @@
 </span><span id="line-171">    <span class="s2">"make_keyword_formulator"</span><span class="p">,</span>
 </span><span id="line-172">    <span class="s2">"lexical_miss"</span><span class="p">,</span>
 </span><span id="line-173">    <span class="s2">"grep_hits"</span><span class="p">,</span>
-</span><span id="line-174">    <span class="s2">"make_grep_retriever"</span><span class="p">,</span>
-</span><span id="line-175">    <span class="s2">"Formulator"</span><span class="p">,</span>
-</span><span id="line-176">    <span class="s2">"select"</span><span class="p">,</span>
-</span><span id="line-177">    <span class="s2">"disclose"</span><span class="p">,</span>
-</span><span id="line-178">    <span class="s2">"discover"</span><span class="p">,</span>
-</span><span id="line-179">    <span class="s2">"Selection"</span><span class="p">,</span>
-</span><span id="line-180">    <span class="s2">"Disclosure"</span><span class="p">,</span>
-</span><span id="line-181">    <span class="s2">"DiscoveryResult"</span><span class="p">,</span>
-</span><span id="line-182">    <span class="s2">"register"</span><span class="p">,</span>
-</span><span id="line-183">    <span class="s2">"corpora"</span><span class="p">,</span>
-</span><span id="line-184">    <span class="s2">"build_corpus"</span><span class="p">,</span>
-</span><span id="line-185">    <span class="s2">"maintain"</span><span class="p">,</span>
-</span><span id="line-186">    <span class="s2">"maintain_corpus"</span><span class="p">,</span>
-</span><span id="line-187">    <span class="s2">"MaintenanceResult"</span><span class="p">,</span>
-</span><span id="line-188">    <span class="s2">"MaintenancePolicy"</span><span class="p">,</span>
-</span><span id="line-189">    <span class="s2">"ReindexPolicy"</span><span class="p">,</span>
-</span><span id="line-190">    <span class="s2">"SynopsisPolicy"</span><span class="p">,</span>
-</span><span id="line-191">    <span class="s2">"resolve_policy"</span><span class="p">,</span>
-</span><span id="line-192">    <span class="s2">"default_policy_for_kind"</span><span class="p">,</span>
-</span><span id="line-193">    <span class="s2">"policy_for"</span><span class="p">,</span>
-</span><span id="line-194"><span class="p">]</span>
-</span><span id="line-195">
-</span><span id="line-196"><span class="n">register</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">register</span>
-</span><span id="line-197"><span class="n">corpora</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">registered</span>
-</span><span id="line-198">
+</span><span id="line-174">    <span class="s2">"recency_weight"</span><span class="p">,</span>
+</span><span id="line-175">    <span class="s2">"make_grep_retriever"</span><span class="p">,</span>
+</span><span id="line-176">    <span class="s2">"Formulator"</span><span class="p">,</span>
+</span><span id="line-177">    <span class="s2">"select"</span><span class="p">,</span>
+</span><span id="line-178">    <span class="s2">"disclose"</span><span class="p">,</span>
+</span><span id="line-179">    <span class="s2">"discover"</span><span class="p">,</span>
+</span><span id="line-180">    <span class="s2">"Selection"</span><span class="p">,</span>
+</span><span id="line-181">    <span class="s2">"Disclosure"</span><span class="p">,</span>
+</span><span id="line-182">    <span class="s2">"DiscoveryResult"</span><span class="p">,</span>
+</span><span id="line-183">    <span class="s2">"register"</span><span class="p">,</span>
+</span><span id="line-184">    <span class="s2">"corpora"</span><span class="p">,</span>
+</span><span id="line-185">    <span class="s2">"build_corpus"</span><span class="p">,</span>
+</span><span id="line-186">    <span class="s2">"maintain"</span><span class="p">,</span>
+</span><span id="line-187">    <span class="s2">"maintain_corpus"</span><span class="p">,</span>
+</span><span id="line-188">    <span class="s2">"MaintenanceResult"</span><span class="p">,</span>
+</span><span id="line-189">    <span class="s2">"MaintenancePolicy"</span><span class="p">,</span>
+</span><span id="line-190">    <span class="s2">"ReindexPolicy"</span><span class="p">,</span>
+</span><span id="line-191">    <span class="s2">"SynopsisPolicy"</span><span class="p">,</span>
+</span><span id="line-192">    <span class="s2">"resolve_policy"</span><span class="p">,</span>
+</span><span id="line-193">    <span class="s2">"default_policy_for_kind"</span><span class="p">,</span>
+</span><span id="line-194">    <span class="s2">"policy_for"</span><span class="p">,</span>
+</span><span id="line-195"><span class="p">]</span>
+</span><span id="line-196">
+</span><span id="line-197"><span class="n">register</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">register</span>
+</span><span id="line-198"><span class="n">corpora</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">registered</span>
 </span><span id="line-199">
+</span><span id="line-200">
 <div class="viewcode-block" id="build_corpus">
 <a class="viewcode-back" href="../_autosummary/ir.html#ir.build_corpus">[docs]</a>
-</span><span id="line-200"><span class="k">def</span><span class="w"> </span><span class="nf">build_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="line-201"><span class="w">    </span><span class="sd">"""Build (or update) a registered/preset corpus by *name*; returns a :class:`~ir.index.Corpus`.</span>
-</span><span id="line-202">
-</span><span id="line-203"><span class="sd">    ``**kwargs`` are forwarded to :func:`ir.build` — notably ``store``,</span>
-</span><span id="line-204"><span class="sd">    ``embedder`` (e.g. ``"light"`` for the numpy-only hashing embedder),</span>
-</span><span id="line-205"><span class="sd">    ``full`` (prune artifacts no longer in the source), and ``batch_size``.</span>
-</span><span id="line-206"><span class="sd">    """</span>
-</span><span id="line-207">    <span class="k">return</span> <span class="n">build</span><span class="p">(</span><span class="n">registry</span><span class="o">.</span><span class="n">source_for</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</span><span id="line-201"><span class="k">def</span><span class="w"> </span><span class="nf">build_corpus</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="line-202"><span class="w">    </span><span class="sd">"""Build (or update) a registered/preset corpus by *name*; returns a :class:`~ir.index.Corpus`.</span>
+</span><span id="line-203">
+</span><span id="line-204"><span class="sd">    ``**kwargs`` are forwarded to :func:`ir.build` — notably ``store``,</span>
+</span><span id="line-205"><span class="sd">    ``embedder`` (e.g. ``"light"`` for the numpy-only hashing embedder),</span>
+</span><span id="line-206"><span class="sd">    ``full`` (prune artifacts no longer in the source), and ``batch_size``.</span>
+</span><span id="line-207"><span class="sd">    """</span>
+</span><span id="line-208">    <span class="k">return</span> <span class="n">build</span><span class="p">(</span><span class="n">registry</span><span class="o">.</span><span class="n">source_for</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-</span><span id="line-208">
 </span><span id="line-209">
+</span><span id="line-210">
 <div class="viewcode-block" id="search">
 <a class="viewcode-back" href="../_autosummary/ir.html#ir.search">[docs]</a>
-</span><span id="line-210"><span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="line-211"><span class="w">    </span><span class="sd">"""Search a :class:`~ir.index.Corpus` (or a corpus *name*, reopened lazily).</span>
-</span><span id="line-212">
-</span><span id="line-213"><span class="sd">    Thin facade over :func:`ir.retrieve.search`; ``**kwargs`` are forwarded to</span>
-</span><span id="line-214"><span class="sd">    it — the useful ones are ``k`` (how many hits), ``mode`` (``"dense"`` /</span>
-</span><span id="line-215"><span class="sd">    ``"lexical"`` / ``"hybrid"``), ``filter`` (a ``vd`` Mongo-style metadata</span>
-</span><span id="line-216"><span class="sd">    filter), ``surfaces`` (restrict to surface kinds), and ``per_artifact``</span>
-</span><span id="line-217"><span class="sd">    (collapse to the best surface per artifact). See :func:`ir.retrieve.search`</span>
-</span><span id="line-218"><span class="sd">    for the full signature and defaults.</span>
-</span><span id="line-219"><span class="sd">    """</span>
-</span><span id="line-220">    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="line-221">        <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
-</span><span id="line-222">    <span class="k">return</span> <span class="n">_search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</span><span id="line-211"><span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="line-212"><span class="w">    </span><span class="sd">"""Search a :class:`~ir.index.Corpus` (or a corpus *name*, reopened lazily).</span>
+</span><span id="line-213">
+</span><span id="line-214"><span class="sd">    Thin facade over :func:`ir.retrieve.search`; ``**kwargs`` are forwarded to</span>
+</span><span id="line-215"><span class="sd">    it — the useful ones are ``k`` (how many hits), ``mode`` (``"dense"`` /</span>
+</span><span id="line-216"><span class="sd">    ``"lexical"`` / ``"hybrid"``), ``filter`` (a ``vd`` Mongo-style metadata</span>
+</span><span id="line-217"><span class="sd">    filter), ``surfaces`` (restrict to surface kinds), and ``per_artifact``</span>
+</span><span id="line-218"><span class="sd">    (collapse to the best surface per artifact). See :func:`ir.retrieve.search`</span>
+</span><span id="line-219"><span class="sd">    for the full signature and defaults.</span>
+</span><span id="line-220"><span class="sd">    """</span>
+</span><span id="line-221">    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="line-222">        <span class="n">corpus</span> <span class="o">=</span> <span class="n">open_corpus</span><span class="p">(</span><span class="n">corpus</span><span class="p">)</span>
+</span><span id="line-223">    <span class="k">return</span> <span class="n">_search</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-</span><span id="line-223">
 </span><span id="line-224">
-</span><span id="line-225"><span class="c1"># The evaluation harness is reachable as ``ir.eval`` (its ``ef`` imports are</span>
-</span><span id="line-226"><span class="c1"># lazy, so this does not weigh down ``import ir``). Kept out of ``__all__`` so a</span>
-</span><span id="line-227"><span class="c1"># star-import does not shadow the ``eval`` builtin. ``ir.eval_gen`` is the</span>
-</span><span id="line-228"><span class="c1"># build-time case generator (its ``aix`` import is lazy too).</span>
-</span><span id="line-229"><span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="nb">eval</span>  <span class="c1"># noqa: E402,F401  (submodule attribute: ir.eval)</span>
-</span><span id="line-230"><span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">eval_gen</span>  <span class="c1"># noqa: E402,F401  (submodule attribute: ir.eval_gen)</span>
+</span><span id="line-225">
+</span><span id="line-226"><span class="c1"># The evaluation harness is reachable as ``ir.eval`` (its ``ef`` imports are</span>
+</span><span id="line-227"><span class="c1"># lazy, so this does not weigh down ``import ir``). Kept out of ``__all__`` so a</span>
+</span><span id="line-228"><span class="c1"># star-import does not shadow the ``eval`` builtin. ``ir.eval_gen`` is the</span>
+</span><span id="line-229"><span class="c1"># build-time case generator (its ``aix`` import is lazy too).</span>
+</span><span id="line-230"><span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="nb">eval</span>  <span class="c1"># noqa: E402,F401  (submodule attribute: ir.eval)</span>
+</span><span id="line-231"><span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">eval_gen</span>  <span class="c1"># noqa: E402,F401  (submodule attribute: ir.eval_gen)</span>
 </span></code></pre></div>
     </div></div>
           </main>
@@ -436,7 +437,7 @@
 </footer>
     </div>
     
-    <script src="../_static/documentation_options.js?v=c75a234e"></script>
+    <script src="../_static/documentation_options.js?v=6322a757"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

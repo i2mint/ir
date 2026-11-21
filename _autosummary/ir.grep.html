@@ -201,6 +201,9 @@ the caller’s (or the agent layer’s) choice.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.grep.make_grep_retriever" title="ir.grep.make_grep_retriever"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_grep_retriever</span></code></a>(roots, **grep_defaults)</p></td>
 <td><p>Bind roots (and defaults) to the uniform <a class="reference internal" href="ir.retrieve.html#ir.retrieve.Retriever" title="ir.retrieve.Retriever"><code class="xref py py-data docutils literal notranslate"><span class="pre">ir.retrieve.Retriever</span></code></a> contract.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.grep.recency_weight" title="ir.grep.recency_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recency_weight</span></code></a>(half_life_days, *[, now])</p></td>
+<td><p>A composable <code class="docutils literal notranslate"><span class="pre">weight_of</span></code> seam: a file's weight halves per <code class="docutils literal notranslate"><span class="pre">half_life_days</span></code> of age.</p></td>
+</tr>
 </tbody>
 </table>
 <dl class="py data">
@@ -258,6 +261,28 @@ corpora. Overrides are the keywords of <a class="reference internal" href="#ir.g
 </dd>
 </dl>
 </dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.grep.recency_weight">
+<span class="sig-prename descclassname"><span class="pre">ir.grep.</span></span><span class="sig-name descname"><span class="pre">recency_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">half_life_days</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/grep.html#recency_weight"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.grep.recency_weight" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.grep.recency_weight'">¶</a></dt>
+<dd><p>A composable <code class="docutils literal notranslate"><span class="pre">weight_of</span></code> seam: a file’s weight halves per <code class="docutils literal notranslate"><span class="pre">half_life_days</span></code> of age.</p>
+<p><code class="docutils literal notranslate"><span class="pre">now</span></code> pins the clock (default: the time of each call). Multiply it into your own
+<code class="docutils literal notranslate"><span class="pre">weight_of</span></code> to combine it with other weights; it is what
+<code class="docutils literal notranslate"><span class="pre">recency_half_life_days</span></code> uses.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">tempfile</span><span class="o">,</span><span class="w"> </span><span class="nn">time</span>
+</span><span id="line-2"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span><span id="line-3"><span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">d</span><span class="p">:</span>
+</span><span id="line-4"><span class="gp">... </span>    <span class="n">f</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="s2">"a.md"</span><span class="p">);</span> <span class="n">_</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">"x"</span><span class="p">)</span>
+</span><span id="line-5"><span class="gp">... </span>    <span class="n">os</span><span class="o">.</span><span class="n">utime</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+</span><span id="line-6"><span class="gp">... </span>    <span class="n">recency_weight</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">_SECONDS_PER_DAY</span><span class="p">)(</span><span class="n">f</span><span class="p">)</span>
+</span><span id="line-7"><span class="go">0.5</span>
+</span></code></pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>[[<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>], <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
 </section>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
@@ -268,6 +293,7 @@ corpora. Overrides are the keywords of <a class="reference internal" href="#ir.g
 <li><a :data-current="activeSection === '#ir.grep.GREP_KIND'" class="reference internal" href="#ir.grep.GREP_KIND"><code class="docutils literal notranslate"><span class="pre">GREP_KIND</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.grep.grep_hits'" class="reference internal" href="#ir.grep.grep_hits"><code class="docutils literal notranslate"><span class="pre">grep_hits()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.grep.make_grep_retriever'" class="reference internal" href="#ir.grep.make_grep_retriever"><code class="docutils literal notranslate"><span class="pre">make_grep_retriever()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.grep.recency_weight'" class="reference internal" href="#ir.grep.recency_weight"><code class="docutils literal notranslate"><span class="pre">recency_weight()</span></code></a></li>
 </ul>
 </div>
 </aside>
@@ -281,7 +307,7 @@ corpora. Overrides are the keywords of <a class="reference internal" href="#ir.g
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=c75a234e"></script>
+<script src="../_static/documentation_options.js?v=6322a757"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

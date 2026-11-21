@@ -54,6 +54,7 @@ the caller’s (or the agent layer’s) choice.
 | [`grep_hits`](#ir.grep.grep_hits)(pattern, \*, roots[, glob, k, ...])   | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
 |--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`make_grep_retriever`](#ir.grep.make_grep_retriever)(roots, \*\*grep_defaults)   | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
+| [`recency_weight`](#ir.grep.recency_weight)(half_life_days, \*[, now])       | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                              |
 
 ### ir.grep.DFLT_EXCLUDE_DIRS *= ('.git', 'node_modules', '_\_pycache_\_', '.venv')*
 
@@ -101,3 +102,24 @@ corpora. Overrides are the keywords of [`grep_hits()`](#ir.grep.grep_hits); an u
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]]
+
+### ir.grep.recency_weight(half_life_days, , now=None)
+
+A composable `weight_of` seam: a file’s weight halves per `half_life_days` of age.
+
+`now` pins the clock (default: the time of each call). Multiply it into your own
+`weight_of` to combine it with other weights; it is what
+`recency_half_life_days` uses.
+
+```pycon
+>>> import os, tempfile, time
+>>> from pathlib import Path
+>>> with tempfile.TemporaryDirectory() as d:
+...     f = Path(d, "a.md"); _ = f.write_text("x")
+...     os.utime(f, (0, 0))
+...     recency_weight(10, now=10 * _SECONDS_PER_DAY)(f)
+0.5
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]

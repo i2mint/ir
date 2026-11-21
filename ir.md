@@ -1,4 +1,4 @@
-> built 2026-11-21 19:01 UTC from dbf21c0 (master) · ir 0.1.74. Details: build_info.json
+> built 2026-11-21 22:35 UTC from 24b1499 (master) · ir 0.1.75. Details: build_info.json
 
 # index.html.md
 
@@ -3084,6 +3084,7 @@ the caller’s (or the agent layer’s) choice.
 | [`grep_hits`](_autosummary/ir.grep.html.md#ir.grep.grep_hits)(pattern, \*, roots[, glob, k, ...])   | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
 |--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`make_grep_retriever`](_autosummary/ir.grep.html.md#ir.grep.make_grep_retriever)(roots, \*\*grep_defaults)   | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
+| [`recency_weight`](_autosummary/ir.grep.html.md#ir.grep.recency_weight)(half_life_days, \*[, now])       | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                              |
 
 ### ir.grep.DFLT_EXCLUDE_DIRS *= ('.git', 'node_modules', '_\_pycache_\_', '.venv')*
 
@@ -3131,6 +3132,27 @@ corpora. Overrides are the keywords of [`grep_hits()`](_autosummary/ir.grep.html
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)]]
+
+### ir.grep.recency_weight(half_life_days, , now=None)
+
+A composable `weight_of` seam: a file’s weight halves per `half_life_days` of age.
+
+`now` pins the clock (default: the time of each call). Multiply it into your own
+`weight_of` to combine it with other weights; it is what
+`recency_half_life_days` uses.
+
+```pycon
+>>> import os, tempfile, time
+>>> from pathlib import Path
+>>> with tempfile.TemporaryDirectory() as d:
+...     f = Path(d, "a.md"); _ = f.write_text("x")
+...     os.utime(f, (0, 0))
+...     recency_weight(10, now=10 * _SECONDS_PER_DAY)(f)
+0.5
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 
 # _autosummary/ir.html.md
@@ -3209,6 +3231,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`make_keyword_formulator`](_autosummary/ir.html.md#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                            |
 | [`lexical_miss`](_autosummary/ir.html.md#ir.lexical_miss)(hits, \*[, required, candidates])     | Miss signals for the committed `hits`; `{"miss": bool, ...}`.                                                                                   |
 | [`grep_hits`](_autosummary/ir.html.md#ir.grep_hits)(pattern, \*, roots[, glob, k, ...])      | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
+| [`recency_weight`](_autosummary/ir.html.md#ir.recency_weight)(half_life_days, \*[, now])          | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                              |
 | [`make_grep_retriever`](_autosummary/ir.html.md#ir.make_grep_retriever)(roots, \*\*grep_defaults)      | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
 | [`select`](_autosummary/ir.html.md#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                      |
 | [`disclose`](_autosummary/ir.html.md#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                         |
@@ -4918,6 +4941,27 @@ The effective [`ir.policy.MaintenancePolicy`](_autosummary/ir.policy.html.md#ir.
 Resolves the registered entry’s `maintenance` over its kind’s smart default
 over the global default (see [`ir.policy.resolve_policy()`](_autosummary/ir.policy.html.md#ir.policy.resolve_policy)). An unregistered
 name resolves to the global default policy.
+
+### ir.recency_weight(half_life_days, , now=None)
+
+A composable `weight_of` seam: a file’s weight halves per `half_life_days` of age.
+
+`now` pins the clock (default: the time of each call). Multiply it into your own
+`weight_of` to combine it with other weights; it is what
+`recency_half_life_days` uses.
+
+```pycon
+>>> import os, tempfile, time
+>>> from pathlib import Path
+>>> with tempfile.TemporaryDirectory() as d:
+...     f = Path(d, "a.md"); _ = f.write_text("x")
+...     os.utime(f, (0, 0))
+...     recency_weight(10, now=10 * _SECONDS_PER_DAY)(f)
+0.5
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### ir.records_for_artifact(store_or_corpus, artifact_id, , surface_kind=None)
 
@@ -8398,18 +8442,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-21 19:01 UTC** from commit <a href="https://github.com/i2mint/ir/commit/dbf21c029ab7977bf74d8916344cb477c308bc96"><code>dbf21c0</code></a> on branch <code>master</code>, for **ir 0.1.74** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-21 22:35 UTC** from commit <a href="https://github.com/i2mint/ir/commit/24b149969a076cc2c22162d2346af5ff791c2a80"><code>24b1499</code></a> on branch <code>master</code>, for **ir 0.1.75** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.74) is behind the latest release on PyPI (0.1.75): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/dbf21c029ab7977bf74d8916344cb477c308bc96"><code>dbf21c029ab7977bf74d8916344cb477c308bc96</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/24b149969a076cc2c22162d2346af5ff791c2a80"><code>24b149969a076cc2c22162d2346af5ff791c2a80</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8420,9 +8462,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/44938476664">44938476664</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/44957412605">44957412605</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>dbf21c029ab7977bf74d8916344cb477c308bc96</code> (in the history of the built commit) |
+| Event commit | <code>24b149969a076cc2c22162d2346af5ff791c2a80</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8447,13 +8489,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.75/">0.1.75</a>, newer than the documented version (0.1.74).
+Latest release: <a href="https://pypi.org/project/ir/0.1.75/">0.1.75</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout dbf21c029ab7977bf74d8916344cb477c308bc96
+git checkout 24b149969a076cc2c22162d2346af5ff791c2a80
 pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

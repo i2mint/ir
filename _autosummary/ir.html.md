@@ -72,6 +72,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`make_keyword_formulator`](#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                            |
 | [`lexical_miss`](#ir.lexical_miss)(hits, \*[, required, candidates])     | Miss signals for the committed `hits`; `{"miss": bool, ...}`.                                                                                   |
 | [`grep_hits`](#ir.grep_hits)(pattern, \*, roots[, glob, k, ...])      | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
+| [`recency_weight`](#ir.recency_weight)(half_life_days, \*[, now])          | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                              |
 | [`make_grep_retriever`](#ir.make_grep_retriever)(roots, \*\*grep_defaults)      | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
 | [`select`](#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                      |
 | [`disclose`](#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                         |
@@ -1781,6 +1782,27 @@ The effective [`ir.policy.MaintenancePolicy`](ir.policy.html.md#ir.policy.Mainte
 Resolves the registered entry’s `maintenance` over its kind’s smart default
 over the global default (see [`ir.policy.resolve_policy()`](ir.policy.html.md#ir.policy.resolve_policy)). An unregistered
 name resolves to the global default policy.
+
+### ir.recency_weight(half_life_days, , now=None)
+
+A composable `weight_of` seam: a file’s weight halves per `half_life_days` of age.
+
+`now` pins the clock (default: the time of each call). Multiply it into your own
+`weight_of` to combine it with other weights; it is what
+`recency_half_life_days` uses.
+
+```pycon
+>>> import os, tempfile, time
+>>> from pathlib import Path
+>>> with tempfile.TemporaryDirectory() as d:
+...     f = Path(d, "a.md"); _ = f.write_text("x")
+...     os.utime(f, (0, 0))
+...     recency_weight(10, now=10 * _SECONDS_PER_DAY)(f)
+0.5
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### ir.records_for_artifact(store_or_corpus, artifact_id, , surface_kind=None)
 
