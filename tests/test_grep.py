@@ -345,3 +345,20 @@ def test_symlinks_out_of_the_root_and_excluded_dirs_are_not_read(tmp_path):
 def test_scoring_inputs_are_validated(tree, kw):
     with pytest.raises(ValueError):
         grep_hits("acme", roots=tree, use_rg=False, **kw)
+
+
+def test_recency_weight_factory_composes_with_weight_of(tree):
+    import ir
+
+    now = 10 * 86400.0
+    for p in tree.rglob("*.md"):
+        os.utime(p, (0, 0))
+    rw = ir.recency_weight(10, now=now)
+    assert rw(next(tree.rglob("*.md"))) == 0.5
+    a = ir.grep_hits("acme", roots=tree, use_rg=False, weight_of=rw)
+    b = ir.grep_hits(
+        "acme", roots=tree, use_rg=False, recency_half_life_days=10, now=now
+    )
+    assert [(h.artifact_id, h.score) for h in a] == [(h.artifact_id, h.score) for h in b]
+    with pytest.raises(ValueError):
+        ir.recency_weight(0)
