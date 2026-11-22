@@ -1,4 +1,4 @@
-> built 2026-11-21 22:35 UTC from 24b1499 (master) · ir 0.1.75. Details: build_info.json
+> built 2026-11-22 11:50 UTC from 77c1051 (master) · ir 0.1.76. Details: build_info.json
 
 # index.html.md
 
@@ -3958,7 +3958,7 @@ JSON-serializable result for the qh / HTTP surface.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* ir.Fields(fields, , head=(), layout='record', normalize=None, normalize_id=None, max_chars=1200, overlap=200, kind='record')
+### *class* ir.Fields(fields, , head=(), layout='record', normalize=None, normalize_id=None, max_chars=1200, overlap=200, kind='record', split=None, split_id=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3982,7 +3982,9 @@ A reference is persisted in a registry spec and is its own identity; a
 callable is not persisted, and is identified by its qualified name or an
 explicit `normalize_id` (required for a lambda or closure).
 `max_chars` / `overlap` window the *body* with `balanced_windows()`
-(the head is prefixed to each window and not itself windowed, so keep it short).
+(`split` swaps the splitter: a `(text, *, size, overlap) -> list[str]`
+callable or `"module:attr"` reference, e.g. `word_windows()` for
+word-aligned cuts; `split_id` names a lambda/closure for re-indexing) (the head is prefixed to each window and not itself windowed, so keep it short).
 `kind` names the surface in the `"record"` layout; `"fields"` uses the
 field names. A key listed in both `head` and `fields` is read once.
 [`reads`](_autosummary/ir.html.md#ir.Fields.reads) lists every key the strategy reads, so a change signal can cover them.
@@ -7575,13 +7577,14 @@ custom strategies need only match the [`IndexingStrategy`](_autosummary/ir.strat
 
 ### Functions
 
-| [`balanced_windows`](_autosummary/ir.strategy.html.md#ir.strategy.balanced_windows)(text, \*, size[, overlap])   | Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.   |
-|------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| [`fold_text`](_autosummary/ir.strategy.html.md#ir.strategy.fold_text)(text)                               | Case-fold *text* and strip accents from Latin and Greek letters only.                     |
-| [`is_simple_param`](_autosummary/ir.strategy.html.md#ir.strategy.is_simple_param)(value)                        | Whether a constructor parameter is JSON-simple (scalar, or a tuple/list of scalars).      |
-| [`strategy_from_spec`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_from_spec)(spec)                      | Reconstruct a shipped strategy from a `{"name", "params"}` spec.                          |
-| [`strategy_to_spec`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_to_spec)(strategy)                    | A `{"name", "params"}` spec for a shipped, scalar-param strategy.                         |
-| [`text_of`](_autosummary/ir.strategy.html.md#ir.strategy.text_of)(raw[, text_key])                      | Best-effort text extraction from a raw artifact payload.                                  |
+| [`balanced_windows`](_autosummary/ir.strategy.html.md#ir.strategy.balanced_windows)(text, \*, size[, overlap])   | Split *text* into the fewest windows of at most *size* chars, **near-equal in length**.                                      |
+|------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| [`fold_text`](_autosummary/ir.strategy.html.md#ir.strategy.fold_text)(text)                               | Case-fold *text* and strip accents from Latin and Greek letters only.                                                        |
+| [`is_simple_param`](_autosummary/ir.strategy.html.md#ir.strategy.is_simple_param)(value)                        | Whether a constructor parameter is JSON-simple (scalar, or a tuple/list of scalars).                                         |
+| [`strategy_from_spec`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_from_spec)(spec)                      | Reconstruct a shipped strategy from a `{"name", "params"}` spec.                                                             |
+| [`strategy_to_spec`](_autosummary/ir.strategy.html.md#ir.strategy.strategy_to_spec)(strategy)                    | A `{"name", "params"}` spec for a shipped, scalar-param strategy.                                                            |
+| [`text_of`](_autosummary/ir.strategy.html.md#ir.strategy.text_of)(raw[, text_key])                      | Best-effort text extraction from a raw artifact payload.                                                                     |
+| [`word_windows`](_autosummary/ir.strategy.html.md#ir.strategy.word_windows)(text, \*, size[, overlap])       | Like [`balanced_windows()`](_autosummary/ir.strategy.html.md#ir.strategy.balanced_windows), but each cut moves back to the nearest whitespace. |
 
 ### Classes
 
@@ -7636,7 +7639,7 @@ it. We target 250 (not 254) to leave headroom for the two special tokens
 substring is re-tokenized on its own — so an embedded chunk stays within
 budget and its tail is never silently truncated (see `_chunk_text()`).
 
-### *class* ir.strategy.Fields(fields, , head=(), layout='record', normalize=None, normalize_id=None, max_chars=1200, overlap=200, kind='record')
+### *class* ir.strategy.Fields(fields, , head=(), layout='record', normalize=None, normalize_id=None, max_chars=1200, overlap=200, kind='record', split=None, split_id=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -7660,7 +7663,9 @@ A reference is persisted in a registry spec and is its own identity; a
 callable is not persisted, and is identified by its qualified name or an
 explicit `normalize_id` (required for a lambda or closure).
 `max_chars` / `overlap` window the *body* with [`balanced_windows()`](_autosummary/ir.strategy.html.md#ir.strategy.balanced_windows)
-(the head is prefixed to each window and not itself windowed, so keep it short).
+(`split` swaps the splitter: a `(text, *, size, overlap) -> list[str]`
+callable or `"module:attr"` reference, e.g. [`word_windows()`](_autosummary/ir.strategy.html.md#ir.strategy.word_windows) for
+word-aligned cuts; `split_id` names a lambda/closure for re-indexing) (the head is prefixed to each window and not itself windowed, so keep it short).
 `kind` names the surface in the `"record"` layout; `"fields"` uses the
 field names. A key listed in both `head` and `fields` is read once.
 [`reads`](_autosummary/ir.strategy.html.md#ir.strategy.Fields.reads) lists every key the strategy reads, so a change signal can cover them.
@@ -7843,6 +7848,25 @@ so an injected-free synopsis summarizes the same text a strategy would index.
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### ir.strategy.word_windows(text, , size, overlap=0)
+
+Like [`balanced_windows()`](_autosummary/ir.strategy.html.md#ir.strategy.balanced_windows), but each cut moves back to the nearest whitespace.
+
+A window that would end mid-word ends at the last space inside it instead
+(when there is one), and the next window starts at the following word, so no
+word is split. Windows are therefore *at most* `size` long but not
+near-equal. `overlap` is a character target, rounded to word starts.
+
+```pycon
+>>> word_windows("alpha beta gamma delta", size=12)
+['alpha beta', 'gamma delta']
+>>> word_windows("short", size=12)
+['short']
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 
 # _autosummary/ir.synonyms.html.md
@@ -8442,7 +8466,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-21 22:35 UTC** from commit <a href="https://github.com/i2mint/ir/commit/24b149969a076cc2c22162d2346af5ff791c2a80"><code>24b1499</code></a> on branch <code>master</code>, for **ir 0.1.75** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-22 11:50 UTC** from commit <a href="https://github.com/i2mint/ir/commit/77c1051959e9451e6432f859a1bc8e3f913e388f"><code>77c1051</code></a> on branch <code>master</code>, for **ir 0.1.76** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -8451,7 +8475,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/24b149969a076cc2c22162d2346af5ff791c2a80"><code>24b149969a076cc2c22162d2346af5ff791c2a80</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/77c1051959e9451e6432f859a1bc8e3f913e388f"><code>77c1051959e9451e6432f859a1bc8e3f913e388f</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8462,9 +8486,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/44957412605">44957412605</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45019170448">45019170448</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>24b149969a076cc2c22162d2346af5ff791c2a80</code> (in the history of the built commit) |
+| Event commit | <code>77c1051959e9451e6432f859a1bc8e3f913e388f</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8489,13 +8513,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.75/">0.1.75</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.76/">0.1.76</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 24b149969a076cc2c22162d2346af5ff791c2a80
+git checkout 77c1051959e9451e6432f859a1bc8e3f913e388f
 pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

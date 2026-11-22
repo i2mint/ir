@@ -799,7 +799,7 @@ JSON-serializable result for the qh / HTTP surface.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* ir.Fields(fields, , head=(), layout='record', normalize=None, normalize_id=None, max_chars=1200, overlap=200, kind='record')
+### *class* ir.Fields(fields, , head=(), layout='record', normalize=None, normalize_id=None, max_chars=1200, overlap=200, kind='record', split=None, split_id=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -823,7 +823,9 @@ A reference is persisted in a registry spec and is its own identity; a
 callable is not persisted, and is identified by its qualified name or an
 explicit `normalize_id` (required for a lambda or closure).
 `max_chars` / `overlap` window the *body* with `balanced_windows()`
-(the head is prefixed to each window and not itself windowed, so keep it short).
+(`split` swaps the splitter: a `(text, *, size, overlap) -> list[str]`
+callable or `"module:attr"` reference, e.g. `word_windows()` for
+word-aligned cuts; `split_id` names a lambda/closure for re-indexing) (the head is prefixed to each window and not itself windowed, so keep it short).
 `kind` names the surface in the `"record"` layout; `"fields"` uses the
 field names. A key listed in both `head` and `fields` is read once.
 [`reads`](#ir.Fields.reads) lists every key the strategy reads, so a change signal can cover them.

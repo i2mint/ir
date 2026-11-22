@@ -21,6 +21,7 @@ ir.strategy
       strategy_from_spec
       strategy_to_spec
       text_of
+      word_windows
    
    .. rubric:: Classes
 
