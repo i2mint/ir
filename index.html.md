@@ -127,6 +127,7 @@ A corpus is pinned to the embedder it was built with (its `embedder_id`, shown b
 
 `ir.discover` chains retrieve → select → disclose into the single agent-callable (and `qh`-exposable) tool. Pass a **list** of corpus names for single-shot *federated* discovery across several corpora:
 
+<!-- wads-docs: skip - fragment: continues from the reader's own query and results -->
 ```python
 ir.discover(["skills", "packages"], "deploy the app")  # fan-out → fuse → select
 ir.discover(
@@ -166,6 +167,7 @@ hits = ir.search(
 
 ### Expand
 
+<!-- wads-docs: skip - fragment: continues from the reader's own query and results -->
 ```python
 passage = ir.expand(hit, corpus)  # ±1 chunk window (default)
 passage = ir.expand(hit, corpus, policy=ir.parent_policy())  # the whole artifact
@@ -173,6 +175,7 @@ passage = ir.expand(hit, corpus, policy=ir.parent_policy())  # the whole artifac
 
 The matched chunk is rarely the unit you want to read, and the whole document is usually too much. `ir.expand` stitches a hit’s *stored sibling segments* into a mid-granularity `Passage` (retrieve → expand → rerank), with chunker overlap deduped and the hit’s identity and score untouched. Policies are injectable (`NeighborhoodPolicy`); `sentence_window_policy(k)` and `parent_policy()` ship. It also works through the disclosure seam:
 
+<!-- wads-docs: skip - fragment: continues from the reader's own query and results -->
 ```python
 ir.disclose(sel, expand=ir.sentence_window_policy(2), corpus=corpus)
 ir.discover(
@@ -194,6 +197,7 @@ sel = ir.select(
 
 The abstention floor is mode-specific (dense cosine, BM25, and RRF live on different scales), so rather than guess `min_score`, **calibrate** it from a case file and let `discover` load it:
 
+<!-- wads-docs: skip - fragment: continues from the reader's own query and results -->
 ```python
 ev.calibrate_min_score(
     corpus, cases, mode="dense", persist=True
@@ -231,12 +235,14 @@ graph.neighbors("contaix", edge_type="REF")  # the package's dependencies
 
 `ir.traverse` walks that structure at query time under a pluggable `WalkPolicy` (*score frontier → select → expand → stop*). **Safety is the operator’s**: a visited-set, depth cap, and node budget live in `traverse` itself, so even a cyclic graph and a never-stopping policy terminate. The shipped `collapsed_tree_policy` is pure-vector — it routes a query that matches an artifact’s *summary* down to that artifact’s best *chunk*:
 
+<!-- wads-docs: skip - fragment: continues from the reader's own query and results -->
 ```python
 hits = ir.traverse(query, corpus, policy=ir.collapsed_tree_policy())
 ```
 
 Dependencies are also a ranking signal, seeded by the caller. `graph.reverse_neighbors("networkx")` lists a library’s dependents and `graph.fan_in(...)` counts them. `ir.reverse_dependency_policy(seeds=[...])` walks those reverse edges, so a package that depends on a domain library but never says so in prose is still found. At ranking time, `ir.search(..., dep_boost=ir.dependency_evidence_boost({"networkx"}, weight=0.02))` adds score to candidates whose `deps` include a listed library. `ir` never chooses the libraries: that is the agent layer’s planning decision.
 
+<!-- wads-docs: skip - fragment: continues from the reader's own query and results -->
 ```python
 policy = ir.reverse_dependency_policy(seeds=["networkx"], fan_in_weight=0.1)
 walked = ir.traverse(query, corpus, policy=policy)
@@ -245,6 +251,7 @@ hits = ir.fuse_hits({"flat": ir.search(corpus, query, mode="hybrid"), "deps": wa
 
 The *summary* a query routes on can be an artifact’s own short field — or an **LLM-authored synopsis**. `ir.with_synopsis` wraps any indexing strategy to add one `synopsis` surface per artifact at build time (the document-summary-index pattern: build-time cost, ≈free at query time), and that synopsis becomes the collapsed-tree router:
 
+<!-- wads-docs: skip - fragment: my_summarizer is the reader's own function -->
 ```python
 strat = ir.with_synopsis(
     ir.Chunked(), synthesize=my_summarizer
@@ -272,6 +279,7 @@ The predicate’s identity (`when_id`) is part of the strategy id, so changing i
 
 `ir.eval` scores discovery quality offline (reusing [`ef`](https://github.com/thorwhalen/ef)’s retrieval metrics):
 
+<!-- wads-docs: skip - needs the reader's own eval file -->
 ```python
 from ir import eval as ev
 
