@@ -425,6 +425,46 @@ def balanced_windows(text: str, *, size: int, overlap: int = 0) -> list[str]:
     return [text[i * step : i * step + width] for i in range(n)]
 
 
+def word_windows(text: str, *, size: int, overlap: int = 0) -> list[str]:
+    """Like :func:`balanced_windows`, but each cut moves back to the nearest whitespace.
+
+    A window that would end mid-word ends at the last space inside it instead
+    (when there is one), and the next window starts at the following word, so no
+    word is split. Windows are therefore *at most* ``size`` long but not
+    near-equal. ``overlap`` is a character target, rounded to word starts.
+
+    >>> word_windows("alpha beta gamma delta", size=12)
+    ['alpha beta', 'gamma delta']
+    >>> word_windows("short", size=12)
+    ['short']
+    """
+    if not 0 <= overlap < size:
+        raise ValueError(
+            f"need 0 <= overlap < size, got overlap={overlap}, size={size}"
+        )
+    text = text.strip()
+    if len(text) <= size:
+        return [text] if text else []
+    windows, start, n = [], 0, len(text)
+    while start < n:
+        end = min(start + size, n)
+        if end < n:
+            cut = text.rfind(" ", start + 1, end + 1)
+            if cut > start:
+                end = cut
+        windows.append(text[start:end].strip())
+        if end >= n:
+            break
+        nxt = max(end - overlap, start + 1)
+        if overlap and nxt > start:
+            space = text.find(" ", nxt)
+            nxt = space + 1 if 0 <= space < end else end
+        start = nxt
+        while start < n and text[start] == " ":
+            start += 1
+    return [w for w in windows if w]
+
+
 def _field_text(value: Any) -> str:
     """A record field's text: strings as-is, lists joined, ``None`` empty."""
     if value is None:
@@ -443,7 +483,9 @@ def _resolve_normalizer(normalize) -> Callable[[str], str]:
     return resolve_fetcher(normalize)
 
 
-def _normalizer_id(normalize, explicit: str | None) -> str | None:
+def _normalizer_id(
+    normalize, explicit: str | None, *, what: str = "normalize"
+) -> str | None:
     """Identity stamp of a callable normalizer (``None`` for none or a named ref).
 
     An import reference is its own identity (it is a persisted scalar). An
@@ -452,7 +494,7 @@ def _normalizer_id(normalize, explicit: str | None) -> str | None:
     """
     if normalize is None or isinstance(normalize, str):
         if explicit is not None:
-            raise ValueError("normalize_id requires a callable `normalize`")
+            raise ValueError(f"{what}_id requires a callable `{what}`")
         return None
     if explicit:
         return explicit
@@ -461,9 +503,9 @@ def _normalizer_id(normalize, explicit: str | None) -> str | None:
         module = getattr(normalize, "__module__", None) or type(normalize).__module__
         return f"{module}.{qualname}"
     warnings.warn(
-        "Fields: could not derive a stable identity for `normalize` (an unnamed "
-        "lambda, a local closure or a partial), so changing it will not re-index; "
-        "pass normalize_id=... to track it, or a 'module:attr' reference.",
+        f"Fields: could not derive a stable identity for `{what}` (an unnamed "
+        f"lambda, a local closure or a partial), so changing it will not re-index; "
+        f"pass {what}_id=... to track it, or a 'module:attr' reference.",
         stacklevel=3,
     )
     return "custom"
@@ -490,7 +532,9 @@ class Fields:
     callable is not persisted, and is identified by its qualified name or an
     explicit ``normalize_id`` (required for a lambda or closure).
     ``max_chars`` / ``overlap`` window the *body* with :func:`balanced_windows`
-    (the head is prefixed to each window and not itself windowed, so keep it short).
+    (``split`` swaps the splitter: a ``(text, *, size, overlap) -> list[str]``
+    callable or ``"module:attr"`` reference, e.g. :func:`word_windows` for
+    word-aligned cuts; ``split_id`` names a lambda/closure for re-indexing) (the head is prefixed to each window and not itself windowed, so keep it short).
     ``kind`` names the surface in the ``"record"`` layout; ``"fields"`` uses the
     field names. A key listed in both ``head`` and ``fields`` is read once.
     :attr:`reads` lists every key the strategy reads, so a change signal can cover them.
@@ -512,6 +556,8 @@ class Fields:
         max_chars: int = 1200,
         overlap: int = 200,
         kind: str = "record",
+        split: Callable[..., list[str]] | str | None = None,
+        split_id: str | None = None,
     ):
         if layout not in ("record", "fields"):
             raise ValueError(f"layout must be 'record' or 'fields', got {layout!r}")
@@ -532,6 +578,8 @@ class Fields:
         self.max_chars = max_chars
         self.overlap = overlap
         self.kind = kind
+        self.split = split
+        self.split_id = _normalizer_id(split, split_id, what="split")
 
     @property
     def reads(self) -> tuple[str, ...]:
@@ -547,13 +595,19 @@ class Fields:
         meta = dict(metadata or {})
         record = raw if isinstance(raw, Mapping) else {}
         norm = _resolve_normalizer(self.normalize)
+        from .sources import resolve_fetcher
 
         def text(key):
             return norm(_field_text(record.get(key))).strip()
 
-        windows = functools.partial(
-            balanced_windows, size=self.max_chars, overlap=self.overlap
+        splitter = (
+            balanced_windows
+            if self.split is None
+            else resolve_fetcher(self.split)
+            if isinstance(self.split, str)
+            else self.split
         )
+        windows = functools.partial(splitter, size=self.max_chars, overlap=self.overlap)
         if self.layout == "fields":
             surfaces = []
             for key in self.reads:

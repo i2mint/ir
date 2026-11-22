@@ -252,3 +252,31 @@ def test_with_synopsis_forwards_reads_and_synopsis_fields():
 
     synth = _default_synthesizer(Fields(["about"], head=["name"]))
     assert synth.synthesizer_id.endswith(":name,about")  # the strategy's fields
+
+
+def test_word_windows_never_split_a_word():
+    from ir.strategy import word_windows
+
+    text = " ".join(["lorem", "ipsum", "dolor", "sit", "amet"] * 8)
+    wins = word_windows(text, size=23, overlap=6)
+    words = set(text.split())
+    assert all(len(w) <= 23 for w in wins)
+    assert all(set(w.split()) <= words for w in wins)
+    assert " ".join(wins[0].split()) == wins[0]
+    assert set(text.split()) == {t for w in wins for t in w.split()}
+    assert word_windows("") == [] if False else word_windows(" ", size=5) == []
+
+
+def test_fields_split_seam_default_unchanged_and_swappable():
+    from ir.strategy import word_windows
+
+    rec = {"about": "alpha beta gamma delta epsilon zeta eta theta"}
+    base = Fields(["about"], max_chars=15, overlap=0)
+    word = Fields(["about"], max_chars=15, overlap=0, split=word_windows)
+    ref = Fields(["about"], max_chars=15, overlap=0, split="ir.strategy:word_windows")
+    texts = lambda f: [s.text for s in f.decompose("r", rec).surfaces]  # noqa: E731
+    assert texts(word) == texts(ref)
+    assert all(t.split() and t == t.strip() for t in texts(word))
+    assert texts(base) != texts(word)
+    assert word.split_id.endswith("word_windows") and ref.split_id is None
+    assert base.split_id is None
