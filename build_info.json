@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-22T16:43:44Z",
+  "built_at": "2026-11-22T16:52:11Z",
   "package": {
     "name": "ir",
-    "version": "0.1.77",
+    "version": "0.1.78",
     "display_name": "ir",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "609c84d25d2030b419b7456740d04af5a33f3846",
-    "short_commit": "609c84d",
+    "commit": "ca62bed4d4b8b6a31b50e71731363826c1aca534",
+    "short_commit": "ca62bed",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/ir",
-    "commit_url": "https://github.com/i2mint/ir/commit/609c84d25d2030b419b7456740d04af5a33f3846",
+    "commit_url": "https://github.com/i2mint/ir/commit/ca62bed4d4b8b6a31b50e71731363826c1aca534",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/ir",
-    "sha": "609c84d25d2030b419b7456740d04af5a33f3846",
+    "sha": "ca62bed4d4b8b6a31b50e71731363826c1aca534",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "45045281374",
-    "run_url": "https://github.com/i2mint/ir/actions/runs/45045281374",
+    "run_id": "45046034262",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/45046034262",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -61,15 +61,13 @@
   "pypi": {
     "checked": true,
     "latest": "0.1.78",
-    "relation": "behind",
+    "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout 609c84d25d2030b419b7456740d04af5a33f3846\npip install \"epythet==0.2.23\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout ca62bed4d4b8b6a31b50e71731363826c1aca534\npip install \"epythet==0.2.23\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": false,
-    "notes": [
-      "The documented version (0.1.77) is behind the latest release on PyPI (0.1.78): `pip install ir` gives newer code than these docs describe."
-    ]
+    "aligned": true,
+    "notes": []
   }
 }
