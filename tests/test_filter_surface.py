@@ -68,7 +68,7 @@ def test_short_f_still_means_fusion_and_filter_is_long_only():
 
 @pytest.mark.parametrize(
     "bad",
-    ['{"project": {"$regex": "p"}}', '{"$and": {"project": "p1"}}'],
+    ['{"project": {"$like": "p%"}}', '{"$and": {"project": "p1"}}'],
 )
 def test_filter_kw_rejects_unsupported_operators(bad):
     with pytest.raises(SystemExit, match="--filter"):
@@ -84,7 +84,7 @@ def test_python_api_raises_on_unsupported_operator(corpus):
     from vd.base import UnsupportedFilterError
 
     with pytest.raises(UnsupportedFilterError):
-        corpus.search("alpha", mode="lexical", filter={"project": {"$regex": "p"}})
+        corpus.search("alpha", mode="lexical", filter={"project": {"$like": "p%"}})
 
 
 def test_discover_short_f_is_fusion():
