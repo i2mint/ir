@@ -165,6 +165,7 @@
 <li><p>Commit to the few results worth acting on, or abstain when nothing fits (<code class="docutils literal notranslate"><span class="pre">min_score=</span></code>, or <code class="docutils literal notranslate"><span class="pre">min_score="auto"</span></code> with a calibrated floor).</p></li>
 <li><p>Search several corpora in one call (<code class="docutils literal notranslate"><span class="pre">ir.discover(["skills",</span> <span class="pre">"packages"],</span> <span class="pre">query)</span></code>) and get JSON-ready results (<code class="docutils literal notranslate"><span class="pre">.to_dict()</span></code>, <code class="docutils literal notranslate"><span class="pre">ir.tools.search</span></code>).</p></li>
 </ul>
+<p><strong>Compared with the Claude API’s tool search tool.</strong> The API’s built-in tool search (regex or BM25 over the tool definitions sent in the same request) is the zero-infrastructure choice for one Claude agent with a modest toolset. <code class="docutils literal notranslate"><span class="pre">ir</span></code> covers what it cannot see: several corpora at once (skills, packages, documents, sessions as well as MCP tools), dense, lexical and hybrid retrieval, and a calibrated floor to abstain when nothing fits. The two compose: <code class="docutils literal notranslate"><span class="pre">ir</span></code> can sit behind the API tool as its custom search, returning its selection as <code class="docutils literal notranslate"><span class="pre">tool_reference</span></code> blocks.</p>
 <p>A minimal runnable example, offline and with no model download (the <code class="docutils literal notranslate"><span class="pre">light</span></code> embedder is a numpy-only hashing embedder):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="kn">import</span><span class="w"> </span><span class="nn">ir</span>
 </span><span id="line-2"><span class="kn">from</span><span class="w"> </span><span class="nn">ir.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusStore</span>
@@ -476,7 +477,7 @@
 
 </section>
 </section>
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-22 20:00 UTC from <a href="https://github.com/i2mint/ir/commit/ad6b48431185438b8489b5cd7576d03e8061f793">ad6b484</a> (master) · ir 0.1.78 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-22 23:42 UTC from <a href="https://github.com/i2mint/ir/commit/d83c2e5728966280610a84515130a6b6b474fdc2">d83c2e5</a> (master) · ir 0.1.78 · <a href="about-this-build.html">about this build</a></p>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>

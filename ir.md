@@ -1,4 +1,4 @@
-> built 2026-11-22 20:00 UTC from ad6b484 (master) · ir 0.1.78. Details: build_info.json
+> built 2026-11-22 23:42 UTC from d83c2e5 (master) · ir 0.1.78. Details: build_info.json
 
 # index.html.md
 
@@ -32,6 +32,8 @@ The consumer skill also travels inside the installed package. Find it with `pyth
 - Give itself one search tool over a large catalogue (skills, MCP tools, packages, documents) instead of loading every schema into context.
 - Commit to the few results worth acting on, or abstain when nothing fits (`min_score=`, or `min_score="auto"` with a calibrated floor).
 - Search several corpora in one call (`ir.discover(["skills", "packages"], query)`) and get JSON-ready results (`.to_dict()`, `ir.tools.search`).
+
+**Compared with the Claude API’s tool search tool.** The API’s built-in tool search (regex or BM25 over the tool definitions sent in the same request) is the zero-infrastructure choice for one Claude agent with a modest toolset. `ir` covers what it cannot see: several corpora at once (skills, packages, documents, sessions as well as MCP tools), dense, lexical and hybrid retrieval, and a calibrated floor to abstain when nothing fits. The two compose: `ir` can sit behind the API tool as its custom search, returning its selection as `tool_reference` blocks.
 
 A minimal runnable example, offline and with no model download (the `light` embedder is a numpy-only hashing embedder):
 
@@ -8474,7 +8476,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-22 20:00 UTC** from commit <a href="https://github.com/i2mint/ir/commit/ad6b48431185438b8489b5cd7576d03e8061f793"><code>ad6b484</code></a> on branch <code>master</code>, for **ir 0.1.78** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-22 23:42 UTC** from commit <a href="https://github.com/i2mint/ir/commit/d83c2e5728966280610a84515130a6b6b474fdc2"><code>d83c2e5</code></a> on branch <code>master</code>, for **ir 0.1.78** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -8483,7 +8485,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/ad6b48431185438b8489b5cd7576d03e8061f793"><code>ad6b48431185438b8489b5cd7576d03e8061f793</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/d83c2e5728966280610a84515130a6b6b474fdc2"><code>d83c2e5728966280610a84515130a6b6b474fdc2</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8494,9 +8496,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45063722854">45063722854</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45084534049">45084534049</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>ad6b48431185438b8489b5cd7576d03e8061f793</code> (in the history of the built commit) |
+| Event commit | <code>d83c2e5728966280610a84515130a6b6b474fdc2</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8527,7 +8529,7 @@ Latest release: <a href="https://pypi.org/project/ir/0.1.78/">0.1.78</a>, the sa
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout ad6b48431185438b8489b5cd7576d03e8061f793
+git checkout d83c2e5728966280610a84515130a6b6b474fdc2
 pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

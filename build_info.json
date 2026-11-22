@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-22T20:00:03Z",
+  "built_at": "2026-11-22T23:42:40Z",
   "package": {
     "name": "ir",
     "version": "0.1.78",
@@ -9,24 +9,24 @@
   },
   "git": {
     "available": true,
-    "commit": "ad6b48431185438b8489b5cd7576d03e8061f793",
-    "short_commit": "ad6b484",
+    "commit": "d83c2e5728966280610a84515130a6b6b474fdc2",
+    "short_commit": "d83c2e5",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/ir",
-    "commit_url": "https://github.com/i2mint/ir/commit/ad6b48431185438b8489b5cd7576d03e8061f793",
+    "commit_url": "https://github.com/i2mint/ir/commit/d83c2e5728966280610a84515130a6b6b474fdc2",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/ir",
-    "sha": "ad6b48431185438b8489b5cd7576d03e8061f793",
+    "sha": "d83c2e5728966280610a84515130a6b6b474fdc2",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "45063722854",
-    "run_url": "https://github.com/i2mint/ir/actions/runs/45063722854",
+    "run_id": "45084534049",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/45084534049",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -64,7 +64,7 @@
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout ad6b48431185438b8489b5cd7576d03e8061f793\npip install \"epythet==0.2.23\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout d83c2e5728966280610a84515130a6b6b474fdc2\npip install \"epythet==0.2.23\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,

@@ -29,6 +29,8 @@ The consumer skill also travels inside the installed package. Find it with `pyth
 - Commit to the few results worth acting on, or abstain when nothing fits (`min_score=`, or `min_score="auto"` with a calibrated floor).
 - Search several corpora in one call (`ir.discover(["skills", "packages"], query)`) and get JSON-ready results (`.to_dict()`, `ir.tools.search`).
 
+**Compared with the Claude API’s tool search tool.** The API’s built-in tool search (regex or BM25 over the tool definitions sent in the same request) is the zero-infrastructure choice for one Claude agent with a modest toolset. `ir` covers what it cannot see: several corpora at once (skills, packages, documents, sessions as well as MCP tools), dense, lexical and hybrid retrieval, and a calibrated floor to abstain when nothing fits. The two compose: `ir` can sit behind the API tool as its custom search, returning its selection as `tool_reference` blocks.
+
 A minimal runnable example, offline and with no model download (the `light` embedder is a numpy-only hashing embedder):
 
 ```python
