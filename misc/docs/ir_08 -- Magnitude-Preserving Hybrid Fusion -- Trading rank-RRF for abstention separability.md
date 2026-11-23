@@ -146,6 +146,34 @@ scales.
 
 ---
 
+## 8. Re-run, 2026-11-23 ([#168](https://github.com/i2mint/ir/issues/168))
+
+Question: does blend now win outright, so that it should become the default hybrid fusion? Same three corpora (grown since: skills 1,129 records, packages 5,128, reports 153,146), new case sets generated with `ir.eval_gen` (Claude Sonnet back-translation, up to 150 artifacts per corpus in sorted-id order, 15% abstention slice), `all-MiniLM-L6-v2`, the pure-Python BM25 engine, `blend` at its defaults (α=0.5, k_sat=8). Same procedure as §3: `calibrate_min_score` (not persisted) for J, `evaluate_discovery` for retrieval. The case files hold queries derived from private corpora and are not committed; the numbers are. Reproduce with `misc/evals/gen_cases_subscription.py` (the generator, on the Claude subscription through `aix`'s `claude-cli/` backend) and `misc/evals/fusion_rerun.py`.
+
+| corpus | gold / abstention cases | metric | dense | hybrid/rrf | hybrid/blend |
+|---|---|---|---:|---:|---:|
+| skills | 747 / 132 | Youden's J | 0.845 | 0.405 | **0.893** |
+| skills | 747 / 132 | NDCG@10 | 0.392 | **0.484** | 0.482 |
+| skills | 747 / 132 | recall@10 | 0.704 | **0.814** | 0.810 |
+| skills | 747 / 132 | MRR@10 | 0.295 | **0.379** | 0.377 |
+| skills | 747 / 132 | hit@1 | 0.131 | **0.187** | 0.175 |
+| packages | 709 / 126 | Youden's J | 0.816 | 0.381 | **0.859** |
+| packages | 709 / 126 | NDCG@10 | **0.496** | 0.495 | 0.454 |
+| packages | 709 / 126 | recall@10 | 0.649 | **0.653** | 0.549 |
+| packages | 709 / 126 | MRR@10 | **0.447** | 0.445 | 0.423 |
+| packages | 709 / 126 | hit@1 | 0.350 | **0.354** | **0.354** |
+| reports | 600 / 106 | Youden's J | 0.885 | 0.626 | **0.932** |
+| reports | 600 / 106 | NDCG@10 | 0.452 | 0.572 | **0.578** |
+| reports | 600 / 106 | recall@10 | 0.652 | **0.782** | 0.763 |
+| reports | 600 / 106 | MRR@10 | 0.389 | 0.505 | **0.519** |
+| reports | 600 / 106 | hit@1 | 0.275 | 0.365 | **0.390** |
+
+**Abstention: blend wins everywhere, by a wide margin**, and beats dense on all three corpora, as in §4.1. RRF is again the worst abstention mode.
+
+**Retrieval: the §4.2 trade-off holds.** On skills blend ties RRF (NDCG 0.482 vs 0.484, recall@10 0.810 vs 0.814). On reports it is level or better on NDCG, MRR and hit@1 but 1.8 points lower on recall@10 (within about one standard error at 600 cases). On packages, the terse, identifier-heavy corpus, it loses clearly: recall@10 0.549 against 0.653, NDCG 0.454 against 0.495.
+
+**Decision: the default stays `fusion="rrf"`.** Blend does not win outright; it trades lexical-only recall on terse corpora for abstention, exactly the mechanism §4.2 describes. What #168 asked for on the abstention side is covered by the warning `discover(min_score="auto")` now gives under rank fusion (#174), which points at `fusion="blend"`. The per-corpus default fusion of §7 (skills and reports → blend, packages → rrf) is the change these numbers support, if a consumer needs it.
+
 ## REFERENCES
 
 1. [`ir_07` — Min-Score Calibration](ir_07%20--%20Min-Score%20Calibration%20--%20Abstention%20floors%20from%20score-distribution%20separability.md): abstention as 1-D separability; the original hybrid-is-worst finding.
