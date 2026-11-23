@@ -65,7 +65,7 @@ def test_filter_is_pushed_into_the_scan_before_files_are_read(tree, monkeypatch)
     seen = []
     real = g._count_and_first
     monkeypatch.setattr(
-        g, "_count_and_first", lambda f, rx: seen.append(f) or real(f, rx)
+        g, "_count_and_first", lambda f, rx, *a: seen.append(f) or real(f, rx, *a)
     )
     hits = grep_hits(
         "acme",
@@ -223,7 +223,7 @@ def test_rg_prefilter_result_is_what_is_read(tree, monkeypatch):
     read = []
     real = g._count_and_first
     monkeypatch.setattr(
-        g, "_count_and_first", lambda f, rx: read.append(f.name) or real(f, rx)
+        g, "_count_and_first", lambda f, rx, *a: read.append(f.name) or real(f, rx, *a)
     )
     grep_hits("acme", roots=tree, use_rg=True)
     assert sorted(read) == [

@@ -85,7 +85,14 @@ from .select import (
     select,
 )
 from .sources import CorpusSource
-from .grep import grep_hits, make_grep_retriever, recency_weight
+from .grep import (
+    corpus_paths,
+    grep_hits,
+    json_field_score,
+    make_grep_retriever,
+    markdown_heading_score,
+    recency_weight,
+)
 from .miss import lexical_miss
 from .store import CorpusStore
 from .strategy import (
@@ -173,6 +180,9 @@ __all__ = [
     "grep_hits",
     "recency_weight",
     "make_grep_retriever",
+    "markdown_heading_score",
+    "json_field_score",
+    "corpus_paths",
     "Formulator",
     "select",
     "disclose",
