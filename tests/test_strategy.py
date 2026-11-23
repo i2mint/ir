@@ -90,7 +90,11 @@ def test_package_embed_deps_adds_a_deps_surface_last():
     # appended last (keeps description/readme_chunk surface_index stable)
     assert plan.surfaces[-1].kind == "deps"
     # deps remain a filter field too
-    assert plan.filter_fields["deps"] == ["sentence-transformers>=2.0", "networkx", "numpy"]
+    assert plan.filter_fields["deps"] == [
+        "sentence-transformers>=2.0",
+        "networkx",
+        "numpy",
+    ]
 
 
 def test_package_embed_deps_empty_deps_yields_no_surface():
@@ -108,9 +112,9 @@ def test_package_custom_deps_template():
 
 
 def test_default_deps_text_strips_dedups_and_lowercases():
-    assert _default_deps_text(["NumPy>=1.2", "numpy", "torch[cuda]", "oa ; python_version>'3.9'"]) == (
-        "Depends on: numpy, torch, oa"
-    )
+    assert _default_deps_text(
+        ["NumPy>=1.2", "numpy", "torch[cuda]", "oa ; python_version>'3.9'"]
+    ) == ("Depends on: numpy, torch, oa")
     assert _default_deps_text([]) == ""
 
 
@@ -157,3 +161,31 @@ def test_chunked_whitespace_run_yields_no_blank_surfaces():
     # chunk_index contiguous and n_chunks counts only real (stored) chunks.
     assert [s.metadata["chunk_index"] for s in plan.surfaces] == list(range(n))
     assert all(s.metadata["n_chunks"] == n for s in plan.surfaces)
+
+
+def test_chunked_split_seam():
+    import pytest
+    from ir.strategy import Chunked, balanced_windows
+
+    text = "a" * 25
+    default = [
+        s.text for s in Chunked(chunk_size=10, overlap=2).decompose("x", text).surfaces
+    ]
+    balanced = [
+        s.text
+        for s in Chunked(chunk_size=10, overlap=2, split=balanced_windows)
+        .decompose("x", text)
+        .surfaces
+    ]
+    assert "".join(balanced).count("a") >= 25 and max(map(len, balanced)) <= 10
+    assert default != balanced or len(balanced) == len(default)
+    by_ref = Chunked(chunk_size=12, overlap=0, split="ir.strategy:word_windows")
+    assert [
+        s.text for s in by_ref.decompose("x", "hello big world again friend").surfaces
+    ] == [
+        "hello big",
+        "world again",
+        "friend",
+    ]
+    with pytest.raises(ValueError, match="exclusive"):
+        Chunked(split=balanced_windows, max_tokens=64)
