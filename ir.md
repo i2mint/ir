@@ -1,4 +1,4 @@
-> built 2026-11-23 02:39 UTC from d280ca0 (master) · ir 0.1.78. Details: build_info.json
+> built 2026-11-23 02:43 UTC from 02f4705 (master) · ir 0.1.79. Details: build_info.json
 
 # index.html.md
 
@@ -9,6 +9,38 @@
 `ir` is an information-retrieval substrate for agentic systems: one “find the relevant things in this corpus” contract over skills, packages, documents, sessions, MCP tools or any mapping. It retrieves candidates, commits to a small high-precision subset (or abstains), and loads each committed item’s payload only when asked.
 
 [For developers with a pulse →]()
+
+## Quickstart
+
+```bash
+pip install ir
+```
+
+```python
+import ir
+
+# Define a corpus, build the index (incremental), then discover.
+source = ir.CorpusSource.from_skills()  # your agent skills (read through `priv`)
+# Other sources: from_packages(), from_md_reports(), from_claude_sessions(),
+# from_files(root), from_mapping(docs, name=...), from_mcp_tools(tools),
+# from_records(fetcher="mypkg.recall:records")  # records another package owns
+corpus = ir.build(source)  # embed + persist under XDG dirs
+result = ir.discover(corpus, "how do I deploy the app to the server")
+
+for item in result.results:
+    print(item.score, item.name)  # the committed few (or result.abstained)
+print(result.to_dict())  # JSON-serializable (qh / HTTP ready)
+```
+
+## Install
+
+`ir` is **light by default** — `numpy` + [`dol`](https://github.com/i2mint/dol) for storage, plus [`ef`](https://github.com/thorwhalen/ef) / [`vd`](https://github.com/i2mint/vd) for embedding and lexical/hybrid retrieval. Python ≥ 3.10.
+
+Notes for the default (semantic) path:
+
+- The default embedder is `all-MiniLM-L6-v2` (384-dim, via `sentence-transformers`), **downloaded on first build** (needs network) and cached under `~/.cache/ir`. For a fast, offline, dependency-light run — tests, CI, quick experiments — pass `embedder="light"` (a numpy-only hashing embedder): `ir.build(source, embedder="light")`.
+- `ir` sets `USE_TF=0` on import so `transformers` does not pull in TensorFlow (which crashes on some numpy ABIs); import `ir` before anything that imports `transformers`.
+- Case generation (`ir.eval_gen`) and the optional LLM selector need an LLM via [`aix`](https://github.com/thorwhalen/aix) — install the extra, `pip install "ir[llm]"`. Scoring and evaluation themselves stay offline. The LLM is an *injected callable* at every seam, so it can run on a Claude subscription instead of a metered key — see [`ir_10`]() (MCP sampling for connectors / the Agent SDK for Claude Code).
 
 ## For agents: the agentic layer
 
@@ -66,38 +98,6 @@ assert nothing.abstained  # no tool clears the floor, so the agent is told so
 > If you want the **agent** — a planner, an LLM formulator that rewrites queries, and the evaluator→reformulate loop over one or more `ir` corpora — reach for **[`raglab`](https://github.com/thorwhalen/raglab)**, which is **built on top of `ir`** (`raglab` imports `ir`; `ir` never imports `raglab`, so it stays installable-light and offline-by-default).
 
 > Prefer to drive it from **Claude Code** instead of a coded agent? `ir` ships a reviewing **search subagent** and an `ir-search` **skill** (see [the agentic layer]()) — a lightweight “raglab-in-instructions” that formulates queries, *reads and judges* candidates against your real intent, filters, and reformulates, all on your Claude subscription (see [`ir_10`]()).
-
-## Quickstart
-
-```bash
-pip install ir
-```
-
-```python
-import ir
-
-# Define a corpus, build the index (incremental), then discover.
-source = ir.CorpusSource.from_skills()  # your agent skills (read through `priv`)
-# Other sources: from_packages(), from_md_reports(), from_claude_sessions(),
-# from_files(root), from_mapping(docs, name=...), from_mcp_tools(tools),
-# from_records(fetcher="mypkg.recall:records")  # records another package owns
-corpus = ir.build(source)  # embed + persist under XDG dirs
-result = ir.discover(corpus, "how do I deploy the app to the server")
-
-for item in result.results:
-    print(item.score, item.name)  # the committed few (or result.abstained)
-print(result.to_dict())  # JSON-serializable (qh / HTTP ready)
-```
-
-## Install
-
-`ir` is **light by default** — `numpy` + [`dol`](https://github.com/i2mint/dol) for storage, plus [`ef`](https://github.com/thorwhalen/ef) / [`vd`](https://github.com/i2mint/vd) for embedding and lexical/hybrid retrieval. Python ≥ 3.10.
-
-Notes for the default (semantic) path:
-
-- The default embedder is `all-MiniLM-L6-v2` (384-dim, via `sentence-transformers`), **downloaded on first build** (needs network) and cached under `~/.cache/ir`. For a fast, offline, dependency-light run — tests, CI, quick experiments — pass `embedder="light"` (a numpy-only hashing embedder): `ir.build(source, embedder="light")`.
-- `ir` sets `USE_TF=0` on import so `transformers` does not pull in TensorFlow (which crashes on some numpy ABIs); import `ir` before anything that imports `transformers`.
-- Case generation (`ir.eval_gen`) and the optional LLM selector need an LLM via [`aix`](https://github.com/thorwhalen/aix) — install the extra, `pip install "ir[llm]"`. Scoring and evaluation themselves stay offline. The LLM is an *injected callable* at every seam, so it can run on a Claude subscription instead of a metered key — see [`ir_10`]() (MCP sampling for connectors / the Agent SDK for Claude Code).
 
 ## Install on a fresh server
 
@@ -8490,16 +8490,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-23 02:39 UTC** from commit <a href="https://github.com/i2mint/ir/commit/d280ca0f2b601ffb66336db6ea6ac8ace4c4a7f9"><code>d280ca0</code></a> on branch <code>master</code>, for **ir 0.1.78** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-23 02:43 UTC** from commit <a href="https://github.com/i2mint/ir/commit/02f47056c879d7e36cdde47e25bc79bfbe4ec1f6"><code>02f4705</code></a> on branch <code>master</code>, for **ir 0.1.79** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.79) is behind the latest release on PyPI (0.1.80): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/d280ca0f2b601ffb66336db6ea6ac8ace4c4a7f9"><code>d280ca0f2b601ffb66336db6ea6ac8ace4c4a7f9</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/02f47056c879d7e36cdde47e25bc79bfbe4ec1f6"><code>02f47056c879d7e36cdde47e25bc79bfbe4ec1f6</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8510,9 +8512,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45101293508">45101293508</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45101609844">45101609844</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>d280ca0f2b601ffb66336db6ea6ac8ace4c4a7f9</code> (in the history of the built commit) |
+| Event commit | <code>02f47056c879d7e36cdde47e25bc79bfbe4ec1f6</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8537,13 +8539,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.78/">0.1.78</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.80/">0.1.80</a>, newer than the documented version (0.1.79).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout d280ca0f2b601ffb66336db6ea6ac8ace4c4a7f9
+git checkout 02f47056c879d7e36cdde47e25bc79bfbe4ec1f6
 pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
