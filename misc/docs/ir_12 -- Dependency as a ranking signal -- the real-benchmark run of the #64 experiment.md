@@ -134,3 +134,35 @@ Best by #68's rule: **deps, w=3.0**
 
 **Decision: no default changes here.** The evidence is a clean dominance but on 11 hard positives and 23 distractors across two themes, and the weight is a search-level argument: making `{"deps": 2.0}` the global default would put every corpus's scores on a weighted scale and skip its calibrated `min_score="auto"` floor. The recommendation for package corpora is `Package(embed_deps=True)` with `surface_weights={"deps": 2.0}`, and the way to ship it as a default is per-corpus search settings with their own floor: https://github.com/i2mint/ir/issues/183.
 
+## Addendum, 2026-11-23: conditional synopsis on the real benchmark (#99)
+
+Three corpora over the same labelled packages, identical except strategy: **a** \`Package()\`, **b** \`with_synopsis(Package())\`, **c** \`with_synopsis(Package(), when=make_thin_description_predicate(min_chars=m))\` for m in 20, 40 (the default), 80, 160. Synopses from \`TOPICAL_SYNOPSIS_PROMPT\` through \`aix\`'s \`claude-cli/haiku\` backend (the Claude subscription), computed once and shared by b and c through a counting synthesizer, so the arms differ only in which packages get one. Script: \`misc/evals/synopsis_conditional.py\`. "Thin" in the metrics is the benchmark's own \`thin_description\` label on packages labelled core or strong; the nDCG is over the well-described packages only.
+
+### embeddings (16 thin-description relevant packages)
+
+| arm | thin recall@10 | thin mean rank | nDCG@20 (well-described) | LLM calls (% of b) |
+|---|---|---|---|---|
+| a Package() | 0.19 | 39.9 | 0.696 | 0 (0%) |
+| b synopsis for all | 0.31 | 27.8 | 0.711 | 228 (100%) |
+| c synopsis when thin (min_chars=20) | 0.19 | 29.2 | 0.697 | 17 (7%) |
+| c synopsis when thin (min_chars=40) | 0.25 | 29.1 | 0.695 | 100 (44%) |
+| c synopsis when thin (min_chars=80) | 0.31 | 27.2 | 0.728 | 192 (84%) |
+| c synopsis when thin (min_chars=160) | 0.31 | 27.8 | 0.711 | 226 (99%) |
+
+### graphs (11 thin-description relevant packages)
+
+| arm | thin recall@10 | thin mean rank | nDCG@20 (well-described) | LLM calls (% of b) |
+|---|---|---|---|---|
+| a Package() | 0.18 | 49.5 | 0.578 | 0 (0%) |
+| b synopsis for all | 0.27 | 31.8 | 0.673 | 228 (100%) |
+| c synopsis when thin (min_chars=20) | 0.18 | 50.4 | 0.578 | 17 (7%) |
+| c synopsis when thin (min_chars=40) | 0.18 | 36.9 | 0.665 | 100 (44%) |
+| c synopsis when thin (min_chars=80) | 0.18 | 32.9 | 0.671 | 192 (84%) |
+| c synopsis when thin (min_chars=160) | 0.27 | 31.8 | 0.673 | 226 (99%) |
+
+**A synopsis for every package helps, on both themes and beyond the thin packages**: thin-package recall@10 rises 0.19 to 0.31 (embeddings) and 0.18 to 0.27 (graphs), their mean rank improves by 12 and 18 places, and nDCG@20 on the *well-described* packages rises too (+0.015 and +0.095).
+
+**The conditional gate does not meet #99's target.** The default \`min_chars=40\` already synthesizes for 44% of the packages, not 15% or fewer; the gate that does stay under 15% (\`min_chars=20\`, 7%) buys nothing on either theme. Description length is not what picks out the packages a synopsis helps: the benchmark's thin-description packages include many whose pyproject description is short but not empty, and the gain on well-described packages says the synopsis adds a topical summary even where the description is fine.
+
+**Decision**: no default changes. \`min_chars\` stays 40 (no value in the sweep saves calls without losing most of the gain). When a corpus can afford one LLM call per artifact (228 here, on a subscription), \`with_synopsis\` on everything is the better configuration; \`when=\` remains for corpora where it cannot, with this caveat.
+
