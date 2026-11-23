@@ -67,6 +67,7 @@ dev = [
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
     "hatchling",
+    "bm25s",
 ]
 docs = [
     "sphinx>=6.0",
@@ -77,6 +78,10 @@ rerank = [
 ]
 llm = [
     "aix",
+]
+# Fast lexical/hybrid search: ir.retrieve.BM25_ENGINE="auto" picks it up (#171).
+bm25s = [
+    "vd[bm25s]",
 ]
 
 [tool.ruff]
