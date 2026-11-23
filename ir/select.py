@@ -936,6 +936,25 @@ def _drop_auto_floor_if_rescaled(min_score: Any, search_kw: Mapping) -> Any:
     return {name: None if spec == "auto" else spec for name, spec in min_score.items()}
 
 
+def _warn_auto_floor_on_rank_fusion(mode: str, fusion: str) -> None:
+    """Warn that ``min_score="auto"`` on hybrid rank fusion separates in-scope from out-of-scope poorly.
+
+    ``fusion="rrf"`` (the default) scores by rank, so its scores barely move between a
+    query that has an answer and one that has none. On the fleet benchmark the
+    abstention Youden J is 0.33 to 0.61 with rank fusion and better with ``"blend"``
+    (i2mint/ir#168). The default is unchanged; this only says so where it matters.
+    """
+    if mode == "hybrid" and fusion == "rrf":
+        # stacklevel=4: warn → this helper → discover → the user's call.
+        warnings.warn(
+            "discover(min_score='auto') with mode='hybrid' and fusion='rrf': rank-based "
+            "scores separate in-scope from out-of-scope queries poorly (Youden J 0.33 to "
+            "0.61 on the fleet benchmark), so the calibrated floor abstains unreliably. "
+            "Pass fusion='blend' (and calibrate under it) for a magnitude-preserving score.",
+            stacklevel=4,
+        )
+
+
 def _resolve_auto_min_score(
     corpus: Any, mode: str, rerank: str | None = None
 ) -> float | None:
@@ -1198,6 +1217,8 @@ def discover(
                 f"invalid min_score {min_score!r}; expected a float, None, or the "
                 f"sentinel 'auto' (load the calibrated floor for this corpus/mode)."
             )
+        if not rerank_id:  # a reranked search is scored by the reranker, not by the fusion
+            _warn_auto_floor_on_rank_fusion(mode, search_kw.get("fusion", "rrf"))
         min_score = _resolve_auto_min_score(corpus, mode, rerank_id)
 
     hits = _search(
