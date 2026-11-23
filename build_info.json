@@ -1,36 +1,36 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-23T06:52:56Z",
+  "built_at": "2026-11-23T07:31:16Z",
   "package": {
     "name": "ir",
-    "version": "0.1.80",
+    "version": "0.1.81",
     "display_name": "ir",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "bedf5eef398ecfcc8310500fc29c410fc26b08cb",
-    "short_commit": "bedf5ee",
+    "commit": "f5a6bd0289a5eb9a48778d8d3cb26d547ea8a737",
+    "short_commit": "f5a6bd0",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/ir",
-    "commit_url": "https://github.com/i2mint/ir/commit/bedf5eef398ecfcc8310500fc29c410fc26b08cb",
+    "commit_url": "https://github.com/i2mint/ir/commit/f5a6bd0289a5eb9a48778d8d3cb26d547ea8a737",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/ir",
-    "sha": "bedf5eef398ecfcc8310500fc29c410fc26b08cb",
+    "sha": "f5a6bd0289a5eb9a48778d8d3cb26d547ea8a737",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "45126953643",
-    "run_url": "https://github.com/i2mint/ir/actions/runs/45126953643",
+    "run_id": "45131462457",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/45131462457",
     "server_url": "https://github.com"
   },
   "tools": {
-    "epythet": "0.2.23",
+    "epythet": "0.2.24",
     "sphinx": "9.1.1",
     "docutils": "0.22.4",
     "python": "3.12.16"
@@ -60,11 +60,11 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.1.80",
+    "latest": "0.1.81",
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout bedf5eef398ecfcc8310500fc29c410fc26b08cb\npip install \"epythet==0.2.23\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout f5a6bd0289a5eb9a48778d8d3cb26d547ea8a737\npip install \"epythet==0.2.24\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,

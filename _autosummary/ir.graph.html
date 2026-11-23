@@ -372,7 +372,7 @@ turns an artifact’s filter fields into outgoing edges. <code class="docutils l
 <a class="reference internal" href="#ir.graph.CorpusGraph" title="ir.graph.CorpusGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorpusGraph</span></code></a> <em>and</em> by any external graph: <code class="docutils literal notranslate"><span class="pre">__getitem__</span></code> resolves
 a node id to its scorable payload, <code class="docutils literal notranslate"><span class="pre">neighbors</span></code> lists adjacent node ids
 (optionally of one edge type). Granularity-agnostic on purpose — an
-artifact graph and a surface-level tree are both <a href="#id1"><span class="problematic" id="id2">``</span></a>GraphStore``s.</p>
+artifact graph and a surface-level tree are both <code class="docutils literal notranslate"><span class="pre">GraphStore</span></code> objects.</p>
 <p><code class="docutils literal notranslate"><span class="pre">runtime_checkable</span></code> makes <code class="docutils literal notranslate"><span class="pre">isinstance(x,</span> <span class="pre">GraphStore)</span></code> a <em>structural</em>
 check on attribute <strong>names</strong> only (not signatures) — enough to tell a
 conforming adapter from an arbitrary object, but it cannot validate that
@@ -513,7 +513,7 @@ package <code class="docutils literal notranslate"><span class="pre">"AA"</span>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=4ea980d6"></script>
+<script src="../_static/documentation_options.js?v=ead104cf"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

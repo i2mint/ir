@@ -862,13 +862,7 @@ Deliberately minimal (two methods) so it is satisfied by ir’s
 [`CorpusGraph`](#ir.CorpusGraph) *and* by any external graph: `__getitem__` resolves
 a node id to its scorable payload, `neighbors` lists adjacent node ids
 (optionally of one edge type). Granularity-agnostic on purpose — an
-artifact graph and a surface-level tree are both 
-
-```
-``
-```
-
-GraphStore\`\`s.
+artifact graph and a surface-level tree are both `GraphStore` objects.
 
 `runtime_checkable` makes `isinstance(x, GraphStore)` a *structural*
 check on attribute **names** only (not signatures) — enough to tell a
