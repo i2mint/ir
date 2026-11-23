@@ -17,20 +17,25 @@ upgrade for corpora large enough that recomputing surfaces is the bottleneck.
 
 ### Functions
 
-| [`build`](#ir.index.build)(source, \*[, store, embedder, full, ...])   | Build or incrementally update *source* into a [`Corpus`](#ir.index.Corpus).   |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| [`open_corpus`](#ir.index.open_corpus)(name, \*[, embedder])                 | Reopen a previously built corpus by name.                                                                |
+| [`build`](#ir.index.build)(source, \*[, store, embedder, full, ...])    | Build or incrementally update *source* into a [`Corpus`](#ir.index.Corpus).   |
+|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| [`open_corpus`](#ir.index.open_corpus)(name, \*[, embedder, query_normalize]) | Reopen a previously built corpus by name.                                                                |
 
 ### Classes
 
-| [`Corpus`](#ir.index.Corpus)(name, store, embedder, embedder_id)   | A built, queryable corpus: a store plus its embedder.   |
-|-----------------------------------------------------------------------------------------------|---------------------------------------------------------|
+| [`Corpus`](#ir.index.Corpus)(name, store, embedder, embedder_id[, ...])   | A built, queryable corpus: a store plus its embedder.   |
+|------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
 
-### *class* ir.index.Corpus(name, store, embedder, embedder_id)
+### *class* ir.index.Corpus(name, store, embedder, embedder_id, query_normalize=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A built, queryable corpus: a store plus its embedder.
+
+`query_normalize` is the `str -> str` function the corpus’s indexing
+strategy applied to the indexed text (e.g. `Fields(normalize=fold_text)`),
+or `None`. [`ir.retrieve.search()`](ir.retrieve.html.md#ir.retrieve.search) applies it to every query, so folded
+text is matched by a folded query.
 
 #### search(query, \*\*kwargs)
 
@@ -62,7 +67,7 @@ Build or incrementally update *source* into a [`Corpus`](#ir.index.Corpus).
 * **Return type:**
   [`Corpus`](#ir.index.Corpus)
 
-### ir.index.open_corpus(name, , embedder=None)
+### ir.index.open_corpus(name, , embedder=None, query_normalize=None)
 
 Reopen a previously built corpus by name.
 
@@ -77,6 +82,10 @@ with\*\* (its stored `embedder_id`), not re-resolved from the spec: a spec
 like `"default"` means different models on machines with and without
 `sentence-transformers`, which would make the query vectors incompatible
 with the index.
+
+The query normalizer the corpus was built with (see [`Corpus`](#ir.index.Corpus)) is
+reopened from its stored `"module:attr"` reference; pass
+`query_normalize=` (a callable or a reference) to override it.
 
 * **Return type:**
   [`Corpus`](#ir.index.Corpus)

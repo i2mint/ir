@@ -189,13 +189,16 @@ custom strategies need only match the <a class="reference internal" href="#ir.st
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.strategy.strategy_from_spec" title="ir.strategy.strategy_from_spec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strategy_from_spec</span></code></a>(spec)</p></td>
 <td><p>Reconstruct a shipped strategy from a <code class="docutils literal notranslate"><span class="pre">{"name",</span> <span class="pre">"params"}</span></code> spec.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.strategy.strategy_to_spec" title="ir.strategy.strategy_to_spec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strategy_to_spec</span></code></a>(strategy)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.strategy.strategy_normalizer" title="ir.strategy.strategy_normalizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strategy_normalizer</span></code></a>(strategy)</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">normalize</span></code> an indexing <em>strategy</em> applies to its text, as given.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.strategy.strategy_to_spec" title="ir.strategy.strategy_to_spec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strategy_to_spec</span></code></a>(strategy)</p></td>
 <td><p>A <code class="docutils literal notranslate"><span class="pre">{"name",</span> <span class="pre">"params"}</span></code> spec for a shipped, scalar-param strategy.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.strategy.text_of" title="ir.strategy.text_of"><code class="xref py py-obj docutils literal notranslate"><span class="pre">text_of</span></code></a>(raw[, text_key])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.strategy.text_of" title="ir.strategy.text_of"><code class="xref py py-obj docutils literal notranslate"><span class="pre">text_of</span></code></a>(raw[, text_key])</p></td>
 <td><p>Best-effort text extraction from a raw artifact payload.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.strategy.word_windows" title="ir.strategy.word_windows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">word_windows</span></code></a>(text, *, size[, overlap])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.strategy.word_windows" title="ir.strategy.word_windows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">word_windows</span></code></a>(text, *, size[, overlap])</p></td>
 <td><p>Like <a class="reference internal" href="#ir.strategy.balanced_windows" title="ir.strategy.balanced_windows"><code class="xref py py-func docutils literal notranslate"><span class="pre">balanced_windows()</span></code></a>, but each cut moves back to the nearest whitespace.</p></td>
 </tr>
 </tbody>
@@ -292,12 +295,14 @@ judged requests over ~44k records: BM25 hit@1 0.92 vs 0.58 for <code class="docu
 field name, so a query can target one field with <code class="docutils literal notranslate"><span class="pre">surfaces={...}</span></code>.</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">normalize</span></code> (a <code class="docutils literal notranslate"><span class="pre">str</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code> callable, or a <code class="docutils literal notranslate"><span class="pre">"module:attr"</span></code> reference to
-one, case/accent folding…) is applied to every text before indexing. **It
-acts on the index side only**: apply the same function to queries (e.g.
-through <code class="docutils literal notranslate"><span class="pre">formulate=</span></code>), or folded text will never match an unfolded query.
-A reference is persisted in a registry spec and is its own identity; a
-callable is not persisted, and is identified by its qualified name or an
-explicit <code class="docutils literal notranslate"><span class="pre">normalize_id</span></code> (required for a lambda or closure).
+one, case/accent folding…) is applied to every text before indexing, and
+<a class="reference internal" href="ir.html#ir.build" title="ir.build"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.build()</span></code></a> records it on the corpus so every search folds its query
+with the same function (see <a class="reference internal" href="ir.index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">ir.index.Corpus</span></code></a>). A reference is
+persisted in a registry spec and in the built corpus, and is its own
+identity; a callable is not persisted (a reopened corpus warns that its
+queries are no longer folded, unless <code class="docutils literal notranslate"><span class="pre">open_corpus(query_normalize=...)</span></code>
+hands it back), and is identified by its qualified name or an explicit
+<code class="docutils literal notranslate"><span class="pre">normalize_id</span></code> (required for a lambda or closure).
 <code class="docutils literal notranslate"><span class="pre">max_chars</span></code> / <code class="docutils literal notranslate"><span class="pre">overlap</span></code> window the <em>body</em> with <a class="reference internal" href="#ir.strategy.balanced_windows" title="ir.strategy.balanced_windows"><code class="xref py py-func docutils literal notranslate"><span class="pre">balanced_windows()</span></code></a>
 (<code class="docutils literal notranslate"><span class="pre">split</span></code> swaps the splitter: a <code class="docutils literal notranslate"><span class="pre">(text,</span> <span class="pre">*,</span> <span class="pre">size,</span> <span class="pre">overlap)</span> <span class="pre">-&gt;</span> <span class="pre">list[str]</span></code>
 callable or <code class="docutils literal notranslate"><span class="pre">"module:attr"</span></code> reference, e.g. <a class="reference internal" href="#ir.strategy.word_windows" title="ir.strategy.word_windows"><code class="xref py py-func docutils literal notranslate"><span class="pre">word_windows()</span></code></a> for
@@ -471,6 +476,27 @@ registry entries.</p>
 </dl>
 </dd></dl>
 <dl class="py function">
+<dt class="sig sig-object py" id="ir.strategy.strategy_normalizer">
+<span class="sig-prename descclassname"><span class="pre">ir.strategy.</span></span><span class="sig-name descname"><span class="pre">strategy_normalizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/strategy.html#strategy_normalizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.strategy.strategy_normalizer" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.strategy.strategy_normalizer'">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">normalize</span></code> an indexing <em>strategy</em> applies to its text, as given.</p>
+<p>That is the strategy’s <code class="docutils literal notranslate"><span class="pre">normalize</span></code> attribute (a callable or a
+<code class="docutils literal notranslate"><span class="pre">"module:attr"</span></code> reference), or, for a wrapper such as
+<a class="reference internal" href="ir.html#ir.with_synopsis" title="ir.with_synopsis"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.with_synopsis()</span></code></a>, that of the strategy it wraps; <code class="docutils literal notranslate"><span class="pre">None</span></code> when the
+indexed text is not normalized. <a class="reference internal" href="ir.html#ir.build" title="ir.build"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.build()</span></code></a> records it so a search can
+fold its query with the same function.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="gp">&gt;&gt;&gt; </span><span class="n">strategy_normalizer</span><span class="p">(</span><span class="n">Fields</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">"about"</span><span class="p">],</span> <span class="n">normalize</span><span class="o">=</span><span class="s2">"ir.strategy:fold_text"</span><span class="p">))</span>
+</span><span id="line-2"><span class="go">'ir.strategy:fold_text'</span>
+</span><span id="line-3"><span class="gp">&gt;&gt;&gt; </span><span class="n">strategy_normalizer</span><span class="p">(</span><span class="n">Fields</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">"about"</span><span class="p">]))</span> <span class="ow">is</span> <span class="kc">None</span>
+</span><span id="line-4"><span class="go">True</span>
+</span></code></pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>[[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>], <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>], <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>, <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
 <dt class="sig sig-object py" id="ir.strategy.strategy_to_spec">
 <span class="sig-prename descclassname"><span class="pre">ir.strategy.</span></span><span class="sig-name descname"><span class="pre">strategy_to_spec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strategy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/strategy.html#strategy_to_spec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.strategy.strategy_to_spec" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.strategy.strategy_to_spec'">¶</a></dt>
 <dd><p>A <code class="docutils literal notranslate"><span class="pre">{"name",</span> <span class="pre">"params"}</span></code> spec for a shipped, scalar-param strategy.</p>
@@ -544,6 +570,7 @@ near-equal. <code class="docutils literal notranslate"><span class="pre">overlap
 <li><a :data-current="activeSection === '#ir.strategy.fold_text'" class="reference internal" href="#ir.strategy.fold_text"><code class="docutils literal notranslate"><span class="pre">fold_text()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.strategy.is_simple_param'" class="reference internal" href="#ir.strategy.is_simple_param"><code class="docutils literal notranslate"><span class="pre">is_simple_param()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.strategy.strategy_from_spec'" class="reference internal" href="#ir.strategy.strategy_from_spec"><code class="docutils literal notranslate"><span class="pre">strategy_from_spec()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.strategy.strategy_normalizer'" class="reference internal" href="#ir.strategy.strategy_normalizer"><code class="docutils literal notranslate"><span class="pre">strategy_normalizer()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.strategy.strategy_to_spec'" class="reference internal" href="#ir.strategy.strategy_to_spec"><code class="docutils literal notranslate"><span class="pre">strategy_to_spec()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.strategy.text_of'" class="reference internal" href="#ir.strategy.text_of"><code class="docutils literal notranslate"><span class="pre">text_of()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.strategy.word_windows'" class="reference internal" href="#ir.strategy.word_windows"><code class="docutils literal notranslate"><span class="pre">word_windows()</span></code></a></li>
@@ -560,7 +587,7 @@ near-equal. <code class="docutils literal notranslate"><span class="pre">overlap
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=21589402"></script>
+<script src="../_static/documentation_options.js?v=8520101b"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

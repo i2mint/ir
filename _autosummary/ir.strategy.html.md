@@ -38,6 +38,7 @@ custom strategies need only match the [`IndexingStrategy`](#ir.strategy.Indexing
 | [`fold_text`](#ir.strategy.fold_text)(text)                               | Case-fold *text* and strip accents from Latin and Greek letters only.                                                        |
 | [`is_simple_param`](#ir.strategy.is_simple_param)(value)                        | Whether a constructor parameter is JSON-simple (scalar, or a tuple/list of scalars).                                         |
 | [`strategy_from_spec`](#ir.strategy.strategy_from_spec)(spec)                      | Reconstruct a shipped strategy from a `{"name", "params"}` spec.                                                             |
+| [`strategy_normalizer`](#ir.strategy.strategy_normalizer)(strategy)                 | The `normalize` an indexing *strategy* applies to its text, as given.                                                        |
 | [`strategy_to_spec`](#ir.strategy.strategy_to_spec)(strategy)                    | A `{"name", "params"}` spec for a shipped, scalar-param strategy.                                                            |
 | [`text_of`](#ir.strategy.text_of)(raw[, text_key])                      | Best-effort text extraction from a raw artifact payload.                                                                     |
 | [`word_windows`](#ir.strategy.word_windows)(text, \*, size[, overlap])       | Like [`balanced_windows()`](#ir.strategy.balanced_windows), but each cut moves back to the nearest whitespace. |
@@ -119,12 +120,14 @@ place) that lead the record. Two layouts:
   field name, so a query can target one field with `surfaces={...}`.
 
 `normalize` (a `str -> str` callable, or a `"module:attr"` reference to
-one, case/accent folding…) is applied to every text before indexing. \*\*It
-acts on the index side only\*\*: apply the same function to queries (e.g.
-through `formulate=`), or folded text will never match an unfolded query.
-A reference is persisted in a registry spec and is its own identity; a
-callable is not persisted, and is identified by its qualified name or an
-explicit `normalize_id` (required for a lambda or closure).
+one, case/accent folding…) is applied to every text before indexing, and
+[`ir.build()`](ir.html.md#ir.build) records it on the corpus so every search folds its query
+with the same function (see [`ir.index.Corpus`](ir.index.html.md#ir.index.Corpus)). A reference is
+persisted in a registry spec and in the built corpus, and is its own
+identity; a callable is not persisted (a reopened corpus warns that its
+queries are no longer folded, unless `open_corpus(query_normalize=...)`
+hands it back), and is identified by its qualified name or an explicit
+`normalize_id` (required for a lambda or closure).
 `max_chars` / `overlap` window the *body* with [`balanced_windows()`](#ir.strategy.balanced_windows)
 (`split` swaps the splitter: a `(text, *, size, overlap) -> list[str]`
 callable or `"module:attr"` reference, e.g. [`word_windows()`](#ir.strategy.word_windows) for
@@ -285,6 +288,26 @@ registry entries.
 
 * **Return type:**
   [`IndexingStrategy`](#ir.strategy.IndexingStrategy) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### ir.strategy.strategy_normalizer(strategy)
+
+The `normalize` an indexing *strategy* applies to its text, as given.
+
+That is the strategy’s `normalize` attribute (a callable or a
+`"module:attr"` reference), or, for a wrapper such as
+[`ir.with_synopsis()`](ir.html.md#ir.with_synopsis), that of the strategy it wraps; `None` when the
+indexed text is not normalized. [`ir.build()`](ir.html.md#ir.build) records it so a search can
+fold its query with the same function.
+
+```pycon
+>>> strategy_normalizer(Fields(fields=["about"], normalize="ir.strategy:fold_text"))
+'ir.strategy:fold_text'
+>>> strategy_normalizer(Fields(fields=["about"])) is None
+True
+```
+
+* **Return type:**
+  [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
 ### ir.strategy.strategy_to_spec(strategy)
 

@@ -202,7 +202,7 @@ the reviewing search subagent shipped under <code class="docutils literal notran
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.build" title="ir.build"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build</span></code></a>(source, *[, store, embedder, full, ...])</p></td>
 <td><p>Build or incrementally update <em>source</em> into a <a class="reference internal" href="#ir.Corpus" title="ir.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.open_corpus" title="ir.open_corpus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">open_corpus</span></code></a>(name, *[, embedder])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.open_corpus" title="ir.open_corpus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">open_corpus</span></code></a>(name, *[, embedder, query_normalize])</p></td>
 <td><p>Reopen a previously built corpus by name.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.reports_coverage" title="ir.reports_coverage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reports_coverage</span></code></a>([name, projects_root, ...])</p></td>
@@ -354,7 +354,7 @@ the reviewing search subagent shipped under <code class="docutils literal notran
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.CorpusStore" title="ir.CorpusStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CorpusStore</span></code></a>(meta, vectors, ledger, config[, ...])</p></td>
 <td><p>Repository bundling the meta/vectors/ledger/config views of one corpus.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.Corpus" title="ir.Corpus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Corpus</span></code></a>(name, store, embedder, embedder_id)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.Corpus" title="ir.Corpus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Corpus</span></code></a>(name, store, embedder, embedder_id[, ...])</p></td>
 <td><p>A built, queryable corpus: a store plus its embedder.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.CoverageReport" title="ir.CoverageReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CoverageReport</span></code></a>(name, on_disk, indexed, excluded)</p></td>
@@ -448,9 +448,13 @@ tool-use become hard-filter fields.</p>
 </dd></dl>
 <dl class="py class">
 <dt class="sig sig-object py" id="ir.Corpus">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">Corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/index.html#Corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.Corpus" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.Corpus'">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">Corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/index.html#Corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.Corpus" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.Corpus'">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></p>
 <p>A built, queryable corpus: a store plus its embedder.</p>
+<p><code class="docutils literal notranslate"><span class="pre">query_normalize</span></code> is the <code class="docutils literal notranslate"><span class="pre">str</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code> function the corpus’s indexing
+strategy applied to the indexed text (e.g. <code class="docutils literal notranslate"><span class="pre">Fields(normalize=fold_text)</span></code>),
+or <code class="docutils literal notranslate"><span class="pre">None</span></code>. <a class="reference internal" href="ir.retrieve.html#ir.retrieve.search" title="ir.retrieve.search"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.retrieve.search()</span></code></a> applies it to every query, so folded
+text is matched by a folded query.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
@@ -1242,12 +1246,14 @@ judged requests over ~44k records: BM25 hit@1 0.92 vs 0.58 for <code class="docu
 field name, so a query can target one field with <code class="docutils literal notranslate"><span class="pre">surfaces={...}</span></code>.</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">normalize</span></code> (a <code class="docutils literal notranslate"><span class="pre">str</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code> callable, or a <code class="docutils literal notranslate"><span class="pre">"module:attr"</span></code> reference to
-one, case/accent folding…) is applied to every text before indexing. **It
-acts on the index side only**: apply the same function to queries (e.g.
-through <code class="docutils literal notranslate"><span class="pre">formulate=</span></code>), or folded text will never match an unfolded query.
-A reference is persisted in a registry spec and is its own identity; a
-callable is not persisted, and is identified by its qualified name or an
-explicit <code class="docutils literal notranslate"><span class="pre">normalize_id</span></code> (required for a lambda or closure).
+one, case/accent folding…) is applied to every text before indexing, and
+<a class="reference internal" href="#ir.build" title="ir.build"><code class="xref py py-func docutils literal notranslate"><span class="pre">ir.build()</span></code></a> records it on the corpus so every search folds its query
+with the same function (see <a class="reference internal" href="ir.index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">ir.index.Corpus</span></code></a>). A reference is
+persisted in a registry spec and in the built corpus, and is its own
+identity; a callable is not persisted (a reopened corpus warns that its
+queries are no longer folded, unless <code class="docutils literal notranslate"><span class="pre">open_corpus(query_normalize=...)</span></code>
+hands it back), and is identified by its qualified name or an explicit
+<code class="docutils literal notranslate"><span class="pre">normalize_id</span></code> (required for a lambda or closure).
 <code class="docutils literal notranslate"><span class="pre">max_chars</span></code> / <code class="docutils literal notranslate"><span class="pre">overlap</span></code> window the <em>body</em> with <code class="xref py py-func docutils literal notranslate"><span class="pre">balanced_windows()</span></code>
 (<code class="docutils literal notranslate"><span class="pre">split</span></code> swaps the splitter: a <code class="docutils literal notranslate"><span class="pre">(text,</span> <span class="pre">*,</span> <span class="pre">size,</span> <span class="pre">overlap)</span> <span class="pre">-&gt;</span> <span class="pre">list[str]</span></code>
 callable or <code class="docutils literal notranslate"><span class="pre">"module:attr"</span></code> reference, e.g. <code class="xref py py-func docutils literal notranslate"><span class="pre">word_windows()</span></code> for
@@ -2272,7 +2278,7 @@ carries a <code class="docutils literal notranslate"><span class="pre">when_id</
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.open_corpus">
-<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">open_corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/index.html#open_corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.open_corpus" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.open_corpus'">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">ir.</span></span><span class="sig-name descname"><span class="pre">open_corpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/index.html#open_corpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.open_corpus" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.open_corpus'">¶</a></dt>
 <dd><p>Reopen a previously built corpus by name.</p>
 <p>The embedding model is <strong>lazily</strong> resolved (see <code class="xref py py-class docutils literal notranslate"><span class="pre">_LazyEmbedder</span></code>): the
 returned corpus knows its <code class="docutils literal notranslate"><span class="pre">embedder_id</span></code> from stored config immediately, but
@@ -2284,6 +2290,9 @@ with** (its stored <code class="docutils literal notranslate"><span class="pre">
 like <code class="docutils literal notranslate"><span class="pre">"default"</span></code> means different models on machines with and without
 <code class="docutils literal notranslate"><span class="pre">sentence-transformers</span></code>, which would make the query vectors incompatible
 with the index.</p>
+<p>The query normalizer the corpus was built with (see <a class="reference internal" href="#ir.Corpus" title="ir.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a>) is
+reopened from its stored <code class="docutils literal notranslate"><span class="pre">"module:attr"</span></code> reference; pass
+<code class="docutils literal notranslate"><span class="pre">query_normalize=</span></code> (a callable or a reference) to override it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="ir.index.html#ir.index.Corpus" title="ir.index.Corpus"><code class="xref py py-class docutils literal notranslate"><span class="pre">Corpus</span></code></a></span></p>
@@ -2962,7 +2971,7 @@ omitted → the predicate’s <code class="docutils literal notranslate"><span c
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=21589402"></script>
+<script src="../_static/documentation_options.js?v=8520101b"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

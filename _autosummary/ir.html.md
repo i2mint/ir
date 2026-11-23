@@ -50,7 +50,7 @@ the reviewing search subagent shipped under `.claude/`.
 | `thin_description_predicate`(artifact)                                                              | Ready-made gate: synthesize only for packages with an empty / short description.                                                                |
 | [`make_llm_synthesizer`](#ir.make_llm_synthesizer)(\*[, summarize, prompt, ...]) | An LLM-backed `Synthesizer` ([`Artifact`](ir.base.html.md#ir.base.Artifact) → synopsis).                            |
 | [`build`](#ir.build)(source, \*[, store, embedder, full, ...])    | Build or incrementally update *source* into a [`Corpus`](#ir.Corpus).                                          |
-| [`open_corpus`](#ir.open_corpus)(name, \*[, embedder])                  | Reopen a previously built corpus by name.                                                                                                       |
+| [`open_corpus`](#ir.open_corpus)(name, \*[, embedder, query_normalize]) | Reopen a previously built corpus by name.                                                                                                       |
 | [`reports_coverage`](#ir.reports_coverage)([name, projects_root, ...])       | Diff the reports docs tree on disk against the built `name` corpus.                                                                             |
 | [`search`](#ir.search)(corpus, query, \*\*kwargs)                  | Search a [`Corpus`](ir.index.html.md#ir.index.Corpus) (or a corpus *name*, reopened lazily).                         |
 | [`as_retriever`](#ir.as_retriever)(corpus_or_name, \*\*search_defaults)  | Bind ONE corpus to the uniform `Retriever` contract.                                                                                            |
@@ -103,7 +103,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`ClaudeTurn`](#ir.ClaudeTurn)(\*[, include_full])                     | Index a Claude Code session turn-pair: user prompt + assistant summary.                                                      |
 | [`CorpusSource`](#ir.CorpusSource)(name, scope[, ...])                   | A corpus definition: scope + change signal + strategy + embedder.                                                            |
 | [`CorpusStore`](#ir.CorpusStore)(meta, vectors, ledger, config[, ...])  | Repository bundling the meta/vectors/ledger/config views of one corpus.                                                      |
-| [`Corpus`](#ir.Corpus)(name, store, embedder, embedder_id)         | A built, queryable corpus: a store plus its embedder.                                                                        |
+| [`Corpus`](#ir.Corpus)(name, store, embedder, embedder_id[, ...])  | A built, queryable corpus: a store plus its embedder.                                                                        |
 | [`CoverageReport`](#ir.CoverageReport)(name, on_disk, indexed, excluded)   | Disk-vs-index coverage for a filesystem-backed corpus.                                                                       |
 | [`GraphStore`](#ir.GraphStore)(\*args, \*\*kwargs)                     | Structural contract a traversal operator binds to — node + neighbors.                                                        |
 | [`CorpusGraph`](#ir.CorpusGraph)(store_or_corpus)                       | A [`GraphStore`](#ir.GraphStore) over one corpus — artifact nodes, `links` edges.               |
@@ -164,11 +164,16 @@ The raw artifact is a turn-pair record (see
 `priv.claude_transcripts.turn_pair_records()`): a mapping with
 `user_prompt` / `assistant_summary` / `assistant_full` plus metadata.
 
-### *class* ir.Corpus(name, store, embedder, embedder_id)
+### *class* ir.Corpus(name, store, embedder, embedder_id, query_normalize=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A built, queryable corpus: a store plus its embedder.
+
+`query_normalize` is the `str -> str` function the corpus’s indexing
+strategy applied to the indexed text (e.g. `Fields(normalize=fold_text)`),
+or `None`. [`ir.retrieve.search()`](ir.retrieve.html.md#ir.retrieve.search) applies it to every query, so folded
+text is matched by a folded query.
 
 #### search(query, \*\*kwargs)
 
@@ -823,12 +828,14 @@ place) that lead the record. Two layouts:
   field name, so a query can target one field with `surfaces={...}`.
 
 `normalize` (a `str -> str` callable, or a `"module:attr"` reference to
-one, case/accent folding…) is applied to every text before indexing. \*\*It
-acts on the index side only\*\*: apply the same function to queries (e.g.
-through `formulate=`), or folded text will never match an unfolded query.
-A reference is persisted in a registry spec and is its own identity; a
-callable is not persisted, and is identified by its qualified name or an
-explicit `normalize_id` (required for a lambda or closure).
+one, case/accent folding…) is applied to every text before indexing, and
+[`ir.build()`](#ir.build) records it on the corpus so every search folds its query
+with the same function (see [`ir.index.Corpus`](ir.index.html.md#ir.index.Corpus)). A reference is
+persisted in a registry spec and in the built corpus, and is its own
+identity; a callable is not persisted (a reopened corpus warns that its
+queries are no longer folded, unless `open_corpus(query_normalize=...)`
+hands it back), and is identified by its qualified name or an explicit
+`normalize_id` (required for a lambda or closure).
 `max_chars` / `overlap` window the *body* with `balanced_windows()`
 (`split` swaps the splitter: a `(text, *, size, overlap) -> list[str]`
 callable or `"module:attr"` reference, e.g. `word_windows()` for
@@ -1748,7 +1755,7 @@ False
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
 
-### ir.open_corpus(name, , embedder=None)
+### ir.open_corpus(name, , embedder=None, query_normalize=None)
 
 Reopen a previously built corpus by name.
 
@@ -1763,6 +1770,10 @@ with\*\* (its stored `embedder_id`), not re-resolved from the spec: a spec
 like `"default"` means different models on machines with and without
 `sentence-transformers`, which would make the query vectors incompatible
 with the index.
+
+The query normalizer the corpus was built with (see [`Corpus`](#ir.Corpus)) is
+reopened from its stored `"module:attr"` reference; pass
+`query_normalize=` (a callable or a reference) to override it.
 
 * **Return type:**
   [`Corpus`](ir.index.html.md#ir.index.Corpus)
