@@ -153,12 +153,17 @@ def test_a_future_dated_lock_is_not_immortal(tmp_path):
 
 
 def test_maintain_cli_prints_the_report_on_stdout_even_when_a_corpus_fails(
-    monkeypatch, capsys
+    monkeypatch, capsys, tmp_path
 ):
     # `ir maintain --all > report.txt` must not lose the corpora that succeeded
     # just because one did not. Only the summary rides SystemExit (whose job is
     # the non-zero exit code a scheduler records).
     from ir import cli, maintenance
+
+    # The single-run lock lives in the cache dir: point it at tmp_path, or this
+    # test reads (and would take) the machine's real lock -- reporting "skipped"
+    # whenever a scheduled `ir maintain` happens to be running.
+    monkeypatch.setenv("IR_CACHE_DIR", str(tmp_path))
 
     monkeypatch.setattr(
         maintenance,

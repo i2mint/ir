@@ -122,7 +122,33 @@ def test_installed_dependency_outside_the_bounds_is_named(monkeypatch):
         check_requirements(bounds=bounds)
 
 
+def _installed_metadata_predates_the_cw_bound() -> bool:
+    """Whether ir's installed metadata was written before pyproject declared cw.
+
+    An editable install keeps the dist-info written when it was made: after
+    pyproject.toml gains a dependency, the metadata does not declare it until the
+    checkout is reinstalled (the code is live, only the metadata is stale). Read
+    the raw ``Requires-Dist`` lines, not ``declared_bounds``, so a bug in the
+    function under test can never turn into a skip.
+    """
+    import re
+    from pathlib import Path
+
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    if not pyproject.is_file():  # an installed wheel: its metadata is the truth
+        return False
+    if not re.search(r'^\s*"cw[<>=!~ ]', pyproject.read_text(), re.M):
+        return False
+    requires = _req.importlib.metadata.distribution(_req.DIST).requires or []
+    return not any(re.match(r"cw\b", r) for r in requires)
+
+
 def test_declared_bounds_come_from_the_installed_metadata():
+    if _installed_metadata_predates_the_cw_bound():
+        pytest.skip(
+            "ir's installed (editable) metadata predates pyproject.toml; "
+            "reinstall the checkout to refresh it"
+        )
     bounds = _req.declared_bounds()
     assert "cw" in bounds and "<0.2" in bounds["cw"]
     assert "pytest" not in bounds and "aix" not in bounds  # extras are not required
