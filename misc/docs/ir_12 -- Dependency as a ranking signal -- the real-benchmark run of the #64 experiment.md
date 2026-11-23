@@ -102,3 +102,35 @@ Latency was timed too, but the machine was loaded by other jobs and the numbers 
 
 So `rerank="cross-encoder"` stays opt-in: it is a top-10 ordering stage for text-rich themes, not the distractor filter #65 hoped for. No floor is calibrated for it on the Package corpus, since it does not become the default.
 
+## Addendum, 2026-11-23: the deps-surface weight sweep of #68
+
+Two in-memory corpora over the same labelled packages, identical except `Package(embed_deps=...)`; on the one with a `deps` surface, hybrid search with `surface_weights={"deps": w}`, ranked 100 deep. Script: `misc/evals/deps_weight_sweep.py`. #68's rule: the `w` that maximizes hard-positive recall@20 without raising the distractor FP-rate@20 above the no-deps baseline.
+
+### embeddings (5 hard positives, 14 distractors)
+
+| arm | nDCG@20 | recall@20 | hard-positive recall@20 | distractor FP-rate@20 |
+|---|---|---|---|---|
+| no deps surface | 0.841 | 0.45 | 0.40 | 0.07 |
+| deps, w=1.0 | 0.840 | 0.45 | 0.40 | 0.07 |
+| deps, w=1.5 | 0.866 | 0.48 | 0.40 | 0.07 |
+| deps, w=2.0 | 0.845 | 0.45 | 0.40 | 0.07 |
+| deps, w=3.0 | 0.715 | 0.45 | 0.40 | 0.00 |
+
+Best by #68's rule: **deps, w=1.0**
+
+### graphs (6 hard positives, 9 distractors)
+
+| arm | nDCG@20 | recall@20 | hard-positive recall@20 | distractor FP-rate@20 |
+|---|---|---|---|---|
+| no deps surface | 0.709 | 0.46 | 0.17 | 0.33 |
+| deps, w=1.0 | 0.723 | 0.50 | 0.17 | 0.22 |
+| deps, w=1.5 | 0.777 | 0.58 | 0.33 | 0.11 |
+| deps, w=2.0 | 0.777 | 0.54 | 0.50 | 0.11 |
+| deps, w=3.0 | 0.706 | 0.50 | 0.67 | 0.11 |
+
+Best by #68's rule: **deps, w=3.0**
+
+**Per theme the rule picks different weights**: on embeddings the deps surface never moves the hard positives (so the rule falls to the first tie, w=1), and on graphs recall climbs with the weight, to 0.67 at w=3. One weight has to serve both, and **w=2.0 is the only one at least as good as the no-deps baseline on every metric of both themes**: embeddings flat (nDCG 0.845 against 0.841), graphs hard-positive recall 0.17 to 0.50, distractor FP-rate 0.33 to 0.11, nDCG +0.07. w=3 buys the last graphs hard positive with 0.13 of embeddings nDCG.
+
+**Decision: no default changes here.** The evidence is a clean dominance but on 11 hard positives and 23 distractors across two themes, and the weight is a search-level argument: making `{"deps": 2.0}` the global default would put every corpus's scores on a weighted scale and skip its calibrated `min_score="auto"` floor. The recommendation for package corpora is `Package(embed_deps=True)` with `surface_weights={"deps": 2.0}`, and the way to ship it as a default is per-corpus search settings with their own floor: https://github.com/i2mint/ir/issues/183.
+
