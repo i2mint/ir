@@ -156,6 +156,27 @@ def _dense_ranked(
 BM25_CACHE_MAXSIZE = 8
 _BM25_CACHE_LOCK = threading.Lock()
 
+#: Which ``vd.BM25Index`` engine scores lexical queries. ``"auto"`` uses vd's
+#: ``"bm25s"`` engine when the ``bm25s`` package imports (same ranking as the
+#: pure-Python engine, scores equal to float32 rounding, queries roughly 100x
+#: faster; it comes with ir's ``bm25s`` extra) and the pure-Python engine
+#: otherwise. Set ``"python"`` for bit-identical scores across machines, or name
+#: any engine in ``vd.search.BM25_ENGINES``.
+BM25_ENGINE = "auto"
+
+
+def _resolve_bm25_engine(engine: str) -> str:
+    """The concrete ``vd`` BM25 engine name for *engine* (resolving ``"auto"``)."""
+    if engine != "auto":
+        return engine
+    try:
+        from vd.search import BM25_ENGINES
+
+        import bm25s  # noqa: F401
+    except Exception:  # no bm25s, or a vd that predates its engine seam
+        return "python"
+    return "bm25s" if "bm25s" in BM25_ENGINES else "python"
+
 
 def _candidate_key(
     surfaces: tuple[str, ...] | None, filter: Mapping[str, Any] | None
@@ -206,6 +227,8 @@ def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
         )
         return None
 
+    engine = _resolve_bm25_engine(BM25_ENGINE)
+    cache_key = (cache_key, engine)  # switching engines must not serve a stale index
     cache = getattr(corpus, "_bm25_index_cache", None)
     if cache is None:
         cache = OrderedDict()
@@ -225,7 +248,12 @@ def _bm25_index_for(corpus, ids, metas, candidates, cache_key):
         )
         for j in candidates
     }
-    index = BM25Index(collection)
+    # The default engine is passed implicitly, so a vd without the seam still works.
+    index = (
+        BM25Index(collection)
+        if engine == "python"
+        else BM25Index(collection, engine=engine)
+    )
     with _BM25_CACHE_LOCK:
         cache[cache_key] = index
         while len(cache) > BM25_CACHE_MAXSIZE:  # LRU: varied filters stay bounded
