@@ -1,4 +1,4 @@
-> built 2026-11-23 07:31 UTC from f5a6bd0 (master) · ir 0.1.81. Details: build_info.json
+> built 2026-11-23 07:55 UTC from e475816 (master) · ir 0.1.82. Details: build_info.json
 
 # index.html.md
 
@@ -114,7 +114,7 @@ Or install into an environment you own: `uv pip install --python <env>/bin/pytho
 
 **What the `packages` corpus covers.** Every repo on disk, not only Python packages: the `.pth` manifest’s packages first, then every checkout `priv.layout.scan_fleet` finds under the letter dirs (JS/TS apps, data repos), with `package.json` supplying the description when there is no `pyproject.toml` one. Without `priv` installed it is the manifest alone. `CorpusSource.from_packages(repos=...)` replaces the enumeration. To keep a repo out of the index on one machine, add an `fnmatch` pattern for its path (relative to the projects folder, e.g. `q/some-private-repo`) to `~/.config/ir/exclude`, one per line; the next build drops its records.
 
-**How long a first build takes.** With the light embedder (no model download), `ir build packages` over about 2,800 records took 12 s on a small server. With the default MiniLM embedder the first build also downloads the model (about 90 MB) and embeds on CPU, so budget minutes (not measured here); `uv pip install --python <python> 'ef[sentence-transformers]'` enables it. Without that package `ir build` warns and builds with the light embedder.
+**How long a first build takes.** With the light embedder (no model download), `ir build packages` over about 2,800 records took 12 s on a small server. With the default MiniLM embedder the first build also downloads the model (about 90 MB) and embeds on CPU, which measured 64 s over 494 records on a 2026 Mac with the model already cached (about 0.13 s per record, so roughly 6 minutes at the 2,800 records above; the one-off model download is extra and was not timed); `uv pip install --python <python> 'ef[sentence-transformers]'` enables it. Without that package `ir build` warns and builds with the light embedder.
 
 A corpus is pinned to the embedder it was built with (its `embedder_id`, shown by `ir info`), so installing or removing `sentence-transformers` later does not break querying. To switch embedders, re-embed with `ir build NAME`.
 
@@ -8478,7 +8478,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-23 07:31 UTC** from commit <a href="https://github.com/i2mint/ir/commit/f5a6bd0289a5eb9a48778d8d3cb26d547ea8a737"><code>f5a6bd0</code></a> on branch <code>master</code>, for **ir 0.1.81** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-23 07:55 UTC** from commit <a href="https://github.com/i2mint/ir/commit/e4758164d3cecc8ae580dde072a4833fdc82401e"><code>e475816</code></a> on branch <code>master</code>, for **ir 0.1.82** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -8487,7 +8487,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/f5a6bd0289a5eb9a48778d8d3cb26d547ea8a737"><code>f5a6bd0289a5eb9a48778d8d3cb26d547ea8a737</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/e4758164d3cecc8ae580dde072a4833fdc82401e"><code>e4758164d3cecc8ae580dde072a4833fdc82401e</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8498,9 +8498,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45131462457">45131462457</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45134371243">45134371243</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>f5a6bd0289a5eb9a48778d8d3cb26d547ea8a737</code> (in the history of the built commit) |
+| Event commit | <code>bc2d732fca3504fc7b8a28b34b521893579ec27b</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8525,13 +8525,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.81/">0.1.81</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.82/">0.1.82</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout f5a6bd0289a5eb9a48778d8d3cb26d547ea8a737
+git checkout e4758164d3cecc8ae580dde072a4833fdc82401e
 pip install "epythet==0.2.24"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
