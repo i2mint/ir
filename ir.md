@@ -1,4 +1,4 @@
-> built 2026-11-23 16:02 UTC from 1ca13bd (master) · ir 0.1.89. Details: build_info.json
+> built 2026-11-23 21:49 UTC from 7e43d50 (master) · ir 0.1.90. Details: build_info.json
 
 # index.html.md
 
@@ -8676,7 +8676,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-23 16:02 UTC** from commit <a href="https://github.com/i2mint/ir/commit/1ca13bddeb1c0c227ae81caccc2dfdd87825a190"><code>1ca13bd</code></a> on branch <code>master</code>, for **ir 0.1.89** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-23 21:49 UTC** from commit <a href="https://github.com/i2mint/ir/commit/7e43d50eaa8ed31dd978ccb7e628150b0b491ef9"><code>7e43d50</code></a> on branch <code>master</code>, for **ir 0.1.90** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -8685,7 +8685,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/1ca13bddeb1c0c227ae81caccc2dfdd87825a190"><code>1ca13bddeb1c0c227ae81caccc2dfdd87825a190</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/7e43d50eaa8ed31dd978ccb7e628150b0b491ef9"><code>7e43d50eaa8ed31dd978ccb7e628150b0b491ef9</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8696,9 +8696,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45211612373">45211612373</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45273224628">45273224628</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>1ca13bddeb1c0c227ae81caccc2dfdd87825a190</code> (in the history of the built commit) |
+| Event commit | <code>7e43d50eaa8ed31dd978ccb7e628150b0b491ef9</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8723,13 +8723,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.89/">0.1.89</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.90/">0.1.90</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 1ca13bddeb1c0c227ae81caccc2dfdd87825a190
+git checkout 7e43d50eaa8ed31dd978ccb7e628150b0b491ef9
 pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

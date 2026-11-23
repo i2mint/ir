@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-23T16:02:33Z",
+  "built_at": "2026-11-23T21:49:21Z",
   "package": {
     "name": "ir",
-    "version": "0.1.89",
+    "version": "0.1.90",
     "display_name": "ir",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "1ca13bddeb1c0c227ae81caccc2dfdd87825a190",
-    "short_commit": "1ca13bd",
+    "commit": "7e43d50eaa8ed31dd978ccb7e628150b0b491ef9",
+    "short_commit": "7e43d50",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/ir",
-    "commit_url": "https://github.com/i2mint/ir/commit/1ca13bddeb1c0c227ae81caccc2dfdd87825a190",
+    "commit_url": "https://github.com/i2mint/ir/commit/7e43d50eaa8ed31dd978ccb7e628150b0b491ef9",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/ir",
-    "sha": "1ca13bddeb1c0c227ae81caccc2dfdd87825a190",
+    "sha": "7e43d50eaa8ed31dd978ccb7e628150b0b491ef9",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "45211612373",
-    "run_url": "https://github.com/i2mint/ir/actions/runs/45211612373",
+    "run_id": "45273224628",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/45273224628",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -60,11 +60,11 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.1.89",
+    "latest": "0.1.90",
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout 1ca13bddeb1c0c227ae81caccc2dfdd87825a190\npip install \"epythet==0.2.25\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout 7e43d50eaa8ed31dd978ccb7e628150b0b491ef9\npip install \"epythet==0.2.25\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,
