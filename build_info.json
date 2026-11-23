@@ -1,36 +1,36 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-23T07:55:23Z",
+  "built_at": "2026-11-23T09:59:34Z",
   "package": {
     "name": "ir",
-    "version": "0.1.82",
+    "version": "0.1.84",
     "display_name": "ir",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "e4758164d3cecc8ae580dde072a4833fdc82401e",
-    "short_commit": "e475816",
+    "commit": "5df803c4b862fe426d16688f2cd18d1ff82ed2ef",
+    "short_commit": "5df803c",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/ir",
-    "commit_url": "https://github.com/i2mint/ir/commit/e4758164d3cecc8ae580dde072a4833fdc82401e",
+    "commit_url": "https://github.com/i2mint/ir/commit/5df803c4b862fe426d16688f2cd18d1ff82ed2ef",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/ir",
-    "sha": "e4758164d3cecc8ae580dde072a4833fdc82401e",
+    "sha": "5df803c4b862fe426d16688f2cd18d1ff82ed2ef",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "45134413179",
-    "run_url": "https://github.com/i2mint/ir/actions/runs/45134413179",
+    "run_id": "45151721879",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/45151721879",
     "server_url": "https://github.com"
   },
   "tools": {
-    "epythet": "0.2.24",
+    "epythet": "0.2.25",
     "sphinx": "9.1.1",
     "docutils": "0.22.4",
     "python": "3.12.16"
@@ -60,16 +60,14 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.1.83",
-    "relation": "behind",
+    "latest": "0.1.84",
+    "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout e4758164d3cecc8ae580dde072a4833fdc82401e\npip install \"epythet==0.2.24\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout 5df803c4b862fe426d16688f2cd18d1ff82ed2ef\npip install \"epythet==0.2.25\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": false,
-    "notes": [
-      "The documented version (0.1.82) is behind the latest release on PyPI (0.1.83): `pip install ir` gives newer code than these docs describe."
-    ]
+    "aligned": true,
+    "notes": []
   }
 }
