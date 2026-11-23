@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-23T07:55:11Z",
+  "built_at": "2026-11-23T07:55:23Z",
   "package": {
     "name": "ir",
     "version": "0.1.82",
@@ -21,12 +21,12 @@
   "ci": {
     "provider": "github",
     "repository": "i2mint/ir",
-    "sha": "bc2d732fca3504fc7b8a28b34b521893579ec27b",
+    "sha": "e4758164d3cecc8ae580dde072a4833fdc82401e",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "45134371243",
-    "run_url": "https://github.com/i2mint/ir/actions/runs/45134371243",
+    "run_id": "45134413179",
+    "run_url": "https://github.com/i2mint/ir/actions/runs/45134413179",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -60,14 +60,16 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.1.82",
-    "relation": "same",
+    "latest": "0.1.83",
+    "relation": "behind",
     "error": null
   },
   "reproduce": "git clone https://github.com/i2mint/ir && cd ir\ngit checkout e4758164d3cecc8ae580dde072a4833fdc82401e\npip install \"epythet==0.2.24\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": true,
-    "notes": []
+    "aligned": false,
+    "notes": [
+      "The documented version (0.1.82) is behind the latest release on PyPI (0.1.83): `pip install ir` gives newer code than these docs describe."
+    ]
   }
 }

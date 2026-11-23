@@ -8480,8 +8480,10 @@ single function serves any corpus.
 
 This documentation was built on **2026-11-23 07:55 UTC** from commit <a href="https://github.com/i2mint/ir/commit/e4758164d3cecc8ae580dde072a4833fdc82401e"><code>e475816</code></a> on branch <code>master</code>, for **ir 0.1.82** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.82) is behind the latest release on PyPI (0.1.83): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
@@ -8498,9 +8500,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45134371243">45134371243</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45134413179">45134413179</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>bc2d732fca3504fc7b8a28b34b521893579ec27b</code> (in the history of the built commit) |
+| Event commit | <code>e4758164d3cecc8ae580dde072a4833fdc82401e</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8525,7 +8527,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.82/">0.1.82</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.83/">0.1.83</a>, newer than the documented version (0.1.82).
 
 ## Reproduce
 
