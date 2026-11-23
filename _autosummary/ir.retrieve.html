@@ -203,13 +203,16 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.retrieve.BM25_CACHE_MAXSIZE" title="ir.retrieve.BM25_CACHE_MAXSIZE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BM25_CACHE_MAXSIZE</span></code></a></p></td>
 <td><p>How many per-candidate-set BM25 indexes a corpus keeps (least recently used evicted first).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.retrieve.ScoreBoost" title="ir.retrieve.ScoreBoost"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoreBoost</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.retrieve.BM25_ENGINE" title="ir.retrieve.BM25_ENGINE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BM25_ENGINE</span></code></a></p></td>
+<td><p>Which <code class="docutils literal notranslate"><span class="pre">vd.BM25Index</span></code> engine scores lexical queries.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.retrieve.ScoreBoost" title="ir.retrieve.ScoreBoost"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoreBoost</span></code></a></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">hit</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code>, added to each candidate's score after fusion and the reranker, before the per-artifact collapse.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.retrieve.Identity" title="ir.retrieve.Identity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Identity</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.retrieve.Identity" title="ir.retrieve.Identity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Identity</span></code></a></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">None</span></code> (default — hits from different sources never merge; same id, different corpus = different artifact), the string <code class="docutils literal notranslate"><span class="pre">"pointer"</span></code> (merge hits whose <a class="reference internal" href="ir.base.html#ir.base.SearchHit.pointer" title="ir.base.SearchHit.pointer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pointer</span></code></a> match — opt-in, for corpora that genuinely index the same files), or any <code class="docutils literal notranslate"><span class="pre">hit</span> <span class="pre">-&gt;</span> <span class="pre">hashable</span></code> callable (a falsy key falls back to per-source identity).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ir.retrieve.Retriever" title="ir.retrieve.Retriever"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Retriever</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.retrieve.Retriever" title="ir.retrieve.Retriever"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Retriever</span></code></a></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">(query,</span> <span class="pre">**overrides)</span> <span class="pre">-&gt;</span> <span class="pre">list[SearchHit]</span></code> — ir_09's Retriever leaf (one query, one corpus) as a swappable callable.</p></td>
 </tr>
 </tbody>
@@ -247,6 +250,16 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 <span class="sig-prename descclassname"><span class="pre">ir.retrieve.</span></span><span class="sig-name descname"><span class="pre">BM25_CACHE_MAXSIZE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.retrieve.BM25_CACHE_MAXSIZE" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.retrieve.BM25_CACHE_MAXSIZE'">¶</a></dt>
 <dd><p>How many per-candidate-set BM25 indexes a corpus keeps (least recently used
 evicted first). Each is a full tokenized copy of its slice, so this bounds memory.</p>
+</dd></dl>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.retrieve.BM25_ENGINE">
+<span class="sig-prename descclassname"><span class="pre">ir.retrieve.</span></span><span class="sig-name descname"><span class="pre">BM25_ENGINE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'auto'</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.retrieve.BM25_ENGINE" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.retrieve.BM25_ENGINE'">¶</a></dt>
+<dd><p>Which <code class="docutils literal notranslate"><span class="pre">vd.BM25Index</span></code> engine scores lexical queries. <code class="docutils literal notranslate"><span class="pre">"auto"</span></code> uses vd’s
+<code class="docutils literal notranslate"><span class="pre">"bm25s"</span></code> engine when the <code class="docutils literal notranslate"><span class="pre">bm25s</span></code> package imports (same ranking as the
+pure-Python engine, scores equal to float32 rounding, queries roughly 100x
+faster; it comes with ir’s <code class="docutils literal notranslate"><span class="pre">bm25s</span></code> extra) and the pure-Python engine
+otherwise. Set <code class="docutils literal notranslate"><span class="pre">"python"</span></code> for bit-identical scores across machines, or name
+any engine in <code class="docutils literal notranslate"><span class="pre">vd.search.BM25_ENGINES</span></code>.</p>
 </dd></dl>
 <dl class="py data">
 <dt class="sig sig-object py" id="ir.retrieve.DFLT_BLEND_ALPHA">
@@ -574,6 +587,7 @@ no boost.</p></li>
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
 <li><a :data-current="activeSection === '#ir.retrieve.BM25_CACHE_MAXSIZE'" class="reference internal" href="#ir.retrieve.BM25_CACHE_MAXSIZE"><code class="docutils literal notranslate"><span class="pre">BM25_CACHE_MAXSIZE</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.retrieve.BM25_ENGINE'" class="reference internal" href="#ir.retrieve.BM25_ENGINE"><code class="docutils literal notranslate"><span class="pre">BM25_ENGINE</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.retrieve.DFLT_BLEND_ALPHA'" class="reference internal" href="#ir.retrieve.DFLT_BLEND_ALPHA"><code class="docutils literal notranslate"><span class="pre">DFLT_BLEND_ALPHA</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.retrieve.DFLT_BM25_SAT_K'" class="reference internal" href="#ir.retrieve.DFLT_BM25_SAT_K"><code class="docutils literal notranslate"><span class="pre">DFLT_BM25_SAT_K</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.retrieve.DFLT_RRF_K'" class="reference internal" href="#ir.retrieve.DFLT_RRF_K"><code class="docutils literal notranslate"><span class="pre">DFLT_RRF_K</span></code></a></li>
@@ -601,7 +615,7 @@ no boost.</p></li>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=b2d89a71"></script>
+<script src="../_static/documentation_options.js?v=21589402"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

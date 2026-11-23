@@ -306,6 +306,7 @@
 </span></code></pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'ir[rerank]'</span></code> brings <code class="docutils literal notranslate"><span class="pre">sentence-transformers</span></code>; without it the search warns once and returns the first-stage ranking. <code class="docutils literal notranslate"><span class="pre">rerank=</span></code> also takes any <code class="docutils literal notranslate"><span class="pre">ef.Reranker</span></code> callable (a stub, a hosted model), and <code class="docutils literal notranslate"><span class="pre">rerank_text=</span></code> a <code class="docutils literal notranslate"><span class="pre">(corpus,</span> <span class="pre">meta)</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code> callable. The <code class="docutils literal notranslate"><span class="pre">"cross-encoder"</span></code> spec squashes the model’s raw logits through a sigmoid into (0, 1), so relative selectors keep working. A reranked hit’s score is the reranker’s, on its own scale, so its abstention floor is calibrated and stored separately (a callable you pass needs a stable <code class="docutils literal notranslate"><span class="pre">rerank_id</span></code> attribute for that): pass the same <code class="docutils literal notranslate"><span class="pre">rerank=</span></code> / <code class="docutils literal notranslate"><span class="pre">rerank_text=</span></code> to <code class="docutils literal notranslate"><span class="pre">ir.eval.calibrate_min_score</span></code> and <code class="docutils literal notranslate"><span class="pre">ir.discover(...,</span> <span class="pre">min_score="auto")</span></code> (see <code class="docutils literal notranslate"><span class="pre">ir.rerank</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'ir[bm25s]'</span></code> makes lexical and hybrid search faster: with <code class="docutils literal notranslate"><span class="pre">bm25s</span></code> installed, ir scores BM25 through vd’s <code class="docutils literal notranslate"><span class="pre">bm25s</span></code> engine (same top-50, scores equal to float32 rounding; lexical queries measured 14x to 16x faster on 5k and 16k-record corpora, <code class="docutils literal notranslate"><span class="pre">misc/bench/bm25_engines.py</span></code>). Set <code class="docutils literal notranslate"><span class="pre">ir.retrieve.BM25_ENGINE</span> <span class="pre">=</span> <span class="pre">"python"</span></code> for bit-identical scores across machines.</p>
 </section>
 </section>
 <section id="expand">
@@ -477,7 +478,7 @@
 
 </section>
 </section>
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-23 09:59 UTC from <a href="https://github.com/i2mint/ir/commit/5df803c4b862fe426d16688f2cd18d1ff82ed2ef">5df803c</a> (master) · ir 0.1.84 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-23 10:10 UTC from <a href="https://github.com/i2mint/ir/commit/49693c39058c0604c82e0ae96b235ccb27ea80a4">49693c3</a> (master) · ir 0.1.86 · <a href="about-this-build.html">about this build</a></p>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
@@ -513,7 +514,7 @@
 </div>
 </footer>
 </div>
-<script src="_static/documentation_options.js?v=b2d89a71"></script>
+<script src="_static/documentation_options.js?v=21589402"></script>
 <script src="_static/doctools.js?v=fd6eb6e6"></script>
 <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>

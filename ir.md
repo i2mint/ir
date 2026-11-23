@@ -1,4 +1,4 @@
-> built 2026-11-23 09:59 UTC from 5df803c (master) · ir 0.1.84. Details: build_info.json
+> built 2026-11-23 10:10 UTC from 49693c3 (master) · ir 0.1.86. Details: build_info.json
 
 # index.html.md
 
@@ -170,6 +170,8 @@ hits = ir.search(
 ```
 
 `pip install 'ir[rerank]'` brings `sentence-transformers`; without it the search warns once and returns the first-stage ranking. `rerank=` also takes any `ef.Reranker` callable (a stub, a hosted model), and `rerank_text=` a `(corpus, meta) -> str` callable. The `"cross-encoder"` spec squashes the model’s raw logits through a sigmoid into (0, 1), so relative selectors keep working. A reranked hit’s score is the reranker’s, on its own scale, so its abstention floor is calibrated and stored separately (a callable you pass needs a stable `rerank_id` attribute for that): pass the same `rerank=` / `rerank_text=` to `ir.eval.calibrate_min_score` and `ir.discover(..., min_score="auto")` (see `ir.rerank`).
+
+`pip install 'ir[bm25s]'` makes lexical and hybrid search faster: with `bm25s` installed, ir scores BM25 through vd’s `bm25s` engine (same top-50, scores equal to float32 rounding; lexical queries measured 14x to 16x faster on 5k and 16k-record corpora, `misc/bench/bm25_engines.py`). Set `ir.retrieve.BM25_ENGINE = "python"` for bit-identical scores across machines.
 
 ### Expand
 
@@ -6221,6 +6223,7 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 | [`DFLT_BLEND_ALPHA`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_BLEND_ALPHA)   | Dense weight in the `"blend"` fusion convex combination (`1-alpha` on the bounded lexical term).                                                                                                                                                                                                                                                                                             |
 | [`DFLT_BM25_SAT_K`](_autosummary/ir.retrieve.html.md#ir.retrieve.DFLT_BM25_SAT_K)    | `bm25 -> bm25/(bm25+k)`, a bounded squash to `[0, 1)` that needs no *per-query* normalization (which would erase the absolute-magnitude signal abstention calibration depends on).                                                                                                                                                                                                           |
 | [`BM25_CACHE_MAXSIZE`](_autosummary/ir.retrieve.html.md#ir.retrieve.BM25_CACHE_MAXSIZE) | How many per-candidate-set BM25 indexes a corpus keeps (least recently used evicted first).                                                                                                                                                                                                                                                                                                  |
+| [`BM25_ENGINE`](_autosummary/ir.retrieve.html.md#ir.retrieve.BM25_ENGINE)        | Which `vd.BM25Index` engine scores lexical queries.                                                                                                                                                                                                                                                                                                                                          |
 | [`ScoreBoost`](_autosummary/ir.retrieve.html.md#ir.retrieve.ScoreBoost)         | `hit -> float`, added to each candidate's score after fusion and the reranker, before the per-artifact collapse.                                                                                                                                                                                                                                                                             |
 | [`Identity`](_autosummary/ir.retrieve.html.md#ir.retrieve.Identity)           | `None` (default — hits from different sources never merge; same id, different corpus = different artifact), the string `"pointer"` (merge hits whose [`pointer`](_autosummary/ir.base.html.md#ir.base.SearchHit.pointer) match — opt-in, for corpora that genuinely index the same files), or any `hit -> hashable` callable (a falsy key falls back to per-source identity). |
 | [`Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever)          | `(query, **overrides) -> list[SearchHit]` — ir_09's Retriever leaf (one query, one corpus) as a swappable callable.                                                                                                                                                                                                                                                                          |
@@ -6243,6 +6246,15 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 
 How many per-candidate-set BM25 indexes a corpus keeps (least recently used
 evicted first). Each is a full tokenized copy of its slice, so this bounds memory.
+
+### ir.retrieve.BM25_ENGINE *= 'auto'*
+
+Which `vd.BM25Index` engine scores lexical queries. `"auto"` uses vd’s
+`"bm25s"` engine when the `bm25s` package imports (same ranking as the
+pure-Python engine, scores equal to float32 rounding, queries roughly 100x
+faster; it comes with ir’s `bm25s` extra) and the pure-Python engine
+otherwise. Set `"python"` for bit-identical scores across machines, or name
+any engine in `vd.search.BM25_ENGINES`.
 
 ### ir.retrieve.DFLT_BLEND_ALPHA *= 0.5*
 
@@ -8478,7 +8490,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-23 09:59 UTC** from commit <a href="https://github.com/i2mint/ir/commit/5df803c4b862fe426d16688f2cd18d1ff82ed2ef"><code>5df803c</code></a> on branch <code>master</code>, for **ir 0.1.84** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-23 10:10 UTC** from commit <a href="https://github.com/i2mint/ir/commit/49693c39058c0604c82e0ae96b235ccb27ea80a4"><code>49693c3</code></a> on branch <code>master</code>, for **ir 0.1.86** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -8487,7 +8499,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/5df803c4b862fe426d16688f2cd18d1ff82ed2ef"><code>5df803c4b862fe426d16688f2cd18d1ff82ed2ef</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/49693c39058c0604c82e0ae96b235ccb27ea80a4"><code>49693c39058c0604c82e0ae96b235ccb27ea80a4</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8498,9 +8510,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45151735458">45151735458</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45153397934">45153397934</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>5df803c4b862fe426d16688f2cd18d1ff82ed2ef</code> (in the history of the built commit) |
+| Event commit | <code>49693c39058c0604c82e0ae96b235ccb27ea80a4</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8525,13 +8537,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.84/">0.1.84</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.86/">0.1.86</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 5df803c4b862fe426d16688f2cd18d1ff82ed2ef
+git checkout 49693c39058c0604c82e0ae96b235ccb27ea80a4
 pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -167,6 +167,8 @@ hits = ir.search(
 
 `pip install 'ir[rerank]'` brings `sentence-transformers`; without it the search warns once and returns the first-stage ranking. `rerank=` also takes any `ef.Reranker` callable (a stub, a hosted model), and `rerank_text=` a `(corpus, meta) -> str` callable. The `"cross-encoder"` spec squashes the model’s raw logits through a sigmoid into (0, 1), so relative selectors keep working. A reranked hit’s score is the reranker’s, on its own scale, so its abstention floor is calibrated and stored separately (a callable you pass needs a stable `rerank_id` attribute for that): pass the same `rerank=` / `rerank_text=` to `ir.eval.calibrate_min_score` and `ir.discover(..., min_score="auto")` (see `ir.rerank`).
 
+`pip install 'ir[bm25s]'` makes lexical and hybrid search faster: with `bm25s` installed, ir scores BM25 through vd’s `bm25s` engine (same top-50, scores equal to float32 rounding; lexical queries measured 14x to 16x faster on 5k and 16k-record corpora, `misc/bench/bm25_engines.py`). Set `ir.retrieve.BM25_ENGINE = "python"` for bit-identical scores across machines.
+
 ### Expand
 
 <!-- wads-docs: skip - fragment: continues from the reader's own query and results -->

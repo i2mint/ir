@@ -56,6 +56,7 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 | [`DFLT_BLEND_ALPHA`](#ir.retrieve.DFLT_BLEND_ALPHA)   | Dense weight in the `"blend"` fusion convex combination (`1-alpha` on the bounded lexical term).                                                                                                                                                                                                                                                                                             |
 | [`DFLT_BM25_SAT_K`](#ir.retrieve.DFLT_BM25_SAT_K)    | `bm25 -> bm25/(bm25+k)`, a bounded squash to `[0, 1)` that needs no *per-query* normalization (which would erase the absolute-magnitude signal abstention calibration depends on).                                                                                                                                                                                                           |
 | [`BM25_CACHE_MAXSIZE`](#ir.retrieve.BM25_CACHE_MAXSIZE) | How many per-candidate-set BM25 indexes a corpus keeps (least recently used evicted first).                                                                                                                                                                                                                                                                                                  |
+| [`BM25_ENGINE`](#ir.retrieve.BM25_ENGINE)        | Which `vd.BM25Index` engine scores lexical queries.                                                                                                                                                                                                                                                                                                                                          |
 | [`ScoreBoost`](#ir.retrieve.ScoreBoost)         | `hit -> float`, added to each candidate's score after fusion and the reranker, before the per-artifact collapse.                                                                                                                                                                                                                                                                             |
 | [`Identity`](#ir.retrieve.Identity)           | `None` (default — hits from different sources never merge; same id, different corpus = different artifact), the string `"pointer"` (merge hits whose [`pointer`](ir.base.html.md#ir.base.SearchHit.pointer) match — opt-in, for corpora that genuinely index the same files), or any `hit -> hashable` callable (a falsy key falls back to per-source identity). |
 | [`Retriever`](#ir.retrieve.Retriever)          | `(query, **overrides) -> list[SearchHit]` — ir_09's Retriever leaf (one query, one corpus) as a swappable callable.                                                                                                                                                                                                                                                                          |
@@ -78,6 +79,15 @@ the ledger, never by re-deriving record ids. The expansion operator itself
 
 How many per-candidate-set BM25 indexes a corpus keeps (least recently used
 evicted first). Each is a full tokenized copy of its slice, so this bounds memory.
+
+### ir.retrieve.BM25_ENGINE *= 'auto'*
+
+Which `vd.BM25Index` engine scores lexical queries. `"auto"` uses vd’s
+`"bm25s"` engine when the `bm25s` package imports (same ranking as the
+pure-Python engine, scores equal to float32 rounding, queries roughly 100x
+faster; it comes with ir’s `bm25s` extra) and the pure-Python engine
+otherwise. Set `"python"` for bit-identical scores across machines, or name
+any engine in `vd.search.BM25_ENGINES`.
 
 ### ir.retrieve.DFLT_BLEND_ALPHA *= 0.5*
 
