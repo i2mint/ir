@@ -71,3 +71,34 @@ Seed libraries: of the 18, the most depended-on has 19 dependents in the corpus,
 The experiment of #64 has now run on the real labels. Both mechanisms improve ir's single-shot search when the caller supplies seeds. Neither raises the distractor rate, and together they reach every hard positive that the seeds make reachable. What limits the effect is seed choice: seeds that are too narrow miss hard positives, and seeds that are too general promote distractors. That choice is a planning concern, outside ir.
 
 Two pieces of follow-up work are tracked as their own issues: the harness gap (`ir.eval.compare_indexings` cannot score a fused walk arm, so this script scores the arms itself), #121; and a reusable project-metadata reader, #125.
+
+## Addendum, 2026-11-23: the cross-encoder A/B/C of #104
+
+The same benchmark, corpus and probes, with ef's cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) as a precision stage at `fetch_k=50`: **A** hybrid, **B** A reranked on the matched surface, **C** A reranked on the whole artifact (`rerank_text="artifact"`: description, README chunks and deps joined; the model reads its first 512 tokens). Script: `misc/evals/rerank_abc.py`. The success rule was set in #104 before the run: C cuts the named-distractor FP-rate@20 by at least 40% against A, with hard-positive recall@20 at least A's.
+
+### embeddings (5 hard positives, 14 distractors)
+
+| arm | nDCG@20 | P@10 | distractor FP-rate@20 | hard-positive recall@20 |
+|---|---|---|---|---|
+| A hybrid | 0.751 | 0.90 | 0.14 | 0.20 |
+| B + cross-encoder (surface) | 0.775 | 1.00 | 0.14 | 0.20 |
+| C + cross-encoder (artifact) | 0.803 | 1.00 | 0.14 | 0.20 |
+
+FP-rate cut, C vs A: 0%; success rule met: **no**
+
+### graphs (6 hard positives, 9 distractors)
+
+| arm | nDCG@20 | P@10 | distractor FP-rate@20 | hard-positive recall@20 |
+|---|---|---|---|---|
+| A hybrid | 0.681 | 0.70 | 0.33 | 0.17 |
+| B + cross-encoder (surface) | 0.642 | 0.70 | 0.33 | 0.17 |
+| C + cross-encoder (artifact) | 0.646 | 0.70 | 0.33 | 0.17 |
+
+FP-rate cut, C vs A: 0%; success rule met: **no**
+
+**The rule is not met on either theme.** Reranking does not move a single named distractor out of the top 20 (FP-rate cut 0%), and the hard positives the hybrid misses stay missed: a reranker can only reorder the 50 candidates it is shown, and these hard positives are not among them (they are the thin-description packages of ir_11 and the dependency-only ones of #64, whose fix is the dependency signal above, not precision). What it does change is the order inside the top 20: on embeddings, reading the whole artifact lifts nDCG@20 by 0.05 and puts only relevant packages in the top 10; on graphs it lowers nDCG@20 by 0.035.
+
+Latency was timed too, but the machine was loaded by other jobs and the numbers were not coherent (the reranked arms ran faster than the plain one on one theme), so none are reported. The earlier measure from #103 stands: the cross-encoder adds about one forward pass over `fetch_k` passages per query.
+
+So `rerank="cross-encoder"` stays opt-in: it is a top-10 ordering stage for text-rich themes, not the distractor filter #65 hoped for. No floor is calibrated for it on the Package corpus, since it does not become the default.
+
