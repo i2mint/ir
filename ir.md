@@ -1,4 +1,4 @@
-> built 2026-11-22 23:42 UTC from d83c2e5 (master) · ir 0.1.78. Details: build_info.json
+> built 2026-11-23 02:39 UTC from d280ca0 (master) · ir 0.1.78. Details: build_info.json
 
 # index.html.md
 
@@ -3293,7 +3293,7 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A logical corpus item before decomposition into surfaces.
 
-### *class* ir.Chunked(, chunk_size=1200, overlap=200, text_key=None, kind='chunk', max_tokens=None, token_model=None)
+### *class* ir.Chunked(, chunk_size=1200, overlap=200, text_key=None, kind='chunk', max_tokens=None, token_model=None, split=None, split_id=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3306,6 +3306,13 @@ model), so no chunk overflows the embedder’s sequence limit and is silently
 truncated. Token mode degrades to char mode with a warning if the tokenizer
 is unavailable. The char `chunk_size` / `overlap` still set the overlap
 *ratio* used in token mode.
+
+`split` swaps the character splitter for a `(text, *, size, overlap) ->
+list[str]` callable or `"module:attr"` reference, e.g.
+`balanced_windows()` (equal-sized windows, no short tail) or
+`word_windows()` (word-aligned cuts), with `size=chunk_size`. It is
+exclusive with `max_tokens`. `split_id` names a lambda/closure for
+re-indexing, as for [`Fields`](_autosummary/ir.html.md#ir.Fields).
 
 ### *class* ir.ClaudeTurn(, include_full=False)
 
@@ -7607,7 +7614,7 @@ custom strategies need only match the [`IndexingStrategy`](_autosummary/ir.strat
 | [`Skill`](_autosummary/ir.strategy.html.md#ir.strategy.Skill)()                                             | Capability strategy: embed `name + description` only.                         |
 | [`WholeText`](_autosummary/ir.strategy.html.md#ir.strategy.WholeText)(\*[, text_key, kind])                     | One surface = the entire text.                                                |
 
-### *class* ir.strategy.Chunked(, chunk_size=1200, overlap=200, text_key=None, kind='chunk', max_tokens=None, token_model=None)
+### *class* ir.strategy.Chunked(, chunk_size=1200, overlap=200, text_key=None, kind='chunk', max_tokens=None, token_model=None, split=None, split_id=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -7620,6 +7627,13 @@ model), so no chunk overflows the embedder’s sequence limit and is silently
 truncated. Token mode degrades to char mode with a warning if the tokenizer
 is unavailable. The char `chunk_size` / `overlap` still set the overlap
 *ratio* used in token mode.
+
+`split` swaps the character splitter for a `(text, *, size, overlap) ->
+list[str]` callable or `"module:attr"` reference, e.g.
+[`balanced_windows()`](_autosummary/ir.strategy.html.md#ir.strategy.balanced_windows) (equal-sized windows, no short tail) or
+[`word_windows()`](_autosummary/ir.strategy.html.md#ir.strategy.word_windows) (word-aligned cuts), with `size=chunk_size`. It is
+exclusive with `max_tokens`. `split_id` names a lambda/closure for
+re-indexing, as for [`Fields`](_autosummary/ir.strategy.html.md#ir.strategy.Fields).
 
 ### *class* ir.strategy.ClaudeTurn(, include_full=False)
 
@@ -8476,7 +8490,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-22 23:42 UTC** from commit <a href="https://github.com/i2mint/ir/commit/d83c2e5728966280610a84515130a6b6b474fdc2"><code>d83c2e5</code></a> on branch <code>master</code>, for **ir 0.1.78** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-23 02:39 UTC** from commit <a href="https://github.com/i2mint/ir/commit/d280ca0f2b601ffb66336db6ea6ac8ace4c4a7f9"><code>d280ca0</code></a> on branch <code>master</code>, for **ir 0.1.78** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -8485,7 +8499,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/d83c2e5728966280610a84515130a6b6b474fdc2"><code>d83c2e5728966280610a84515130a6b6b474fdc2</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/d280ca0f2b601ffb66336db6ea6ac8ace4c4a7f9"><code>d280ca0f2b601ffb66336db6ea6ac8ace4c4a7f9</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8496,9 +8510,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45084534049">45084534049</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45101293508">45101293508</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>d83c2e5728966280610a84515130a6b6b474fdc2</code> (in the history of the built commit) |
+| Event commit | <code>d280ca0f2b601ffb66336db6ea6ac8ace4c4a7f9</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8529,7 +8543,7 @@ Latest release: <a href="https://pypi.org/project/ir/0.1.78/">0.1.78</a>, the sa
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout d83c2e5728966280610a84515130a6b6b474fdc2
+git checkout d280ca0f2b601ffb66336db6ea6ac8ace4c4a7f9
 pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

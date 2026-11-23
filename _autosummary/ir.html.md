@@ -124,7 +124,7 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A logical corpus item before decomposition into surfaces.
 
-### *class* ir.Chunked(, chunk_size=1200, overlap=200, text_key=None, kind='chunk', max_tokens=None, token_model=None)
+### *class* ir.Chunked(, chunk_size=1200, overlap=200, text_key=None, kind='chunk', max_tokens=None, token_model=None, split=None, split_id=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -137,6 +137,13 @@ model), so no chunk overflows the embedder’s sequence limit and is silently
 truncated. Token mode degrades to char mode with a warning if the tokenizer
 is unavailable. The char `chunk_size` / `overlap` still set the overlap
 *ratio* used in token mode.
+
+`split` swaps the character splitter for a `(text, *, size, overlap) ->
+list[str]` callable or `"module:attr"` reference, e.g.
+`balanced_windows()` (equal-sized windows, no short tail) or
+`word_windows()` (word-aligned cuts), with `size=chunk_size`. It is
+exclusive with `max_tokens`. `split_id` names a lambda/closure for
+re-indexing, as for [`Fields`](#ir.Fields).
 
 ### *class* ir.ClaudeTurn(, include_full=False)
 
