@@ -4,6 +4,38 @@
 
 [For developers with a pulse →](#for-developers-with-a-pulse)
 
+## Quickstart
+
+```bash
+pip install ir
+```
+
+```python
+import ir
+
+# Define a corpus, build the index (incremental), then discover.
+source = ir.CorpusSource.from_skills()  # your agent skills (read through `priv`)
+# Other sources: from_packages(), from_md_reports(), from_claude_sessions(),
+# from_files(root), from_mapping(docs, name=...), from_mcp_tools(tools),
+# from_records(fetcher="mypkg.recall:records")  # records another package owns
+corpus = ir.build(source)  # embed + persist under XDG dirs
+result = ir.discover(corpus, "how do I deploy the app to the server")
+
+for item in result.results:
+    print(item.score, item.name)  # the committed few (or result.abstained)
+print(result.to_dict())  # JSON-serializable (qh / HTTP ready)
+```
+
+## Install
+
+`ir` is **light by default** — `numpy` + [`dol`](https://github.com/i2mint/dol) for storage, plus [`ef`](https://github.com/thorwhalen/ef) / [`vd`](https://github.com/i2mint/vd) for embedding and lexical/hybrid retrieval. Python ≥ 3.10.
+
+Notes for the default (semantic) path:
+
+- The default embedder is `all-MiniLM-L6-v2` (384-dim, via `sentence-transformers`), **downloaded on first build** (needs network) and cached under `~/.cache/ir`. For a fast, offline, dependency-light run — tests, CI, quick experiments — pass `embedder="light"` (a numpy-only hashing embedder): `ir.build(source, embedder="light")`.
+- `ir` sets `USE_TF=0` on import so `transformers` does not pull in TensorFlow (which crashes on some numpy ABIs); import `ir` before anything that imports `transformers`.
+- Case generation (`ir.eval_gen`) and the optional LLM selector need an LLM via [`aix`](https://github.com/thorwhalen/aix) — install the extra, `pip install "ir[llm]"`. Scoring and evaluation themselves stay offline. The LLM is an *injected callable* at every seam, so it can run on a Claude subscription instead of a metered key — see [`ir_10`](misc/docs/ir_10%20--%20LLM%20Routing%20--%20Running%20Agentic%20Search%20on%20a%20Claude%20Subscription%20instead%20of%20pay-as-you-go.md) (MCP sampling for connectors / the Agent SDK for Claude Code).
+
 ## For agents: the agentic layer
 
 **Skills.** `ir` ships two [Agent Skills](https://agentskills.io):
@@ -61,38 +93,6 @@ assert nothing.abstained  # no tool clears the floor, so the agent is told so
 > If you want the **agent** — a planner, an LLM formulator that rewrites queries, and the evaluator→reformulate loop over one or more `ir` corpora — reach for **[`raglab`](https://github.com/thorwhalen/raglab)**, which is **built on top of `ir`** (`raglab` imports `ir`; `ir` never imports `raglab`, so it stays installable-light and offline-by-default).
 >
 > Prefer to drive it from **Claude Code** instead of a coded agent? `ir` ships a reviewing **search subagent** and an `ir-search` **skill** (see [the agentic layer](#for-agents-the-agentic-layer)) — a lightweight "raglab-in-instructions" that formulates queries, *reads and judges* candidates against your real intent, filters, and reformulates, all on your Claude subscription (see [`ir_10`](misc/docs/ir_10%20--%20LLM%20Routing%20--%20Running%20Agentic%20Search%20on%20a%20Claude%20Subscription%20instead%20of%20pay-as-you-go.md)).
-
-## Quickstart
-
-```bash
-pip install ir
-```
-
-```python
-import ir
-
-# Define a corpus, build the index (incremental), then discover.
-source = ir.CorpusSource.from_skills()  # your agent skills (read through `priv`)
-# Other sources: from_packages(), from_md_reports(), from_claude_sessions(),
-# from_files(root), from_mapping(docs, name=...), from_mcp_tools(tools),
-# from_records(fetcher="mypkg.recall:records")  # records another package owns
-corpus = ir.build(source)  # embed + persist under XDG dirs
-result = ir.discover(corpus, "how do I deploy the app to the server")
-
-for item in result.results:
-    print(item.score, item.name)  # the committed few (or result.abstained)
-print(result.to_dict())  # JSON-serializable (qh / HTTP ready)
-```
-
-## Install
-
-`ir` is **light by default** — `numpy` + [`dol`](https://github.com/i2mint/dol) for storage, plus [`ef`](https://github.com/thorwhalen/ef) / [`vd`](https://github.com/i2mint/vd) for embedding and lexical/hybrid retrieval. Python ≥ 3.10.
-
-Notes for the default (semantic) path:
-
-- The default embedder is `all-MiniLM-L6-v2` (384-dim, via `sentence-transformers`), **downloaded on first build** (needs network) and cached under `~/.cache/ir`. For a fast, offline, dependency-light run — tests, CI, quick experiments — pass `embedder="light"` (a numpy-only hashing embedder): `ir.build(source, embedder="light")`.
-- `ir` sets `USE_TF=0` on import so `transformers` does not pull in TensorFlow (which crashes on some numpy ABIs); import `ir` before anything that imports `transformers`.
-- Case generation (`ir.eval_gen`) and the optional LLM selector need an LLM via [`aix`](https://github.com/thorwhalen/aix) — install the extra, `pip install "ir[llm]"`. Scoring and evaluation themselves stay offline. The LLM is an *injected callable* at every seam, so it can run on a Claude subscription instead of a metered key — see [`ir_10`](misc/docs/ir_10%20--%20LLM%20Routing%20--%20Running%20Agentic%20Search%20on%20a%20Claude%20Subscription%20instead%20of%20pay-as-you-go.md) (MCP sampling for connectors / the Agent SDK for Claude Code).
 
 ## Install on a fresh server
 
