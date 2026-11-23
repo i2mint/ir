@@ -1217,7 +1217,9 @@ def discover(
                 f"invalid min_score {min_score!r}; expected a float, None, or the "
                 f"sentinel 'auto' (load the calibrated floor for this corpus/mode)."
             )
-        if not rerank_id:  # a reranked search is scored by the reranker, not by the fusion
+        if (
+            not rerank_id
+        ):  # a reranked search is scored by the reranker, not by the fusion
             _warn_auto_floor_on_rank_fusion(mode, search_kw.get("fusion", "rrf"))
         min_score = _resolve_auto_min_score(corpus, mode, rerank_id)
 
