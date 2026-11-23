@@ -16,12 +16,19 @@ since ``rg`` and Python read ``\\w``, ``\\s``, ``.``, character classes and Unic
 folding differently and a prefilter that disagrees would silently drop files. Any
 other pattern is read in Python (``use_rg=True`` then raises).
 
-Scoring is explicit and tunable: a file's score is its **matching-line count**, times a
-per-file weight (``weight_of``: e.g. a title or a recent folder counts more), times an
+Scoring is explicit and tunable: a file's score is its **matching-line count** (or, with
+``score_line``, the sum of each matching line's score: a heading or a title field can
+count more than body text, see :func:`markdown_heading_score` and
+:func:`json_field_score`), times a per-file weight (``weight_of``: e.g. a title or a recent folder counts more), times an
 optional recency decay (``recency_half_life_days``: a file's weight halves for each
 half-life of age). Metadata filters are pushed into the scan: ``metadata_of(path)``
 derives a file's metadata and a Mongo-style ``filter`` (the same one
 :func:`ir.search` takes) drops files **before** they are read.
+
+The files are either everything under ``roots`` (filtered by ``glob``) or, with
+``paths``, an explicit ``{artifact_id: path}`` mapping: :func:`corpus_paths` reads one
+from a built corpus, which is how ``ir.search(corpus, pattern, mode="grep")`` greps the
+files a corpus indexed, under the corpus's own artifact ids.
 
 Hit metadata carries only the id-relative ``path`` and ``filename`` (never an absolute
 local path, which would leak into anything published) unless ``absolute_paths=True``.
@@ -101,6 +108,35 @@ def _candidate_files(
                     yield root, f
 
 
+def _mapped_files(
+    paths: Mapping[str, str | os.PathLike], glob: str
+) -> Iterator[tuple[str, Path]]:
+    """``(id, file)`` for each mapped path that is a file and whose id matches ``glob``."""
+    for aid in sorted(paths):
+        f = Path(paths[aid])
+        if fnmatch.fnmatchcase(aid, glob) and f.is_file():
+            yield aid, f
+
+
+def corpus_paths(corpus: Any) -> dict[str, Path]:
+    """``{artifact_id: file}`` for the artifacts of a built corpus that are files.
+
+    Read from the metadata the corpus stored at build time (the ``path`` that
+    file-backed sources such as ``from_files`` and ``from_md_reports`` record), so
+    no source is walked again; the files themselves are read live by
+    :func:`grep_hits`. Artifacts without a stored path (records, packages, skills)
+    are left out.
+    """
+    out: dict[str, Path] = {}
+    _ids, metas = corpus.store.metas()
+    for meta in metas:
+        aid = meta.get("artifact_id")
+        path = (meta.get("metadata") or {}).get("path")
+        if aid is not None and isinstance(path, str) and aid not in out:
+            out[aid] = Path(path)
+    return out
+
+
 def _inside(path: Path, real_root: Path) -> bool:
     """Does the symlink ``path`` resolve to somewhere under ``real_root``?"""
     try:
@@ -125,16 +161,89 @@ def _lines(path: Path) -> Iterator[str]:
             yield line.rstrip("\r\n")
 
 
-def _count_and_first(path: Path, rx: re.Pattern) -> tuple[int, str]:
-    n, first = 0, ""
+#: ``score_line(line, rx) -> float``: the score one matching line adds to its file.
+LineScore = Callable[[str, re.Pattern], float]
+
+
+def _count_and_first(
+    path: Path, rx: re.Pattern, score_line: LineScore | None = None
+) -> tuple[int, str, float]:
+    """``(matching lines, first matching line, summed line score)`` for one file.
+
+    Without ``score_line`` each matching line scores 1, so the sum is the count.
+    """
+    n, first, total = 0, "", 0.0
     try:
         for line in _lines(path):
             if rx.search(line):
                 n += 1
                 first = first or line
+                total += (
+                    1.0 if score_line is None else _line_score(score_line, line, rx)
+                )
     except OSError:
-        return 0, ""
-    return n, first
+        return 0, "", 0.0
+    return n, first, total
+
+
+def _line_score(score_line: LineScore, line: str, rx: re.Pattern) -> float:
+    s = score_line(line, rx)
+    if not (isinstance(s, (int, float)) and math.isfinite(s) and s >= 0):
+        raise ValueError(
+            f"score_line({line[:40]!r}) must be finite and >= 0, got {s!r}"
+        )
+    return float(s)
+
+
+def markdown_heading_score(heading: float = 3.0, *, body: float = 1.0) -> LineScore:
+    """A ``score_line`` seam: a match on a markdown heading line counts ``heading``.
+
+    Any other matching line counts ``body``, so a document whose title names the
+    pattern outranks one that only mentions it in passing.
+
+    >>> score = markdown_heading_score(3.0)
+    >>> rx = re.compile("acme", re.I)
+    >>> score("# Acme invoices", rx), score("paid acme today", rx)
+    (3.0, 1.0)
+    """
+    return lambda line, rx: heading if line.lstrip().startswith("#") else body
+
+
+def json_field_score(
+    weights: Mapping[str, float], *, default: float = 1.0, other_lines: float = 1.0
+) -> LineScore:
+    """A ``score_line`` seam for JSONL records: field weights, for title-over-body.
+
+    Each line is read as one JSON object; the line scores the sum of ``weights[f]``
+    over the top-level fields ``f`` whose (string) value matches, ``default`` for a
+    matching field not in ``weights``. A match only in a key, or in a non-string
+    value, scores 0. A line that is not a JSON object scores ``other_lines``.
+
+    >>> score = json_field_score({"title": 3.0, "body": 1.0})
+    >>> rx = re.compile("acme", re.I)
+    >>> score('{"title": "Acme", "body": "acme again"}', rx)
+    4.0
+    >>> score('{"title": "Other", "body": "about acme"}', rx)
+    1.0
+    """
+    import json
+
+    def score(line: str, rx: re.Pattern) -> float:
+        try:
+            record = json.loads(line)
+        except ValueError:
+            return other_lines
+        if not isinstance(record, dict):
+            return other_lines
+        return float(
+            sum(
+                weights.get(field, default)
+                for field, value in record.items()
+                if isinstance(value, str) and rx.search(value)
+            )
+        )
+
+    return score
 
 
 #: Regex metacharacters: a pattern containing none is a plain literal.
@@ -240,7 +349,8 @@ def _weight(weight_of: Callable[[Path], float] | None, path: Path) -> float:
 def grep_hits(
     pattern: str,
     *,
-    roots: str | os.PathLike | Iterable[str | os.PathLike],
+    roots: str | os.PathLike | Iterable[str | os.PathLike] | None = None,
+    paths: Mapping[str, str | os.PathLike] | None = None,
     glob: str = "*",
     k: int = 10,
     ignore_case: bool = True,
@@ -248,6 +358,7 @@ def grep_hits(
     filter: Mapping[str, Any] | None = None,
     metadata_of: Callable[[Path], Mapping[str, Any]] | None = None,
     weight_of: Callable[[Path], float] | None = None,
+    score_line: LineScore | None = None,
     recency_half_life_days: float | None = None,
     id_of: Callable[[Path, Path], str] | None = None,
     use_rg: bool | None = None,
@@ -270,8 +381,18 @@ def grep_hits(
     a common relative path: pass ``id_of``). ``use_rg``: ``None`` = prefilter with
     ``rg`` if installed, ``True`` = require it (``RuntimeError`` otherwise), ``False`` =
     Python only. The score is described in the module docstring.
+
+    ``paths`` replaces ``roots``: an explicit ``{artifact_id: path}`` mapping (e.g.
+    :func:`corpus_paths`), its keys used as ids and matched against ``glob``; a path
+    that is not a file any more is skipped. Give exactly one of ``roots`` and ``paths``.
+    ``score_line(line, rx)`` scores each matching line (default 1, so the score is
+    the count); see :func:`markdown_heading_score` and :func:`json_field_score`.
     """
     _check_args(k, recency_half_life_days, rg_batch)
+    if (roots is None) == (paths is None):
+        raise ValueError("grep_hits needs exactly one of roots= and paths=")
+    if paths is not None and id_of is not None:
+        raise ValueError("grep_hits: paths= already names each file; drop id_of=")
     if use_rg is True and not _rg_can_prefilter(
         pattern, ignore_case=ignore_case, fixed=fixed
     ):
@@ -291,11 +412,18 @@ def grep_hits(
         shown = str(f) if absolute_paths else aid
         return {**user_meta(f), "path": shown, "filename": f.name}
 
+    if paths is None:
+        candidates = (
+            (name_of(root, f), f)
+            for root, f in _candidate_files(_as_roots(roots), glob, exclude_dirs)
+        )
+    else:
+        candidates = _mapped_files(paths, glob)
+
     kept: dict[Path, str] = {}
     ids: dict[str, Path] = {}
     seen_real: set[Path] = set()
-    for root, f in _candidate_files(_as_roots(roots), glob, exclude_dirs):
-        aid = name_of(root, f)
+    for aid, f in candidates:
         if filter and not matches_filter(meta_for(f, aid), dict(filter)):
             continue  # metadata_of runs here only when there is a filter
         real = f.resolve()
@@ -324,9 +452,13 @@ def grep_hits(
     t = time.time() if now is None else now
     scored = []
     for f in files:
-        n, first = _count_and_first(f, rx)
+        n, first, lines_score = _count_and_first(f, rx, score_line)
         if n:
-            score = n * _weight(weight_of, f) * _recency(f, recency_half_life_days, t)
+            score = (
+                lines_score
+                * _weight(weight_of, f)
+                * _recency(f, recency_half_life_days, t)
+            )
             scored.append((score, n, f, first))
     scored.sort(key=lambda s: (-s[0], kept[s[2]]))
 

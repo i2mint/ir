@@ -10,6 +10,8 @@ published to PyPI). Entries are commit subjects and PR titles, verbatim.
 
 ### Added
 
+- `ir.search(corpus, pattern, mode="grep")`: grep the files a corpus indexed, live, under its artifact ids (file-backed corpora; `k`, `filter` and `grep={...}` options apply). `ir.corpus_paths(corpus)` gives the `{artifact_id: file}` map, and `grep_hits(paths=...)` takes one in place of `roots` ([#152](https://github.com/i2mint/ir/issues/152))
+- `grep_hits(score_line=...)`: per-line scores, so a title or heading match outranks a body mention; ships `ir.markdown_heading_score` and `ir.json_field_score` (field weights for JSONL records) ([#152](https://github.com/i2mint/ir/issues/152))
 - `ir.with_synopsis(..., when=...)` — conditional synopsis: synthesize only where a predicate holds; ships `ir.thin_description_predicate` / `ir.make_thin_description_predicate` and an opt-in `TOPICAL_SYNOPSIS_PROMPT` ([#63](https://github.com/i2mint/ir/issues/63))
 - `ir schedule` — install, inspect and operate the OS job that runs `ir maintain` (launchd on macOS, cron elsewhere) ([#75](https://github.com/i2mint/ir/issues/75))
 

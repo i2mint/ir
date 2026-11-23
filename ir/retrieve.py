@@ -68,7 +68,7 @@ from .formulate import Formulator
 from .rerank import DFLT_RERANK_MAX_CHARS, passage_texts, resolve_reranker
 
 #: Ranking modes accepted by :func:`search`.
-MODES = ("dense", "lexical", "hybrid")
+MODES = ("dense", "lexical", "hybrid", "grep")
 
 #: Hybrid fusion methods accepted by :func:`search` (``mode="hybrid"``).
 #: ``"rrf"`` is the rank-based default; ``"blend"`` preserves score magnitude
@@ -276,6 +276,37 @@ def _lexical_ranked(
         return []
     results = index.search(query, limit=fetch, **(bm25 or {}))
     return [(r["id"], float(r["score"])) for r in results]
+
+
+def _grep_search(corpus, pattern, *, k, filter, options) -> list[SearchHit]:
+    """``mode="grep"``: grep the files *corpus* indexed, under its artifact ids."""
+    from .grep import corpus_paths, grep_hits
+
+    paths = corpus_paths(corpus)
+    if not paths:
+        raise ValueError(
+            f"mode='grep' needs a file-backed corpus; {getattr(corpus, 'name', corpus)!r} "
+            "stored no file paths (only from_files / from_md_reports corpora do)"
+        )
+    by_id: dict[str, dict] = {}
+    if filter:  # filter on the metadata the corpus stored, as the other modes do
+        _ids, metas = corpus.store.metas()
+        for meta in metas:
+            by_id.setdefault(meta.get("artifact_id"), meta.get("metadata") or {})
+    opts = dict(options or {})
+    for taken in ("roots", "paths", "id_of", "metadata_of", "filter", "k"):
+        if taken in opts:
+            raise ValueError(f"grep={{{taken!r}: ...}} is set by mode='grep' itself")
+    stored = {str(path): aid for aid, path in paths.items()}
+    return grep_hits(
+        pattern,
+        paths=paths,
+        k=k,
+        filter=filter,
+        metadata_of=(lambda f: by_id.get(stored.get(str(f)), {})) if filter else None,
+        source=getattr(corpus, "name", None),
+        **opts,
+    )
 
 
 def _rrf_fuse(
@@ -596,6 +627,7 @@ def search(
     surface_weights: Mapping[str, float] | None = None,
     dep_boost: ScoreBoost | None = None,
     variant_weight: float = 1.0,
+    grep: Mapping[str, Any] | None = None,
 ) -> list[SearchHit]:
     """Return the top-*k* :class:`~ir.base.SearchHit` for *query*.
 
@@ -608,7 +640,12 @@ def search(
     mode : ``"dense"`` (default, cosine), ``"lexical"`` (BM25), or ``"hybrid"``
         (dense + BM25 fused). Hybrid is the strongest default for short,
         identifier-heavy text; ``"dense"`` is the historical behavior and is
-        kept as the default for backward compatibility.
+        kept as the default for backward compatibility. ``"grep"`` treats *query*
+        as a regex and reads the files the corpus indexed, live (no index, so it
+        finds exact names and strings the index may miss or hold stale), under the
+        corpus's artifact ids, one hit per file: see :func:`ir.grep.grep_hits`.
+        Only ``k``, ``filter`` and ``grep`` apply to it; it needs a file-backed
+        corpus (``from_files``, ``from_md_reports``).
     fusion : how ``"hybrid"`` fuses dense + lexical — ``"rrf"`` (default,
         rank-based Reciprocal Rank Fusion) or ``"blend"`` (magnitude-preserving
         convex blend; better abstention separability — see ir_08). Ignored for
@@ -679,6 +716,8 @@ def search(
         over-fetch (``max(k*5, 50)``) even with ``per_artifact=False``, so pin
         ``fetch_k`` when comparing runs with and without it. Default ``None``:
         no boost.
+    grep : options for ``mode="grep"``, forwarded to :func:`ir.grep.grep_hits`
+        (e.g. ``{"fixed": True, "score_line": ir.grep.markdown_heading_score()}``).
     """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {MODES}")
@@ -687,6 +726,23 @@ def search(
     if fusion not in FUSIONS:
         raise ValueError(f"unknown fusion {fusion!r}; expected one of {FUSIONS}")
     weights = _check_surface_weights(surface_weights)
+    if mode == "grep":
+        given = {
+            "surfaces": surfaces is not None,
+            "rerank": rerank is not None,
+            "formulate": formulate is not None,
+            "surface_weights": bool(weights),
+            "dep_boost": dep_boost is not None,
+            "bm25": bm25 is not None,
+        }
+        if any(given.values()):
+            unused = ", ".join(name for name, on in given.items() if on)
+            raise ValueError(
+                f"mode='grep' takes only k, filter and grep=; got {unused}"
+            )
+        return _grep_search(corpus, query, k=k, filter=filter, options=grep)
+    if grep is not None:
+        raise ValueError("grep= applies to mode='grep' only")
     if not (math.isfinite(variant_weight) and 0 <= variant_weight <= 1):
         raise ValueError(f"variant_weight must be in [0, 1], got {variant_weight!r}")
 
