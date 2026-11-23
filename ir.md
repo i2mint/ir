@@ -1,4 +1,4 @@
-> built 2026-11-23 10:16 UTC from 5f352af (master) · ir 0.1.87. Details: build_info.json
+> built 2026-11-23 10:34 UTC from 735343b (master) · ir 0.1.88. Details: build_info.json
 
 # index.html.md
 
@@ -3054,12 +3054,19 @@ since `rg` and Python read `\w`, `\s`, `.`, character classes and Unicode case
 folding differently and a prefilter that disagrees would silently drop files. Any
 other pattern is read in Python (`use_rg=True` then raises).
 
-Scoring is explicit and tunable: a file’s score is its **matching-line count**, times a
-per-file weight (`weight_of`: e.g. a title or a recent folder counts more), times an
+Scoring is explicit and tunable: a file’s score is its **matching-line count** (or, with
+`score_line`, the sum of each matching line’s score: a heading or a title field can
+count more than body text, see [`markdown_heading_score()`](_autosummary/ir.grep.html.md#ir.grep.markdown_heading_score) and
+[`json_field_score()`](_autosummary/ir.grep.html.md#ir.grep.json_field_score)), times a per-file weight (`weight_of`: e.g. a title or a recent folder counts more), times an
 optional recency decay (`recency_half_life_days`: a file’s weight halves for each
 half-life of age). Metadata filters are pushed into the scan: `metadata_of(path)`
 derives a file’s metadata and a Mongo-style `filter` (the same one
 [`ir.search()`](_autosummary/ir.html.md#ir.search) takes) drops files **before** they are read.
+
+The files are either everything under `roots` (filtered by `glob`) or, with
+`paths`, an explicit `{artifact_id: path}` mapping: [`corpus_paths()`](_autosummary/ir.grep.html.md#ir.grep.corpus_paths) reads one
+from a built corpus, which is how `ir.search(corpus, pattern, mode="grep")` greps the
+files a corpus indexed, under the corpus’s own artifact ids.
 
 Hit metadata carries only the id-relative `path` and `filename` (never an absolute
 local path, which would leak into anything published) unless `absolute_paths=True`.
@@ -3084,13 +3091,17 @@ the caller’s (or the agent layer’s) choice.
 | [`DFLT_SNIPPET_CHARS`](_autosummary/ir.grep.html.md#ir.grep.DFLT_SNIPPET_CHARS) | Longest snippet kept per hit (the first matching line, trimmed).                        |
 | [`DFLT_EXCLUDE_DIRS`](_autosummary/ir.grep.html.md#ir.grep.DFLT_EXCLUDE_DIRS)  | Directories never descended into (VCS and tooling noise; override with `exclude_dirs`). |
 | [`GREP_KIND`](_autosummary/ir.grep.html.md#ir.grep.GREP_KIND)          | The `surface_kind` of a grep hit.                                                       |
+| [`LineScore`](_autosummary/ir.grep.html.md#ir.grep.LineScore)          | the score one matching line adds to its file.                                           |
 
 ### Functions
 
-| [`grep_hits`](_autosummary/ir.grep.html.md#ir.grep.grep_hits)(pattern, \*, roots[, glob, k, ...])   | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
-|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`make_grep_retriever`](_autosummary/ir.grep.html.md#ir.grep.make_grep_retriever)(roots, \*\*grep_defaults)   | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
-| [`recency_weight`](_autosummary/ir.grep.html.md#ir.grep.recency_weight)(half_life_days, \*[, now])       | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                              |
+| [`corpus_paths`](_autosummary/ir.grep.html.md#ir.grep.corpus_paths)(corpus)                              | `{artifact_id: file}` for the artifacts of a built corpus that are files.                                                                       |
+|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`grep_hits`](_autosummary/ir.grep.html.md#ir.grep.grep_hits)(pattern, \*[, roots, paths, glob, ...]) | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
+| [`json_field_score`](_autosummary/ir.grep.html.md#ir.grep.json_field_score)(weights, \*[, default, ...])     | A `score_line` seam for JSONL records: field weights, for title-over-body.                                                                      |
+| [`make_grep_retriever`](_autosummary/ir.grep.html.md#ir.grep.make_grep_retriever)(roots, \*\*grep_defaults)     | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
+| [`markdown_heading_score`](_autosummary/ir.grep.html.md#ir.grep.markdown_heading_score)([heading, body])           | A `score_line` seam: a match on a markdown heading line counts `heading`.                                                                       |
+| [`recency_weight`](_autosummary/ir.grep.html.md#ir.grep.recency_weight)(half_life_days, \*[, now])         | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                              |
 
 ### ir.grep.DFLT_EXCLUDE_DIRS *= ('.git', 'node_modules', '_\_pycache_\_', '.venv')*
 
@@ -3108,7 +3119,29 @@ Longest snippet kept per hit (the first matching line, trimmed).
 
 The `surface_kind` of a grep hit.
 
-### ir.grep.grep_hits(pattern, , roots, glob='\*', k=10, ignore_case=True, fixed=False, filter=None, metadata_of=None, weight_of=None, recency_half_life_days=None, id_of=None, use_rg=None, rg_batch=500, exclude_dirs=('.git', 'node_modules', '_\_pycache_\_', '.venv'), absolute_paths=False, snippet_chars=200, source=None, now=None)
+### ir.grep.LineScore
+
+the score one matching line adds to its file.
+
+* **Type:**
+  `score_line(line, rx) -> float`
+
+alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Pattern`](https://docs.python.org/3/library/re.html#re.Pattern)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### ir.grep.corpus_paths(corpus)
+
+`{artifact_id: file}` for the artifacts of a built corpus that are files.
+
+Read from the metadata the corpus stored at build time (the `path` that
+file-backed sources such as `from_files` and `from_md_reports` record), so
+no source is walked again; the files themselves are read live by
+[`grep_hits()`](_autosummary/ir.grep.html.md#ir.grep.grep_hits). Artifacts without a stored path (records, packages, skills)
+are left out.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
+
+### ir.grep.grep_hits(pattern, , roots=None, paths=None, glob='\*', k=10, ignore_case=True, fixed=False, filter=None, metadata_of=None, weight_of=None, score_line=None, recency_half_life_days=None, id_of=None, use_rg=None, rg_batch=500, exclude_dirs=('.git', 'node_modules', '_\_pycache_\_', '.venv'), absolute_paths=False, snippet_chars=200, source=None, now=None)
 
 The top-`k` files under `roots` whose lines match `pattern`, as hits.
 
@@ -3123,8 +3156,35 @@ a common relative path: pass `id_of`). `use_rg`: `None` = prefilter with
 `rg` if installed, `True` = require it (`RuntimeError` otherwise), `False` =
 Python only. The score is described in the module docstring.
 
+`paths` replaces `roots`: an explicit `{artifact_id: path}` mapping (e.g.
+[`corpus_paths()`](_autosummary/ir.grep.html.md#ir.grep.corpus_paths)), its keys used as ids and matched against `glob`; a path
+that is not a file any more is skipped. Give exactly one of `roots` and `paths`.
+`score_line(line, rx)` scores each matching line (default 1, so the score is
+the count); see [`markdown_heading_score()`](_autosummary/ir.grep.html.md#ir.grep.markdown_heading_score) and [`json_field_score()`](_autosummary/ir.grep.html.md#ir.grep.json_field_score).
+
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)]
+
+### ir.grep.json_field_score(weights, , default=1.0, other_lines=1.0)
+
+A `score_line` seam for JSONL records: field weights, for title-over-body.
+
+Each line is read as one JSON object; the line scores the sum of `weights[f]`
+over the top-level fields `f` whose (string) value matches, `default` for a
+matching field not in `weights`. A match only in a key, or in a non-string
+value, scores 0. A line that is not a JSON object scores `other_lines`.
+
+```pycon
+>>> score = json_field_score({"title": 3.0, "body": 1.0})
+>>> rx = re.compile("acme", re.I)
+>>> score('{"title": "Acme", "body": "acme again"}', rx)
+4.0
+>>> score('{"title": "Other", "body": "about acme"}', rx)
+1.0
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Pattern`](https://docs.python.org/3/library/re.html#re.Pattern)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### ir.grep.make_grep_retriever(roots, \*\*grep_defaults)
 
@@ -3138,6 +3198,23 @@ corpora. Overrides are the keywords of [`grep_hits()`](_autosummary/ir.grep.html
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)]]
+
+### ir.grep.markdown_heading_score(heading=3.0, , body=1.0)
+
+A `score_line` seam: a match on a markdown heading line counts `heading`.
+
+Any other matching line counts `body`, so a document whose title names the
+pattern outranks one that only mentions it in passing.
+
+```pycon
+>>> score = markdown_heading_score(3.0)
+>>> rx = re.compile("acme", re.I)
+>>> score("# Acme invoices", rx), score("paid acme today", rx)
+(3.0, 1.0)
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Pattern`](https://docs.python.org/3/library/re.html#re.Pattern)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### ir.grep.recency_weight(half_life_days, , now=None)
 
@@ -3236,9 +3313,12 @@ the reviewing search subagent shipped under `.claude/`.
 | [`make_llm_formulator`](_autosummary/ir.html.md#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                                    |
 | [`make_keyword_formulator`](_autosummary/ir.html.md#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                            |
 | [`lexical_miss`](_autosummary/ir.html.md#ir.lexical_miss)(hits, \*[, required, candidates])     | Miss signals for the committed `hits`; `{"miss": bool, ...}`.                                                                                   |
-| [`grep_hits`](_autosummary/ir.html.md#ir.grep_hits)(pattern, \*, roots[, glob, k, ...])      | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
+| [`grep_hits`](_autosummary/ir.html.md#ir.grep_hits)(pattern, \*[, roots, paths, glob, ...])  | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
 | [`recency_weight`](_autosummary/ir.html.md#ir.recency_weight)(half_life_days, \*[, now])          | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                              |
 | [`make_grep_retriever`](_autosummary/ir.html.md#ir.make_grep_retriever)(roots, \*\*grep_defaults)      | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
+| [`markdown_heading_score`](_autosummary/ir.html.md#ir.markdown_heading_score)([heading, body])            | A `score_line` seam: a match on a markdown heading line counts `heading`.                                                                       |
+| [`json_field_score`](_autosummary/ir.html.md#ir.json_field_score)(weights, \*[, default, ...])      | A `score_line` seam for JSONL records: field weights, for title-over-body.                                                                      |
+| [`corpus_paths`](_autosummary/ir.html.md#ir.corpus_paths)(corpus)                               | `{artifact_id: file}` for the artifacts of a built corpus that are files.                                                                       |
 | [`select`](_autosummary/ir.html.md#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                      |
 | [`disclose`](_autosummary/ir.html.md#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                         |
 | [`discover`](_autosummary/ir.html.md#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                          |
@@ -4448,6 +4528,19 @@ All registered corpus definitions, keyed by name.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
+### ir.corpus_paths(corpus)
+
+`{artifact_id: file}` for the artifacts of a built corpus that are files.
+
+Read from the metadata the corpus stored at build time (the `path` that
+file-backed sources such as `from_files` and `from_md_reports` record), so
+no source is walked again; the files themselves are read live by
+[`grep_hits()`](_autosummary/ir.html.md#ir.grep_hits). Artifacts without a stored path (records, packages, skills)
+are left out.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
+
 ### ir.default_edge_extractor(artifact_id, filter_fields)
 
 Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.
@@ -4741,7 +4834,7 @@ interact, via weighted Reciprocal Rank Fusion: each hit contributes
   absolute floors — apply calibrated `min_score` floors per source,
   *before* fusing (see ir_07/ir_08 and `ir.discover`’s federated form).
 
-### ir.grep_hits(pattern, , roots, glob='\*', k=10, ignore_case=True, fixed=False, filter=None, metadata_of=None, weight_of=None, recency_half_life_days=None, id_of=None, use_rg=None, rg_batch=500, exclude_dirs=('.git', 'node_modules', '_\_pycache_\_', '.venv'), absolute_paths=False, snippet_chars=200, source=None, now=None)
+### ir.grep_hits(pattern, , roots=None, paths=None, glob='\*', k=10, ignore_case=True, fixed=False, filter=None, metadata_of=None, weight_of=None, score_line=None, recency_half_life_days=None, id_of=None, use_rg=None, rg_batch=500, exclude_dirs=('.git', 'node_modules', '_\_pycache_\_', '.venv'), absolute_paths=False, snippet_chars=200, source=None, now=None)
 
 The top-`k` files under `roots` whose lines match `pattern`, as hits.
 
@@ -4756,8 +4849,35 @@ a common relative path: pass `id_of`). `use_rg`: `None` = prefilter with
 `rg` if installed, `True` = require it (`RuntimeError` otherwise), `False` =
 Python only. The score is described in the module docstring.
 
+`paths` replaces `roots`: an explicit `{artifact_id: path}` mapping (e.g.
+[`corpus_paths()`](_autosummary/ir.html.md#ir.corpus_paths)), its keys used as ids and matched against `glob`; a path
+that is not a file any more is skipped. Give exactly one of `roots` and `paths`.
+`score_line(line, rx)` scores each matching line (default 1, so the score is
+the count); see [`markdown_heading_score()`](_autosummary/ir.html.md#ir.markdown_heading_score) and [`json_field_score()`](_autosummary/ir.html.md#ir.json_field_score).
+
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)]
+
+### ir.json_field_score(weights, , default=1.0, other_lines=1.0)
+
+A `score_line` seam for JSONL records: field weights, for title-over-body.
+
+Each line is read as one JSON object; the line scores the sum of `weights[f]`
+over the top-level fields `f` whose (string) value matches, `default` for a
+matching field not in `weights`. A match only in a key, or in a non-string
+value, scores 0. A line that is not a JSON object scores `other_lines`.
+
+```pycon
+>>> score = json_field_score({"title": 3.0, "body": 1.0})
+>>> rx = re.compile("acme", re.I)
+>>> score('{"title": "Acme", "body": "acme again"}', rx)
+4.0
+>>> score('{"title": "Other", "body": "about acme"}', rx)
+1.0
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Pattern`](https://docs.python.org/3/library/re.html#re.Pattern)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### ir.lexical_miss(hits, , required=(), candidates=None)
 
@@ -4919,6 +5039,23 @@ False
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](_autosummary/ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
+
+### ir.markdown_heading_score(heading=3.0, , body=1.0)
+
+A `score_line` seam: a match on a markdown heading line counts `heading`.
+
+Any other matching line counts `body`, so a document whose title names the
+pattern outranks one that only mentions it in passing.
+
+```pycon
+>>> score = markdown_heading_score(3.0)
+>>> rx = re.compile("acme", re.I)
+>>> score("# Acme invoices", rx), score("paid acme today", rx)
+(3.0, 1.0)
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Pattern`](https://docs.python.org/3/library/re.html#re.Pattern)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### ir.open_corpus(name, , embedder=None, query_normalize=None)
 
@@ -6314,7 +6451,7 @@ falsy key falls back to per-source identity).
 
 alias of `Callable`[[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)] | [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### ir.retrieve.MODES *= ('dense', 'lexical', 'hybrid')*
+### ir.retrieve.MODES *= ('dense', 'lexical', 'hybrid', 'grep')*
 
 Ranking modes accepted by [`search()`](_autosummary/ir.retrieve.html.md#ir.retrieve.search).
 
@@ -6489,7 +6626,7 @@ siblings.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Record`](_autosummary/ir.base.html.md#ir.base.Record)]
 
-### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None, surface_weights=None, dep_boost=None, variant_weight=1.0)
+### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None, surface_weights=None, dep_boost=None, variant_weight=1.0, grep=None)
 
 Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit) for *query*.
 
@@ -6500,7 +6637,12 @@ Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)
   * **per_artifact** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool))
   * **mode** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – (dense + BM25 fused). Hybrid is the strongest default for short,
     identifier-heavy text; `"dense"` is the historical behavior and is
-    kept as the default for backward compatibility.
+    kept as the default for backward compatibility. `"grep"` treats *query*
+    as a regex and reads the files the corpus indexed, live (no index, so it
+    finds exact names and strings the index may miss or hold stale), under the
+    corpus’s artifact ids, one hit per file: see [`ir.grep.grep_hits()`](_autosummary/ir.grep.html.md#ir.grep.grep_hits).
+    Only `k`, `filter` and `grep` apply to it; it needs a file-backed
+    corpus (`from_files`, `from_md_reports`).
   * **fusion** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – rank-based Reciprocal Rank Fusion) or `"blend"` (magnitude-preserving
     convex blend; better abstention separability — see ir_08). Ignored for
     non-hybrid modes.
@@ -6562,6 +6704,7 @@ Return the top-*k* [`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)
     over-fetch (`max(k*5, 50)`) even with `per_artifact=False`, so pin
     `fetch_k` when comparing runs with and without it. Default `None`:
     no boost.
+  * **grep** ([`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – (e.g. `{"fixed": True, "score_line": ir.grep.markdown_heading_score()}`).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](_autosummary/ir.base.html.md#ir.base.SearchHit)]
 
@@ -8533,16 +8676,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-23 10:16 UTC** from commit <a href="https://github.com/i2mint/ir/commit/5f352af71395f4adf90570bb223abf8bd48b478a"><code>5f352af</code></a> on branch <code>master</code>, for **ir 0.1.87** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-23 10:34 UTC** from commit <a href="https://github.com/i2mint/ir/commit/735343bdc14b3c2302f7ce7f620378738fc628a3"><code>735343b</code></a> on branch <code>master</code>, for **ir 0.1.88** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.88) is behind the latest release on PyPI (0.1.89): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/5f352af71395f4adf90570bb223abf8bd48b478a"><code>5f352af71395f4adf90570bb223abf8bd48b478a</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/735343bdc14b3c2302f7ce7f620378738fc628a3"><code>735343bdc14b3c2302f7ce7f620378738fc628a3</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8553,9 +8698,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45154327008">45154327008</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45157006709">45157006709</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>5f352af71395f4adf90570bb223abf8bd48b478a</code> (in the history of the built commit) |
+| Event commit | <code>735343bdc14b3c2302f7ce7f620378738fc628a3</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8580,13 +8725,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.87/">0.1.87</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.89/">0.1.89</a>, newer than the documented version (0.1.88).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 5f352af71395f4adf90570bb223abf8bd48b478a
+git checkout 735343bdc14b3c2302f7ce7f620378738fc628a3
 pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -208,359 +208,500 @@
 </span><span id="line-16"><span class="sd">folding differently and a prefilter that disagrees would silently drop files. Any</span>
 </span><span id="line-17"><span class="sd">other pattern is read in Python (``use_rg=True`` then raises).</span>
 </span><span id="line-18">
-</span><span id="line-19"><span class="sd">Scoring is explicit and tunable: a file's score is its **matching-line count**, times a</span>
-</span><span id="line-20"><span class="sd">per-file weight (``weight_of``: e.g. a title or a recent folder counts more), times an</span>
-</span><span id="line-21"><span class="sd">optional recency decay (``recency_half_life_days``: a file's weight halves for each</span>
-</span><span id="line-22"><span class="sd">half-life of age). Metadata filters are pushed into the scan: ``metadata_of(path)``</span>
-</span><span id="line-23"><span class="sd">derives a file's metadata and a Mongo-style ``filter`` (the same one</span>
-</span><span id="line-24"><span class="sd">:func:`ir.search` takes) drops files **before** they are read.</span>
-</span><span id="line-25">
-</span><span id="line-26"><span class="sd">Hit metadata carries only the id-relative ``path`` and ``filename`` (never an absolute</span>
-</span><span id="line-27"><span class="sd">local path, which would leak into anything published) unless ``absolute_paths=True``.</span>
-</span><span id="line-28">
-</span><span id="line-29"><span class="sd">It returns hits, never a loop and never a plan; whether to grep or to use the index is</span>
-</span><span id="line-30"><span class="sd">the caller's (or the agent layer's) choice.</span>
-</span><span id="line-31">
-</span><span id="line-32"><span class="sd">&gt;&gt;&gt; import tempfile, pathlib</span>
-</span><span id="line-33"><span class="sd">&gt;&gt;&gt; with tempfile.TemporaryDirectory() as d:</span>
-</span><span id="line-34"><span class="sd">...     _ = pathlib.Path(d, "a.md").write_text("Acme invoice\\nnothing\\nacme again")</span>
-</span><span id="line-35"><span class="sd">...     _ = pathlib.Path(d, "b.md").write_text("unrelated")</span>
-</span><span id="line-36"><span class="sd">...     hits = grep_hits("acme", roots=d, use_rg=False)</span>
-</span><span id="line-37"><span class="sd">&gt;&gt;&gt; [(h.artifact_id, h.score, h.metadata["n_matches"]) for h in hits]</span>
-</span><span id="line-38"><span class="sd">[('a.md', 2.0, 2)]</span>
-</span><span id="line-39"><span class="sd">"""</span>
-</span><span id="line-40">
-</span><span id="line-41"><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
-</span><span id="line-42">
-</span><span id="line-43"><span class="kn">import</span><span class="w"> </span><span class="nn">fnmatch</span>
-</span><span id="line-44"><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
-</span><span id="line-45"><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="line-46"><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-</span><span id="line-47"><span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
-</span><span id="line-48"><span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
-</span><span id="line-49"><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-</span><span id="line-50"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span>
-</span><span id="line-51"><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-</span><span id="line-52"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
-</span><span id="line-53">
-</span><span id="line-54"><span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchHit</span>
-</span><span id="line-55"><span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">Retriever</span>
-</span><span id="line-56">
-</span><span id="line-57"><span class="c1">#: How many files one ``rg`` call is handed (keeps argv under the OS limit).</span>
-</span><span id="line-58"><span class="n">DFLT_RG_BATCH</span> <span class="o">=</span> <span class="mi">500</span>
-</span><span id="line-59">
-</span><span id="line-60"><span class="c1">#: Longest snippet kept per hit (the first matching line, trimmed).</span>
-</span><span id="line-61"><span class="n">DFLT_SNIPPET_CHARS</span> <span class="o">=</span> <span class="mi">200</span>
-</span><span id="line-62">
-</span><span id="line-63"><span class="c1">#: Directories never descended into (VCS and tooling noise; override with ``exclude_dirs``).</span>
-</span><span id="line-64"><span class="n">DFLT_EXCLUDE_DIRS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">".git"</span><span class="p">,</span> <span class="s2">"node_modules"</span><span class="p">,</span> <span class="s2">"__pycache__"</span><span class="p">,</span> <span class="s2">".venv"</span><span class="p">)</span>
-</span><span id="line-65">
-</span><span id="line-66"><span class="c1">#: The ``surface_kind`` of a grep hit.</span>
-</span><span id="line-67"><span class="n">GREP_KIND</span> <span class="o">=</span> <span class="s2">"grep"</span>
-</span><span id="line-68">
-</span><span id="line-69"><span class="n">_SECONDS_PER_DAY</span> <span class="o">=</span> <span class="mf">86400.0</span>
-</span><span id="line-70">
-</span><span id="line-71">
-</span><span id="line-72"><span class="k">def</span><span class="w"> </span><span class="nf">_as_roots</span><span class="p">(</span><span class="n">roots</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
-</span><span id="line-73">    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">roots</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)):</span>
-</span><span id="line-74">        <span class="k">return</span> <span class="p">[</span><span class="n">Path</span><span class="p">(</span><span class="n">roots</span><span class="p">)]</span>
-</span><span id="line-75">    <span class="k">return</span> <span class="p">[</span><span class="n">Path</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">roots</span><span class="p">]</span>
-</span><span id="line-76">
+</span><span id="line-19"><span class="sd">Scoring is explicit and tunable: a file's score is its **matching-line count** (or, with</span>
+</span><span id="line-20"><span class="sd">``score_line``, the sum of each matching line's score: a heading or a title field can</span>
+</span><span id="line-21"><span class="sd">count more than body text, see :func:`markdown_heading_score` and</span>
+</span><span id="line-22"><span class="sd">:func:`json_field_score`), times a per-file weight (``weight_of``: e.g. a title or a recent folder counts more), times an</span>
+</span><span id="line-23"><span class="sd">optional recency decay (``recency_half_life_days``: a file's weight halves for each</span>
+</span><span id="line-24"><span class="sd">half-life of age). Metadata filters are pushed into the scan: ``metadata_of(path)``</span>
+</span><span id="line-25"><span class="sd">derives a file's metadata and a Mongo-style ``filter`` (the same one</span>
+</span><span id="line-26"><span class="sd">:func:`ir.search` takes) drops files **before** they are read.</span>
+</span><span id="line-27">
+</span><span id="line-28"><span class="sd">The files are either everything under ``roots`` (filtered by ``glob``) or, with</span>
+</span><span id="line-29"><span class="sd">``paths``, an explicit ``{artifact_id: path}`` mapping: :func:`corpus_paths` reads one</span>
+</span><span id="line-30"><span class="sd">from a built corpus, which is how ``ir.search(corpus, pattern, mode="grep")`` greps the</span>
+</span><span id="line-31"><span class="sd">files a corpus indexed, under the corpus's own artifact ids.</span>
+</span><span id="line-32">
+</span><span id="line-33"><span class="sd">Hit metadata carries only the id-relative ``path`` and ``filename`` (never an absolute</span>
+</span><span id="line-34"><span class="sd">local path, which would leak into anything published) unless ``absolute_paths=True``.</span>
+</span><span id="line-35">
+</span><span id="line-36"><span class="sd">It returns hits, never a loop and never a plan; whether to grep or to use the index is</span>
+</span><span id="line-37"><span class="sd">the caller's (or the agent layer's) choice.</span>
+</span><span id="line-38">
+</span><span id="line-39"><span class="sd">&gt;&gt;&gt; import tempfile, pathlib</span>
+</span><span id="line-40"><span class="sd">&gt;&gt;&gt; with tempfile.TemporaryDirectory() as d:</span>
+</span><span id="line-41"><span class="sd">...     _ = pathlib.Path(d, "a.md").write_text("Acme invoice\\nnothing\\nacme again")</span>
+</span><span id="line-42"><span class="sd">...     _ = pathlib.Path(d, "b.md").write_text("unrelated")</span>
+</span><span id="line-43"><span class="sd">...     hits = grep_hits("acme", roots=d, use_rg=False)</span>
+</span><span id="line-44"><span class="sd">&gt;&gt;&gt; [(h.artifact_id, h.score, h.metadata["n_matches"]) for h in hits]</span>
+</span><span id="line-45"><span class="sd">[('a.md', 2.0, 2)]</span>
+</span><span id="line-46"><span class="sd">"""</span>
+</span><span id="line-47">
+</span><span id="line-48"><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+</span><span id="line-49">
+</span><span id="line-50"><span class="kn">import</span><span class="w"> </span><span class="nn">fnmatch</span>
+</span><span id="line-51"><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+</span><span id="line-52"><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="line-53"><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+</span><span id="line-54"><span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+</span><span id="line-55"><span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+</span><span id="line-56"><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+</span><span id="line-57"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span>
+</span><span id="line-58"><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span><span id="line-59"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+</span><span id="line-60">
+</span><span id="line-61"><span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchHit</span>
+</span><span id="line-62"><span class="kn">from</span><span class="w"> </span><span class="nn">.retrieve</span><span class="w"> </span><span class="kn">import</span> <span class="n">Retriever</span>
+</span><span id="line-63">
+</span><span id="line-64"><span class="c1">#: How many files one ``rg`` call is handed (keeps argv under the OS limit).</span>
+</span><span id="line-65"><span class="n">DFLT_RG_BATCH</span> <span class="o">=</span> <span class="mi">500</span>
+</span><span id="line-66">
+</span><span id="line-67"><span class="c1">#: Longest snippet kept per hit (the first matching line, trimmed).</span>
+</span><span id="line-68"><span class="n">DFLT_SNIPPET_CHARS</span> <span class="o">=</span> <span class="mi">200</span>
+</span><span id="line-69">
+</span><span id="line-70"><span class="c1">#: Directories never descended into (VCS and tooling noise; override with ``exclude_dirs``).</span>
+</span><span id="line-71"><span class="n">DFLT_EXCLUDE_DIRS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">".git"</span><span class="p">,</span> <span class="s2">"node_modules"</span><span class="p">,</span> <span class="s2">"__pycache__"</span><span class="p">,</span> <span class="s2">".venv"</span><span class="p">)</span>
+</span><span id="line-72">
+</span><span id="line-73"><span class="c1">#: The ``surface_kind`` of a grep hit.</span>
+</span><span id="line-74"><span class="n">GREP_KIND</span> <span class="o">=</span> <span class="s2">"grep"</span>
+</span><span id="line-75">
+</span><span id="line-76"><span class="n">_SECONDS_PER_DAY</span> <span class="o">=</span> <span class="mf">86400.0</span>
 </span><span id="line-77">
-</span><span id="line-78"><span class="k">def</span><span class="w"> </span><span class="nf">_candidate_files</span><span class="p">(</span>
-</span><span id="line-79">    <span class="n">roots</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span> <span class="n">glob</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-</span><span id="line-80"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]:</span>
-</span><span id="line-81"><span class="w">    </span><span class="sd">"""``(root, file)`` for each regular file under the roots whose root-relative path</span>
-</span><span id="line-82"><span class="sd">    matches the fnmatch ``glob``; symlinks that leave the root, and excluded</span>
-</span><span id="line-83"><span class="sd">    directories, are skipped (and never walked)."""</span>
-</span><span id="line-84">    <span class="n">skip</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">exclude_dirs</span><span class="p">)</span>
-</span><span id="line-85">    <span class="k">for</span> <span class="n">root</span> <span class="ow">in</span> <span class="n">roots</span><span class="p">:</span>
-</span><span id="line-86">        <span class="k">if</span> <span class="n">root</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
-</span><span id="line-87">            <span class="k">yield</span> <span class="n">root</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="n">root</span>
-</span><span id="line-88">            <span class="k">continue</span>
-</span><span id="line-89">        <span class="k">if</span> <span class="ow">not</span> <span class="n">root</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
-</span><span id="line-90">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"grep: root </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="si">!r}</span><span class="s2"> does not exist"</span><span class="p">)</span>
-</span><span id="line-91">        <span class="n">real_root</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-</span><span id="line-92">        <span class="k">for</span> <span class="n">dirpath</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">followlinks</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-</span><span id="line-93">            <span class="n">dirnames</span><span class="p">[:]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dirnames</span> <span class="k">if</span> <span class="n">d</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">skip</span><span class="p">)</span>
-</span><span id="line-94">            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">filenames</span><span class="p">):</span>
-</span><span id="line-95">                <span class="n">f</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-</span><span id="line-96">                <span class="k">if</span> <span class="ow">not</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatchcase</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">(),</span> <span class="n">glob</span><span class="p">):</span>
-</span><span id="line-97">                    <span class="k">continue</span>
-</span><span id="line-98">                <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_symlink</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_inside</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">real_root</span><span class="p">):</span>
-</span><span id="line-99">                    <span class="k">continue</span>
-</span><span id="line-100">                <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
-</span><span id="line-101">                    <span class="k">yield</span> <span class="n">root</span><span class="p">,</span> <span class="n">f</span>
-</span><span id="line-102">
-</span><span id="line-103">
-</span><span id="line-104"><span class="k">def</span><span class="w"> </span><span class="nf">_inside</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">real_root</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="line-105"><span class="w">    </span><span class="sd">"""Does the symlink ``path`` resolve to somewhere under ``real_root``?"""</span>
-</span><span id="line-106">    <span class="k">try</span><span class="p">:</span>
-</span><span id="line-107">        <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">is_relative_to</span><span class="p">(</span><span class="n">real_root</span><span class="p">)</span>
-</span><span id="line-108">    <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">):</span>  <span class="c1"># a symlink loop</span>
-</span><span id="line-109">        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="line-78">
+</span><span id="line-79"><span class="k">def</span><span class="w"> </span><span class="nf">_as_roots</span><span class="p">(</span><span class="n">roots</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+</span><span id="line-80">    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">roots</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)):</span>
+</span><span id="line-81">        <span class="k">return</span> <span class="p">[</span><span class="n">Path</span><span class="p">(</span><span class="n">roots</span><span class="p">)]</span>
+</span><span id="line-82">    <span class="k">return</span> <span class="p">[</span><span class="n">Path</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">roots</span><span class="p">]</span>
+</span><span id="line-83">
+</span><span id="line-84">
+</span><span id="line-85"><span class="k">def</span><span class="w"> </span><span class="nf">_candidate_files</span><span class="p">(</span>
+</span><span id="line-86">    <span class="n">roots</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span> <span class="n">glob</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</span><span id="line-87"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]:</span>
+</span><span id="line-88"><span class="w">    </span><span class="sd">"""``(root, file)`` for each regular file under the roots whose root-relative path</span>
+</span><span id="line-89"><span class="sd">    matches the fnmatch ``glob``; symlinks that leave the root, and excluded</span>
+</span><span id="line-90"><span class="sd">    directories, are skipped (and never walked)."""</span>
+</span><span id="line-91">    <span class="n">skip</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">exclude_dirs</span><span class="p">)</span>
+</span><span id="line-92">    <span class="k">for</span> <span class="n">root</span> <span class="ow">in</span> <span class="n">roots</span><span class="p">:</span>
+</span><span id="line-93">        <span class="k">if</span> <span class="n">root</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+</span><span id="line-94">            <span class="k">yield</span> <span class="n">root</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="n">root</span>
+</span><span id="line-95">            <span class="k">continue</span>
+</span><span id="line-96">        <span class="k">if</span> <span class="ow">not</span> <span class="n">root</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+</span><span id="line-97">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"grep: root </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="si">!r}</span><span class="s2"> does not exist"</span><span class="p">)</span>
+</span><span id="line-98">        <span class="n">real_root</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+</span><span id="line-99">        <span class="k">for</span> <span class="n">dirpath</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">followlinks</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+</span><span id="line-100">            <span class="n">dirnames</span><span class="p">[:]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dirnames</span> <span class="k">if</span> <span class="n">d</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">skip</span><span class="p">)</span>
+</span><span id="line-101">            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">filenames</span><span class="p">):</span>
+</span><span id="line-102">                <span class="n">f</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">dirpath</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+</span><span id="line-103">                <span class="k">if</span> <span class="ow">not</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatchcase</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">(),</span> <span class="n">glob</span><span class="p">):</span>
+</span><span id="line-104">                    <span class="k">continue</span>
+</span><span id="line-105">                <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_symlink</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_inside</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">real_root</span><span class="p">):</span>
+</span><span id="line-106">                    <span class="k">continue</span>
+</span><span id="line-107">                <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+</span><span id="line-108">                    <span class="k">yield</span> <span class="n">root</span><span class="p">,</span> <span class="n">f</span>
+</span><span id="line-109">
 </span><span id="line-110">
-</span><span id="line-111">
-</span><span id="line-112"><span class="k">def</span><span class="w"> </span><span class="nf">_compile</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ignore_case</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">fixed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">:</span>
-</span><span id="line-113">    <span class="k">try</span><span class="p">:</span>
-</span><span id="line-114">        <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
-</span><span id="line-115">            <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="k">if</span> <span class="n">fixed</span> <span class="k">else</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span> <span class="k">if</span> <span class="n">ignore_case</span> <span class="k">else</span> <span class="mi">0</span>
-</span><span id="line-116">        <span class="p">)</span>
-</span><span id="line-117">    <span class="k">except</span> <span class="n">re</span><span class="o">.</span><span class="n">error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="line-118">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"grep: invalid regular expression </span><span class="si">{</span><span class="n">pattern</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+</span><span id="line-111"><span class="k">def</span><span class="w"> </span><span class="nf">_mapped_files</span><span class="p">(</span>
+</span><span id="line-112">    <span class="n">paths</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">],</span> <span class="n">glob</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="line-113"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]:</span>
+</span><span id="line-114"><span class="w">    </span><span class="sd">"""``(id, file)`` for each mapped path that is a file and whose id matches ``glob``."""</span>
+</span><span id="line-115">    <span class="k">for</span> <span class="n">aid</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">paths</span><span class="p">):</span>
+</span><span id="line-116">        <span class="n">f</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">paths</span><span class="p">[</span><span class="n">aid</span><span class="p">])</span>
+</span><span id="line-117">        <span class="k">if</span> <span class="n">fnmatch</span><span class="o">.</span><span class="n">fnmatchcase</span><span class="p">(</span><span class="n">aid</span><span class="p">,</span> <span class="n">glob</span><span class="p">)</span> <span class="ow">and</span> <span class="n">f</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+</span><span id="line-118">            <span class="k">yield</span> <span class="n">aid</span><span class="p">,</span> <span class="n">f</span>
 </span><span id="line-119">
 </span><span id="line-120">
-</span><span id="line-121"><span class="k">def</span><span class="w"> </span><span class="nf">_lines</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-</span><span id="line-122"><span class="w">    </span><span class="sd">"""The file's lines, split on ``\\n`` only, without a trailing ``\\r`` or ``\\n``."""</span>
-</span><span id="line-123">    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8-sig"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"replace"</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
-</span><span id="line-124">        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
-</span><span id="line-125">            <span class="k">yield</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\r\n</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="line-126">
-</span><span id="line-127">
-</span><span id="line-128"><span class="k">def</span><span class="w"> </span><span class="nf">_count_and_first</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">rx</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="line-129">    <span class="n">n</span><span class="p">,</span> <span class="n">first</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">""</span>
-</span><span id="line-130">    <span class="k">try</span><span class="p">:</span>
-</span><span id="line-131">        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">_lines</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-</span><span id="line-132">            <span class="k">if</span> <span class="n">rx</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
-</span><span id="line-133">                <span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="line-134">                <span class="n">first</span> <span class="o">=</span> <span class="n">first</span> <span class="ow">or</span> <span class="n">line</span>
-</span><span id="line-135">    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
-</span><span id="line-136">        <span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">""</span>
-</span><span id="line-137">    <span class="k">return</span> <span class="n">n</span><span class="p">,</span> <span class="n">first</span>
+<div class="viewcode-block" id="corpus_paths">
+<a class="viewcode-back" href="../../_autosummary/ir.grep.html#ir.corpus_paths">[docs]</a>
+</span><span id="line-121"><span class="k">def</span><span class="w"> </span><span class="nf">corpus_paths</span><span class="p">(</span><span class="n">corpus</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]:</span>
+</span><span id="line-122"><span class="w">    </span><span class="sd">"""``{artifact_id: file}`` for the artifacts of a built corpus that are files.</span>
+</span><span id="line-123">
+</span><span id="line-124"><span class="sd">    Read from the metadata the corpus stored at build time (the ``path`` that</span>
+</span><span id="line-125"><span class="sd">    file-backed sources such as ``from_files`` and ``from_md_reports`` record), so</span>
+</span><span id="line-126"><span class="sd">    no source is walked again; the files themselves are read live by</span>
+</span><span id="line-127"><span class="sd">    :func:`grep_hits`. Artifacts without a stored path (records, packages, skills)</span>
+</span><span id="line-128"><span class="sd">    are left out.</span>
+</span><span id="line-129"><span class="sd">    """</span>
+</span><span id="line-130">    <span class="n">out</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-131">    <span class="n">_ids</span><span class="p">,</span> <span class="n">metas</span> <span class="o">=</span> <span class="n">corpus</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">metas</span><span class="p">()</span>
+</span><span id="line-132">    <span class="k">for</span> <span class="n">meta</span> <span class="ow">in</span> <span class="n">metas</span><span class="p">:</span>
+</span><span id="line-133">        <span class="n">aid</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"artifact_id"</span><span class="p">)</span>
+</span><span id="line-134">        <span class="n">path</span> <span class="o">=</span> <span class="p">(</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"metadata"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"path"</span><span class="p">)</span>
+</span><span id="line-135">        <span class="k">if</span> <span class="n">aid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">aid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">out</span><span class="p">:</span>
+</span><span id="line-136">            <span class="n">out</span><span class="p">[</span><span class="n">aid</span><span class="p">]</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</span><span id="line-137">    <span class="k">return</span> <span class="n">out</span></div>
+
 </span><span id="line-138">
 </span><span id="line-139">
-</span><span id="line-140"><span class="c1">#: Regex metacharacters: a pattern containing none is a plain literal.</span>
-</span><span id="line-141"><span class="n">_META</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[</span><span class="se">\\</span><span class="s2">.^$*+?</span><span class="si">{}</span><span class="s2">\[\]|()]"</span><span class="p">)</span>
-</span><span id="line-142">
-</span><span id="line-143"><span class="c1">#: Letters with non-ASCII case-insensitive equivalents (İ ı K ſ) that Python's</span>
-</span><span id="line-144"><span class="c1">#: ``re.I`` matches and ``rg -i`` does not.</span>
-</span><span id="line-145"><span class="n">_FOLD_TRAPS</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[iIkKsS]"</span><span class="p">)</span>
+</span><span id="line-140"><span class="k">def</span><span class="w"> </span><span class="nf">_inside</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">real_root</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="line-141"><span class="w">    </span><span class="sd">"""Does the symlink ``path`` resolve to somewhere under ``real_root``?"""</span>
+</span><span id="line-142">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-143">        <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">is_relative_to</span><span class="p">(</span><span class="n">real_root</span><span class="p">)</span>
+</span><span id="line-144">    <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">):</span>  <span class="c1"># a symlink loop</span>
+</span><span id="line-145">        <span class="k">return</span> <span class="kc">False</span>
 </span><span id="line-146">
 </span><span id="line-147">
-</span><span id="line-148"><span class="k">def</span><span class="w"> </span><span class="nf">_rg_can_prefilter</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ignore_case</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">fixed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="line-149"><span class="w">    </span><span class="sd">"""Whether ``rg`` is guaranteed to select a superset of the files Python matches."""</span>
-</span><span id="line-150">    <span class="k">if</span> <span class="ow">not</span> <span class="n">pattern</span><span class="o">.</span><span class="n">isascii</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">"</span><span class="se">\x00</span><span class="s2">"</span> <span class="ow">in</span> <span class="n">pattern</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">pattern</span><span class="p">:</span>
-</span><span id="line-151">        <span class="k">return</span> <span class="kc">False</span>
-</span><span id="line-152">    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">fixed</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">_META</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">)):</span>
-</span><span id="line-153">        <span class="k">return</span> <span class="kc">False</span>
-</span><span id="line-154">    <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span><span class="n">ignore_case</span> <span class="ow">and</span> <span class="n">_FOLD_TRAPS</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">))</span>
+</span><span id="line-148"><span class="k">def</span><span class="w"> </span><span class="nf">_compile</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ignore_case</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">fixed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">:</span>
+</span><span id="line-149">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-150">        <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+</span><span id="line-151">            <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="k">if</span> <span class="n">fixed</span> <span class="k">else</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span> <span class="k">if</span> <span class="n">ignore_case</span> <span class="k">else</span> <span class="mi">0</span>
+</span><span id="line-152">        <span class="p">)</span>
+</span><span id="line-153">    <span class="k">except</span> <span class="n">re</span><span class="o">.</span><span class="n">error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="line-154">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"grep: invalid regular expression </span><span class="si">{</span><span class="n">pattern</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
 </span><span id="line-155">
 </span><span id="line-156">
-</span><span id="line-157"><span class="k">def</span><span class="w"> </span><span class="nf">_rg_prefilter</span><span class="p">(</span>
-</span><span id="line-158">    <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span>
-</span><span id="line-159">    <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="line-160">    <span class="o">*</span><span class="p">,</span>
-</span><span id="line-161">    <span class="n">ignore_case</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-</span><span id="line-162">    <span class="n">fixed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-</span><span id="line-163">    <span class="n">batch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-</span><span id="line-164"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-165"><span class="w">    </span><span class="sd">"""The files ``rg`` says may match, or ``None`` if ``rg`` is missing or cannot be</span>
-</span><span id="line-166"><span class="sd">    used for this pattern/batch (the caller then reads every file in Python)."""</span>
-</span><span id="line-167">    <span class="n">rg</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">"rg"</span><span class="p">)</span>
-</span><span id="line-168">    <span class="k">if</span> <span class="ow">not</span> <span class="n">rg</span><span class="p">:</span>
-</span><span id="line-169">        <span class="k">return</span> <span class="kc">None</span>
-</span><span id="line-170">    <span class="n">flags</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"--no-config"</span><span class="p">,</span> <span class="s2">"--null"</span><span class="p">,</span> <span class="s2">"--no-messages"</span><span class="p">,</span> <span class="s2">"--no-ignore"</span><span class="p">,</span> <span class="s2">"--crlf"</span><span class="p">,</span> <span class="s2">"-l"</span><span class="p">]</span>
-</span><span id="line-171">    <span class="n">flags</span> <span class="o">+=</span> <span class="p">([</span><span class="s2">"-i"</span><span class="p">]</span> <span class="k">if</span> <span class="n">ignore_case</span> <span class="k">else</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">([</span><span class="s2">"-F"</span><span class="p">]</span> <span class="k">if</span> <span class="n">fixed</span> <span class="k">else</span> <span class="p">[])</span>
-</span><span id="line-172">    <span class="n">keep</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="line-173">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">),</span> <span class="n">batch</span><span class="p">):</span>
-</span><span id="line-174">        <span class="n">chunk</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch</span><span class="p">]]</span>
-</span><span id="line-175">        <span class="k">try</span><span class="p">:</span>
-</span><span id="line-176">            <span class="n">proc</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-</span><span id="line-177">                <span class="p">[</span><span class="n">rg</span><span class="p">,</span> <span class="o">*</span><span class="n">flags</span><span class="p">,</span> <span class="s2">"-e"</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="s2">"--"</span><span class="p">,</span> <span class="o">*</span><span class="n">chunk</span><span class="p">],</span>
-</span><span id="line-178">                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="line-179">                <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
-</span><span id="line-180">                <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="line-181">            <span class="p">)</span>
-</span><span id="line-182">        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>  <span class="c1"># e.g. argument list too long</span>
-</span><span id="line-183">            <span class="k">return</span> <span class="kc">None</span>
-</span><span id="line-184">        <span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>  <span class="c1"># rg cannot compile the regex</span>
-</span><span id="line-185">            <span class="k">return</span> <span class="kc">None</span>
-</span><span id="line-186">        <span class="n">keep</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">fsdecode</span><span class="p">(</span><span class="n">p</span><span class="p">))</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">b</span><span class="s2">"</span><span class="se">\0</span><span class="s2">"</span><span class="p">)</span> <span class="k">if</span> <span class="n">p</span><span class="p">]</span>
-</span><span id="line-187">    <span class="k">return</span> <span class="n">keep</span>
+</span><span id="line-157"><span class="k">def</span><span class="w"> </span><span class="nf">_lines</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="line-158"><span class="w">    </span><span class="sd">"""The file's lines, split on ``\\n`` only, without a trailing ``\\r`` or ``\\n``."""</span>
+</span><span id="line-159">    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8-sig"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"replace"</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+</span><span id="line-160">        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
+</span><span id="line-161">            <span class="k">yield</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\r\n</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-162">
+</span><span id="line-163">
+</span><span id="line-164"><span class="c1">#: ``score_line(line, rx) -&gt; float``: the score one matching line adds to its file.</span>
+</span><span id="line-165"><span class="n">LineScore</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span>
+</span><span id="line-166">
+</span><span id="line-167">
+</span><span id="line-168"><span class="k">def</span><span class="w"> </span><span class="nf">_count_and_first</span><span class="p">(</span>
+</span><span id="line-169">    <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">rx</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">,</span> <span class="n">score_line</span><span class="p">:</span> <span class="n">LineScore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="line-170"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+</span><span id="line-171"><span class="w">    </span><span class="sd">"""``(matching lines, first matching line, summed line score)`` for one file.</span>
+</span><span id="line-172">
+</span><span id="line-173"><span class="sd">    Without ``score_line`` each matching line scores 1, so the sum is the count.</span>
+</span><span id="line-174"><span class="sd">    """</span>
+</span><span id="line-175">    <span class="n">n</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="mf">0.0</span>
+</span><span id="line-176">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-177">        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">_lines</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+</span><span id="line-178">            <span class="k">if</span> <span class="n">rx</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+</span><span id="line-179">                <span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="line-180">                <span class="n">first</span> <span class="o">=</span> <span class="n">first</span> <span class="ow">or</span> <span class="n">line</span>
+</span><span id="line-181">                <span class="n">total</span> <span class="o">+=</span> <span class="p">(</span>
+</span><span id="line-182">                    <span class="mf">1.0</span> <span class="k">if</span> <span class="n">score_line</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_line_score</span><span class="p">(</span><span class="n">score_line</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">rx</span><span class="p">)</span>
+</span><span id="line-183">                <span class="p">)</span>
+</span><span id="line-184">    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+</span><span id="line-185">        <span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="mf">0.0</span>
+</span><span id="line-186">    <span class="k">return</span> <span class="n">n</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="n">total</span>
+</span><span id="line-187">
 </span><span id="line-188">
-</span><span id="line-189">
-</span><span id="line-190"><span class="k">def</span><span class="w"> </span><span class="nf">_recency</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">half_life_days</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">now</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="line-191">    <span class="k">if</span> <span class="ow">not</span> <span class="n">half_life_days</span><span class="p">:</span>
-</span><span id="line-192">        <span class="k">return</span> <span class="mf">1.0</span>
-</span><span id="line-193">    <span class="k">try</span><span class="p">:</span>
-</span><span id="line-194">        <span class="n">age_days</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span> <span class="o">/</span> <span class="n">_SECONDS_PER_DAY</span><span class="p">)</span>
-</span><span id="line-195">    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
-</span><span id="line-196">        <span class="k">return</span> <span class="mf">1.0</span>
-</span><span id="line-197">    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="n">age_days</span> <span class="o">/</span> <span class="n">half_life_days</span><span class="p">)</span>
-</span><span id="line-198">
-</span><span id="line-199">
+</span><span id="line-189"><span class="k">def</span><span class="w"> </span><span class="nf">_line_score</span><span class="p">(</span><span class="n">score_line</span><span class="p">:</span> <span class="n">LineScore</span><span class="p">,</span> <span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rx</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="line-190">    <span class="n">s</span> <span class="o">=</span> <span class="n">score_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">rx</span><span class="p">)</span>
+</span><span id="line-191">    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">):</span>
+</span><span id="line-192">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="line-193">            <span class="sa">f</span><span class="s2">"score_line(</span><span class="si">{</span><span class="n">line</span><span class="p">[:</span><span class="mi">40</span><span class="p">]</span><span class="si">!r}</span><span class="s2">) must be finite and &gt;= 0, got </span><span class="si">{</span><span class="n">s</span><span class="si">!r}</span><span class="s2">"</span>
+</span><span id="line-194">        <span class="p">)</span>
+</span><span id="line-195">    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</span><span id="line-196">
+</span><span id="line-197">
+<div class="viewcode-block" id="markdown_heading_score">
+<a class="viewcode-back" href="../../_autosummary/ir.grep.html#ir.markdown_heading_score">[docs]</a>
+</span><span id="line-198"><span class="k">def</span><span class="w"> </span><span class="nf">markdown_heading_score</span><span class="p">(</span><span class="n">heading</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LineScore</span><span class="p">:</span>
+</span><span id="line-199"><span class="w">    </span><span class="sd">"""A ``score_line`` seam: a match on a markdown heading line counts ``heading``.</span>
+</span><span id="line-200">
+</span><span id="line-201"><span class="sd">    Any other matching line counts ``body``, so a document whose title names the</span>
+</span><span id="line-202"><span class="sd">    pattern outranks one that only mentions it in passing.</span>
+</span><span id="line-203">
+</span><span id="line-204"><span class="sd">    &gt;&gt;&gt; score = markdown_heading_score(3.0)</span>
+</span><span id="line-205"><span class="sd">    &gt;&gt;&gt; rx = re.compile("acme", re.I)</span>
+</span><span id="line-206"><span class="sd">    &gt;&gt;&gt; score("# Acme invoices", rx), score("paid acme today", rx)</span>
+</span><span id="line-207"><span class="sd">    (3.0, 1.0)</span>
+</span><span id="line-208"><span class="sd">    """</span>
+</span><span id="line-209">    <span class="k">return</span> <span class="k">lambda</span> <span class="n">line</span><span class="p">,</span> <span class="n">rx</span><span class="p">:</span> <span class="n">heading</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"#"</span><span class="p">)</span> <span class="k">else</span> <span class="n">body</span></div>
+
+</span><span id="line-210">
+</span><span id="line-211">
+<div class="viewcode-block" id="json_field_score">
+<a class="viewcode-back" href="../../_autosummary/ir.grep.html#ir.json_field_score">[docs]</a>
+</span><span id="line-212"><span class="k">def</span><span class="w"> </span><span class="nf">json_field_score</span><span class="p">(</span>
+</span><span id="line-213">    <span class="n">weights</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">other_lines</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+</span><span id="line-214"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LineScore</span><span class="p">:</span>
+</span><span id="line-215"><span class="w">    </span><span class="sd">"""A ``score_line`` seam for JSONL records: field weights, for title-over-body.</span>
+</span><span id="line-216">
+</span><span id="line-217"><span class="sd">    Each line is read as one JSON object; the line scores the sum of ``weights[f]``</span>
+</span><span id="line-218"><span class="sd">    over the top-level fields ``f`` whose (string) value matches, ``default`` for a</span>
+</span><span id="line-219"><span class="sd">    matching field not in ``weights``. A match only in a key, or in a non-string</span>
+</span><span id="line-220"><span class="sd">    value, scores 0. A line that is not a JSON object scores ``other_lines``.</span>
+</span><span id="line-221">
+</span><span id="line-222"><span class="sd">    &gt;&gt;&gt; score = json_field_score({"title": 3.0, "body": 1.0})</span>
+</span><span id="line-223"><span class="sd">    &gt;&gt;&gt; rx = re.compile("acme", re.I)</span>
+</span><span id="line-224"><span class="sd">    &gt;&gt;&gt; score('{"title": "Acme", "body": "acme again"}', rx)</span>
+</span><span id="line-225"><span class="sd">    4.0</span>
+</span><span id="line-226"><span class="sd">    &gt;&gt;&gt; score('{"title": "Other", "body": "about acme"}', rx)</span>
+</span><span id="line-227"><span class="sd">    1.0</span>
+</span><span id="line-228"><span class="sd">    """</span>
+</span><span id="line-229">    <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+</span><span id="line-230">
+</span><span id="line-231">    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="n">line</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">rx</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="line-232">        <span class="k">try</span><span class="p">:</span>
+</span><span id="line-233">            <span class="n">record</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+</span><span id="line-234">        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="line-235">            <span class="k">return</span> <span class="n">other_lines</span>
+</span><span id="line-236">        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+</span><span id="line-237">            <span class="k">return</span> <span class="n">other_lines</span>
+</span><span id="line-238">        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span>
+</span><span id="line-239">            <span class="nb">sum</span><span class="p">(</span>
+</span><span id="line-240">                <span class="n">weights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+</span><span id="line-241">                <span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</span><span id="line-242">                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">rx</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</span><span id="line-243">            <span class="p">)</span>
+</span><span id="line-244">        <span class="p">)</span>
+</span><span id="line-245">
+</span><span id="line-246">    <span class="k">return</span> <span class="n">score</span></div>
+
+</span><span id="line-247">
+</span><span id="line-248">
+</span><span id="line-249"><span class="c1">#: Regex metacharacters: a pattern containing none is a plain literal.</span>
+</span><span id="line-250"><span class="n">_META</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[</span><span class="se">\\</span><span class="s2">.^$*+?</span><span class="si">{}</span><span class="s2">\[\]|()]"</span><span class="p">)</span>
+</span><span id="line-251">
+</span><span id="line-252"><span class="c1">#: Letters with non-ASCII case-insensitive equivalents (İ ı K ſ) that Python's</span>
+</span><span id="line-253"><span class="c1">#: ``re.I`` matches and ``rg -i`` does not.</span>
+</span><span id="line-254"><span class="n">_FOLD_TRAPS</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[iIkKsS]"</span><span class="p">)</span>
+</span><span id="line-255">
+</span><span id="line-256">
+</span><span id="line-257"><span class="k">def</span><span class="w"> </span><span class="nf">_rg_can_prefilter</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ignore_case</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">fixed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="line-258"><span class="w">    </span><span class="sd">"""Whether ``rg`` is guaranteed to select a superset of the files Python matches."""</span>
+</span><span id="line-259">    <span class="k">if</span> <span class="ow">not</span> <span class="n">pattern</span><span class="o">.</span><span class="n">isascii</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">"</span><span class="se">\x00</span><span class="s2">"</span> <span class="ow">in</span> <span class="n">pattern</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">pattern</span><span class="p">:</span>
+</span><span id="line-260">        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="line-261">    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">fixed</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">_META</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">)):</span>
+</span><span id="line-262">        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="line-263">    <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span><span class="n">ignore_case</span> <span class="ow">and</span> <span class="n">_FOLD_TRAPS</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">))</span>
+</span><span id="line-264">
+</span><span id="line-265">
+</span><span id="line-266"><span class="k">def</span><span class="w"> </span><span class="nf">_rg_prefilter</span><span class="p">(</span>
+</span><span id="line-267">    <span class="n">files</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">],</span>
+</span><span id="line-268">    <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="line-269">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-270">    <span class="n">ignore_case</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+</span><span id="line-271">    <span class="n">fixed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+</span><span id="line-272">    <span class="n">batch</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+</span><span id="line-273"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-274"><span class="w">    </span><span class="sd">"""The files ``rg`` says may match, or ``None`` if ``rg`` is missing or cannot be</span>
+</span><span id="line-275"><span class="sd">    used for this pattern/batch (the caller then reads every file in Python)."""</span>
+</span><span id="line-276">    <span class="n">rg</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">"rg"</span><span class="p">)</span>
+</span><span id="line-277">    <span class="k">if</span> <span class="ow">not</span> <span class="n">rg</span><span class="p">:</span>
+</span><span id="line-278">        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="line-279">    <span class="n">flags</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"--no-config"</span><span class="p">,</span> <span class="s2">"--null"</span><span class="p">,</span> <span class="s2">"--no-messages"</span><span class="p">,</span> <span class="s2">"--no-ignore"</span><span class="p">,</span> <span class="s2">"--crlf"</span><span class="p">,</span> <span class="s2">"-l"</span><span class="p">]</span>
+</span><span id="line-280">    <span class="n">flags</span> <span class="o">+=</span> <span class="p">([</span><span class="s2">"-i"</span><span class="p">]</span> <span class="k">if</span> <span class="n">ignore_case</span> <span class="k">else</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">([</span><span class="s2">"-F"</span><span class="p">]</span> <span class="k">if</span> <span class="n">fixed</span> <span class="k">else</span> <span class="p">[])</span>
+</span><span id="line-281">    <span class="n">keep</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="line-282">    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">),</span> <span class="n">batch</span><span class="p">):</span>
+</span><span id="line-283">        <span class="n">chunk</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch</span><span class="p">]]</span>
+</span><span id="line-284">        <span class="k">try</span><span class="p">:</span>
+</span><span id="line-285">            <span class="n">proc</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+</span><span id="line-286">                <span class="p">[</span><span class="n">rg</span><span class="p">,</span> <span class="o">*</span><span class="n">flags</span><span class="p">,</span> <span class="s2">"-e"</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="s2">"--"</span><span class="p">,</span> <span class="o">*</span><span class="n">chunk</span><span class="p">],</span>
+</span><span id="line-287">                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="line-288">                <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
+</span><span id="line-289">                <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="line-290">            <span class="p">)</span>
+</span><span id="line-291">        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>  <span class="c1"># e.g. argument list too long</span>
+</span><span id="line-292">            <span class="k">return</span> <span class="kc">None</span>
+</span><span id="line-293">        <span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>  <span class="c1"># rg cannot compile the regex</span>
+</span><span id="line-294">            <span class="k">return</span> <span class="kc">None</span>
+</span><span id="line-295">        <span class="n">keep</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">fsdecode</span><span class="p">(</span><span class="n">p</span><span class="p">))</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">b</span><span class="s2">"</span><span class="se">\0</span><span class="s2">"</span><span class="p">)</span> <span class="k">if</span> <span class="n">p</span><span class="p">]</span>
+</span><span id="line-296">    <span class="k">return</span> <span class="n">keep</span>
+</span><span id="line-297">
+</span><span id="line-298">
+</span><span id="line-299"><span class="k">def</span><span class="w"> </span><span class="nf">_recency</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">half_life_days</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">now</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="line-300">    <span class="k">if</span> <span class="ow">not</span> <span class="n">half_life_days</span><span class="p">:</span>
+</span><span id="line-301">        <span class="k">return</span> <span class="mf">1.0</span>
+</span><span id="line-302">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-303">        <span class="n">age_days</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span> <span class="o">/</span> <span class="n">_SECONDS_PER_DAY</span><span class="p">)</span>
+</span><span id="line-304">    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+</span><span id="line-305">        <span class="k">return</span> <span class="mf">1.0</span>
+</span><span id="line-306">    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="n">age_days</span> <span class="o">/</span> <span class="n">half_life_days</span><span class="p">)</span>
+</span><span id="line-307">
+</span><span id="line-308">
 <div class="viewcode-block" id="recency_weight">
 <a class="viewcode-back" href="../../_autosummary/ir.grep.html#ir.recency_weight">[docs]</a>
-</span><span id="line-200"><span class="k">def</span><span class="w"> </span><span class="nf">recency_weight</span><span class="p">(</span>
-</span><span id="line-201">    <span class="n">half_life_days</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">now</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="line-202"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Path</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
-</span><span id="line-203"><span class="w">    </span><span class="sd">"""A composable ``weight_of`` seam: a file's weight halves per ``half_life_days`` of age.</span>
-</span><span id="line-204">
-</span><span id="line-205"><span class="sd">    ``now`` pins the clock (default: the time of each call). Multiply it into your own</span>
-</span><span id="line-206"><span class="sd">    ``weight_of`` to combine it with other weights; it is what</span>
-</span><span id="line-207"><span class="sd">    ``recency_half_life_days`` uses.</span>
-</span><span id="line-208">
-</span><span id="line-209"><span class="sd">    &gt;&gt;&gt; import os, tempfile, time</span>
-</span><span id="line-210"><span class="sd">    &gt;&gt;&gt; from pathlib import Path</span>
-</span><span id="line-211"><span class="sd">    &gt;&gt;&gt; with tempfile.TemporaryDirectory() as d:</span>
-</span><span id="line-212"><span class="sd">    ...     f = Path(d, "a.md"); _ = f.write_text("x")</span>
-</span><span id="line-213"><span class="sd">    ...     os.utime(f, (0, 0))</span>
-</span><span id="line-214"><span class="sd">    ...     recency_weight(10, now=10 * _SECONDS_PER_DAY)(f)</span>
-</span><span id="line-215"><span class="sd">    0.5</span>
-</span><span id="line-216"><span class="sd">    """</span>
-</span><span id="line-217">    <span class="n">_check_args</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">half_life_days</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-</span><span id="line-218">    <span class="k">return</span> <span class="k">lambda</span> <span class="n">path</span><span class="p">:</span> <span class="n">_recency</span><span class="p">(</span>
-</span><span id="line-219">        <span class="n">path</span><span class="p">,</span> <span class="n">half_life_days</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="k">if</span> <span class="n">now</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">now</span>
-</span><span id="line-220">    <span class="p">)</span></div>
+</span><span id="line-309"><span class="k">def</span><span class="w"> </span><span class="nf">recency_weight</span><span class="p">(</span>
+</span><span id="line-310">    <span class="n">half_life_days</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">now</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="line-311"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Path</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
+</span><span id="line-312"><span class="w">    </span><span class="sd">"""A composable ``weight_of`` seam: a file's weight halves per ``half_life_days`` of age.</span>
+</span><span id="line-313">
+</span><span id="line-314"><span class="sd">    ``now`` pins the clock (default: the time of each call). Multiply it into your own</span>
+</span><span id="line-315"><span class="sd">    ``weight_of`` to combine it with other weights; it is what</span>
+</span><span id="line-316"><span class="sd">    ``recency_half_life_days`` uses.</span>
+</span><span id="line-317">
+</span><span id="line-318"><span class="sd">    &gt;&gt;&gt; import os, tempfile, time</span>
+</span><span id="line-319"><span class="sd">    &gt;&gt;&gt; from pathlib import Path</span>
+</span><span id="line-320"><span class="sd">    &gt;&gt;&gt; with tempfile.TemporaryDirectory() as d:</span>
+</span><span id="line-321"><span class="sd">    ...     f = Path(d, "a.md"); _ = f.write_text("x")</span>
+</span><span id="line-322"><span class="sd">    ...     os.utime(f, (0, 0))</span>
+</span><span id="line-323"><span class="sd">    ...     recency_weight(10, now=10 * _SECONDS_PER_DAY)(f)</span>
+</span><span id="line-324"><span class="sd">    0.5</span>
+</span><span id="line-325"><span class="sd">    """</span>
+</span><span id="line-326">    <span class="n">_check_args</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">half_life_days</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="line-327">    <span class="k">return</span> <span class="k">lambda</span> <span class="n">path</span><span class="p">:</span> <span class="n">_recency</span><span class="p">(</span>
+</span><span id="line-328">        <span class="n">path</span><span class="p">,</span> <span class="n">half_life_days</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="k">if</span> <span class="n">now</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">now</span>
+</span><span id="line-329">    <span class="p">)</span></div>
 
-</span><span id="line-221">
-</span><span id="line-222">
-</span><span id="line-223"><span class="k">def</span><span class="w"> </span><span class="nf">_check_args</span><span class="p">(</span><span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">half_life</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rg_batch</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-224">    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"k"</span><span class="p">,</span> <span class="n">k</span><span class="p">),</span> <span class="p">(</span><span class="s2">"rg_batch"</span><span class="p">,</span> <span class="n">rg_batch</span><span class="p">)):</span>
-</span><span id="line-225">        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
-</span><span id="line-226">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be a positive integer, got </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="line-227">    <span class="k">if</span> <span class="n">half_life</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">half_life</span><span class="p">)</span> <span class="ow">and</span> <span class="n">half_life</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
-</span><span id="line-228">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"recency_half_life_days must be positive, got </span><span class="si">{</span><span class="n">half_life</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="line-229">
-</span><span id="line-230">
-</span><span id="line-231"><span class="k">def</span><span class="w"> </span><span class="nf">_weight</span><span class="p">(</span><span class="n">weight_of</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Path</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="line-232">    <span class="k">if</span> <span class="n">weight_of</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-233">        <span class="k">return</span> <span class="mf">1.0</span>
-</span><span id="line-234">    <span class="n">w</span> <span class="o">=</span> <span class="n">weight_of</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-</span><span id="line-235">    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="ow">and</span> <span class="n">w</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">):</span>
-</span><span id="line-236">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"weight_of(</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">!r}</span><span class="s2">) must be finite and &gt;= 0, got </span><span class="si">{</span><span class="n">w</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="line-237">    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
-</span><span id="line-238">
-</span><span id="line-239">
+</span><span id="line-330">
+</span><span id="line-331">
+</span><span id="line-332"><span class="k">def</span><span class="w"> </span><span class="nf">_check_args</span><span class="p">(</span><span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">half_life</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">rg_batch</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-333">    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"k"</span><span class="p">,</span> <span class="n">k</span><span class="p">),</span> <span class="p">(</span><span class="s2">"rg_batch"</span><span class="p">,</span> <span class="n">rg_batch</span><span class="p">)):</span>
+</span><span id="line-334">        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+</span><span id="line-335">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be a positive integer, got </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-336">    <span class="k">if</span> <span class="n">half_life</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">half_life</span><span class="p">)</span> <span class="ow">and</span> <span class="n">half_life</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+</span><span id="line-337">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"recency_half_life_days must be positive, got </span><span class="si">{</span><span class="n">half_life</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-338">
+</span><span id="line-339">
+</span><span id="line-340"><span class="k">def</span><span class="w"> </span><span class="nf">_weight</span><span class="p">(</span><span class="n">weight_of</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Path</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="line-341">    <span class="k">if</span> <span class="n">weight_of</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-342">        <span class="k">return</span> <span class="mf">1.0</span>
+</span><span id="line-343">    <span class="n">w</span> <span class="o">=</span> <span class="n">weight_of</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+</span><span id="line-344">    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="ow">and</span> <span class="n">w</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">):</span>
+</span><span id="line-345">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"weight_of(</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">!r}</span><span class="s2">) must be finite and &gt;= 0, got </span><span class="si">{</span><span class="n">w</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="line-346">    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+</span><span id="line-347">
+</span><span id="line-348">
 <div class="viewcode-block" id="grep_hits">
 <a class="viewcode-back" href="../../_autosummary/ir.grep.html#ir.grep_hits">[docs]</a>
-</span><span id="line-240"><span class="k">def</span><span class="w"> </span><span class="nf">grep_hits</span><span class="p">(</span>
-</span><span id="line-241">    <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="line-242">    <span class="o">*</span><span class="p">,</span>
-</span><span id="line-243">    <span class="n">roots</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">],</span>
-</span><span id="line-244">    <span class="n">glob</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"*"</span><span class="p">,</span>
-</span><span id="line-245">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-</span><span id="line-246">    <span class="n">ignore_case</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="line-247">    <span class="n">fixed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="line-248">    <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-249">    <span class="n">metadata_of</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Path</span><span class="p">],</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-250">    <span class="n">weight_of</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Path</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-251">    <span class="n">recency_half_life_days</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-252">    <span class="n">id_of</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-253">    <span class="n">use_rg</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-254">    <span class="n">rg_batch</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_RG_BATCH</span><span class="p">,</span>
-</span><span id="line-255">    <span class="n">exclude_dirs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_EXCLUDE_DIRS</span><span class="p">,</span>
-</span><span id="line-256">    <span class="n">absolute_paths</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="line-257">    <span class="n">snippet_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_SNIPPET_CHARS</span><span class="p">,</span>
-</span><span id="line-258">    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-259">    <span class="n">now</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="line-260"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
-</span><span id="line-261"><span class="w">    </span><span class="sd">"""The top-``k`` files under ``roots`` whose lines match ``pattern``, as hits.</span>
-</span><span id="line-262">
-</span><span id="line-263"><span class="sd">    ``pattern`` is a Python regex (``fixed=True``: a literal). Files are those whose</span>
-</span><span id="line-264"><span class="sd">    root-relative posix path matches the fnmatch ``glob`` (``*`` crosses ``/``, so</span>
-</span><span id="line-265"><span class="sd">    ``"*.md"`` means every markdown file below the root); a root that is a file</span>
-</span><span id="line-266"><span class="sd">    stands for itself. ``filter`` is applied to ``metadata_of(path)`` *before* any file</span>
-</span><span id="line-267"><span class="sd">    is read (a filter without ``metadata_of`` sees ``{"path", "filename"}``, the path</span>
-</span><span id="line-268"><span class="sd">    relative to its root). ``id_of(root, path)`` names the artifact (default: the</span>
-</span><span id="line-269"><span class="sd">    relative path); two files with the same id raise ``ValueError`` (several roots with</span>
-</span><span id="line-270"><span class="sd">    a common relative path: pass ``id_of``). ``use_rg``: ``None`` = prefilter with</span>
-</span><span id="line-271"><span class="sd">    ``rg`` if installed, ``True`` = require it (``RuntimeError`` otherwise), ``False`` =</span>
-</span><span id="line-272"><span class="sd">    Python only. The score is described in the module docstring.</span>
-</span><span id="line-273"><span class="sd">    """</span>
-</span><span id="line-274">    <span class="n">_check_args</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">recency_half_life_days</span><span class="p">,</span> <span class="n">rg_batch</span><span class="p">)</span>
-</span><span id="line-275">    <span class="k">if</span> <span class="n">use_rg</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_rg_can_prefilter</span><span class="p">(</span>
-</span><span id="line-276">        <span class="n">pattern</span><span class="p">,</span> <span class="n">ignore_case</span><span class="o">=</span><span class="n">ignore_case</span><span class="p">,</span> <span class="n">fixed</span><span class="o">=</span><span class="n">fixed</span>
-</span><span id="line-277">    <span class="p">):</span>
-</span><span id="line-278">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="line-279">            <span class="s2">"grep_hits(use_rg=True) needs an ASCII literal pattern that rg and "</span>
-</span><span id="line-280">            <span class="s2">"Python read identically; use use_rg=None to let ir decide"</span>
-</span><span id="line-281">        <span class="p">)</span>
-</span><span id="line-282">    <span class="k">if</span> <span class="n">use_rg</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">"rg"</span><span class="p">):</span>
-</span><span id="line-283">        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"grep_hits(use_rg=True) but `rg` is not installed"</span><span class="p">)</span>
-</span><span id="line-284">    <span class="n">rx</span> <span class="o">=</span> <span class="n">_compile</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">ignore_case</span><span class="o">=</span><span class="n">ignore_case</span><span class="p">,</span> <span class="n">fixed</span><span class="o">=</span><span class="n">fixed</span><span class="p">)</span>
-</span><span id="line-285">    <span class="kn">from</span><span class="w"> </span><span class="nn">vd.filters</span><span class="w"> </span><span class="kn">import</span> <span class="n">matches_filter</span>
-</span><span id="line-286">
-</span><span id="line-287">    <span class="n">name_of</span> <span class="o">=</span> <span class="n">id_of</span> <span class="ow">or</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">root</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">path</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">())</span>
-</span><span id="line-288">    <span class="n">user_meta</span> <span class="o">=</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">metadata_of</span><span class="p">(</span><span class="n">f</span><span class="p">)))</span> <span class="k">if</span> <span class="n">metadata_of</span> <span class="k">else</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="p">{})</span>
-</span><span id="line-289">
-</span><span id="line-290">    <span class="k">def</span><span class="w"> </span><span class="nf">meta_for</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">aid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span id="line-291">        <span class="n">shown</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">if</span> <span class="n">absolute_paths</span> <span class="k">else</span> <span class="n">aid</span>
-</span><span id="line-292">        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">user_meta</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="s2">"path"</span><span class="p">:</span> <span class="n">shown</span><span class="p">,</span> <span class="s2">"filename"</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">}</span>
-</span><span id="line-293">
-</span><span id="line-294">    <span class="n">kept</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="line-295">    <span class="n">ids</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-</span><span id="line-296">    <span class="n">seen_real</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-</span><span id="line-297">    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">_candidate_files</span><span class="p">(</span><span class="n">_as_roots</span><span class="p">(</span><span class="n">roots</span><span class="p">),</span> <span class="n">glob</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="p">):</span>
-</span><span id="line-298">        <span class="n">aid</span> <span class="o">=</span> <span class="n">name_of</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
-</span><span id="line-299">        <span class="k">if</span> <span class="nb">filter</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">matches_filter</span><span class="p">(</span><span class="n">meta_for</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">aid</span><span class="p">),</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">filter</span><span class="p">)):</span>
-</span><span id="line-300">            <span class="k">continue</span>  <span class="c1"># metadata_of runs here only when there is a filter</span>
-</span><span id="line-301">        <span class="n">real</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-</span><span id="line-302">        <span class="k">if</span> <span class="n">real</span> <span class="ow">in</span> <span class="n">seen_real</span><span class="p">:</span>  <span class="c1"># overlapping roots: one file, once</span>
-</span><span id="line-303">            <span class="k">continue</span>
-</span><span id="line-304">        <span class="k">if</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">ids</span> <span class="ow">and</span> <span class="n">ids</span><span class="p">[</span><span class="n">aid</span><span class="p">]</span> <span class="o">!=</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="line-305">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="line-306">                <span class="sa">f</span><span class="s2">"grep: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="n">aid</span><span class="p">])</span><span class="si">!r}</span><span class="s2"> and </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="si">!r}</span><span class="s2"> share the id </span><span class="si">{</span><span class="n">aid</span><span class="si">!r}</span><span class="s2">; "</span>
-</span><span id="line-307">                <span class="s2">"pass id_of to tell them apart"</span>
-</span><span id="line-308">            <span class="p">)</span>
-</span><span id="line-309">        <span class="n">seen_real</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">real</span><span class="p">)</span>
-</span><span id="line-310">        <span class="n">ids</span><span class="p">[</span><span class="n">aid</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
-</span><span id="line-311">        <span class="n">kept</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">aid</span>
-</span><span id="line-312">
-</span><span id="line-313">    <span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">kept</span><span class="p">)</span>
-</span><span id="line-314">    <span class="k">if</span> <span class="n">use_rg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span> <span class="ow">and</span> <span class="n">_rg_can_prefilter</span><span class="p">(</span>
-</span><span id="line-315">        <span class="n">pattern</span><span class="p">,</span> <span class="n">ignore_case</span><span class="o">=</span><span class="n">ignore_case</span><span class="p">,</span> <span class="n">fixed</span><span class="o">=</span><span class="n">fixed</span>
-</span><span id="line-316">    <span class="p">):</span>
-</span><span id="line-317">        <span class="n">prefiltered</span> <span class="o">=</span> <span class="n">_rg_prefilter</span><span class="p">(</span>
-</span><span id="line-318">            <span class="n">files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">ignore_case</span><span class="o">=</span><span class="n">ignore_case</span><span class="p">,</span> <span class="n">fixed</span><span class="o">=</span><span class="n">fixed</span><span class="p">,</span> <span class="n">batch</span><span class="o">=</span><span class="n">rg_batch</span>
-</span><span id="line-319">        <span class="p">)</span>
-</span><span id="line-320">        <span class="k">if</span> <span class="n">prefiltered</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="line-321">            <span class="n">wanted</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">prefiltered</span><span class="p">)</span>
-</span><span id="line-322">            <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">wanted</span><span class="p">]</span>
-</span><span id="line-323">
-</span><span id="line-324">    <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="k">if</span> <span class="n">now</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">now</span>
-</span><span id="line-325">    <span class="n">scored</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="line-326">    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
-</span><span id="line-327">        <span class="n">n</span><span class="p">,</span> <span class="n">first</span> <span class="o">=</span> <span class="n">_count_and_first</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">rx</span><span class="p">)</span>
-</span><span id="line-328">        <span class="k">if</span> <span class="n">n</span><span class="p">:</span>
-</span><span id="line-329">            <span class="n">score</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="n">_weight</span><span class="p">(</span><span class="n">weight_of</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="o">*</span> <span class="n">_recency</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">recency_half_life_days</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
-</span><span id="line-330">            <span class="n">scored</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">score</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">first</span><span class="p">))</span>
-</span><span id="line-331">    <span class="n">scored</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">kept</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="mi">2</span><span class="p">]]))</span>
-</span><span id="line-332">
-</span><span id="line-333">    <span class="k">return</span> <span class="p">[</span>
-</span><span id="line-334">        <span class="n">SearchHit</span><span class="p">(</span>
-</span><span id="line-335">            <span class="n">artifact_id</span><span class="o">=</span><span class="n">kept</span><span class="p">[</span><span class="n">f</span><span class="p">],</span>
-</span><span id="line-336">            <span class="n">surface_kind</span><span class="o">=</span><span class="n">GREP_KIND</span><span class="p">,</span>
-</span><span id="line-337">            <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">),</span>
-</span><span id="line-338">            <span class="n">text</span><span class="o">=</span><span class="n">first</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="n">snippet_chars</span><span class="p">],</span>
-</span><span id="line-339">            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">meta_for</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">kept</span><span class="p">[</span><span class="n">f</span><span class="p">]),</span> <span class="s2">"n_matches"</span><span class="p">:</span> <span class="n">n</span><span class="p">},</span>
-</span><span id="line-340">            <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
-</span><span id="line-341">        <span class="p">)</span>
-</span><span id="line-342">        <span class="k">for</span> <span class="n">score</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">first</span> <span class="ow">in</span> <span class="n">scored</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span>
-</span><span id="line-343">    <span class="p">]</span></div>
+</span><span id="line-349"><span class="k">def</span><span class="w"> </span><span class="nf">grep_hits</span><span class="p">(</span>
+</span><span id="line-350">    <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="line-351">    <span class="o">*</span><span class="p">,</span>
+</span><span id="line-352">    <span class="n">roots</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-353">    <span class="n">paths</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-354">    <span class="n">glob</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"*"</span><span class="p">,</span>
+</span><span id="line-355">    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+</span><span id="line-356">    <span class="n">ignore_case</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="line-357">    <span class="n">fixed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="line-358">    <span class="nb">filter</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-359">    <span class="n">metadata_of</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Path</span><span class="p">],</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-360">    <span class="n">weight_of</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Path</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-361">    <span class="n">score_line</span><span class="p">:</span> <span class="n">LineScore</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-362">    <span class="n">recency_half_life_days</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-363">    <span class="n">id_of</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-364">    <span class="n">use_rg</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-365">    <span class="n">rg_batch</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_RG_BATCH</span><span class="p">,</span>
+</span><span id="line-366">    <span class="n">exclude_dirs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">DFLT_EXCLUDE_DIRS</span><span class="p">,</span>
+</span><span id="line-367">    <span class="n">absolute_paths</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="line-368">    <span class="n">snippet_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DFLT_SNIPPET_CHARS</span><span class="p">,</span>
+</span><span id="line-369">    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-370">    <span class="n">now</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="line-371"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+</span><span id="line-372"><span class="w">    </span><span class="sd">"""The top-``k`` files under ``roots`` whose lines match ``pattern``, as hits.</span>
+</span><span id="line-373">
+</span><span id="line-374"><span class="sd">    ``pattern`` is a Python regex (``fixed=True``: a literal). Files are those whose</span>
+</span><span id="line-375"><span class="sd">    root-relative posix path matches the fnmatch ``glob`` (``*`` crosses ``/``, so</span>
+</span><span id="line-376"><span class="sd">    ``"*.md"`` means every markdown file below the root); a root that is a file</span>
+</span><span id="line-377"><span class="sd">    stands for itself. ``filter`` is applied to ``metadata_of(path)`` *before* any file</span>
+</span><span id="line-378"><span class="sd">    is read (a filter without ``metadata_of`` sees ``{"path", "filename"}``, the path</span>
+</span><span id="line-379"><span class="sd">    relative to its root). ``id_of(root, path)`` names the artifact (default: the</span>
+</span><span id="line-380"><span class="sd">    relative path); two files with the same id raise ``ValueError`` (several roots with</span>
+</span><span id="line-381"><span class="sd">    a common relative path: pass ``id_of``). ``use_rg``: ``None`` = prefilter with</span>
+</span><span id="line-382"><span class="sd">    ``rg`` if installed, ``True`` = require it (``RuntimeError`` otherwise), ``False`` =</span>
+</span><span id="line-383"><span class="sd">    Python only. The score is described in the module docstring.</span>
+</span><span id="line-384">
+</span><span id="line-385"><span class="sd">    ``paths`` replaces ``roots``: an explicit ``{artifact_id: path}`` mapping (e.g.</span>
+</span><span id="line-386"><span class="sd">    :func:`corpus_paths`), its keys used as ids and matched against ``glob``; a path</span>
+</span><span id="line-387"><span class="sd">    that is not a file any more is skipped. Give exactly one of ``roots`` and ``paths``.</span>
+</span><span id="line-388"><span class="sd">    ``score_line(line, rx)`` scores each matching line (default 1, so the score is</span>
+</span><span id="line-389"><span class="sd">    the count); see :func:`markdown_heading_score` and :func:`json_field_score`.</span>
+</span><span id="line-390"><span class="sd">    """</span>
+</span><span id="line-391">    <span class="n">_check_args</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">recency_half_life_days</span><span class="p">,</span> <span class="n">rg_batch</span><span class="p">)</span>
+</span><span id="line-392">    <span class="k">if</span> <span class="p">(</span><span class="n">roots</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">paths</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+</span><span id="line-393">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"grep_hits needs exactly one of roots= and paths="</span><span class="p">)</span>
+</span><span id="line-394">    <span class="k">if</span> <span class="n">paths</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">id_of</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-395">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"grep_hits: paths= already names each file; drop id_of="</span><span class="p">)</span>
+</span><span id="line-396">    <span class="k">if</span> <span class="n">use_rg</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_rg_can_prefilter</span><span class="p">(</span>
+</span><span id="line-397">        <span class="n">pattern</span><span class="p">,</span> <span class="n">ignore_case</span><span class="o">=</span><span class="n">ignore_case</span><span class="p">,</span> <span class="n">fixed</span><span class="o">=</span><span class="n">fixed</span>
+</span><span id="line-398">    <span class="p">):</span>
+</span><span id="line-399">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="line-400">            <span class="s2">"grep_hits(use_rg=True) needs an ASCII literal pattern that rg and "</span>
+</span><span id="line-401">            <span class="s2">"Python read identically; use use_rg=None to let ir decide"</span>
+</span><span id="line-402">        <span class="p">)</span>
+</span><span id="line-403">    <span class="k">if</span> <span class="n">use_rg</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">"rg"</span><span class="p">):</span>
+</span><span id="line-404">        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"grep_hits(use_rg=True) but `rg` is not installed"</span><span class="p">)</span>
+</span><span id="line-405">    <span class="n">rx</span> <span class="o">=</span> <span class="n">_compile</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">ignore_case</span><span class="o">=</span><span class="n">ignore_case</span><span class="p">,</span> <span class="n">fixed</span><span class="o">=</span><span class="n">fixed</span><span class="p">)</span>
+</span><span id="line-406">    <span class="kn">from</span><span class="w"> </span><span class="nn">vd.filters</span><span class="w"> </span><span class="kn">import</span> <span class="n">matches_filter</span>
+</span><span id="line-407">
+</span><span id="line-408">    <span class="n">name_of</span> <span class="o">=</span> <span class="n">id_of</span> <span class="ow">or</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">root</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">path</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">root</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">())</span>
+</span><span id="line-409">    <span class="n">user_meta</span> <span class="o">=</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">metadata_of</span><span class="p">(</span><span class="n">f</span><span class="p">)))</span> <span class="k">if</span> <span class="n">metadata_of</span> <span class="k">else</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="p">{})</span>
+</span><span id="line-410">
+</span><span id="line-411">    <span class="k">def</span><span class="w"> </span><span class="nf">meta_for</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">aid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="line-412">        <span class="n">shown</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">if</span> <span class="n">absolute_paths</span> <span class="k">else</span> <span class="n">aid</span>
+</span><span id="line-413">        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">user_meta</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="s2">"path"</span><span class="p">:</span> <span class="n">shown</span><span class="p">,</span> <span class="s2">"filename"</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">}</span>
+</span><span id="line-414">
+</span><span id="line-415">    <span class="k">if</span> <span class="n">paths</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-416">        <span class="n">candidates</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="line-417">            <span class="p">(</span><span class="n">name_of</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">f</span><span class="p">),</span> <span class="n">f</span><span class="p">)</span>
+</span><span id="line-418">            <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">_candidate_files</span><span class="p">(</span><span class="n">_as_roots</span><span class="p">(</span><span class="n">roots</span><span class="p">),</span> <span class="n">glob</span><span class="p">,</span> <span class="n">exclude_dirs</span><span class="p">)</span>
+</span><span id="line-419">        <span class="p">)</span>
+</span><span id="line-420">    <span class="k">else</span><span class="p">:</span>
+</span><span id="line-421">        <span class="n">candidates</span> <span class="o">=</span> <span class="n">_mapped_files</span><span class="p">(</span><span class="n">paths</span><span class="p">,</span> <span class="n">glob</span><span class="p">)</span>
+</span><span id="line-422">
+</span><span id="line-423">    <span class="n">kept</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-424">    <span class="n">ids</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span id="line-425">    <span class="n">seen_real</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span id="line-426">    <span class="k">for</span> <span class="n">aid</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+</span><span id="line-427">        <span class="k">if</span> <span class="nb">filter</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">matches_filter</span><span class="p">(</span><span class="n">meta_for</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">aid</span><span class="p">),</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">filter</span><span class="p">)):</span>
+</span><span id="line-428">            <span class="k">continue</span>  <span class="c1"># metadata_of runs here only when there is a filter</span>
+</span><span id="line-429">        <span class="n">real</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+</span><span id="line-430">        <span class="k">if</span> <span class="n">real</span> <span class="ow">in</span> <span class="n">seen_real</span><span class="p">:</span>  <span class="c1"># overlapping roots: one file, once</span>
+</span><span id="line-431">            <span class="k">continue</span>
+</span><span id="line-432">        <span class="k">if</span> <span class="n">aid</span> <span class="ow">in</span> <span class="n">ids</span> <span class="ow">and</span> <span class="n">ids</span><span class="p">[</span><span class="n">aid</span><span class="p">]</span> <span class="o">!=</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="line-433">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="line-434">                <span class="sa">f</span><span class="s2">"grep: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="n">aid</span><span class="p">])</span><span class="si">!r}</span><span class="s2"> and </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="si">!r}</span><span class="s2"> share the id </span><span class="si">{</span><span class="n">aid</span><span class="si">!r}</span><span class="s2">; "</span>
+</span><span id="line-435">                <span class="s2">"pass id_of to tell them apart"</span>
+</span><span id="line-436">            <span class="p">)</span>
+</span><span id="line-437">        <span class="n">seen_real</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">real</span><span class="p">)</span>
+</span><span id="line-438">        <span class="n">ids</span><span class="p">[</span><span class="n">aid</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
+</span><span id="line-439">        <span class="n">kept</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">aid</span>
+</span><span id="line-440">
+</span><span id="line-441">    <span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">kept</span><span class="p">)</span>
+</span><span id="line-442">    <span class="k">if</span> <span class="n">use_rg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span> <span class="ow">and</span> <span class="n">_rg_can_prefilter</span><span class="p">(</span>
+</span><span id="line-443">        <span class="n">pattern</span><span class="p">,</span> <span class="n">ignore_case</span><span class="o">=</span><span class="n">ignore_case</span><span class="p">,</span> <span class="n">fixed</span><span class="o">=</span><span class="n">fixed</span>
+</span><span id="line-444">    <span class="p">):</span>
+</span><span id="line-445">        <span class="n">prefiltered</span> <span class="o">=</span> <span class="n">_rg_prefilter</span><span class="p">(</span>
+</span><span id="line-446">            <span class="n">files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">ignore_case</span><span class="o">=</span><span class="n">ignore_case</span><span class="p">,</span> <span class="n">fixed</span><span class="o">=</span><span class="n">fixed</span><span class="p">,</span> <span class="n">batch</span><span class="o">=</span><span class="n">rg_batch</span>
+</span><span id="line-447">        <span class="p">)</span>
+</span><span id="line-448">        <span class="k">if</span> <span class="n">prefiltered</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="line-449">            <span class="n">wanted</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">prefiltered</span><span class="p">)</span>
+</span><span id="line-450">            <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span> <span class="k">if</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">wanted</span><span class="p">]</span>
+</span><span id="line-451">
+</span><span id="line-452">    <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="k">if</span> <span class="n">now</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">now</span>
+</span><span id="line-453">    <span class="n">scored</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="line-454">    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+</span><span id="line-455">        <span class="n">n</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="n">lines_score</span> <span class="o">=</span> <span class="n">_count_and_first</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">rx</span><span class="p">,</span> <span class="n">score_line</span><span class="p">)</span>
+</span><span id="line-456">        <span class="k">if</span> <span class="n">n</span><span class="p">:</span>
+</span><span id="line-457">            <span class="n">score</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="line-458">                <span class="n">lines_score</span>
+</span><span id="line-459">                <span class="o">*</span> <span class="n">_weight</span><span class="p">(</span><span class="n">weight_of</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+</span><span id="line-460">                <span class="o">*</span> <span class="n">_recency</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">recency_half_life_days</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+</span><span id="line-461">            <span class="p">)</span>
+</span><span id="line-462">            <span class="n">scored</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">score</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">first</span><span class="p">))</span>
+</span><span id="line-463">    <span class="n">scored</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">kept</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="mi">2</span><span class="p">]]))</span>
+</span><span id="line-464">
+</span><span id="line-465">    <span class="k">return</span> <span class="p">[</span>
+</span><span id="line-466">        <span class="n">SearchHit</span><span class="p">(</span>
+</span><span id="line-467">            <span class="n">artifact_id</span><span class="o">=</span><span class="n">kept</span><span class="p">[</span><span class="n">f</span><span class="p">],</span>
+</span><span id="line-468">            <span class="n">surface_kind</span><span class="o">=</span><span class="n">GREP_KIND</span><span class="p">,</span>
+</span><span id="line-469">            <span class="n">score</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">),</span>
+</span><span id="line-470">            <span class="n">text</span><span class="o">=</span><span class="n">first</span><span class="o">.</span><span class="n">strip</span><span class="p">()[:</span><span class="n">snippet_chars</span><span class="p">],</span>
+</span><span id="line-471">            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">meta_for</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">kept</span><span class="p">[</span><span class="n">f</span><span class="p">]),</span> <span class="s2">"n_matches"</span><span class="p">:</span> <span class="n">n</span><span class="p">},</span>
+</span><span id="line-472">            <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+</span><span id="line-473">        <span class="p">)</span>
+</span><span id="line-474">        <span class="k">for</span> <span class="n">score</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">first</span> <span class="ow">in</span> <span class="n">scored</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span>
+</span><span id="line-475">    <span class="p">]</span></div>
 
-</span><span id="line-344">
-</span><span id="line-345">
+</span><span id="line-476">
+</span><span id="line-477">
 <div class="viewcode-block" id="make_grep_retriever">
 <a class="viewcode-back" href="../../_autosummary/ir.grep.html#ir.make_grep_retriever">[docs]</a>
-</span><span id="line-346"><span class="k">def</span><span class="w"> </span><span class="nf">make_grep_retriever</span><span class="p">(</span>
-</span><span id="line-347">    <span class="n">roots</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">],</span> <span class="o">**</span><span class="n">grep_defaults</span><span class="p">:</span> <span class="n">Any</span>
-</span><span id="line-348"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Retriever</span><span class="p">:</span>
-</span><span id="line-349"><span class="w">    </span><span class="sd">"""Bind roots (and defaults) to the uniform :data:`ir.retrieve.Retriever` contract.</span>
-</span><span id="line-350">
-</span><span id="line-351"><span class="sd">    The result is ``retrieve(pattern, **overrides) -&gt; list[SearchHit]`` (``roots`` may</span>
-</span><span id="line-352"><span class="sd">    be overridden per call too), the same shape as :func:`ir.as_retriever`, so a grep</span>
-</span><span id="line-353"><span class="sd">    leaf can sit in a ``Mapping[name, Retriever]`` registry beside index-backed</span>
-</span><span id="line-354"><span class="sd">    corpora. Overrides are the keywords of :func:`grep_hits`; an unknown one</span>
-</span><span id="line-355"><span class="sd">    (``mode=``) is a ``TypeError``, not silently dropped.</span>
-</span><span id="line-356"><span class="sd">    """</span>
-</span><span id="line-357">    <span class="n">bound</span> <span class="o">=</span> <span class="n">_as_roots</span><span class="p">(</span><span class="n">roots</span><span class="p">)</span>  <span class="c1"># materialised: a generator would be spent after one call</span>
-</span><span id="line-358">
-</span><span id="line-359">    <span class="k">def</span><span class="w"> </span><span class="nf">retrieve</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">overrides</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
-</span><span id="line-360">        <span class="k">return</span> <span class="n">grep_hits</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s2">"roots"</span><span class="p">:</span> <span class="n">bound</span><span class="p">,</span> <span class="o">**</span><span class="n">grep_defaults</span><span class="p">,</span> <span class="o">**</span><span class="n">overrides</span><span class="p">})</span>
-</span><span id="line-361">
-</span><span id="line-362">    <span class="n">retrieve</span><span class="o">.</span><span class="n">roots</span> <span class="o">=</span> <span class="n">bound</span>
-</span><span id="line-363">    <span class="k">return</span> <span class="n">retrieve</span></div>
+</span><span id="line-478"><span class="k">def</span><span class="w"> </span><span class="nf">make_grep_retriever</span><span class="p">(</span>
+</span><span id="line-479">    <span class="n">roots</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">],</span> <span class="o">**</span><span class="n">grep_defaults</span><span class="p">:</span> <span class="n">Any</span>
+</span><span id="line-480"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Retriever</span><span class="p">:</span>
+</span><span id="line-481"><span class="w">    </span><span class="sd">"""Bind roots (and defaults) to the uniform :data:`ir.retrieve.Retriever` contract.</span>
+</span><span id="line-482">
+</span><span id="line-483"><span class="sd">    The result is ``retrieve(pattern, **overrides) -&gt; list[SearchHit]`` (``roots`` may</span>
+</span><span id="line-484"><span class="sd">    be overridden per call too), the same shape as :func:`ir.as_retriever`, so a grep</span>
+</span><span id="line-485"><span class="sd">    leaf can sit in a ``Mapping[name, Retriever]`` registry beside index-backed</span>
+</span><span id="line-486"><span class="sd">    corpora. Overrides are the keywords of :func:`grep_hits`; an unknown one</span>
+</span><span id="line-487"><span class="sd">    (``mode=``) is a ``TypeError``, not silently dropped.</span>
+</span><span id="line-488"><span class="sd">    """</span>
+</span><span id="line-489">    <span class="n">bound</span> <span class="o">=</span> <span class="n">_as_roots</span><span class="p">(</span><span class="n">roots</span><span class="p">)</span>  <span class="c1"># materialised: a generator would be spent after one call</span>
+</span><span id="line-490">
+</span><span id="line-491">    <span class="k">def</span><span class="w"> </span><span class="nf">retrieve</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">overrides</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SearchHit</span><span class="p">]:</span>
+</span><span id="line-492">        <span class="k">return</span> <span class="n">grep_hits</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s2">"roots"</span><span class="p">:</span> <span class="n">bound</span><span class="p">,</span> <span class="o">**</span><span class="n">grep_defaults</span><span class="p">,</span> <span class="o">**</span><span class="n">overrides</span><span class="p">})</span>
+</span><span id="line-493">
+</span><span id="line-494">    <span class="n">retrieve</span><span class="o">.</span><span class="n">roots</span> <span class="o">=</span> <span class="n">bound</span>
+</span><span id="line-495">    <span class="k">return</span> <span class="n">retrieve</span></div>
 
 </span></code></pre></div>
     </div></div>
@@ -575,7 +716,7 @@
 </footer>
     </div>
     
-    <script src="../../_static/documentation_options.js?v=8520101b"></script>
+    <script src="../../_static/documentation_options.js?v=6d3ab3d9"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>

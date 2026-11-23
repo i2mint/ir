@@ -71,9 +71,12 @@ the reviewing search subagent shipped under `.claude/`.
 | [`make_llm_formulator`](#ir.make_llm_formulator)(\*[, rewriter, prompt, ...])   | An LLM-backed `Formulator` (rewrite / expand / multi-query).                                                                                    |
 | [`make_keyword_formulator`](#ir.make_keyword_formulator)(\*[, rewriter, n, ...])    | An LLM `Formulator` that writes **keyword** queries for BM25 / grep.                                                                            |
 | [`lexical_miss`](#ir.lexical_miss)(hits, \*[, required, candidates])     | Miss signals for the committed `hits`; `{"miss": bool, ...}`.                                                                                   |
-| [`grep_hits`](#ir.grep_hits)(pattern, \*, roots[, glob, k, ...])      | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
+| [`grep_hits`](#ir.grep_hits)(pattern, \*[, roots, paths, glob, ...])  | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
 | [`recency_weight`](#ir.recency_weight)(half_life_days, \*[, now])          | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                              |
 | [`make_grep_retriever`](#ir.make_grep_retriever)(roots, \*\*grep_defaults)      | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
+| [`markdown_heading_score`](#ir.markdown_heading_score)([heading, body])            | A `score_line` seam: a match on a markdown heading line counts `heading`.                                                                       |
+| [`json_field_score`](#ir.json_field_score)(weights, \*[, default, ...])      | A `score_line` seam for JSONL records: field weights, for title-over-body.                                                                      |
+| [`corpus_paths`](#ir.corpus_paths)(corpus)                               | `{artifact_id: file}` for the artifacts of a built corpus that are files.                                                                       |
 | [`select`](#ir.select)(hits, \*[, strategy, max_k, rel, ...])      | Commit to a subset of ranked `hits` — the selection stage.                                                                                      |
 | [`disclose`](#ir.disclose)(selection, \*[, level, loader, ...])      | Reveal the payload of each selected hit at `level` — append-only, pure.                                                                         |
 | [`discover`](#ir.discover)(corpus, query, \*[, k, mode, ...])        | Find and commit to the capabilities for `query` — the one search tool.                                                                          |
@@ -1283,6 +1286,19 @@ All registered corpus definitions, keyed by name.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
+### ir.corpus_paths(corpus)
+
+`{artifact_id: file}` for the artifacts of a built corpus that are files.
+
+Read from the metadata the corpus stored at build time (the `path` that
+file-backed sources such as `from_files` and `from_md_reports` record), so
+no source is walked again; the files themselves are read live by
+[`grep_hits()`](#ir.grep_hits). Artifacts without a stored path (records, packages, skills)
+are left out.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
+
 ### ir.default_edge_extractor(artifact_id, filter_fields)
 
 Edges latent in the standard filter fields: `deps` → REF, `parent` → PARENT.
@@ -1576,7 +1592,7 @@ interact, via weighted Reciprocal Rank Fusion: each hit contributes
   absolute floors — apply calibrated `min_score` floors per source,
   *before* fusing (see ir_07/ir_08 and `ir.discover`’s federated form).
 
-### ir.grep_hits(pattern, , roots, glob='\*', k=10, ignore_case=True, fixed=False, filter=None, metadata_of=None, weight_of=None, recency_half_life_days=None, id_of=None, use_rg=None, rg_batch=500, exclude_dirs=('.git', 'node_modules', '_\_pycache_\_', '.venv'), absolute_paths=False, snippet_chars=200, source=None, now=None)
+### ir.grep_hits(pattern, , roots=None, paths=None, glob='\*', k=10, ignore_case=True, fixed=False, filter=None, metadata_of=None, weight_of=None, score_line=None, recency_half_life_days=None, id_of=None, use_rg=None, rg_batch=500, exclude_dirs=('.git', 'node_modules', '_\_pycache_\_', '.venv'), absolute_paths=False, snippet_chars=200, source=None, now=None)
 
 The top-`k` files under `roots` whose lines match `pattern`, as hits.
 
@@ -1591,8 +1607,35 @@ a common relative path: pass `id_of`). `use_rg`: `None` = prefilter with
 `rg` if installed, `True` = require it (`RuntimeError` otherwise), `False` =
 Python only. The score is described in the module docstring.
 
+`paths` replaces `roots`: an explicit `{artifact_id: path}` mapping (e.g.
+[`corpus_paths()`](#ir.corpus_paths)), its keys used as ids and matched against `glob`; a path
+that is not a file any more is skipped. Give exactly one of `roots` and `paths`.
+`score_line(line, rx)` scores each matching line (default 1, so the score is
+the count); see [`markdown_heading_score()`](#ir.markdown_heading_score) and [`json_field_score()`](#ir.json_field_score).
+
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]
+
+### ir.json_field_score(weights, , default=1.0, other_lines=1.0)
+
+A `score_line` seam for JSONL records: field weights, for title-over-body.
+
+Each line is read as one JSON object; the line scores the sum of `weights[f]`
+over the top-level fields `f` whose (string) value matches, `default` for a
+matching field not in `weights`. A match only in a key, or in a non-string
+value, scores 0. A line that is not a JSON object scores `other_lines`.
+
+```pycon
+>>> score = json_field_score({"title": 3.0, "body": 1.0})
+>>> rx = re.compile("acme", re.I)
+>>> score('{"title": "Acme", "body": "acme again"}', rx)
+4.0
+>>> score('{"title": "Other", "body": "about acme"}', rx)
+1.0
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Pattern`](https://docs.python.org/3/library/re.html#re.Pattern)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### ir.lexical_miss(hits, , required=(), candidates=None)
 
@@ -1754,6 +1797,23 @@ False
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Artifact`](ir.base.html.md#ir.base.Artifact)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
+
+### ir.markdown_heading_score(heading=3.0, , body=1.0)
+
+A `score_line` seam: a match on a markdown heading line counts `heading`.
+
+Any other matching line counts `body`, so a document whose title names the
+pattern outranks one that only mentions it in passing.
+
+```pycon
+>>> score = markdown_heading_score(3.0)
+>>> rx = re.compile("acme", re.I)
+>>> score("# Acme invoices", rx), score("paid acme today", rx)
+(3.0, 1.0)
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Pattern`](https://docs.python.org/3/library/re.html#re.Pattern)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### ir.open_corpus(name, , embedder=None, query_normalize=None)
 

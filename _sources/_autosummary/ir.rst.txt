@@ -41,6 +41,9 @@
       grep_hits
       recency_weight
       make_grep_retriever
+      markdown_heading_score
+      json_field_score
+      corpus_paths
       select
       disclose
       discover

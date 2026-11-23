@@ -12,12 +12,16 @@ ir.grep
       DFLT_SNIPPET_CHARS
       DFLT_EXCLUDE_DIRS
       GREP_KIND
+      LineScore
    
    .. rubric:: Functions
 
    .. autosummary::
    
+      corpus_paths
       grep_hits
+      json_field_score
       make_grep_retriever
+      markdown_heading_score
       recency_weight
    

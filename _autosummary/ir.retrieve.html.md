@@ -127,7 +127,7 @@ falsy key falls back to per-source identity).
 
 alias of `Callable`[[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)] | [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### ir.retrieve.MODES *= ('dense', 'lexical', 'hybrid')*
+### ir.retrieve.MODES *= ('dense', 'lexical', 'hybrid', 'grep')*
 
 Ranking modes accepted by [`search()`](#ir.retrieve.search).
 
@@ -302,7 +302,7 @@ siblings.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Record`](ir.base.html.md#ir.base.Record)]
 
-### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None, surface_weights=None, dep_boost=None, variant_weight=1.0)
+### ir.retrieve.search(corpus, query, , k=10, filter=None, surfaces=None, per_artifact=True, mode='dense', fusion='rrf', rrf_k=60, alpha=0.5, bm25_sat_k=8.0, fetch_k=None, rerank=None, rerank_text='surface', rerank_max_chars=2000, bm25=None, formulate=None, surface_weights=None, dep_boost=None, variant_weight=1.0, grep=None)
 
 Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
 
@@ -313,7 +313,12 @@ Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
   * **per_artifact** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool))
   * **mode** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – (dense + BM25 fused). Hybrid is the strongest default for short,
     identifier-heavy text; `"dense"` is the historical behavior and is
-    kept as the default for backward compatibility.
+    kept as the default for backward compatibility. `"grep"` treats *query*
+    as a regex and reads the files the corpus indexed, live (no index, so it
+    finds exact names and strings the index may miss or hold stale), under the
+    corpus’s artifact ids, one hit per file: see [`ir.grep.grep_hits()`](ir.grep.html.md#ir.grep.grep_hits).
+    Only `k`, `filter` and `grep` apply to it; it needs a file-backed
+    corpus (`from_files`, `from_md_reports`).
   * **fusion** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – rank-based Reciprocal Rank Fusion) or `"blend"` (magnitude-preserving
     convex blend; better abstention separability — see ir_08). Ignored for
     non-hybrid modes.
@@ -375,5 +380,6 @@ Return the top-*k* [`SearchHit`](ir.base.html.md#ir.base.SearchHit) for *query*.
     over-fetch (`max(k*5, 50)`) even with `per_artifact=False`, so pin
     `fetch_k` when comparing runs with and without it. Default `None`:
     no boost.
+  * **grep** ([`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – (e.g. `{"fixed": True, "score_line": ir.grep.markdown_heading_score()}`).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`SearchHit`](ir.base.html.md#ir.base.SearchHit)]
