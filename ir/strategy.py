@@ -254,6 +254,13 @@ class Chunked:
     truncated. Token mode degrades to char mode with a warning if the tokenizer
     is unavailable. The char ``chunk_size`` / ``overlap`` still set the overlap
     *ratio* used in token mode.
+
+    ``split`` swaps the character splitter for a ``(text, *, size, overlap) ->
+    list[str]`` callable or ``"module:attr"`` reference, e.g.
+    :func:`balanced_windows` (equal-sized windows, no short tail) or
+    :func:`word_windows` (word-aligned cuts), with ``size=chunk_size``. It is
+    exclusive with ``max_tokens``. ``split_id`` names a lambda/closure for
+    re-indexing, as for :class:`Fields`.
     """
 
     def __init__(
@@ -265,24 +272,40 @@ class Chunked:
         kind: str = "chunk",
         max_tokens: int | None = None,
         token_model: str | None = None,
+        split: Callable[..., list[str]] | str | None = None,
+        split_id: str | None = None,
     ):
+        if split is not None and max_tokens is not None:
+            raise ValueError("split= and max_tokens= are exclusive: pick one splitter")
         self.chunk_size = chunk_size
         self.overlap = overlap
         self.text_key = text_key
         self.kind = kind
         self.max_tokens = max_tokens
         self.token_model = token_model
+        self.split = split
+        self.split_id = _normalizer_id(split, split_id, what="split")
 
     def decompose(self, artifact_id, raw, metadata=None) -> IndexPlan:
         meta = dict(metadata or {})
         text = _text_of(raw, self.text_key)
-        chunks = _chunk_text(
-            text,
-            chunk_size=self.chunk_size,
-            overlap=self.overlap,
-            max_tokens=self.max_tokens,
-            token_model=self.token_model,
-        )
+        if self.split is None:
+            chunks = _chunk_text(
+                text,
+                chunk_size=self.chunk_size,
+                overlap=self.overlap,
+                max_tokens=self.max_tokens,
+                token_model=self.token_model,
+            )
+        else:
+            from .sources import resolve_fetcher
+
+            splitter = (
+                resolve_fetcher(self.split)
+                if isinstance(self.split, str)
+                else self.split
+            )
+            chunks = splitter(text, size=self.chunk_size, overlap=self.overlap)
         surfaces = [
             Surface(
                 artifact_id,
@@ -603,9 +626,11 @@ class Fields:
         splitter = (
             balanced_windows
             if self.split is None
-            else resolve_fetcher(self.split)
-            if isinstance(self.split, str)
-            else self.split
+            else (
+                resolve_fetcher(self.split)
+                if isinstance(self.split, str)
+                else self.split
+            )
         )
         windows = functools.partial(splitter, size=self.max_chars, overlap=self.overlap)
         if self.layout == "fields":
