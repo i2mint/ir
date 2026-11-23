@@ -222,9 +222,11 @@ def test_fold_text_works_as_a_normalizer_reference_and_a_formulator():
         strategy=Fields([], head=["name"], normalize=fold_text),
     )
     corpus = ir.build(src, store=CorpusStore.memory(), embedder="light")
-    miss = ir.search(corpus, "Crème", mode="lexical")
-    hit = ir.search(corpus, "Crème", mode="lexical", formulate=fold_text)
-    assert [h.artifact_id for h in hit] == ["r"] and not miss
+    # the corpus folds the query with its strategy's normalizer (#146)...
+    hit = ir.search(corpus, "Crème", mode="lexical")
+    # ...and folding it again through formulate= is harmless (fold is idempotent)
+    again = ir.search(corpus, "Crème", mode="lexical", formulate=fold_text)
+    assert [h.artifact_id for h in hit] == [h.artifact_id for h in again] == ["r"]
 
 
 def test_with_synopsis_forwards_reads_and_synopsis_fields():

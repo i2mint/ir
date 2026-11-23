@@ -27,7 +27,7 @@ from .base import Record, ledger_key
 from .embed import make_embedder, make_embedder_for_id
 from .sources import CorpusSource
 from .store import CorpusStore
-from .strategy import is_simple_param
+from .strategy import is_simple_param, strategy_normalizer
 
 
 def _strategy_id(strategy) -> str:
@@ -109,12 +109,19 @@ class _LazyEmbedder:
 
 @dataclass
 class Corpus:
-    """A built, queryable corpus: a store plus its embedder."""
+    """A built, queryable corpus: a store plus its embedder.
+
+    ``query_normalize`` is the ``str -> str`` function the corpus's indexing
+    strategy applied to the indexed text (e.g. ``Fields(normalize=fold_text)``),
+    or ``None``. :func:`ir.retrieve.search` applies it to every query, so folded
+    text is matched by a folded query.
+    """
 
     name: str
     store: CorpusStore
     embedder: Callable
     embedder_id: str
+    query_normalize: Callable[[str], str] | None = None
 
     def search(self, query, **kwargs):
         """Search this corpus for *query*.
@@ -245,17 +252,60 @@ def build(
                 store.delete_ledger_entry(key)
                 store.delete_links(entry.get("artifact_id", ""))
 
-    store.set_config(
-        {
-            "name": source.name,
-            "embedder_spec": spec if isinstance(spec, str) else "custom",
-            "embedder_id": emb_id,
-        }
+    normalize = strategy_normalizer(source.indexing_strategy)
+    config = {
+        "name": source.name,
+        "embedder_spec": spec if isinstance(spec, str) else "custom",
+        "embedder_id": emb_id,
+    }
+    if normalize is not None:
+        # A reference reopens as itself; a callable can only be named, so a
+        # reopened corpus can say why its queries are no longer folded.
+        config["query_normalize"] = (
+            normalize
+            if isinstance(normalize, str)
+            else {"id": getattr(source.indexing_strategy, "normalize_id", None)}
+        )
+    store.set_config(config)
+    query_normalize = _resolve_query_normalize(normalize, name=source.name)
+    return Corpus(source.name, store, emb, emb_id, query_normalize)
+
+
+def _resolve_query_normalize(normalize, *, name: str):
+    """A ``str -> str`` from a stored or given normalizer, or ``None`` (with a warning).
+
+    *normalize* is a callable, a ``"module:attr"`` reference, the
+    ``{"id": ...}`` stub :func:`build` stores for a callable, or ``None``.
+    """
+    if normalize is None or callable(normalize):
+        return normalize
+    import warnings
+
+    if isinstance(normalize, str):
+        from .sources import resolve_fetcher
+
+        try:
+            return resolve_fetcher(normalize)
+        except Exception as error:  # a renamed module must not make it unopenable
+            warnings.warn(
+                f"corpus {name!r}: its query normalizer {normalize!r} cannot be "
+                f"imported ({error}), so its queries are not folded.",
+                stacklevel=3,
+            )
+            return None
+    warnings.warn(
+        f"corpus {name!r} folded its indexed text with a callable normalizer "
+        f"({(normalize or {}).get('id') or 'unnamed'}) that cannot be reopened, so "
+        "its queries are not folded. Give the strategy normalize= as a "
+        "'module:attr' reference, or pass query_normalize= to open_corpus.",
+        stacklevel=3,
     )
-    return Corpus(source.name, store, emb, emb_id)
+    return None
 
 
-def open_corpus(name: str, *, embedder: Any = None) -> Corpus:
+def open_corpus(
+    name: str, *, embedder: Any = None, query_normalize: Any = None
+) -> Corpus:
     """Reopen a previously built corpus by name.
 
     The embedding model is **lazily** resolved (see :class:`_LazyEmbedder`): the
@@ -269,10 +319,20 @@ def open_corpus(name: str, *, embedder: Any = None) -> Corpus:
     like ``"default"`` means different models on machines with and without
     ``sentence-transformers``, which would make the query vectors incompatible
     with the index.
+
+    The query normalizer the corpus was built with (see :class:`Corpus`) is
+    reopened from its stored ``"module:attr"`` reference; pass
+    ``query_normalize=`` (a callable or a reference) to override it.
     """
     store = CorpusStore.local(name)
     cfg = store.get_config()
+    normalize = _resolve_query_normalize(
+        query_normalize if query_normalize is not None else cfg.get("query_normalize"),
+        name=name,
+    )
     spec = embedder if embedder is not None else cfg.get("embedder_spec", "default")
     emb_id = cfg.get("embedder_id") or ""
     pinned_id = "" if embedder is not None else emb_id
-    return Corpus(name, store, _LazyEmbedder(spec, pinned_id=pinned_id), emb_id)
+    return Corpus(
+        name, store, _LazyEmbedder(spec, pinned_id=pinned_id), emb_id, normalize
+    )

@@ -758,6 +758,13 @@ def search(
             return merged[:k]
         query = queries[0]
 
+    # Fold the query the way the corpus folded its indexed text (Fields(normalize=
+    # ...)), or an unfolded query never matches folded text. Each formulated
+    # variant arrives here through its own sub-search, so it is folded too.
+    query_normalize = getattr(corpus, "query_normalize", None)
+    if query_normalize is not None:
+        query = query_normalize(query)
+
     # Lexical ranking scores on text alone, so it must not pay the embedding
     # matrix's I/O; dense/hybrid need the matrix. (Both reuse the same cache.)
     if mode == "lexical":

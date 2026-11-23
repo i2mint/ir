@@ -15,6 +15,7 @@ published to PyPI). Entries are commit subjects and PR titles, verbatim.
 
 ### Changed
 
+- A corpus folds its queries with the normalizer its strategy applied to the indexed text (`Fields(normalize=...)`), in every mode: `ir.build` records it (a `"module:attr"` reference is persisted and reopened by `open_corpus`; a callable warns on reopening, and `open_corpus(query_normalize=...)` hands it back). Folded text is no longer missed by an unfolded query ([#146](https://github.com/i2mint/ir/issues/146))
 - Lexical and hybrid search use vd's `bm25s` engine when the `bm25s` package is installed (the new `ir[bm25s]` extra): the same top-50 as the pure-Python engine, scores equal to float32 rounding, lexical queries 5x to 16x faster. `ir.retrieve.BM25_ENGINE = "python"` restores bit-identical scores ([#171](https://github.com/i2mint/ir/issues/171))
 
 - `ir.with_synopsis(ir.Package())` no longer sends every string field of a Package record (including its local `path`) to the LLM: strategies declare `synopsis_fields` (`Package`: name, description, readme) and `make_llm_synthesizer(text_fields=...)` sends only those. The fields fold into the default `synthesizer_id`, so Package synopses built before this re-synthesize (unless you pass your own `synthesizer_id`) ([#101](https://github.com/i2mint/ir/issues/101))

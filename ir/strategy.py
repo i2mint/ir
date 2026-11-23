@@ -497,6 +497,31 @@ def _field_text(value: Any) -> str:
     return str(value)
 
 
+def strategy_normalizer(strategy) -> Callable[[str], str] | str | None:
+    """The ``normalize`` an indexing *strategy* applies to its text, as given.
+
+    That is the strategy's ``normalize`` attribute (a callable or a
+    ``"module:attr"`` reference), or, for a wrapper such as
+    :func:`ir.with_synopsis`, that of the strategy it wraps; ``None`` when the
+    indexed text is not normalized. :func:`ir.build` records it so a search can
+    fold its query with the same function.
+
+    >>> strategy_normalizer(Fields(fields=["about"], normalize="ir.strategy:fold_text"))
+    'ir.strategy:fold_text'
+    >>> strategy_normalizer(Fields(fields=["about"])) is None
+    True
+    """
+    normalize = getattr(strategy, "normalize", None)
+    if normalize is not None:
+        return normalize
+    for value in vars(strategy).values() if hasattr(strategy, "__dict__") else ():
+        if value is not strategy and hasattr(value, "decompose"):
+            found = strategy_normalizer(value)
+            if found is not None:
+                return found
+    return None
+
+
 def _resolve_normalizer(normalize) -> Callable[[str], str]:
     """A ``str -> str`` callable from a callable, a ``"module:attr"`` ref, or ``None``."""
     if normalize is None:
@@ -548,12 +573,14 @@ class Fields:
       field name, so a query can target one field with ``surfaces={...}``.
 
     ``normalize`` (a ``str -> str`` callable, or a ``"module:attr"`` reference to
-    one, case/accent folding...) is applied to every text before indexing. **It
-    acts on the index side only**: apply the same function to queries (e.g.
-    through ``formulate=``), or folded text will never match an unfolded query.
-    A reference is persisted in a registry spec and is its own identity; a
-    callable is not persisted, and is identified by its qualified name or an
-    explicit ``normalize_id`` (required for a lambda or closure).
+    one, case/accent folding...) is applied to every text before indexing, and
+    :func:`ir.build` records it on the corpus so every search folds its query
+    with the same function (see :class:`ir.index.Corpus`). A reference is
+    persisted in a registry spec and in the built corpus, and is its own
+    identity; a callable is not persisted (a reopened corpus warns that its
+    queries are no longer folded, unless ``open_corpus(query_normalize=...)``
+    hands it back), and is identified by its qualified name or an explicit
+    ``normalize_id`` (required for a lambda or closure).
     ``max_chars`` / ``overlap`` window the *body* with :func:`balanced_windows`
     (``split`` swaps the splitter: a ``(text, *, size, overlap) -> list[str]``
     callable or ``"module:attr"`` reference, e.g. :func:`word_windows` for
