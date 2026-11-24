@@ -39,6 +39,36 @@ def test_chunked_with_a_splitter_yields_no_blank_surfaces():
     assert {s.metadata["n_chunks"] for s in plan.surfaces} == {len(texts)}
 
 
+@pytest.mark.parametrize("layout", ["record", "fields"])
+@pytest.mark.parametrize("split", [None, "ir.strategy:balanced_windows", balanced_windows])
+@pytest.mark.parametrize("head", [(), ("name",)])
+def test_fields_windowing_yields_no_blank_windows(layout, split, head):
+    record = {"name": "N", "about": "abc" + " " * 30 + "def"}
+    strategy = Fields(["about"], head=head, layout=layout, max_chars=10, overlap=0, split=split)
+    surfaces = [s for s in strategy.decompose("x", record).surfaces if s.kind != "name"]
+    texts = [s.text for s in surfaces]
+    head_only = "\n".join(record[k] for k in head)
+    assert texts and all(t.strip() and t.strip() != head_only for t in texts)
+    assert [s.metadata["chunk_index"] for s in surfaces] == list(range(len(texts)))
+    assert {s.metadata["n_chunks"] for s in surfaces} == {len(texts)}
+
+
+def test_fields_build_stores_no_blank_surfaces():
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        corpus = ir.build(
+            ir.CorpusSource.from_mapping(
+                {"x": {"about": "abc" + " " * 30 + "def"}},
+                name="fields_blank",
+                strategy=Fields(["about"], max_chars=10, overlap=0),
+            ),
+            store=CorpusStore.memory(),
+            embedder="light",
+        )
+    ids, metas = corpus.store.metas()
+    assert ids and all(m["text"].strip() for m in metas)
+
+
 def _calibration_corpus(name):
     from ir.eval import DiscoveryCase
 

@@ -32,7 +32,7 @@ import math
 import re
 import unicodedata
 import warnings
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, Callable, Protocol, runtime_checkable
 
 from .base import IndexPlan, Surface
@@ -244,6 +244,20 @@ class WholeText:
         return IndexPlan(filter_fields=meta, surfaces=surfaces)
 
 
+def _nonblank(chunks: Iterable[str]) -> list[str]:
+    """Drop whitespace-only chunks.
+
+    The contract every windowing strategy keeps (:class:`Chunked`,
+    :class:`Fields`): a splitter may cut a long whitespace run into windows that
+    strip to nothing, and those must never become surfaces (nor count in
+    ``chunk_index`` / ``n_chunks``).
+
+    >>> _nonblank(["abc", "   ", "", "def"])
+    ['abc', 'def']
+    """
+    return [c for c in chunks if c.strip()]
+
+
 class Chunked:
     """Split the artifact's text into overlapping chunk surfaces.
 
@@ -305,9 +319,9 @@ class Chunked:
                 if isinstance(self.split, str)
                 else self.split
             )
-            chunks = splitter(text, size=self.chunk_size, overlap=self.overlap)
-            # Same contract as the default path: no whitespace-only surfaces.
-            chunks = [c for c in chunks if c.strip()]
+            chunks = _nonblank(
+                splitter(text, size=self.chunk_size, overlap=self.overlap)
+            )
         surfaces = [
             Surface(
                 artifact_id,
@@ -678,7 +692,10 @@ class Fields:
                 else self.split
             )
         )
-        windows = functools.partial(splitter, size=self.max_chars, overlap=self.overlap)
+
+        def windows(t):
+            return _nonblank(splitter(t, size=self.max_chars, overlap=self.overlap))
+
         if self.layout == "fields":
             surfaces = []
             for key in self.reads:
