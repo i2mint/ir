@@ -346,6 +346,14 @@ class _SynopsisStrategy:
         text = self.synthesize(artifact)
         text = text.strip() if isinstance(text, str) else ""
         if text:
+            # The query is folded with the inner strategy's normalizer (ir.build
+            # records it through the wrapper), so the synopsis must be folded too.
+            from .strategy import _resolve_normalizer, strategy_normalizer
+
+            normalize = strategy_normalizer(self.strategy)
+            if normalize is not None:
+                text = _resolve_normalizer(normalize)(text).strip()
+        if text:
             synopsis = Surface(
                 artifact_id,
                 self.synopsis_kind,

@@ -1436,6 +1436,7 @@ class MinScoreCalibration:
     strategy: str = "conservative"
     vd_degraded: bool = False
     rerank: str | None = None
+    fusion: str | None = None
 
     def to_dict(self) -> dict:
         """JSON-serializable form (for persistence and the qh / HTTP surface)."""
@@ -1461,6 +1462,7 @@ class MinScoreCalibration:
             "strategy": self.strategy,
             "vd_degraded": self.vd_degraded,
             "rerank": self.rerank,
+            "fusion": self.fusion,
         }
 
     @classmethod
@@ -1490,6 +1492,7 @@ class MinScoreCalibration:
             strategy=d.get("strategy", "conservative"),
             vd_degraded=bool(d.get("vd_degraded", False)),
             rerank=d.get("rerank"),
+            fusion=d.get("fusion"),
         )
 
     def save(self, corpus: Any) -> "MinScoreCalibration":
@@ -1507,7 +1510,7 @@ class MinScoreCalibration:
                 "set a `rerank_id` attribute on it."
             )
         corpus.store.set_calibration(
-            calibration_key(self.mode, self.rerank), self.to_dict()
+            calibration_key(self.mode, self.rerank, fusion=self.fusion), self.to_dict()
         )
         return self
 
@@ -1689,6 +1692,7 @@ def calibrate_min_score(
             embedder_id=getattr(corpus, "embedder_id", None),
             vd_degraded=vd_degraded,
             rerank=rerank_id,
+            fusion=search_kw.get("fusion"),
         )
 
     floors = (
@@ -1719,6 +1723,7 @@ def calibrate_min_score(
         embedder_id=getattr(corpus, "embedder_id", None),
         vd_degraded=vd_degraded,
         rerank=rerank_id,
+        fusion=search_kw.get("fusion"),
     )
     if persist:
         calib.save(corpus)
@@ -1732,6 +1737,7 @@ def load_calibration(
     rerank: Any = None,
     rerank_text: Any = "surface",
     rerank_max_chars: int = DFLT_RERANK_MAX_CHARS,
+    fusion: str | None = None,
 ) -> MinScoreCalibration | None:
     """Load a persisted :class:`MinScoreCalibration` for ``(corpus, mode)``.
 
@@ -1750,7 +1756,7 @@ def load_calibration(
             return None
     else:
         tag = None
-    rec = corpus.store.get_calibration(calibration_key(mode, tag))
+    rec = corpus.store.get_calibration(calibration_key(mode, tag, fusion=fusion))
     return MinScoreCalibration.from_dict(rec) if rec else None
 
 

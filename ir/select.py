@@ -956,7 +956,7 @@ def _warn_auto_floor_on_rank_fusion(mode: str, fusion: str) -> None:
 
 
 def _resolve_auto_min_score(
-    corpus: Any, mode: str, rerank: str | None = None
+    corpus: Any, mode: str, rerank: str | None = None, *, fusion: str | None = None
 ) -> float | None:
     """Load the calibrated abstention floor for ``(corpus, mode)``, or ``None``.
 
@@ -975,7 +975,7 @@ def _resolve_auto_min_score(
     # stacklevel=3: warn → _resolve_auto_min_score → discover → the user's call.
     store = getattr(corpus, "store", None)
     get = getattr(store, "get_calibration", None)
-    key = calibration_key(mode, rerank)
+    key = calibration_key(mode, rerank, fusion=fusion)
     name = getattr(corpus, "name", "?")
     if is_anonymous(rerank):
         warnings.warn(
@@ -992,13 +992,17 @@ def _resolve_auto_min_score(
             f"{name!r} mode {key!r}; not abstaining by absolute score. Calibrate "
             f"with ir.eval.calibrate_min_score(corpus, cases, mode={mode!r}, "
             f"persist=True"
-            f"{', with the same rerank=/rerank_text=' if rerank else ''}).",
+            f"{', with the same rerank=/rerank_text=' if rerank else ''}"
+            f"{f', fusion={fusion!r}' if key.startswith(mode + '~') else ''}).",
             stacklevel=3,
         )
         return None
     # The key is a file name: make sure the record found there is really this
     # configuration's (a case-insensitive file system folds distinct keys together).
-    if rec.get("rerank") != rerank or rec.get("mode", mode) != mode:
+    stored_key = calibration_key(
+        rec.get("mode", mode), rec.get("rerank"), fusion=rec.get("fusion")
+    )
+    if rec.get("rerank") != rerank or stored_key != key:
         warnings.warn(
             f"discover(min_score='auto'): the calibration stored for corpus {name!r} "
             f"under {key!r} belongs to another configuration (mode "
@@ -1221,7 +1225,9 @@ def discover(
             not rerank_id
         ):  # a reranked search is scored by the reranker, not by the fusion
             _warn_auto_floor_on_rank_fusion(mode, search_kw.get("fusion", "rrf"))
-        min_score = _resolve_auto_min_score(corpus, mode, rerank_id)
+        min_score = _resolve_auto_min_score(
+            corpus, mode, rerank_id, fusion=search_kw.get("fusion")
+        )
 
     hits = _search(
         corpus,
@@ -1269,6 +1275,8 @@ def _resolve_federated_floors(
     min_score: float | str | Mapping[str, float | str | None] | None,
     mode: str,
     rerank: str | None = None,
+    *,
+    fusion: str | None = None,
 ) -> dict[str, float | None]:
     """Per-source abstention floors for federated :func:`discover`.
 
@@ -1292,7 +1300,10 @@ def _resolve_federated_floors(
                 f"invalid min_score {min_score!r}; expected None, 'auto', or a "
                 f"{{name: floor_or_'auto'}} mapping for federated discover."
             )
-        return {name: _resolve_auto_min_score(c, mode, rerank) for name, c in resolved}
+        return {
+            name: _resolve_auto_min_score(c, mode, rerank, fusion=fusion)
+            for name, c in resolved
+        }
     if isinstance(min_score, Mapping):
         by_name = dict(resolved)
         unknown = sorted(set(min_score) - set(by_name))
@@ -1306,7 +1317,9 @@ def _resolve_federated_floors(
             if spec is None:
                 floors[name] = None
             elif spec == "auto":
-                floors[name] = _resolve_auto_min_score(by_name[name], mode, rerank)
+                floors[name] = _resolve_auto_min_score(
+                    by_name[name], mode, rerank, fusion=fusion
+                )
             elif isinstance(spec, bool) or not isinstance(spec, (int, float)):
                 raise ValueError(
                     f"invalid min_score for source {name!r}: {spec!r}; expected "
@@ -1435,7 +1448,11 @@ def _discover_federated(
             )
 
     floors = _resolve_federated_floors(
-        resolved, min_score, mode, _rerank_tag_of(search_kw)
+        resolved,
+        min_score,
+        mode,
+        _rerank_tag_of(search_kw),
+        fusion=search_kw.get("fusion"),
     )
 
     per_source: dict[str, dict] = {}

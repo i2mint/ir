@@ -385,7 +385,9 @@ class CorpusSource:
         """A directory tree of text files as a corpus (lazy ``dol`` scope)."""
         import dol
 
-        root = Path(root).expanduser()
+        # Absolute, so the ``path`` stored for mode='grep' does not depend on the
+        # working directory the corpus was built from.
+        root = Path(root).expanduser().absolute()
         keep = re.compile(pattern)
         store = dol.TextFiles(str(root))
 
@@ -434,7 +436,7 @@ class CorpusSource:
         record is a project-tagged document; ids are paths relative to the
         projects root.
         """
-        root = Path(projects_root or _projects_root())
+        root = Path(projects_root or _projects_root()).expanduser().absolute()
         exclude = DFLT_EXCLUDE_DIRS if exclude_dirs is None else frozenset(exclude_dirs)
         scope: dict[str, dict] = {}
         meta: dict[str, dict] = {}
