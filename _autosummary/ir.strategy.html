@@ -530,9 +530,9 @@ so an injected-free synopsis summarizes the same text a strategy would index.</p
 <dt class="sig sig-object py" id="ir.strategy.word_windows">
 <span class="sig-prename descclassname"><span class="pre">ir.strategy.</span></span><span class="sig-name descname"><span class="pre">word_windows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/strategy.html#word_windows"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.strategy.word_windows" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.strategy.word_windows'">¶</a></dt>
 <dd><p>Like <a class="reference internal" href="#ir.strategy.balanced_windows" title="ir.strategy.balanced_windows"><code class="xref py py-func docutils literal notranslate"><span class="pre">balanced_windows()</span></code></a>, but each cut moves back to the nearest whitespace.</p>
-<p>A window that would end mid-word ends at the last space inside it instead
-(when there is one), and the next window starts at the following word, so no
-word is split. Windows are therefore <em>at most</em> <code class="docutils literal notranslate"><span class="pre">size</span></code> long but not
+<p>A window that would end mid-word ends at the last whitespace (a space, a
+newline, a tab) inside it instead (when there is one), and the next window
+starts at the following word, so no word is split. Windows are therefore <em>at most</em> <code class="docutils literal notranslate"><span class="pre">size</span></code> long but not
 near-equal. <code class="docutils literal notranslate"><span class="pre">overlap</span></code> is a character target, rounded to word starts.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="gp">&gt;&gt;&gt; </span><span class="n">word_windows</span><span class="p">(</span><span class="s2">"alpha beta gamma delta"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
 </span><span id="line-2"><span class="go">['alpha beta', 'gamma delta']</span>
@@ -587,7 +587,7 @@ near-equal. <code class="docutils literal notranslate"><span class="pre">overlap
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=b9e65ee1"></script>
+<script src="../_static/documentation_options.js?v=1d9edaf8"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

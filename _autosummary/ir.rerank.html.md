@@ -62,7 +62,7 @@ True
 | [`rerank_tag`](#ir.rerank.rerank_tag)(reranker[, rerank_text, max_chars]) | A short, key-safe identity for one reranked configuration (`None` if no rerank).                                                                          |
 | [`is_anonymous`](#ir.rerank.is_anonymous)(tag)                              | Does `tag` rest on an unnamed callable (so its calibration key may collide)?                                                                              |
 | [`spec_tag`](#ir.rerank.spec_tag)(spec[, rerank_text, max_chars])       | The tag a `rerank` spec *would* get, without loading a model; `None` if the spec cannot run here (a `"cross-encoder"` spec whose extra is not installed). |
-| [`calibration_key`](#ir.rerank.calibration_key)(mode[, tag])                   | The key an abstention floor is stored and loaded under.                                                                                                   |
+| [`calibration_key`](#ir.rerank.calibration_key)(mode[, tag, fusion])           | The key an abstention floor is stored and loaded under.                                                                                                   |
 | [`passage_texts`](#ir.rerank.passage_texts)(corpus, candidates[, ...])       | The text the reranker scores for each candidate's store `meta` row.                                                                                       |
 
 ### ir.rerank.CROSS_ENCODER *= 'cross-encoder'*
@@ -83,18 +83,23 @@ The cross-encoder `rerank="cross-encoder"` resolves to (ef’s default).
 
 The built-in `rerank_text` choices (a callable is also accepted).
 
-### ir.rerank.calibration_key(mode, tag=None)
+### ir.rerank.calibration_key(mode, tag=None, , fusion=None)
 
 The key an abstention floor is stored and loaded under.
 
 `mode` alone for a first-stage ranking (today’s behaviour, so existing floors keep
-working); `"<mode>+<tag>"` for a reranked one.
+working); `"<mode>+<tag>"` for a reranked one. A hybrid ranking fused other than
+by the default `"rrf"` scores on another scale, so its floor gets its own
+`"<mode>~<fusion>"` key (a reranked search is scored by the reranker, so its key
+ignores `fusion`).
 
 ```pycon
 >>> calibration_key("hybrid")
 'hybrid'
 >>> calibration_key("hybrid", "rerank-m+artifact")
 'hybrid+rerank-m+artifact'
+>>> calibration_key("hybrid", fusion="blend"), calibration_key("hybrid", fusion="rrf")
+('hybrid~blend', 'hybrid')
 ```
 
 * **Return type:**

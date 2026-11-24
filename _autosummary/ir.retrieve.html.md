@@ -84,8 +84,8 @@ evicted first). Each is a full tokenized copy of its slice, so this bounds memor
 
 Which `vd.BM25Index` engine scores lexical queries. `"auto"` uses vd’s
 `"bm25s"` engine when the `bm25s` package imports (same ranking as the
-pure-Python engine, scores equal to float32 rounding, queries roughly 100x
-faster; it comes with ir’s `bm25s` extra) and the pure-Python engine
+pure-Python engine, scores equal to float32 rounding, queries several times
+faster, more on larger corpora; it comes with ir’s `bm25s` extra) and the pure-Python engine
 otherwise. Set `"python"` for bit-identical scores across machines, or name
 any engine in `vd.search.BM25_ENGINES`.
 

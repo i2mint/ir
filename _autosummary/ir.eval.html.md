@@ -371,7 +371,7 @@ relevant tooling); `tangential`/`none` are non-relevant (gain `0`). These
 gains are the knob that lets nDCG rank a core-first ordering strictly above a
 uses-tools-first one at identical recall.
 
-### *class* ir.eval.MinScoreCalibration(corpus_name, mode, k, min_score, sensitivity, specificity, youden_j, balanced_accuracy, separable, sensitivity_weight, n_positive, n_abstention, n_retrieval_miss, positive_scores, abstention_scores, grid, reason, embedder_id=None, strategy='conservative', vd_degraded=False, rerank=None)
+### *class* ir.eval.MinScoreCalibration(corpus_name, mode, k, min_score, sensitivity, specificity, youden_j, balanced_accuracy, separable, sensitivity_weight, n_positive, n_abstention, n_retrieval_miss, positive_scores, abstention_scores, grid, reason, embedder_id=None, strategy='conservative', vd_degraded=False, rerank=None, fusion=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -1178,7 +1178,7 @@ Count of artifacts at each level for `theme` (every level represented).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`int`](https://docs.python.org/3/builtins/functions.html#int)]
 
-### ir.eval.load_calibration(corpus, mode, , rerank=None, rerank_text='surface', rerank_max_chars=2000)
+### ir.eval.load_calibration(corpus, mode, , rerank=None, rerank_text='surface', rerank_max_chars=2000, fusion=None)
 
 Load a persisted [`MinScoreCalibration`](#ir.eval.MinScoreCalibration) for `(corpus, mode)`.
 

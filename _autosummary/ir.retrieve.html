@@ -256,8 +256,8 @@ evicted first). Each is a full tokenized copy of its slice, so this bounds memor
 <span class="sig-prename descclassname"><span class="pre">ir.retrieve.</span></span><span class="sig-name descname"><span class="pre">BM25_ENGINE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'auto'</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.retrieve.BM25_ENGINE" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.retrieve.BM25_ENGINE'">¶</a></dt>
 <dd><p>Which <code class="docutils literal notranslate"><span class="pre">vd.BM25Index</span></code> engine scores lexical queries. <code class="docutils literal notranslate"><span class="pre">"auto"</span></code> uses vd’s
 <code class="docutils literal notranslate"><span class="pre">"bm25s"</span></code> engine when the <code class="docutils literal notranslate"><span class="pre">bm25s</span></code> package imports (same ranking as the
-pure-Python engine, scores equal to float32 rounding, queries roughly 100x
-faster; it comes with ir’s <code class="docutils literal notranslate"><span class="pre">bm25s</span></code> extra) and the pure-Python engine
+pure-Python engine, scores equal to float32 rounding, queries several times
+faster, more on larger corpora; it comes with ir’s <code class="docutils literal notranslate"><span class="pre">bm25s</span></code> extra) and the pure-Python engine
 otherwise. Set <code class="docutils literal notranslate"><span class="pre">"python"</span></code> for bit-identical scores across machines, or name
 any engine in <code class="docutils literal notranslate"><span class="pre">vd.search.BM25_ENGINES</span></code>.</p>
 </dd></dl>
@@ -621,7 +621,7 @@ no boost.</p></li>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=b9e65ee1"></script>
+<script src="../_static/documentation_options.js?v=1d9edaf8"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

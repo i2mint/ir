@@ -339,9 +339,9 @@ so an injected-free synopsis summarizes the same text a strategy would index.
 
 Like [`balanced_windows()`](#ir.strategy.balanced_windows), but each cut moves back to the nearest whitespace.
 
-A window that would end mid-word ends at the last space inside it instead
-(when there is one), and the next window starts at the following word, so no
-word is split. Windows are therefore *at most* `size` long but not
+A window that would end mid-word ends at the last whitespace (a space, a
+newline, a tab) inside it instead (when there is one), and the next window
+starts at the following word, so no word is split. Windows are therefore *at most* `size` long but not
 near-equal. `overlap` is a character target, rounded to word starts.
 
 ```pycon

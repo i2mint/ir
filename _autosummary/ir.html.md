@@ -42,7 +42,7 @@ the reviewing search subagent shipped under `.claude/`.
 
 | [`resolve_reranker`](#ir.resolve_reranker)(spec)                             | The reranker `spec` names, or `None` when there is none to apply.                                                                               |
 |-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`calibration_key`](#ir.calibration_key)(mode[, tag])                       | The key an abstention floor is stored and loaded under.                                                                                         |
+| [`calibration_key`](#ir.calibration_key)(mode[, tag, fusion])               | The key an abstention floor is stored and loaded under.                                                                                         |
 | [`search_tool`](#ir.search_tool)(query, \*, corpus[, k, mode, ...])     | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                          |
 | [`make_search`](#ir.make_search)(corpus, \*[, name, description, ...])  | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                                  |
 | [`with_synopsis`](#ir.with_synopsis)(strategy, \*[, synthesize, ...])     | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                         |
@@ -1217,18 +1217,23 @@ Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](ir.
 `embedder` (e.g. `"light"` for the numpy-only hashing embedder),
 `full` (prune artifacts no longer in the source), and `batch_size`.
 
-### ir.calibration_key(mode, tag=None)
+### ir.calibration_key(mode, tag=None, , fusion=None)
 
 The key an abstention floor is stored and loaded under.
 
 `mode` alone for a first-stage ranking (today’s behaviour, so existing floors keep
-working); `"<mode>+<tag>"` for a reranked one.
+working); `"<mode>+<tag>"` for a reranked one. A hybrid ranking fused other than
+by the default `"rrf"` scores on another scale, so its floor gets its own
+`"<mode>~<fusion>"` key (a reranked search is scored by the reranker, so its key
+ignores `fusion`).
 
 ```pycon
 >>> calibration_key("hybrid")
 'hybrid'
 >>> calibration_key("hybrid", "rerank-m+artifact")
 'hybrid+rerank-m+artifact'
+>>> calibration_key("hybrid", fusion="blend"), calibration_key("hybrid", fusion="rrf")
+('hybrid~blend', 'hybrid')
 ```
 
 * **Return type:**

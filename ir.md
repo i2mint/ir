@@ -1,4 +1,4 @@
-> built 2026-11-23 22:39 UTC from 0c48a91 (master) · ir 0.1.92. Details: build_info.json
+> built 2026-11-24 01:05 UTC from 07389f1 (master) · ir 0.1.93. Details: build_info.json
 
 # index.html.md
 
@@ -1445,7 +1445,7 @@ relevant tooling); `tangential`/`none` are non-relevant (gain `0`). These
 gains are the knob that lets nDCG rank a core-first ordering strictly above a
 uses-tools-first one at identical recall.
 
-### *class* ir.eval.MinScoreCalibration(corpus_name, mode, k, min_score, sensitivity, specificity, youden_j, balanced_accuracy, separable, sensitivity_weight, n_positive, n_abstention, n_retrieval_miss, positive_scores, abstention_scores, grid, reason, embedder_id=None, strategy='conservative', vd_degraded=False, rerank=None)
+### *class* ir.eval.MinScoreCalibration(corpus_name, mode, k, min_score, sensitivity, specificity, youden_j, balanced_accuracy, separable, sensitivity_weight, n_positive, n_abstention, n_retrieval_miss, positive_scores, abstention_scores, grid, reason, embedder_id=None, strategy='conservative', vd_degraded=False, rerank=None, fusion=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2252,7 +2252,7 @@ Count of artifacts at each level for `theme` (every level represented).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`int`](https://docs.python.org/3/builtins/functions.html#int)]
 
-### ir.eval.load_calibration(corpus, mode, , rerank=None, rerank_text='surface', rerank_max_chars=2000)
+### ir.eval.load_calibration(corpus, mode, , rerank=None, rerank_text='surface', rerank_max_chars=2000, fusion=None)
 
 Load a persisted [`MinScoreCalibration`](_autosummary/ir.eval.html.md#ir.eval.MinScoreCalibration) for `(corpus, mode)`.
 
@@ -3284,7 +3284,7 @@ the reviewing search subagent shipped under `.claude/`.
 
 | [`resolve_reranker`](_autosummary/ir.html.md#ir.resolve_reranker)(spec)                             | The reranker `spec` names, or `None` when there is none to apply.                                                                               |
 |-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`calibration_key`](_autosummary/ir.html.md#ir.calibration_key)(mode[, tag])                       | The key an abstention floor is stored and loaded under.                                                                                         |
+| [`calibration_key`](_autosummary/ir.html.md#ir.calibration_key)(mode[, tag, fusion])               | The key an abstention floor is stored and loaded under.                                                                                         |
 | [`search_tool`](_autosummary/ir.html.md#ir.search_tool)(query, \*, corpus[, k, mode, ...])     | Search a named `ir` corpus and return a JSON-serializable result dict.                                                                          |
 | [`make_search`](_autosummary/ir.html.md#ir.make_search)(corpus, \*[, name, description, ...])  | Return a **corpus-bound** `search(query, k=...) -> dict` tool.                                                                                  |
 | [`with_synopsis`](_autosummary/ir.html.md#ir.with_synopsis)(strategy, \*[, synthesize, ...])     | Wrap *strategy* to add one LLM-derived `synopsis` surface per artifact.                                                                         |
@@ -4459,18 +4459,23 @@ Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](_au
 `embedder` (e.g. `"light"` for the numpy-only hashing embedder),
 `full` (prune artifacts no longer in the source), and `batch_size`.
 
-### ir.calibration_key(mode, tag=None)
+### ir.calibration_key(mode, tag=None, , fusion=None)
 
 The key an abstention floor is stored and loaded under.
 
 `mode` alone for a first-stage ranking (today’s behaviour, so existing floors keep
-working); `"<mode>+<tag>"` for a reranked one.
+working); `"<mode>+<tag>"` for a reranked one. A hybrid ranking fused other than
+by the default `"rrf"` scores on another scale, so its floor gets its own
+`"<mode>~<fusion>"` key (a reranked search is scored by the reranker, so its key
+ignores `fusion`).
 
 ```pycon
 >>> calibration_key("hybrid")
 'hybrid'
 >>> calibration_key("hybrid", "rerank-m+artifact")
 'hybrid+rerank-m+artifact'
+>>> calibration_key("hybrid", fusion="blend"), calibration_key("hybrid", fusion="rrf")
+('hybrid~blend', 'hybrid')
 ```
 
 * **Return type:**
@@ -6217,7 +6222,7 @@ True
 | [`rerank_tag`](_autosummary/ir.rerank.html.md#ir.rerank.rerank_tag)(reranker[, rerank_text, max_chars]) | A short, key-safe identity for one reranked configuration (`None` if no rerank).                                                                          |
 | [`is_anonymous`](_autosummary/ir.rerank.html.md#ir.rerank.is_anonymous)(tag)                              | Does `tag` rest on an unnamed callable (so its calibration key may collide)?                                                                              |
 | [`spec_tag`](_autosummary/ir.rerank.html.md#ir.rerank.spec_tag)(spec[, rerank_text, max_chars])       | The tag a `rerank` spec *would* get, without loading a model; `None` if the spec cannot run here (a `"cross-encoder"` spec whose extra is not installed). |
-| [`calibration_key`](_autosummary/ir.rerank.html.md#ir.rerank.calibration_key)(mode[, tag])                   | The key an abstention floor is stored and loaded under.                                                                                                   |
+| [`calibration_key`](_autosummary/ir.rerank.html.md#ir.rerank.calibration_key)(mode[, tag, fusion])           | The key an abstention floor is stored and loaded under.                                                                                                   |
 | [`passage_texts`](_autosummary/ir.rerank.html.md#ir.rerank.passage_texts)(corpus, candidates[, ...])       | The text the reranker scores for each candidate's store `meta` row.                                                                                       |
 
 ### ir.rerank.CROSS_ENCODER *= 'cross-encoder'*
@@ -6238,18 +6243,23 @@ The cross-encoder `rerank="cross-encoder"` resolves to (ef’s default).
 
 The built-in `rerank_text` choices (a callable is also accepted).
 
-### ir.rerank.calibration_key(mode, tag=None)
+### ir.rerank.calibration_key(mode, tag=None, , fusion=None)
 
 The key an abstention floor is stored and loaded under.
 
 `mode` alone for a first-stage ranking (today’s behaviour, so existing floors keep
-working); `"<mode>+<tag>"` for a reranked one.
+working); `"<mode>+<tag>"` for a reranked one. A hybrid ranking fused other than
+by the default `"rrf"` scores on another scale, so its floor gets its own
+`"<mode>~<fusion>"` key (a reranked search is scored by the reranker, so its key
+ignores `fusion`).
 
 ```pycon
 >>> calibration_key("hybrid")
 'hybrid'
 >>> calibration_key("hybrid", "rerank-m+artifact")
 'hybrid+rerank-m+artifact'
+>>> calibration_key("hybrid", fusion="blend"), calibration_key("hybrid", fusion="rrf")
+('hybrid~blend', 'hybrid')
 ```
 
 * **Return type:**
@@ -6408,8 +6418,8 @@ evicted first). Each is a full tokenized copy of its slice, so this bounds memor
 
 Which `vd.BM25Index` engine scores lexical queries. `"auto"` uses vd’s
 `"bm25s"` engine when the `bm25s` package imports (same ranking as the
-pure-Python engine, scores equal to float32 rounding, queries roughly 100x
-faster; it comes with ir’s `bm25s` extra) and the pure-Python engine
+pure-Python engine, scores equal to float32 rounding, queries several times
+faster, more on larger corpora; it comes with ir’s `bm25s` extra) and the pure-Python engine
 otherwise. Set `"python"` for bit-identical scores across machines, or name
 any engine in `vd.search.BM25_ENGINES`.
 
@@ -8063,9 +8073,9 @@ so an injected-free synopsis summarizes the same text a strategy would index.
 
 Like [`balanced_windows()`](_autosummary/ir.strategy.html.md#ir.strategy.balanced_windows), but each cut moves back to the nearest whitespace.
 
-A window that would end mid-word ends at the last space inside it instead
-(when there is one), and the next window starts at the following word, so no
-word is split. Windows are therefore *at most* `size` long but not
+A window that would end mid-word ends at the last whitespace (a space, a
+newline, a tab) inside it instead (when there is one), and the next window
+starts at the following word, so no word is split. Windows are therefore *at most* `size` long but not
 near-equal. `overlap` is a character target, rounded to word starts.
 
 ```pycon
@@ -8676,18 +8686,16 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-23 22:39 UTC** from commit <a href="https://github.com/i2mint/ir/commit/0c48a91df99e395e21e0d064892bb9dff768af4b"><code>0c48a91</code></a> on branch <code>master</code>, for **ir 0.1.92** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-24 01:05 UTC** from commit <a href="https://github.com/i2mint/ir/commit/07389f1fd517b8d9982753835dc784a1f296701d"><code>07389f1</code></a> on branch <code>master</code>, for **ir 0.1.93** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.1.92) is behind the latest release on PyPI (0.1.93): `pip install ir` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/0c48a91df99e395e21e0d064892bb9dff768af4b"><code>0c48a91df99e395e21e0d064892bb9dff768af4b</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/07389f1fd517b8d9982753835dc784a1f296701d"><code>07389f1fd517b8d9982753835dc784a1f296701d</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8698,9 +8706,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45281481753">45281481753</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45302186412">45302186412</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>0c48a91df99e395e21e0d064892bb9dff768af4b</code> (in the history of the built commit) |
+| Event commit | <code>07389f1fd517b8d9982753835dc784a1f296701d</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8725,13 +8733,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.93/">0.1.93</a>, newer than the documented version (0.1.92).
+Latest release: <a href="https://pypi.org/project/ir/0.1.93/">0.1.93</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 0c48a91df99e395e21e0d064892bb9dff768af4b
+git checkout 07389f1fd517b8d9982753835dc784a1f296701d
 pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
