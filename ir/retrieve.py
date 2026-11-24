@@ -301,7 +301,9 @@ def _grep_search(corpus, pattern, *, k, filter, options) -> list[SearchHit]:
             by_id.setdefault(meta.get("artifact_id"), meta.get("metadata") or {})
         wanted = dict(filter)
         paths = {
-            aid: p for aid, p in paths.items() if matches_filter(by_id.get(aid, {}), wanted)
+            aid: p
+            for aid, p in paths.items()
+            if matches_filter(by_id.get(aid, {}), wanted)
         }
     return grep_hits(
         pattern,
