@@ -128,7 +128,11 @@ def test_grep_corpus_from_a_relative_root_works_from_any_cwd(tmp_path, monkeypat
     assert all(os.path.isabs(p) for p in stored.values())
     monkeypatch.chdir(tmp_path.anchor)
     hits = ir.search(corpus, "acme", mode="grep")
-    assert sorted(h.artifact_id for h in hits) == ["a.md", "sub/b.md"]
+    # Artifact ids use the OS separator (dol's file keys): compare them as posix.
+    assert sorted(h.artifact_id.replace(os.sep, "/") for h in hits) == [
+        "a.md",
+        "sub/b.md",
+    ]
 
 
 def test_grep_filter_sees_the_stored_metadata(tmp_path):
