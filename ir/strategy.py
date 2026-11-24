@@ -306,6 +306,8 @@ class Chunked:
                 else self.split
             )
             chunks = splitter(text, size=self.chunk_size, overlap=self.overlap)
+            # Same contract as the default path: no whitespace-only surfaces.
+            chunks = [c for c in chunks if c.strip()]
         surfaces = [
             Surface(
                 artifact_id,
@@ -451,9 +453,9 @@ def balanced_windows(text: str, *, size: int, overlap: int = 0) -> list[str]:
 def word_windows(text: str, *, size: int, overlap: int = 0) -> list[str]:
     """Like :func:`balanced_windows`, but each cut moves back to the nearest whitespace.
 
-    A window that would end mid-word ends at the last space inside it instead
-    (when there is one), and the next window starts at the following word, so no
-    word is split. Windows are therefore *at most* ``size`` long but not
+    A window that would end mid-word ends at the last whitespace (a space, a
+    newline, a tab) inside it instead (when there is one), and the next window
+    starts at the following word, so no word is split. Windows are therefore *at most* ``size`` long but not
     near-equal. ``overlap`` is a character target, rounded to word starts.
 
     >>> word_windows("alpha beta gamma delta", size=12)
@@ -472,7 +474,7 @@ def word_windows(text: str, *, size: int, overlap: int = 0) -> list[str]:
     while start < n:
         end = min(start + size, n)
         if end < n:
-            cut = text.rfind(" ", start + 1, end + 1)
+            cut = _last_space(text, start + 1, end + 1)
             if cut > start:
                 end = cut
         windows.append(text[start:end].strip())
@@ -480,12 +482,29 @@ def word_windows(text: str, *, size: int, overlap: int = 0) -> list[str]:
             break
         nxt = max(end - overlap, start + 1)
         if overlap and nxt > start:
-            space = text.find(" ", nxt)
+            space = _next_space(text, nxt)
             nxt = space + 1 if 0 <= space < end else end
         start = nxt
-        while start < n and text[start] == " ":
+        while start < n and text[start].isspace():
             start += 1
     return [w for w in windows if w]
+
+
+_SPACE = re.compile(r"\s")
+
+
+def _last_space(text: str, lo: int, hi: int) -> int:
+    """Index of the last whitespace character in ``text[lo:hi]``, or -1."""
+    for i in range(min(hi, len(text)) - 1, lo - 1, -1):
+        if text[i].isspace():
+            return i
+    return -1
+
+
+def _next_space(text: str, lo: int) -> int:
+    """Index of the first whitespace character at or after ``lo``, or -1."""
+    m = _SPACE.search(text, lo)
+    return m.start() if m else -1
 
 
 def _field_text(value: Any) -> str:

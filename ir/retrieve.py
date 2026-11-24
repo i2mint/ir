@@ -158,8 +158,8 @@ _BM25_CACHE_LOCK = threading.Lock()
 
 #: Which ``vd.BM25Index`` engine scores lexical queries. ``"auto"`` uses vd's
 #: ``"bm25s"`` engine when the ``bm25s`` package imports (same ranking as the
-#: pure-Python engine, scores equal to float32 rounding, queries roughly 100x
-#: faster; it comes with ir's ``bm25s`` extra) and the pure-Python engine
+#: pure-Python engine, scores equal to float32 rounding, queries several times
+#: faster, more on larger corpora; it comes with ir's ``bm25s`` extra) and the pure-Python engine
 #: otherwise. Set ``"python"`` for bit-identical scores across machines, or name
 #: any engine in ``vd.search.BM25_ENGINES``.
 BM25_ENGINE = "auto"
@@ -288,22 +288,25 @@ def _grep_search(corpus, pattern, *, k, filter, options) -> list[SearchHit]:
             f"mode='grep' needs a file-backed corpus; {getattr(corpus, 'name', corpus)!r} "
             "stored no file paths (only from_files / from_md_reports corpora do)"
         )
-    by_id: dict[str, dict] = {}
-    if filter:  # filter on the metadata the corpus stored, as the other modes do
-        _ids, metas = corpus.store.metas()
-        for meta in metas:
-            by_id.setdefault(meta.get("artifact_id"), meta.get("metadata") or {})
     opts = dict(options or {})
     for taken in ("roots", "paths", "id_of", "metadata_of", "filter", "k"):
         if taken in opts:
             raise ValueError(f"grep={{{taken!r}: ...}} is set by mode='grep' itself")
-    stored = {str(path): aid for aid, path in paths.items()}
+    if filter:  # filter on the metadata the corpus stored, as the other modes do
+        from vd.filters import matches_filter
+
+        by_id: dict[str, dict] = {}
+        _ids, metas = corpus.store.metas()
+        for meta in metas:
+            by_id.setdefault(meta.get("artifact_id"), meta.get("metadata") or {})
+        wanted = dict(filter)
+        paths = {
+            aid: p for aid, p in paths.items() if matches_filter(by_id.get(aid, {}), wanted)
+        }
     return grep_hits(
         pattern,
         paths=paths,
         k=k,
-        filter=filter,
-        metadata_of=(lambda f: by_id.get(stored.get(str(f)), {})) if filter else None,
         source=getattr(corpus, "name", None),
         **opts,
     )

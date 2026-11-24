@@ -277,18 +277,29 @@ def spec_tag(
     return rerank_tag(ghost, rerank_text, max_chars=max_chars)
 
 
-def calibration_key(mode: str, tag: str | None = None) -> str:
+def calibration_key(
+    mode: str, tag: str | None = None, *, fusion: str | None = None
+) -> str:
     """The key an abstention floor is stored and loaded under.
 
     ``mode`` alone for a first-stage ranking (today's behaviour, so existing floors keep
-    working); ``"<mode>+<tag>"`` for a reranked one.
+    working); ``"<mode>+<tag>"`` for a reranked one. A hybrid ranking fused other than
+    by the default ``"rrf"`` scores on another scale, so its floor gets its own
+    ``"<mode>~<fusion>"`` key (a reranked search is scored by the reranker, so its key
+    ignores ``fusion``).
 
     >>> calibration_key("hybrid")
     'hybrid'
     >>> calibration_key("hybrid", "rerank-m+artifact")
     'hybrid+rerank-m+artifact'
+    >>> calibration_key("hybrid", fusion="blend"), calibration_key("hybrid", fusion="rrf")
+    ('hybrid~blend', 'hybrid')
     """
-    return mode if not tag else f"{mode}+{tag}"
+    if tag:
+        return f"{mode}+{tag}"
+    if mode == "hybrid" and fusion not in (None, "rrf"):
+        return f"{mode}~{fusion}"
+    return mode
 
 
 def passage_texts(
