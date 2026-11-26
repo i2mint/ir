@@ -2,7 +2,7 @@
 
 # About this build
 
-This documentation was built on **2026-11-26 13:27 UTC** from commit <a href="https://github.com/i2mint/ir/commit/6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e"><code>6ba4ef9</code></a> on branch <code>master</code>, for **ir 0.1.95** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-26 13:43 UTC** from commit <a href="https://github.com/i2mint/ir/commit/089bcafbc7261a1136aeaa407a2f54d1529f7d78"><code>089bcaf</code></a> on branch <code>master</code>, for **ir 0.1.96** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -11,7 +11,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e"><code>6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/089bcafbc7261a1136aeaa407a2f54d1529f7d78"><code>089bcafbc7261a1136aeaa407a2f54d1529f7d78</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -22,9 +22,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45829149486">45829149486</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45831694129">45831694129</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e</code> (in the history of the built commit) |
+| Event commit | <code>089bcafbc7261a1136aeaa407a2f54d1529f7d78</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -49,13 +49,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.95/">0.1.95</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.96/">0.1.96</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e
+git checkout 089bcafbc7261a1136aeaa407a2f54d1529f7d78
 pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

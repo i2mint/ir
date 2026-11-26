@@ -1,4 +1,4 @@
-> built 2026-11-26 13:27 UTC from 6ba4ef9 (master) · ir 0.1.95. Details: build_info.json
+> built 2026-11-26 13:43 UTC from 089bcaf (master) · ir 0.1.96. Details: build_info.json
 
 # index.html.md
 
@@ -3325,7 +3325,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`register`](_autosummary/ir.html.md#ir.register)(name, kind, \*[, embedder, ...])          | Register (or overwrite) a named corpus definition.                                                                                              |
 | [`corpora`](_autosummary/ir.html.md#ir.corpora)()                                          | All registered corpus definitions, keyed by name.                                                                                               |
 | [`build_corpus`](_autosummary/ir.html.md#ir.build_corpus)(name, \*\*kwargs)                     | Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](_autosummary/ir.index.html.md#ir.index.Corpus).      |
-| [`maintain`](_autosummary/ir.html.md#ir.maintain)([name, all, now, dry_run])                | Run due background work for one corpus (*name*) or every registered one (*all*).                                                                |
+| [`maintain`](_autosummary/ir.html.md#ir.maintain)([name, all, now, dry_run, progress])      | Run due background work for one corpus (*name*) or every registered one (*all*).                                                                |
 | [`maintain_corpus`](_autosummary/ir.html.md#ir.maintain_corpus)(name, \*[, now, dry_run, full])    | Do the due background work for one corpus (idempotent).                                                                                         |
 | [`resolve_policy`](_autosummary/ir.html.md#ir.resolve_policy)(entry)                              | The effective policy for a registry `entry`: entry over kind over global.                                                                       |
 | [`default_policy_for_kind`](_autosummary/ir.html.md#ir.default_policy_for_kind)(kind)                      | The smart-default [`MaintenancePolicy`](_autosummary/ir.html.md#ir.MaintenancePolicy) for a corpus `kind`.                                       |
@@ -4903,7 +4903,7 @@ True
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
-### ir.maintain(name=None, , all=False, now=None, dry_run=False)
+### ir.maintain(name=None, , all=False, now=None, dry_run=False, progress=None)
 
 Run due background work for one corpus (*name*) or every registered one (*all*).
 
@@ -4915,6 +4915,9 @@ direct request, and swallowing its error would turn a typo’d name into a
 result that reads as success to any caller written before `error` existed.
 A sweep is the unattended case, where the opposite is true: one corpus
 failing must not leave every corpus after it stale with nothing to say so.
+
+*progress*, when given, is called with a heartbeat line as each corpus starts
+and finishes, so a long run leaves a trail in the scheduled job’s log.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`MaintenanceResult`](_autosummary/ir.maintenance.html.md#ir.maintenance.MaintenanceResult)]
@@ -5599,16 +5602,18 @@ on, rather than aborting and leaving the corpora after it silently unmaintained.
 
 ### Module Attributes
 
-| [`DFLT_STALE_LOCK_AFTER`](_autosummary/ir.maintenance.html.md#ir.maintenance.DFLT_STALE_LOCK_AFTER)   | A lock older than this is assumed to belong to a run that was killed rather than one still working.   |
-|--------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| [`DFLT_STALE_LOCK_AFTER`](_autosummary/ir.maintenance.html.md#ir.maintenance.DFLT_STALE_LOCK_AFTER)   | A lock older than this is assumed to belong to a run that was killed rather than one still working.                                          |
+|--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DFLT_STUCK_INTERVALS`](_autosummary/ir.maintenance.html.md#ir.maintenance.DFLT_STUCK_INTERVALS)    | A run holding the lock for more than this many scheduled intervals is reported as possibly stuck (an hourly job should not run for 3 hours). |
 
 ### Functions
 
-| [`lock_path`](_autosummary/ir.maintenance.html.md#ir.maintenance.lock_path)()                                     | Where the single-run lock lives (regenerable, so the cache dir).                                      |
-|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| [`maintain`](_autosummary/ir.maintenance.html.md#ir.maintenance.maintain)([name, all, now, dry_run])             | Run due background work for one corpus (*name*) or every registered one (*all*).                      |
-| [`maintain_corpus`](_autosummary/ir.maintenance.html.md#ir.maintenance.maintain_corpus)(name, \*[, now, dry_run, full]) | Do the due background work for one corpus (idempotent).                                               |
-| [`single_run`](_autosummary/ir.maintenance.html.md#ir.maintenance.single_run)(\*[, path, stale_after])             | Hold the maintenance lock, or raise [`MaintenanceBusy`](_autosummary/ir.maintenance.html.md#ir.maintenance.MaintenanceBusy). |
+| [`lock_path`](_autosummary/ir.maintenance.html.md#ir.maintenance.lock_path)()                                       | Where the single-run lock lives (regenerable, so the cache dir).                                      |
+|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| [`maintain`](_autosummary/ir.maintenance.html.md#ir.maintenance.maintain)([name, all, now, dry_run, progress])     | Run due background work for one corpus (*name*) or every registered one (*all*).                      |
+| [`maintain_corpus`](_autosummary/ir.maintenance.html.md#ir.maintenance.maintain_corpus)(name, \*[, now, dry_run, full])   | Do the due background work for one corpus (idempotent).                                               |
+| [`single_run`](_autosummary/ir.maintenance.html.md#ir.maintenance.single_run)(\*[, path, stale_after])               | Hold the maintenance lock, or raise [`MaintenanceBusy`](_autosummary/ir.maintenance.html.md#ir.maintenance.MaintenanceBusy). |
+| [`stuck_run_problem`](_autosummary/ir.maintenance.html.md#ir.maintenance.stuck_run_problem)(every_minutes, \*[, path, ...]) | A warning if a live maintenance run has outlived *stuck_intervals* intervals.                         |
 
 ### Classes
 
@@ -5625,6 +5630,11 @@ on, rather than aborting and leaving the corpora after it silently unmaintained.
 A lock older than this is assumed to belong to a run that was killed rather
 than one still working. Generous, because a first full build of a large corpus
 legitimately takes a long time and reclaiming a *live* lock is the bad outcome.
+
+### ir.maintenance.DFLT_STUCK_INTERVALS *= 3*
+
+A run holding the lock for more than this many scheduled intervals is
+reported as possibly stuck (an hourly job should not run for 3 hours).
 
 ### *exception* ir.maintenance.MaintenanceBusy
 
@@ -5645,7 +5655,7 @@ Where the single-run lock lives (regenerable, so the cache dir).
 * **Return type:**
   [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
 
-### ir.maintenance.maintain(name=None, , all=False, now=None, dry_run=False)
+### ir.maintenance.maintain(name=None, , all=False, now=None, dry_run=False, progress=None)
 
 Run due background work for one corpus (*name*) or every registered one (*all*).
 
@@ -5657,6 +5667,9 @@ direct request, and swallowing its error would turn a typo’d name into a
 result that reads as success to any caller written before `error` existed.
 A sweep is the unattended case, where the opposite is true: one corpus
 failing must not leave every corpus after it stale with nothing to say so.
+
+*progress*, when given, is called with a heartbeat line as each corpus starts
+and finishes, so a long run leaves a trail in the scheduled job’s log.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`MaintenanceResult`](_autosummary/ir.maintenance.html.md#ir.maintenance.MaintenanceResult)]
@@ -5686,6 +5699,17 @@ menu suggests while the agent may be mid-run.
 
 A lock whose owning process is gone, or which is older than *stale_after*, is
 reclaimed — a killed run must not wedge maintenance forever.
+
+### ir.maintenance.stuck_run_problem(every_minutes, , path=None, now=None, stuck_intervals=3)
+
+A warning if a live maintenance run has outlived *stuck_intervals* intervals.
+
+Reads the single-run lock (pid + start time); `None` when there is no lock,
+its holder is gone, the interval is unknown, or the run is within bounds.
+Read-only: it never kills or reclaims anything.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 
 # _autosummary/ir.miss.html.md
@@ -8686,7 +8710,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-26 13:27 UTC** from commit <a href="https://github.com/i2mint/ir/commit/6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e"><code>6ba4ef9</code></a> on branch <code>master</code>, for **ir 0.1.95** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-26 13:43 UTC** from commit <a href="https://github.com/i2mint/ir/commit/089bcafbc7261a1136aeaa407a2f54d1529f7d78"><code>089bcaf</code></a> on branch <code>master</code>, for **ir 0.1.96** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -8695,7 +8719,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e"><code>6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/089bcafbc7261a1136aeaa407a2f54d1529f7d78"><code>089bcafbc7261a1136aeaa407a2f54d1529f7d78</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8706,9 +8730,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45829149486">45829149486</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45831694129">45831694129</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e</code> (in the history of the built commit) |
+| Event commit | <code>089bcafbc7261a1136aeaa407a2f54d1529f7d78</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8733,13 +8757,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.95/">0.1.95</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.96/">0.1.96</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e
+git checkout 089bcafbc7261a1136aeaa407a2f54d1529f7d78
 pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

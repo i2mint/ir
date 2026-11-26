@@ -176,6 +176,9 @@ on, rather than aborting and leaving the corpora after it silently unmaintained.
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.maintenance.DFLT_STALE_LOCK_AFTER" title="ir.maintenance.DFLT_STALE_LOCK_AFTER"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DFLT_STALE_LOCK_AFTER</span></code></a></p></td>
 <td><p>A lock older than this is assumed to belong to a run that was killed rather than one still working.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.maintenance.DFLT_STUCK_INTERVALS" title="ir.maintenance.DFLT_STUCK_INTERVALS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DFLT_STUCK_INTERVALS</span></code></a></p></td>
+<td><p>A run holding the lock for more than this many scheduled intervals is reported as possibly stuck (an hourly job should not run for 3 hours).</p></td>
+</tr>
 </tbody>
 </table>
 <p class="rubric">Functions</p>
@@ -184,7 +187,7 @@ on, rather than aborting and leaving the corpora after it silently unmaintained.
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.maintenance.lock_path" title="ir.maintenance.lock_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lock_path</span></code></a>()</p></td>
 <td><p>Where the single-run lock lives (regenerable, so the cache dir).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ir.maintenance.maintain" title="ir.maintenance.maintain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">maintain</span></code></a>([name, all, now, dry_run])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.maintenance.maintain" title="ir.maintenance.maintain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">maintain</span></code></a>([name, all, now, dry_run, progress])</p></td>
 <td><p>Run due background work for one corpus (<em>name</em>) or every registered one (<em>all</em>).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#ir.maintenance.maintain_corpus" title="ir.maintenance.maintain_corpus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">maintain_corpus</span></code></a>(name, *[, now, dry_run, full])</p></td>
@@ -192,6 +195,9 @@ on, rather than aborting and leaving the corpora after it silently unmaintained.
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.maintenance.single_run" title="ir.maintenance.single_run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">single_run</span></code></a>(*[, path, stale_after])</p></td>
 <td><p>Hold the maintenance lock, or raise <a class="reference internal" href="#ir.maintenance.MaintenanceBusy" title="ir.maintenance.MaintenanceBusy"><code class="xref py py-class docutils literal notranslate"><span class="pre">MaintenanceBusy</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.maintenance.stuck_run_problem" title="ir.maintenance.stuck_run_problem"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stuck_run_problem</span></code></a>(every_minutes, *[, path, ...])</p></td>
+<td><p>A warning if a live maintenance run has outlived <em>stuck_intervals</em> intervals.</p></td>
 </tr>
 </tbody>
 </table>
@@ -217,6 +223,12 @@ on, rather than aborting and leaving the corpora after it silently unmaintained.
 <dd><p>A lock older than this is assumed to belong to a run that was killed rather
 than one still working. Generous, because a first full build of a large corpus
 legitimately takes a long time and reclaiming a <em>live</em> lock is the bad outcome.</p>
+</dd></dl>
+<dl class="py data">
+<dt class="sig sig-object py" id="ir.maintenance.DFLT_STUCK_INTERVALS">
+<span class="sig-prename descclassname"><span class="pre">ir.maintenance.</span></span><span class="sig-name descname"><span class="pre">DFLT_STUCK_INTERVALS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></span><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.maintenance.DFLT_STUCK_INTERVALS" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.maintenance.DFLT_STUCK_INTERVALS'">¶</a></dt>
+<dd><p>A run holding the lock for more than this many scheduled intervals is
+reported as possibly stuck (an hourly job should not run for 3 hours).</p>
 </dd></dl>
 <dl class="py exception">
 <dt class="sig sig-object py" id="ir.maintenance.MaintenanceBusy">
@@ -244,7 +256,7 @@ legitimately takes a long time and reclaiming a <em>live</em> lock is the bad ou
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="ir.maintenance.maintain">
-<span class="sig-prename descclassname"><span class="pre">ir.maintenance.</span></span><span class="sig-name descname"><span class="pre">maintain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/maintenance.html#maintain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.maintenance.maintain" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.maintenance.maintain'">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">ir.maintenance.</span></span><span class="sig-name descname"><span class="pre">maintain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/maintenance.html#maintain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.maintenance.maintain" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.maintenance.maintain'">¶</a></dt>
 <dd><p>Run due background work for one corpus (<em>name</em>) or every registered one (<em>all</em>).</p>
 <p>With neither, defaults to all registered corpora. Returns one
 <a class="reference internal" href="#ir.maintenance.MaintenanceResult" title="ir.maintenance.MaintenanceResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a> per corpus considered.</p>
@@ -253,6 +265,8 @@ direct request, and swallowing its error would turn a typo’d name into a
 result that reads as success to any caller written before <code class="docutils literal notranslate"><span class="pre">error</span></code> existed.
 A sweep is the unattended case, where the opposite is true: one corpus
 failing must not leave every corpus after it stale with nothing to say so.</p>
+<p><em>progress</em>, when given, is called with a heartbeat line as each corpus starts
+and finishes, so a long run leaves a trail in the scheduled job’s log.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>[<a class="reference internal" href="#ir.maintenance.MaintenanceResult" title="ir.maintenance.MaintenanceResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a>]</span></p>
@@ -288,17 +302,32 @@ reclaimed — a killed run must not wedge maintenance forever.</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.maintenance.stuck_run_problem">
+<span class="sig-prename descclassname"><span class="pre">ir.maintenance.</span></span><span class="sig-name descname"><span class="pre">stuck_run_problem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">every_minutes</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stuck_intervals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/maintenance.html#stuck_run_problem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.maintenance.stuck_run_problem" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.maintenance.stuck_run_problem'">¶</a></dt>
+<dd><p>A warning if a live maintenance run has outlived <em>stuck_intervals</em> intervals.</p>
+<p>Reads the single-run lock (pid + start time); <code class="docutils literal notranslate"><span class="pre">None</span></code> when there is no lock,
+its holder is gone, the interval is unknown, or the run is within bounds.
+Read-only: it never kills or reclaims anything.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a> | <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
 </section>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
 <ul>
 <li><a :data-current="activeSection === '#ir.maintenance.DFLT_STALE_LOCK_AFTER'" class="reference internal" href="#ir.maintenance.DFLT_STALE_LOCK_AFTER"><code class="docutils literal notranslate"><span class="pre">DFLT_STALE_LOCK_AFTER</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.maintenance.DFLT_STUCK_INTERVALS'" class="reference internal" href="#ir.maintenance.DFLT_STUCK_INTERVALS"><code class="docutils literal notranslate"><span class="pre">DFLT_STUCK_INTERVALS</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.maintenance.MaintenanceBusy'" class="reference internal" href="#ir.maintenance.MaintenanceBusy"><code class="docutils literal notranslate"><span class="pre">MaintenanceBusy</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.maintenance.MaintenanceResult'" class="reference internal" href="#ir.maintenance.MaintenanceResult"><code class="docutils literal notranslate"><span class="pre">MaintenanceResult</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.maintenance.lock_path'" class="reference internal" href="#ir.maintenance.lock_path"><code class="docutils literal notranslate"><span class="pre">lock_path()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.maintenance.maintain'" class="reference internal" href="#ir.maintenance.maintain"><code class="docutils literal notranslate"><span class="pre">maintain()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.maintenance.maintain_corpus'" class="reference internal" href="#ir.maintenance.maintain_corpus"><code class="docutils literal notranslate"><span class="pre">maintain_corpus()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.maintenance.single_run'" class="reference internal" href="#ir.maintenance.single_run"><code class="docutils literal notranslate"><span class="pre">single_run()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.maintenance.stuck_run_problem'" class="reference internal" href="#ir.maintenance.stuck_run_problem"><code class="docutils literal notranslate"><span class="pre">stuck_run_problem()</span></code></a></li>
 </ul>
 </div>
 </aside>
@@ -312,7 +341,7 @@ reclaimed — a killed run must not wedge maintenance forever.</p>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=726fce2c"></script>
+<script src="../_static/documentation_options.js?v=45974446"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

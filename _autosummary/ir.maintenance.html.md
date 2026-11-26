@@ -33,16 +33,18 @@ on, rather than aborting and leaving the corpora after it silently unmaintained.
 
 ### Module Attributes
 
-| [`DFLT_STALE_LOCK_AFTER`](#ir.maintenance.DFLT_STALE_LOCK_AFTER)   | A lock older than this is assumed to belong to a run that was killed rather than one still working.   |
-|--------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| [`DFLT_STALE_LOCK_AFTER`](#ir.maintenance.DFLT_STALE_LOCK_AFTER)   | A lock older than this is assumed to belong to a run that was killed rather than one still working.                                          |
+|--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DFLT_STUCK_INTERVALS`](#ir.maintenance.DFLT_STUCK_INTERVALS)    | A run holding the lock for more than this many scheduled intervals is reported as possibly stuck (an hourly job should not run for 3 hours). |
 
 ### Functions
 
-| [`lock_path`](#ir.maintenance.lock_path)()                                     | Where the single-run lock lives (regenerable, so the cache dir).                                      |
-|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| [`maintain`](#ir.maintenance.maintain)([name, all, now, dry_run])             | Run due background work for one corpus (*name*) or every registered one (*all*).                      |
-| [`maintain_corpus`](#ir.maintenance.maintain_corpus)(name, \*[, now, dry_run, full]) | Do the due background work for one corpus (idempotent).                                               |
-| [`single_run`](#ir.maintenance.single_run)(\*[, path, stale_after])             | Hold the maintenance lock, or raise [`MaintenanceBusy`](#ir.maintenance.MaintenanceBusy). |
+| [`lock_path`](#ir.maintenance.lock_path)()                                       | Where the single-run lock lives (regenerable, so the cache dir).                                      |
+|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| [`maintain`](#ir.maintenance.maintain)([name, all, now, dry_run, progress])     | Run due background work for one corpus (*name*) or every registered one (*all*).                      |
+| [`maintain_corpus`](#ir.maintenance.maintain_corpus)(name, \*[, now, dry_run, full])   | Do the due background work for one corpus (idempotent).                                               |
+| [`single_run`](#ir.maintenance.single_run)(\*[, path, stale_after])               | Hold the maintenance lock, or raise [`MaintenanceBusy`](#ir.maintenance.MaintenanceBusy). |
+| [`stuck_run_problem`](#ir.maintenance.stuck_run_problem)(every_minutes, \*[, path, ...]) | A warning if a live maintenance run has outlived *stuck_intervals* intervals.                         |
 
 ### Classes
 
@@ -59,6 +61,11 @@ on, rather than aborting and leaving the corpora after it silently unmaintained.
 A lock older than this is assumed to belong to a run that was killed rather
 than one still working. Generous, because a first full build of a large corpus
 legitimately takes a long time and reclaiming a *live* lock is the bad outcome.
+
+### ir.maintenance.DFLT_STUCK_INTERVALS *= 3*
+
+A run holding the lock for more than this many scheduled intervals is
+reported as possibly stuck (an hourly job should not run for 3 hours).
 
 ### *exception* ir.maintenance.MaintenanceBusy
 
@@ -79,7 +86,7 @@ Where the single-run lock lives (regenerable, so the cache dir).
 * **Return type:**
   [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
 
-### ir.maintenance.maintain(name=None, , all=False, now=None, dry_run=False)
+### ir.maintenance.maintain(name=None, , all=False, now=None, dry_run=False, progress=None)
 
 Run due background work for one corpus (*name*) or every registered one (*all*).
 
@@ -91,6 +98,9 @@ direct request, and swallowing its error would turn a typo’d name into a
 result that reads as success to any caller written before `error` existed.
 A sweep is the unattended case, where the opposite is true: one corpus
 failing must not leave every corpus after it stale with nothing to say so.
+
+*progress*, when given, is called with a heartbeat line as each corpus starts
+and finishes, so a long run leaves a trail in the scheduled job’s log.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`MaintenanceResult`](#ir.maintenance.MaintenanceResult)]
@@ -120,3 +130,14 @@ menu suggests while the agent may be mid-run.
 
 A lock whose owning process is gone, or which is older than *stale_after*, is
 reclaimed — a killed run must not wedge maintenance forever.
+
+### ir.maintenance.stuck_run_problem(every_minutes, , path=None, now=None, stuck_intervals=3)
+
+A warning if a live maintenance run has outlived *stuck_intervals* intervals.
+
+Reads the single-run lock (pid + start time); `None` when there is no lock,
+its holder is gone, the interval is unknown, or the run is within bounds.
+Read-only: it never kills or reclaims anything.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)

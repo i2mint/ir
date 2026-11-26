@@ -83,7 +83,7 @@ the reviewing search subagent shipped under `.claude/`.
 | [`register`](#ir.register)(name, kind, \*[, embedder, ...])          | Register (or overwrite) a named corpus definition.                                                                                              |
 | [`corpora`](#ir.corpora)()                                          | All registered corpus definitions, keyed by name.                                                                                               |
 | [`build_corpus`](#ir.build_corpus)(name, \*\*kwargs)                     | Build (or update) a registered/preset corpus by *name*; returns a [`Corpus`](ir.index.html.md#ir.index.Corpus).      |
-| [`maintain`](#ir.maintain)([name, all, now, dry_run])                | Run due background work for one corpus (*name*) or every registered one (*all*).                                                                |
+| [`maintain`](#ir.maintain)([name, all, now, dry_run, progress])      | Run due background work for one corpus (*name*) or every registered one (*all*).                                                                |
 | [`maintain_corpus`](#ir.maintain_corpus)(name, \*[, now, dry_run, full])    | Do the due background work for one corpus (idempotent).                                                                                         |
 | [`resolve_policy`](#ir.resolve_policy)(entry)                              | The effective policy for a registry `entry`: entry over kind over global.                                                                       |
 | [`default_policy_for_kind`](#ir.default_policy_for_kind)(kind)                      | The smart-default [`MaintenancePolicy`](#ir.MaintenancePolicy) for a corpus `kind`.                                       |
@@ -1661,7 +1661,7 @@ True
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
-### ir.maintain(name=None, , all=False, now=None, dry_run=False)
+### ir.maintain(name=None, , all=False, now=None, dry_run=False, progress=None)
 
 Run due background work for one corpus (*name*) or every registered one (*all*).
 
@@ -1673,6 +1673,9 @@ direct request, and swallowing its error would turn a typo’d name into a
 result that reads as success to any caller written before `error` existed.
 A sweep is the unattended case, where the opposite is true: one corpus
 failing must not leave every corpus after it stale with nothing to say so.
+
+*progress*, when given, is called with a heartbeat line as each corpus starts
+and finishes, so a long run leaves a trail in the scheduled job’s log.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`MaintenanceResult`](ir.maintenance.html.md#ir.maintenance.MaintenanceResult)]
