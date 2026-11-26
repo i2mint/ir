@@ -1,4 +1,4 @@
-> built 2026-11-26 13:43 UTC from 089bcaf (master) · ir 0.1.96. Details: build_info.json
+> built 2026-11-26 15:45 UTC from 5d2c398 (master) · ir 0.1.97. Details: build_info.json
 
 # index.html.md
 
@@ -3049,7 +3049,7 @@ Python’s `re` is the authority: `pattern` is a Python regex, lines are split o
 `\n` only (a trailing `\r` is ignored), and counts and snippets come from Python,
 so scores never depend on whether `rg` is installed. `rg` is only a prefilter that
 skips files with no possible match, and it is used **only when that is provably safe**:
-an ASCII *literal* pattern (no regex metacharacters, see `_rg_can_prefilter()`),
+an ASCII *literal* pattern (no regex metacharacters, see [`rg_can_prefilter()`](_autosummary/ir.grep.html.md#ir.grep.rg_can_prefilter)),
 since `rg` and Python read `\w`, `\s`, `.`, character classes and Unicode case
 folding differently and a prefilter that disagrees would silently drop files. Any
 other pattern is read in Python (`use_rg=True` then raises).
@@ -3095,13 +3095,15 @@ the caller’s (or the agent layer’s) choice.
 
 ### Functions
 
-| [`corpus_paths`](_autosummary/ir.grep.html.md#ir.grep.corpus_paths)(corpus)                              | `{artifact_id: file}` for the artifacts of a built corpus that are files.                                                                       |
-|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`grep_hits`](_autosummary/ir.grep.html.md#ir.grep.grep_hits)(pattern, \*[, roots, paths, glob, ...]) | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
-| [`json_field_score`](_autosummary/ir.grep.html.md#ir.grep.json_field_score)(weights, \*[, default, ...])     | A `score_line` seam for JSONL records: field weights, for title-over-body.                                                                      |
-| [`make_grep_retriever`](_autosummary/ir.grep.html.md#ir.grep.make_grep_retriever)(roots, \*\*grep_defaults)     | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
-| [`markdown_heading_score`](_autosummary/ir.grep.html.md#ir.grep.markdown_heading_score)([heading, body])           | A `score_line` seam: a match on a markdown heading line counts `heading`.                                                                       |
-| [`recency_weight`](_autosummary/ir.grep.html.md#ir.grep.recency_weight)(half_life_days, \*[, now])         | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                              |
+| [`corpus_paths`](_autosummary/ir.grep.html.md#ir.grep.corpus_paths)(corpus)                              | `{artifact_id: file}` for the artifacts of a built corpus that are files.                                                                          |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`grep_hits`](_autosummary/ir.grep.html.md#ir.grep.grep_hits)(pattern, \*[, roots, paths, glob, ...]) | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                              |
+| [`json_field_score`](_autosummary/ir.grep.html.md#ir.grep.json_field_score)(weights, \*[, default, ...])     | A `score_line` seam for JSONL records: field weights, for title-over-body.                                                                         |
+| [`make_grep_retriever`](_autosummary/ir.grep.html.md#ir.grep.make_grep_retriever)(roots, \*\*grep_defaults)     | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](_autosummary/ir.retrieve.html.md#ir.retrieve.Retriever) contract.    |
+| [`markdown_heading_score`](_autosummary/ir.grep.html.md#ir.grep.markdown_heading_score)([heading, body])           | A `score_line` seam: a match on a markdown heading line counts `heading`.                                                                          |
+| [`recency_weight`](_autosummary/ir.grep.html.md#ir.grep.recency_weight)(half_life_days, \*[, now])         | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                                 |
+| [`rg_can_prefilter`](_autosummary/ir.grep.html.md#ir.grep.rg_can_prefilter)(pattern, \*[, ignore_case, ...]) | Whether `rg` is guaranteed to select a superset of the files Python matches.                                                                       |
+| [`rg_prefilter`](_autosummary/ir.grep.html.md#ir.grep.rg_prefilter)(files, pattern, \*[, ...])           | The files `rg` says may match, or `None` if `rg` is missing or cannot be used for this pattern/batch (the caller then reads every file in Python). |
 
 ### ir.grep.DFLT_EXCLUDE_DIRS *= ('.git', 'node_modules', '_\_pycache_\_', '.venv')*
 
@@ -3236,6 +3238,35 @@ A composable `weight_of` seam: a file’s weight halves per `half_life_days` of 
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### ir.grep.rg_can_prefilter(pattern, , ignore_case=False, fixed=False)
+
+Whether `rg` is guaranteed to select a superset of the files Python matches.
+
+Public so other tools (e.g. astern) can share the one safety rule.
+
+```pycon
+>>> rg_can_prefilter("acme")
+True
+>>> rg_can_prefilter(r"ac\w+")
+False
+>>> rg_can_prefilter(r"ac\w+", fixed=True)
+True
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### ir.grep.rg_prefilter(files, pattern, , ignore_case=False, fixed=False, batch=500)
+
+The files `rg` says may match, or `None` if `rg` is missing or cannot be
+used for this pattern/batch (the caller then reads every file in Python).
+
+Guard the call with [`rg_can_prefilter()`](_autosummary/ir.grep.html.md#ir.grep.rg_can_prefilter): `rg` is a safe prefilter only for
+the patterns it accepts. Files are handed to `rg` *batch* at a time.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 
 # _autosummary/ir.html.md
@@ -8710,16 +8741,18 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-26 13:43 UTC** from commit <a href="https://github.com/i2mint/ir/commit/089bcafbc7261a1136aeaa407a2f54d1529f7d78"><code>089bcaf</code></a> on branch <code>master</code>, for **ir 0.1.96** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-26 15:45 UTC** from commit <a href="https://github.com/i2mint/ir/commit/5d2c3989c1891b3ec9a03304b03e146e4c100bc5"><code>5d2c398</code></a> on branch <code>master</code>, for **ir 0.1.97** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.97) is behind the latest release on PyPI (0.1.98): `pip install ir` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/089bcafbc7261a1136aeaa407a2f54d1529f7d78"><code>089bcafbc7261a1136aeaa407a2f54d1529f7d78</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/5d2c3989c1891b3ec9a03304b03e146e4c100bc5"><code>5d2c3989c1891b3ec9a03304b03e146e4c100bc5</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8730,9 +8763,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45831694129">45831694129</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45851975497">45851975497</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>089bcafbc7261a1136aeaa407a2f54d1529f7d78</code> (in the history of the built commit) |
+| Event commit | <code>5d2c3989c1891b3ec9a03304b03e146e4c100bc5</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8757,13 +8790,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.96/">0.1.96</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.98/">0.1.98</a>, newer than the documented version (0.1.97).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout 089bcafbc7261a1136aeaa407a2f54d1529f7d78
+git checkout 5d2c3989c1891b3ec9a03304b03e146e4c100bc5
 pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

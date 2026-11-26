@@ -152,7 +152,7 @@ any other Retriever (<a class="reference internal" href="ir.retrieve.html#ir.ret
 <code class="docutils literal notranslate"><span class="pre">\n</span></code> only (a trailing <code class="docutils literal notranslate"><span class="pre">\r</span></code> is ignored), and counts and snippets come from Python,
 so scores never depend on whether <code class="docutils literal notranslate"><span class="pre">rg</span></code> is installed. <code class="docutils literal notranslate"><span class="pre">rg</span></code> is only a prefilter that
 skips files with no possible match, and it is used <strong>only when that is provably safe</strong>:
-an ASCII <em>literal</em> pattern (no regex metacharacters, see <code class="xref py py-func docutils literal notranslate"><span class="pre">_rg_can_prefilter()</span></code>),
+an ASCII <em>literal</em> pattern (no regex metacharacters, see <a class="reference internal" href="#ir.grep.rg_can_prefilter" title="ir.grep.rg_can_prefilter"><code class="xref py py-func docutils literal notranslate"><span class="pre">rg_can_prefilter()</span></code></a>),
 since <code class="docutils literal notranslate"><span class="pre">rg</span></code> and Python read <code class="docutils literal notranslate"><span class="pre">\w</span></code>, <code class="docutils literal notranslate"><span class="pre">\s</span></code>, <code class="docutils literal notranslate"><span class="pre">.</span></code>, character classes and Unicode case
 folding differently and a prefilter that disagrees would silently drop files. Any
 other pattern is read in Python (<code class="docutils literal notranslate"><span class="pre">use_rg=True</span></code> then raises).</p>
@@ -221,6 +221,12 @@ the caller’s (or the agent layer’s) choice.</p>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#ir.grep.recency_weight" title="ir.grep.recency_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recency_weight</span></code></a>(half_life_days, *[, now])</p></td>
 <td><p>A composable <code class="docutils literal notranslate"><span class="pre">weight_of</span></code> seam: a file's weight halves per <code class="docutils literal notranslate"><span class="pre">half_life_days</span></code> of age.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ir.grep.rg_can_prefilter" title="ir.grep.rg_can_prefilter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rg_can_prefilter</span></code></a>(pattern, *[, ignore_case, ...])</p></td>
+<td><p>Whether <code class="docutils literal notranslate"><span class="pre">rg</span></code> is guaranteed to select a superset of the files Python matches.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ir.grep.rg_prefilter" title="ir.grep.rg_prefilter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rg_prefilter</span></code></a>(files, pattern, *[, ...])</p></td>
+<td><p>The files <code class="docutils literal notranslate"><span class="pre">rg</span></code> says may match, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if <code class="docutils literal notranslate"><span class="pre">rg</span></code> is missing or cannot be used for this pattern/batch (the caller then reads every file in Python).</p></td>
 </tr>
 </tbody>
 </table>
@@ -372,6 +378,38 @@ pattern outranks one that only mentions it in passing.</p>
 </dd>
 </dl>
 </dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.grep.rg_can_prefilter">
+<span class="sig-prename descclassname"><span class="pre">ir.grep.</span></span><span class="sig-name descname"><span class="pre">rg_can_prefilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_case</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/grep.html#rg_can_prefilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.grep.rg_can_prefilter" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.grep.rg_can_prefilter'">¶</a></dt>
+<dd><p>Whether <code class="docutils literal notranslate"><span class="pre">rg</span></code> is guaranteed to select a superset of the files Python matches.</p>
+<p>Public so other tools (e.g. astern) can share the one safety rule.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="gp">&gt;&gt;&gt; </span><span class="n">rg_can_prefilter</span><span class="p">(</span><span class="s2">"acme"</span><span class="p">)</span>
+</span><span id="line-2"><span class="go">True</span>
+</span><span id="line-3"><span class="gp">&gt;&gt;&gt; </span><span class="n">rg_can_prefilter</span><span class="p">(</span><span class="sa">r</span><span class="s2">"ac\w+"</span><span class="p">)</span>
+</span><span id="line-4"><span class="go">False</span>
+</span><span id="line-5"><span class="gp">&gt;&gt;&gt; </span><span class="n">rg_can_prefilter</span><span class="p">(</span><span class="sa">r</span><span class="s2">"ac\w+"</span><span class="p">,</span> <span class="n">fixed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-6"><span class="go">True</span>
+</span></code></pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="ir.grep.rg_prefilter">
+<span class="sig-prename descclassname"><span class="pre">ir.grep.</span></span><span class="sig-name descname"><span class="pre">rg_prefilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pattern</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_case</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ir/grep.html#rg_prefilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a @click.prevent="window.navigator.clipboard.writeText($el.href); $el.setAttribute('data-tooltip', 'Copied!'); setTimeout(() =&gt; $el.setAttribute('data-tooltip', 'Copy link to this element'), 2000)" aria-label="Copy link to this element" class="headerlink" data-tooltip="Copy link to this element" href="#ir.grep.rg_prefilter" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#ir.grep.rg_prefilter'">¶</a></dt>
+<dd><p>The files <code class="docutils literal notranslate"><span class="pre">rg</span></code> says may match, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if <code class="docutils literal notranslate"><span class="pre">rg</span></code> is missing or cannot be
+used for this pattern/batch (the caller then reads every file in Python).</p>
+<p>Guard the call with <a class="reference internal" href="#ir.grep.rg_can_prefilter" title="ir.grep.rg_can_prefilter"><code class="xref py py-func docutils literal notranslate"><span class="pre">rg_can_prefilter()</span></code></a>: <code class="docutils literal notranslate"><span class="pre">rg</span></code> is a safe prefilter only for
+the patterns it accepts. Files are handed to <code class="docutils literal notranslate"><span class="pre">rg</span></code> <em>batch</em> at a time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>[<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a>] | <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" rel="nofollow noopener" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code><svg fill="currentColor" height="1em" stroke="none" viewbox="0 96 960 960" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M188 868q-11-11-11-28t11-28l436-436H400q-17 0-28.5-11.5T360 336q0-17 11.5-28.5T400 296h320q17 0 28.5 11.5T760 336v320q0 17-11.5 28.5T720 696q-17 0-28.5-11.5T680 656V432L244 868q-11 11-28 11t-28-11Z"></path></svg></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
 </section>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
 <div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
@@ -387,6 +425,8 @@ pattern outranks one that only mentions it in passing.</p>
 <li><a :data-current="activeSection === '#ir.grep.make_grep_retriever'" class="reference internal" href="#ir.grep.make_grep_retriever"><code class="docutils literal notranslate"><span class="pre">make_grep_retriever()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.grep.markdown_heading_score'" class="reference internal" href="#ir.grep.markdown_heading_score"><code class="docutils literal notranslate"><span class="pre">markdown_heading_score()</span></code></a></li>
 <li><a :data-current="activeSection === '#ir.grep.recency_weight'" class="reference internal" href="#ir.grep.recency_weight"><code class="docutils literal notranslate"><span class="pre">recency_weight()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.grep.rg_can_prefilter'" class="reference internal" href="#ir.grep.rg_can_prefilter"><code class="docutils literal notranslate"><span class="pre">rg_can_prefilter()</span></code></a></li>
+<li><a :data-current="activeSection === '#ir.grep.rg_prefilter'" class="reference internal" href="#ir.grep.rg_prefilter"><code class="docutils literal notranslate"><span class="pre">rg_prefilter()</span></code></a></li>
 </ul>
 </div>
 </aside>
@@ -400,7 +440,7 @@ pattern outranks one that only mentions it in passing.</p>
 </div>
 </footer>
 </div>
-<script src="../_static/documentation_options.js?v=45974446"></script>
+<script src="../_static/documentation_options.js?v=e1efc05f"></script>
 <script src="../_static/doctools.js?v=fd6eb6e6"></script>
 <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

@@ -13,7 +13,7 @@ Python’s `re` is the authority: `pattern` is a Python regex, lines are split o
 `\n` only (a trailing `\r` is ignored), and counts and snippets come from Python,
 so scores never depend on whether `rg` is installed. `rg` is only a prefilter that
 skips files with no possible match, and it is used **only when that is provably safe**:
-an ASCII *literal* pattern (no regex metacharacters, see `_rg_can_prefilter()`),
+an ASCII *literal* pattern (no regex metacharacters, see [`rg_can_prefilter()`](#ir.grep.rg_can_prefilter)),
 since `rg` and Python read `\w`, `\s`, `.`, character classes and Unicode case
 folding differently and a prefilter that disagrees would silently drop files. Any
 other pattern is read in Python (`use_rg=True` then raises).
@@ -59,13 +59,15 @@ the caller’s (or the agent layer’s) choice.
 
 ### Functions
 
-| [`corpus_paths`](#ir.grep.corpus_paths)(corpus)                              | `{artifact_id: file}` for the artifacts of a built corpus that are files.                                                                       |
-|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`grep_hits`](#ir.grep.grep_hits)(pattern, \*[, roots, paths, glob, ...]) | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                           |
-| [`json_field_score`](#ir.grep.json_field_score)(weights, \*[, default, ...])     | A `score_line` seam for JSONL records: field weights, for title-over-body.                                                                      |
-| [`make_grep_retriever`](#ir.grep.make_grep_retriever)(roots, \*\*grep_defaults)     | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) contract. |
-| [`markdown_heading_score`](#ir.grep.markdown_heading_score)([heading, body])           | A `score_line` seam: a match on a markdown heading line counts `heading`.                                                                       |
-| [`recency_weight`](#ir.grep.recency_weight)(half_life_days, \*[, now])         | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                              |
+| [`corpus_paths`](#ir.grep.corpus_paths)(corpus)                              | `{artifact_id: file}` for the artifacts of a built corpus that are files.                                                                          |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`grep_hits`](#ir.grep.grep_hits)(pattern, \*[, roots, paths, glob, ...]) | The top-`k` files under `roots` whose lines match `pattern`, as hits.                                                                              |
+| [`json_field_score`](#ir.grep.json_field_score)(weights, \*[, default, ...])     | A `score_line` seam for JSONL records: field weights, for title-over-body.                                                                         |
+| [`make_grep_retriever`](#ir.grep.make_grep_retriever)(roots, \*\*grep_defaults)     | Bind roots (and defaults) to the uniform [`ir.retrieve.Retriever`](ir.retrieve.html.md#ir.retrieve.Retriever) contract.    |
+| [`markdown_heading_score`](#ir.grep.markdown_heading_score)([heading, body])           | A `score_line` seam: a match on a markdown heading line counts `heading`.                                                                          |
+| [`recency_weight`](#ir.grep.recency_weight)(half_life_days, \*[, now])         | A composable `weight_of` seam: a file's weight halves per `half_life_days` of age.                                                                 |
+| [`rg_can_prefilter`](#ir.grep.rg_can_prefilter)(pattern, \*[, ignore_case, ...]) | Whether `rg` is guaranteed to select a superset of the files Python matches.                                                                       |
+| [`rg_prefilter`](#ir.grep.rg_prefilter)(files, pattern, \*[, ...])           | The files `rg` says may match, or `None` if `rg` is missing or cannot be used for this pattern/batch (the caller then reads every file in Python). |
 
 ### ir.grep.DFLT_EXCLUDE_DIRS *= ('.git', 'node_modules', '_\_pycache_\_', '.venv')*
 
@@ -200,3 +202,32 @@ A composable `weight_of` seam: a file’s weight halves per `half_life_days` of 
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### ir.grep.rg_can_prefilter(pattern, , ignore_case=False, fixed=False)
+
+Whether `rg` is guaranteed to select a superset of the files Python matches.
+
+Public so other tools (e.g. astern) can share the one safety rule.
+
+```pycon
+>>> rg_can_prefilter("acme")
+True
+>>> rg_can_prefilter(r"ac\w+")
+False
+>>> rg_can_prefilter(r"ac\w+", fixed=True)
+True
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### ir.grep.rg_prefilter(files, pattern, , ignore_case=False, fixed=False, batch=500)
+
+The files `rg` says may match, or `None` if `rg` is missing or cannot be
+used for this pattern/batch (the caller then reads every file in Python).
+
+Guard the call with [`rg_can_prefilter()`](#ir.grep.rg_can_prefilter): `rg` is a safe prefilter only for
+the patterns it accepts. Files are handed to `rg` *batch* at a time.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)

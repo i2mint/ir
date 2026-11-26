@@ -24,4 +24,6 @@ ir.grep
       make_grep_retriever
       markdown_heading_score
       recency_weight
+      rg_can_prefilter
+      rg_prefilter
    
