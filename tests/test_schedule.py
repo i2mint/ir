@@ -30,6 +30,12 @@ from ir.schedule import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _isolated_cache(tmp_path, monkeypatch):
+    """Status reads the maintain lock; never the developer's real one."""
+    monkeypatch.setenv("IR_CACHE_DIR", str(tmp_path / "ir-cache"))
+
+
 @pytest.fixture
 def fake_crontab(monkeypatch):
     """Drive the cron backend against an in-memory crontab."""
@@ -435,7 +441,11 @@ def test_install_inspect_update_remove(fake_crontab):
 
     # Re-running the bare command must NOT silently reinstall over a tuned schedule.
     again = schedule.ensure(backend="cron")
-    assert (again.action, again.changed, again.every_minutes) == ("unchanged", False, 15)
+    assert (again.action, again.changed, again.every_minutes) == (
+        "unchanged",
+        False,
+        15,
+    )
 
     changed = schedule.ensure(backend="cron", every="1h")
     assert (changed.action, changed.every_minutes) == ("updated", 60)
@@ -586,7 +596,9 @@ def test_cli_schedule_refuses_contradictory_flags(fake_crontab):
 
     # Silently letting one flag win made `--restart --every 15m` report success
     # while ignoring the interval.
-    assert "cannot be combined" in cli_schedule(status=True, remove=True, backend="cron")
+    assert "cannot be combined" in cli_schedule(
+        status=True, remove=True, backend="cron"
+    )
     assert "cannot be combined" in cli_schedule(
         restart=True, every="15m", backend="cron"
     )

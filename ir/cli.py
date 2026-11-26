@@ -380,6 +380,15 @@ def info(name):
     )
 
 
+def _heartbeat(line):
+    """Timestamped, flushed progress line: a long run leaves a trail in the job log."""
+    from datetime import datetime
+
+    print(
+        f"[{datetime.now().isoformat(timespec='seconds')}] maintain {line}", flush=True
+    )
+
+
 def maintain(name=None, *, all=False, dry_run=False):
     """Run due background work: incremental reindex, synopsis in its downtime window.
 
@@ -396,7 +405,7 @@ def maintain(name=None, *, all=False, dry_run=False):
             # Overlapping runs can interleave writes to one corpus store; the
             # scheduled job and a manual run both arrive through here.
             with single_run():
-                results = _maintain(name=name, all=all)
+                results = _maintain(name=name, all=all, progress=_heartbeat)
     except MaintenanceBusy as busy:
         return f"skipped: {busy}"
     if not results:

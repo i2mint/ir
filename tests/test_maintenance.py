@@ -264,3 +264,34 @@ def test_coverage_counts_records_not_ledger(tmp_path, monkeypatch):
     assert rep.indexed == 1 and len(rep.missing) == 1
     assert rep.ledgered_no_records == rep.missing
     assert "NO records" in str(rep)
+
+
+def test_stuck_run_problem_flags_a_long_live_run(tmp_path):
+    from datetime import datetime, timedelta
+
+    from ir.maintenance import stuck_run_problem
+
+    lock = tmp_path / "maintain.lock"
+    started = datetime.now() - timedelta(hours=5)
+    lock.write_text(f"{os.getpid()}\n{started.isoformat()}\n")  # a live pid: ours
+    assert "may be stuck" in stuck_run_problem(60, path=lock)
+    assert stuck_run_problem(None, path=lock) is None  # interval unknown
+    assert stuck_run_problem(60 * 24, path=lock) is None  # within 3 intervals
+    lock.write_text(f"{os.getpid()}\n{datetime.now().isoformat()}\n")
+    assert stuck_run_problem(60, path=lock) is None  # fresh
+    lock.write_text(f"999999999\n{started.isoformat()}\n")
+    assert stuck_run_problem(60, path=lock) is None  # dead holder: not "stuck"
+    assert stuck_run_problem(60, path=tmp_path / "absent.lock") is None
+
+
+def test_maintain_emits_heartbeat_lines(monkeypatch):
+    from ir import maintenance
+
+    monkeypatch.setattr(
+        maintenance,
+        "maintain_corpus",
+        lambda n, **k: maintenance.MaintenanceResult(n, False, "x"),
+    )
+    lines = []
+    maintenance.maintain(name="a", progress=lines.append)
+    assert lines == ["a: started", "a: finished"]
