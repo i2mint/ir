@@ -108,7 +108,8 @@ def test_single_run_lock_excludes_a_second_run(tmp_path):
 
 
 @pytest.mark.skipif(
-    os.name != "posix", reason="pid liveness probing is POSIX-only (os.kill kills on Windows)"
+    os.name != "posix",
+    reason="pid liveness probing is POSIX-only (os.kill kills on Windows)",
 )
 def test_single_run_lock_reclaims_a_dead_holder(tmp_path):
     # A killed run must not wedge maintenance forever. On POSIX the owning pid is
@@ -193,3 +194,73 @@ def test_maintain_cli_reports_a_concurrent_run_instead_of_racing(monkeypatch):
 
     monkeypatch.setattr(maintenance, "single_run", busy)
     assert "skipped:" in cli.maintain(all=True)
+
+
+def _ghost_source():
+    docs = {f"d{i}": {"text": f"document number {i} about topic{i}"} for i in range(3)}
+    return ir.CorpusSource.from_mapping(docs, name="ghost", strategy=ir.WholeText())
+
+
+def test_build_reembeds_ledgered_artifact_without_records():
+    # A reindex killed after deleting records leaves ledger entries with no
+    # records; an incremental build must treat them as stale, not unchanged.
+    store = CorpusStore.memory()
+    ir.build(_ghost_source(), store=store, embedder="light")
+    assert len(store) == 3
+    for rid in list(store.record_ids()):
+        store.delete_record(rid)
+    assert len(store) == 0 and len(list(store.ledger_items())) == 3
+
+    ir.build(_ghost_source(), store=store, embedder="light", full=False)
+    assert len(store) == 3
+
+
+def test_reindex_writes_new_records_before_dropping_old():
+    # Strategy change: new records are written, the stale ones dropped, and the
+    # ledger entry always names records that exist.
+    store = CorpusStore.memory()
+    ir.build(_ghost_source(), store=store, embedder="light")
+    text = "\n\n".join(f"paragraph {i} with several words here" for i in range(30))
+    src = ir.CorpusSource.from_mapping(
+        {"d0": {"text": text}},
+        name="ghost",
+        strategy=ir.Chunked(chunk_size=120, overlap=20),
+    )
+    ir.build(src, store=store, embedder="light", full=False)
+    stored = set(store.record_ids())
+    for _k, entry in store.ledger_items():
+        assert set(entry["record_ids"]) <= stored
+
+
+def test_coverage_counts_records_not_ledger(tmp_path, monkeypatch):
+    from ir import coverage
+    from ir.coverage import reports_coverage
+
+    doc = tmp_path / "t" / "pkg" / "docs"
+    doc.mkdir(parents=True)
+    (tmp_path / "t" / "pkg" / ".git").mkdir()
+    (doc / "a.md").write_text("alpha")
+    (doc / "b.md").write_text("beta")
+    store = CorpusStore.memory()
+    ir.build(
+        ir.CorpusSource.from_mapping(
+            {"t/pkg/docs/a.md": {"text": "alpha"}, "t/pkg/docs/b.md": {"text": "beta"}},
+            name="reports",
+            strategy=ir.WholeText(),
+        ),
+        store=store,
+        embedder="light",
+    )
+    store.delete_record(next(iter(store.record_ids())))  # one artifact loses records
+
+    class _C:
+        pass
+
+    c = _C()
+    c.store = store
+    monkeypatch.setattr(coverage, "open_corpus", lambda name: c)
+    rep = reports_coverage(projects_root=tmp_path)
+    assert len(rep.ledgered_no_records) == 1
+    assert rep.indexed == 1 and len(rep.missing) == 1
+    assert rep.ledgered_no_records == rep.missing
+    assert "NO records" in str(rep)

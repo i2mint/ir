@@ -174,6 +174,9 @@ def build(
 
     seen: set[str] = set()
     changed: dict[str, tuple] = {}
+    # A ledger entry whose records are gone (a reindex killed mid-way) is stale:
+    # it must be re-embedded, not skipped because its version still matches.
+    stored_ids = set(store.record_ids())
 
     for artifact_id, raw in source.items():
         seen.add(artifact_id)
@@ -185,6 +188,7 @@ def build(
             and prev.get("version") == version
             and prev.get("embedder_id") == emb_id
             and prev.get("strategy_id") == strat_id
+            and all(rid in stored_ids for rid in prev.get("record_ids", []))
         )
         # Unchanged + no edges to refresh → nothing to do for this artifact.
         if unchanged and edge_extractor is None:
@@ -206,33 +210,33 @@ def build(
     ]
     vectors = _embed_batched(emb, [s.text for _, _, s in flat], "document", batch_size)
 
-    # Replace records of changed artifacts (delete-then-write).
-    for _artifact_id, (_k, _v, prev, _plan) in changed.items():
-        if prev:
-            for rid in prev.get("record_ids", []):
-                store.delete_record(rid)
+    # Replace each changed artifact atomically: write its new records, then drop
+    # the old ones that are not reused, then update its ledger entry. A run
+    # killed part-way never leaves an artifact ledgered without records.
+    new_rows: dict[str, list] = defaultdict(list)
+    for item, vec in zip(flat, vectors, strict=True):  # strict: one row per surface
+        new_rows[item[0]].append((item, vec))
 
-    record_ids: dict[str, list[str]] = defaultdict(list)
-    # strict=True asserts one embedding row per surface (a short/long embedder
-    # output is a bug we want to surface, not silently truncate).
-    for (artifact_id, i, surface), vec in zip(flat, vectors, strict=True):
-        rid = Record.make_id(artifact_id, surface.kind, i)
-        plan = changed[artifact_id][3]
-        metadata = {**plan.filter_fields, **dict(surface.metadata)}
-        store.put_record(
-            Record(
-                id=rid,
-                artifact_id=artifact_id,
-                surface_kind=surface.kind,
-                surface_index=i,
-                text=surface.text,
-                vector=vec,
-                metadata=metadata,
+    for artifact_id, (key, version, prev, plan) in changed.items():
+        record_ids: list[str] = []
+        for (_aid, i, surface), vec in new_rows.get(artifact_id, []):
+            rid = Record.make_id(artifact_id, surface.kind, i)
+            metadata = {**plan.filter_fields, **dict(surface.metadata)}
+            store.put_record(
+                Record(
+                    id=rid,
+                    artifact_id=artifact_id,
+                    surface_kind=surface.kind,
+                    surface_index=i,
+                    text=surface.text,
+                    vector=vec,
+                    metadata=metadata,
+                )
             )
-        )
-        record_ids[artifact_id].append(rid)
-
-    for artifact_id, (key, version, _prev, _plan) in changed.items():
+            record_ids.append(rid)
+        if prev:
+            for rid in set(prev.get("record_ids", [])) - set(record_ids):
+                store.delete_record(rid)
         store.set_ledger_entry(
             key,
             {
@@ -240,7 +244,7 @@ def build(
                 "version": version,
                 "embedder_id": emb_id,
                 "strategy_id": strat_id,
-                "record_ids": record_ids.get(artifact_id, []),
+                "record_ids": record_ids,
             },
         )
 
