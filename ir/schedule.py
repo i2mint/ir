@@ -504,6 +504,14 @@ def _log_facts(log_path: str | None) -> tuple[str | None, str | None]:
     return when, last_line
 
 
+def _stuck_problems(every_minutes: int | None) -> tuple[str, ...]:
+    """A warning when a live ``ir maintain`` has outlived several intervals."""
+    from .maintenance import stuck_run_problem
+
+    problem = stuck_run_problem(every_minutes)
+    return (problem,) if problem else ()
+
+
 def _interpreter_problems(python: str | None) -> tuple[str, ...]:
     """Staleness checks on the interpreter a job is pinned to.
 
@@ -650,7 +658,12 @@ class _LaunchdBackend:
         env = tuple(sorted((data.get("EnvironmentVariables") or {}).items()))
         last_run, last_line = _log_facts(log_path)
         loaded, last_exit = self._launchctl_facts(label)
-        problems = _interpreter_problems(argv[0] if argv else None) + _env_problems(env)
+        every = int(interval // 60) if interval else None
+        problems = (
+            _interpreter_problems(argv[0] if argv else None)
+            + _env_problems(env)
+            + _stuck_problems(every)
+        )
         if last_exit:
             problems += (
                 f"the last run exited {last_exit} — the job is firing but failing; "
@@ -784,7 +797,9 @@ class _CronBackend:
             last_run=last_run,
             last_log_line=last_line,
             problems=(
-                _interpreter_problems(parsed["python"]) + _env_problems(parsed["env"])
+                _interpreter_problems(parsed["python"])
+                + _env_problems(parsed["env"])
+                + _stuck_problems(parsed["every_minutes"])
             ),
             detail="cron re-reads the crontab itself; there is nothing to load",
         )

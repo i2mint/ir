@@ -35,7 +35,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, replace as dc_replace
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from . import registry
 from .config import cache_dir
@@ -85,6 +85,45 @@ def _lock_holder_is_live(path: Path, stale_after: timedelta) -> bool:
     # just-written mtime marginally in the future, and a negative age would then
     # compare as "younger than any threshold" -- making the lock immortal.
     return max(age, timedelta(0)) < stale_after
+
+
+#: A run holding the lock for more than this many scheduled intervals is
+#: reported as possibly stuck (an hourly job should not run for 3 hours).
+DFLT_STUCK_INTERVALS = 3
+
+
+def stuck_run_problem(
+    every_minutes: int | None,
+    *,
+    path: Path | None = None,
+    now: datetime | None = None,
+    stuck_intervals: int = DFLT_STUCK_INTERVALS,
+) -> str | None:
+    """A warning if a live maintenance run has outlived *stuck_intervals* intervals.
+
+    Reads the single-run lock (pid + start time); ``None`` when there is no lock,
+    its holder is gone, the interval is unknown, or the run is within bounds.
+    Read-only: it never kills or reclaims anything.
+    """
+    if not every_minutes:
+        return None
+    path = Path(path) if path is not None else lock_path()
+    try:
+        pid_line, started_line, *_ = [*path.read_text(encoding="utf-8").split("\n"), ""]
+        started = datetime.fromisoformat(started_line.strip())
+    except (OSError, ValueError):
+        return None
+    if not _lock_holder_is_live(path, timedelta.max):
+        return None
+    age = (now or datetime.now()) - started
+    if age <= timedelta(minutes=every_minutes * stuck_intervals):
+        return None
+    hours = age.total_seconds() / 3600
+    return (
+        f"an ir maintain run (pid {pid_line.strip() or '?'}) has been going for "
+        f"{hours:.1f}h, over {stuck_intervals} intervals of {every_minutes}m: it may "
+        f"be stuck (lock: {path}). Inspect it; ir never kills it for you."
+    )
 
 
 @contextmanager
@@ -231,6 +270,7 @@ def maintain(
     all: bool = False,
     now: datetime | None = None,
     dry_run: bool = False,
+    progress: Callable[[str], None] | None = None,
 ) -> list[MaintenanceResult]:
     """Run due background work for one corpus (*name*) or every registered one (*all*).
 
@@ -242,13 +282,19 @@ def maintain(
     result that reads as success to any caller written before ``error`` existed.
     A sweep is the unattended case, where the opposite is true: one corpus
     failing must not leave every corpus after it stale with nothing to say so.
+
+    *progress*, when given, is called with a heartbeat line as each corpus starts
+    and finishes, so a long run leaves a trail in the scheduled job's log.
     """
+    say = progress or (lambda _line: None)
     sweep = not (name and not all)
     names = list(registry.registered()) if sweep else [name]
     results = []
     for n in names:
+        say(f"{n}: started")
         if not sweep:
             results.append(maintain_corpus(n, now=now, dry_run=dry_run))
+            say(f"{n}: finished")
             continue
         try:
             results.append(maintain_corpus(n, now=now, dry_run=dry_run))
@@ -258,4 +304,5 @@ def maintain(
                     n, False, f"error: {exc}", error=f"{type(exc).__name__}: {exc}"
                 )
             )
+        say(f"{n}: finished")
     return results
