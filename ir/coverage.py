@@ -40,6 +40,7 @@ class CoverageReport:
     indexed: int
     excluded: dict[str, int]
     missing: list[str] = field(default_factory=list)
+    ledgered_no_records: list[str] = field(default_factory=list)
 
     @property
     def should_index(self) -> int:
@@ -61,6 +62,7 @@ class CoverageReport:
             "excluded": dict(self.excluded),
             "coverage_ratio": self.coverage_ratio,
             "missing": list(self.missing),
+            "ledgered_no_records": list(self.ledgered_no_records),
         }
 
     def __str__(self) -> str:
@@ -77,6 +79,17 @@ class CoverageReport:
                 lines.append(f"    … and {len(self.missing) - len(shown)} more")
         else:
             lines.append("  ✓ every includable report on disk is indexed")
+        if self.ledgered_no_records:
+            lines.append(
+                f"  {len(self.ledgered_no_records)} in the build ledger but with NO "
+                "records (unsearchable; `ir build` re-embeds them):"
+            )
+            shown = self.ledgered_no_records[:20]
+            lines += [f"    {m}" for m in shown]
+            if len(self.ledgered_no_records) > len(shown):
+                lines.append(
+                    f"    … and {len(self.ledgered_no_records) - len(shown)} more"
+                )
         return "\n".join(lines)
 
 
@@ -99,13 +112,17 @@ def reports_coverage(
     ``name`` corpus by default; pass it explicitly (with ``projects_root``) to
     diff an arbitrary tree against an arbitrary index without opening a corpus.
     """
+    ledgered_no_records: set[str] = set()
     if indexed_ids is None:
-        corpus = open_corpus(name)
-        indexed_ids = {
-            e["artifact_id"]
-            for _key, e in corpus.store.ledger_items()
-            if e.get("artifact_id")
+        # "Indexed" means searchable: the artifact has records, not merely a
+        # ledger entry (a killed reindex leaves entries without records).
+        store = open_corpus(name).store
+        _ids, metas = store.metas()
+        indexed_ids = {m.get("artifact_id") for m in metas} - {None, ""}
+        ledgered = {
+            e["artifact_id"] for _key, e in store.ledger_items() if e.get("artifact_id")
         }
+        ledgered_no_records = ledgered - set(indexed_ids)
     indexed_ids = set(indexed_ids)
     root = Path(projects_root or _projects_root())
     exclude = frozenset(exclude_dirs)
@@ -141,4 +158,5 @@ def reports_coverage(
         indexed=indexed,
         excluded=excluded,
         missing=missing,
+        ledgered_no_records=sorted(ledgered_no_records),
     )
