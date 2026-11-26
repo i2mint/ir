@@ -279,8 +279,9 @@ def test_stuck_run_problem_flags_a_long_live_run(tmp_path):
     assert stuck_run_problem(60 * 24, path=lock) is None  # within 3 intervals
     lock.write_text(f"{os.getpid()}\n{datetime.now().isoformat()}\n")
     assert stuck_run_problem(60, path=lock) is None  # fresh
-    lock.write_text(f"999999999\n{started.isoformat()}\n")
-    assert stuck_run_problem(60, path=lock) is None  # dead holder: not "stuck"
+    if os.name == "posix":  # liveness is a pid probe on POSIX only
+        lock.write_text(f"999999999\n{started.isoformat()}\n")
+        assert stuck_run_problem(60, path=lock) is None  # dead holder: not "stuck"
     assert stuck_run_problem(60, path=tmp_path / "absent.lock") is None
 
 
