@@ -11,7 +11,7 @@ Python's ``re`` is the authority: ``pattern`` is a Python regex, lines are split
 ``\\n`` only (a trailing ``\\r`` is ignored), and counts and snippets come from Python,
 so scores never depend on whether ``rg`` is installed. ``rg`` is only a prefilter that
 skips files with no possible match, and it is used **only when that is provably safe**:
-an ASCII *literal* pattern (no regex metacharacters, see :func:`_rg_can_prefilter`),
+an ASCII *literal* pattern (no regex metacharacters, see :func:`rg_can_prefilter`),
 since ``rg`` and Python read ``\\w``, ``\\s``, ``.``, character classes and Unicode case
 folding differently and a prefilter that disagrees would silently drop files. Any
 other pattern is read in Python (``use_rg=True`` then raises).
@@ -254,8 +254,20 @@ _META = re.compile(r"[\\.^$*+?{}\[\]|()]")
 _FOLD_TRAPS = re.compile(r"[iIkKsS]")
 
 
-def _rg_can_prefilter(pattern: str, *, ignore_case: bool, fixed: bool) -> bool:
-    """Whether ``rg`` is guaranteed to select a superset of the files Python matches."""
+def rg_can_prefilter(
+    pattern: str, *, ignore_case: bool = False, fixed: bool = False
+) -> bool:
+    r"""Whether ``rg`` is guaranteed to select a superset of the files Python matches.
+
+    Public so other tools (e.g. astern) can share the one safety rule.
+
+    >>> rg_can_prefilter("acme")
+    True
+    >>> rg_can_prefilter(r"ac\w+")
+    False
+    >>> rg_can_prefilter(r"ac\w+", fixed=True)
+    True
+    """
     if not pattern.isascii() or "\x00" in pattern or not pattern:
         return False
     if not (fixed or not _META.search(pattern)):
@@ -263,16 +275,20 @@ def _rg_can_prefilter(pattern: str, *, ignore_case: bool, fixed: bool) -> bool:
     return not (ignore_case and _FOLD_TRAPS.search(pattern))
 
 
-def _rg_prefilter(
+def rg_prefilter(
     files: list[Path],
     pattern: str,
     *,
-    ignore_case: bool,
-    fixed: bool,
-    batch: int,
+    ignore_case: bool = False,
+    fixed: bool = False,
+    batch: int = DFLT_RG_BATCH,
 ) -> list[Path] | None:
     """The files ``rg`` says may match, or ``None`` if ``rg`` is missing or cannot be
-    used for this pattern/batch (the caller then reads every file in Python)."""
+    used for this pattern/batch (the caller then reads every file in Python).
+
+    Guard the call with :func:`rg_can_prefilter`: ``rg`` is a safe prefilter only for
+    the patterns it accepts. Files are handed to ``rg`` *batch* at a time.
+    """
     rg = shutil.which("rg")
     if not rg:
         return None
@@ -393,7 +409,7 @@ def grep_hits(
         raise ValueError("grep_hits needs exactly one of roots= and paths=")
     if paths is not None and id_of is not None:
         raise ValueError("grep_hits: paths= already names each file; drop id_of=")
-    if use_rg is True and not _rg_can_prefilter(
+    if use_rg is True and not rg_can_prefilter(
         pattern, ignore_case=ignore_case, fixed=fixed
     ):
         raise ValueError(
@@ -439,10 +455,10 @@ def grep_hits(
         kept[f] = aid
 
     files = list(kept)
-    if use_rg is not False and _rg_can_prefilter(
+    if use_rg is not False and rg_can_prefilter(
         pattern, ignore_case=ignore_case, fixed=fixed
     ):
-        prefiltered = _rg_prefilter(
+        prefiltered = rg_prefilter(
             files, pattern, ignore_case=ignore_case, fixed=fixed, batch=rg_batch
         )
         if prefiltered is not None:

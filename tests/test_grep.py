@@ -359,6 +359,22 @@ def test_recency_weight_factory_composes_with_weight_of(tree):
     b = ir.grep_hits(
         "acme", roots=tree, use_rg=False, recency_half_life_days=10, now=now
     )
-    assert [(h.artifact_id, h.score) for h in a] == [(h.artifact_id, h.score) for h in b]
+    assert [(h.artifact_id, h.score) for h in a] == [
+        (h.artifact_id, h.score) for h in b
+    ]
     with pytest.raises(ValueError):
         ir.recency_weight(0)
+
+
+def test_rg_prefilter_is_public_with_defaults(tmp_path):
+    import shutil
+
+    from ir.grep import DFLT_RG_BATCH, rg_can_prefilter, rg_prefilter
+
+    a, b = tmp_path / "a.txt", tmp_path / "b.txt"
+    a.write_text("hello acme\n")
+    b.write_text("nothing\n")
+    assert rg_can_prefilter("acme") and not rg_can_prefilter("ac.me")
+    assert DFLT_RG_BATCH > 0
+    if shutil.which("rg"):
+        assert rg_prefilter([a, b], "ACME", ignore_case=True) == [a]
