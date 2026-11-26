@@ -679,7 +679,7 @@ Persist the maintenance bookkeeping for this corpus.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### *class* ir.CoverageReport(name, on_disk, indexed, excluded, missing=list())
+### *class* ir.CoverageReport(name, on_disk, indexed, excluded, missing=list(), ledgered_no_records=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

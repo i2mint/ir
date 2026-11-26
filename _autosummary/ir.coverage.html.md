@@ -27,7 +27,7 @@ reports that a search would silently miss.
 | [`CoverageReport`](#ir.coverage.CoverageReport)(name, on_disk, indexed, excluded)   | Disk-vs-index coverage for a filesystem-backed corpus.   |
 |-----------------------------------------------------------------------------------------------------|----------------------------------------------------------|
 
-### *class* ir.coverage.CoverageReport(name, on_disk, indexed, excluded, missing=list())
+### *class* ir.coverage.CoverageReport(name, on_disk, indexed, excluded, missing=list(), ledgered_no_records=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

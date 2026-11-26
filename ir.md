@@ -1,4 +1,4 @@
-> built 2026-11-24 04:51 UTC from c4eadb9 (master) · ir 0.1.94. Details: build_info.json
+> built 2026-11-26 13:27 UTC from 6ba4ef9 (master) · ir 0.1.95. Details: build_info.json
 
 # index.html.md
 
@@ -948,7 +948,7 @@ reports that a search would silently miss.
 | [`CoverageReport`](_autosummary/ir.coverage.html.md#ir.coverage.CoverageReport)(name, on_disk, indexed, excluded)   | Disk-vs-index coverage for a filesystem-backed corpus.   |
 |-----------------------------------------------------------------------------------------------------|----------------------------------------------------------|
 
-### *class* ir.coverage.CoverageReport(name, on_disk, indexed, excluded, missing=list())
+### *class* ir.coverage.CoverageReport(name, on_disk, indexed, excluded, missing=list(), ledgered_no_records=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3921,7 +3921,7 @@ Persist the maintenance bookkeeping for this corpus.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### *class* ir.CoverageReport(name, on_disk, indexed, excluded, missing=list())
+### *class* ir.CoverageReport(name, on_disk, indexed, excluded, missing=list(), ledgered_no_records=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -8686,7 +8686,7 @@ single function serves any corpus.
 
 # About this build
 
-This documentation was built on **2026-11-24 04:51 UTC** from commit <a href="https://github.com/i2mint/ir/commit/c4eadb93198b35823b151ca2b934687237094914"><code>c4eadb9</code></a> on branch <code>master</code>, for **ir 0.1.94** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-26 13:27 UTC** from commit <a href="https://github.com/i2mint/ir/commit/6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e"><code>6ba4ef9</code></a> on branch <code>master</code>, for **ir 0.1.95** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -8695,7 +8695,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                  |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/ir/commit/c4eadb93198b35823b151ca2b934687237094914"><code>c4eadb93198b35823b151ca2b934687237094914</code></a> |
+| Commit              | <a href="https://github.com/i2mint/ir/commit/6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e"><code>6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e</code></a> |
 | Branch              | <code>master</code>                                                                                                                              |
 | Tags at this commit | none                                                                                                                                             |
 | Working tree        | clean                                                                                                                                            |
@@ -8706,9 +8706,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/ir</code>                                                                     |
-| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45329054227">45329054227</a>            |
+| Run          | <a href="https://github.com/i2mint/ir/actions/runs/45829149486">45829149486</a>            |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>c4eadb93198b35823b151ca2b934687237094914</code> (in the history of the built commit) |
+| Event commit | <code>6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -8733,13 +8733,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/ir/0.1.94/">0.1.94</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/ir/0.1.95/">0.1.95</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/ir && cd ir
-git checkout c4eadb93198b35823b151ca2b934687237094914
+git checkout 6ba4ef9a497a3c92c270b00f00d2bfecfb48ed3e
 pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
